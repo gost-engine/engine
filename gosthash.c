@@ -255,6 +255,8 @@ int finish_hash(gost_hash_ctx * ctx, byte * hashval)
         fin_len += ctx->left;
     }
     memset(buf, 0, 32);
+    if (fin_len == 0)
+        hash_step(ctx->cipher_ctx, H, buf);
     bptr = buf;
     fin_len <<= 3;              /* Hash length in BITS!! */
     while (fin_len > 0) {

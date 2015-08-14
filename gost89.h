@@ -92,6 +92,7 @@ extern gost_subst_block Gost28147_CryptoProParamSetA;
 extern gost_subst_block Gost28147_CryptoProParamSetB;
 extern gost_subst_block Gost28147_CryptoProParamSetC;
 extern gost_subst_block Gost28147_CryptoProParamSetD;
+extern gost_subst_block Gost28147_TC26ParamSetZ;
 extern const byte CryptoProKeyMeshingKey[];
 typedef unsigned int word32;
 

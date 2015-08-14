@@ -23,6 +23,9 @@ static int gost_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                             const unsigned char *iv, int enc);
 static int gost_cipher_init_cpa(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                                 const unsigned char *iv, int enc);
+static int gost_cipher_init_cp_12(EVP_CIPHER_CTX *ctx,
+                                  const unsigned char *key,
+                                  const unsigned char *iv, int enc);
 /* Handles block of data in CFB mode */
 static int gost_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
                               const unsigned char *in, size_t inl);
@@ -71,9 +74,27 @@ EVP_CIPHER cipher_gost_cpacnt = {
     NULL,
 };
 
+EVP_CIPHER cipher_gost_cpcnt_12 = {
+    NID_gost89_cnt_12,
+    1,                          /* block_size */
+    32,                         /* key_size */
+    8,                          /* iv_len */
+    EVP_CIPH_OFB_MODE | EVP_CIPH_NO_PADDING |
+        EVP_CIPH_CUSTOM_IV | EVP_CIPH_RAND_KEY | EVP_CIPH_ALWAYS_CALL_INIT,
+    gost_cipher_init_cp_12,
+    gost_cipher_do_cnt,
+    gost_cipher_cleanup,
+    sizeof(struct ossl_gost_cipher_ctx), /* ctx_size */
+    gost89_set_asn1_parameters,
+    gost89_get_asn1_parameters,
+    gost_cipher_ctl,
+    NULL,
+};
+
 /* Implementation of GOST 28147-89 in MAC (imitovstavka) mode */
 /* Init functions which set specific parameters */
 static int gost_imit_init_cpa(EVP_MD_CTX *ctx);
+static int gost_imit_init_cp_12(EVP_MD_CTX *ctx);
 /* process block of data */
 static int gost_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count);
 /* Return computed value */
@@ -90,6 +111,24 @@ EVP_MD imit_gost_cpa = {
     4,
     0,
     gost_imit_init_cpa,
+    gost_imit_update,
+    gost_imit_final,
+    gost_imit_copy,
+    gost_imit_cleanup,
+    NULL,
+    NULL,
+    {0, 0, 0, 0, 0},
+    8,
+    sizeof(struct ossl_gost_imit_ctx),
+    gost_imit_ctrl
+};
+
+EVP_MD imit_gost_cp_12 = {
+    NID_gost_mac_12,
+    NID_undef,
+    4,
+    0,
+    gost_imit_init_cp_12,
     gost_imit_update,
     gost_imit_final,
     gost_imit_copy,
@@ -126,6 +165,7 @@ struct gost_cipher_info gost_cipher_list[] = {
      1},
     {NID_id_Gost28147_89_CryptoPro_D_ParamSet, &Gost28147_CryptoProParamSetD,
      1},
+    {NID_id_tc26_gost_28147_param_Z, &Gost28147_TC26ParamSetZ, 1},
     {NID_id_Gost28147_89_TestParamSet, &Gost28147_TestParamSet, 1},
     {NID_undef, NULL, 0}
 };
@@ -143,7 +183,7 @@ const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj)
     if (!obj) {
         const char *params = get_gost_engine_param(GOST_PARAM_CRYPT_PARAMS);
         if (!params || !strlen(params))
-            return &gost_cipher_list[1];
+            return &gost_cipher_list[5];
 
         nid = OBJ_txt2nid(params);
         if (nid == NID_undef) {
@@ -199,11 +239,13 @@ static int gost_cipher_init_param(EVP_CIPHER_CTX *ctx,
     return 1;
 }
 
-static int gost_cipher_init_cpa(EVP_CIPHER_CTX *ctx, const unsigned char *key,
-                                const unsigned char *iv, int enc)
+static int gost_cipher_init_cnt(EVP_CIPHER_CTX *ctx,
+                                const unsigned char *key,
+                                const unsigned char *iv,
+                                gost_subst_block * block)
 {
     struct ossl_gost_cipher_ctx *c = ctx->cipher_data;
-    gost_init(&(c->cctx), &Gost28147_CryptoProParamSetA);
+    gost_init(&(c->cctx), block);
     c->key_meshing = 1;
     c->count = 0;
     if (key)
@@ -212,6 +254,19 @@ static int gost_cipher_init_cpa(EVP_CIPHER_CTX *ctx, const unsigned char *key,
         memcpy(ctx->oiv, iv, EVP_CIPHER_CTX_iv_length(ctx));
     memcpy(ctx->iv, ctx->oiv, EVP_CIPHER_CTX_iv_length(ctx));
     return 1;
+}
+
+static int gost_cipher_init_cpa(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                                const unsigned char *iv, int enc)
+{
+    return gost_cipher_init_cnt(ctx, key, iv, &Gost28147_CryptoProParamSetA);
+}
+
+static int gost_cipher_init_cp_12(EVP_CIPHER_CTX *ctx,
+                                  const unsigned char *key,
+                                  const unsigned char *iv, int enc)
+{
+    return gost_cipher_init_cnt(ctx, key, iv, &Gost28147_TC26ParamSetZ);
 }
 
 /* Initializes EVP_CIPHER_CTX with default values */
@@ -398,6 +453,14 @@ int gost_cipher_cleanup(EVP_CIPHER_CTX *ctx)
 int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
+    case EVP_CTRL_INIT:
+        {
+            struct ossl_gost_cipher_ctx *c = ctx->cipher_data;
+            if (c == NULL) {
+                return -1;
+            }
+            return gost_cipher_set_param(c, arg);
+        }
     case EVP_CTRL_RAND_KEY:
         {
             if (RAND_bytes((unsigned char *)ptr, ctx->key_len) <= 0) {
@@ -409,7 +472,18 @@ int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
         }
     case EVP_CTRL_PBE_PRF_NID:
         if (ptr) {
-            *((int *)ptr) = NID_id_HMACGostR3411_94;
+            const char *params = get_gost_engine_param(GOST_PARAM_PBE_PARAMS);
+            int nid = NID_id_tc26_hmac_gost_3411_2012_512;
+
+            if (params) {
+                if (!strcmp("md_gost12_256", params))
+                    nid = NID_id_tc26_hmac_gost_3411_2012_256;
+                else if (!strcmp("md_gost12_512", params))
+                    nid = NID_id_tc26_hmac_gost_3411_2012_512;
+                else if (!strcmp("md_gost94", params))
+                    nid = NID_id_HMACGostR3411_94;
+            }
+            *((int *)ptr) = nid;
             return 1;
         } else {
             return 0;
@@ -475,6 +549,8 @@ int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
     GOST_CIPHER_PARAMS *gcp = NULL;
     unsigned char *p;
     struct ossl_gost_cipher_ctx *c = ctx->cipher_data;
+    int nid;
+
     if (ASN1_TYPE_get(params) != V_ASN1_SEQUENCE) {
         return ret;
     }
@@ -490,7 +566,16 @@ int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
         GOSTerr(GOST_F_GOST89_GET_ASN1_PARAMETERS, GOST_R_INVALID_IV_LENGTH);
         return -1;
     }
-    if (!gost_cipher_set_param(c, OBJ_obj2nid(gcp->enc_param_set))) {
+
+    nid = OBJ_obj2nid(gcp->enc_param_set);
+    if (nid == NID_undef) {
+        GOST_CIPHER_PARAMS_free(gcp);
+        GOSTerr(GOST_F_GOST89_GET_ASN1_PARAMETERS,
+                GOST_R_INVALID_CIPHER_PARAM_OID);
+        return -1;
+    }
+
+    if (!gost_cipher_set_param(c, nid)) {
         GOST_CIPHER_PARAMS_free(gcp);
         return -1;
     }
@@ -501,7 +586,7 @@ int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
     return 1;
 }
 
-int gost_imit_init_cpa(EVP_MD_CTX *ctx)
+static int gost_imit_init(EVP_MD_CTX *ctx, gost_subst_block * block)
 {
     struct ossl_gost_imit_ctx *c = ctx->md_data;
     memset(c->buffer, 0, sizeof(c->buffer));
@@ -509,8 +594,18 @@ int gost_imit_init_cpa(EVP_MD_CTX *ctx)
     c->count = 0;
     c->bytes_left = 0;
     c->key_meshing = 1;
-    gost_init(&(c->cctx), &Gost28147_CryptoProParamSetA);
+    gost_init(&(c->cctx), block);
     return 1;
+}
+
+static int gost_imit_init_cpa(EVP_MD_CTX *ctx)
+{
+    return gost_imit_init(ctx, &Gost28147_CryptoProParamSetA);
+}
+
+static int gost_imit_init_cp_12(EVP_MD_CTX *ctx)
+{
+    return gost_imit_init(ctx, &Gost28147_TC26ParamSetZ);
 }
 
 static void mac_block_mesh(struct ossl_gost_imit_ctx *c,

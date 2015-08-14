@@ -99,7 +99,9 @@ int pkey_GOST94cp_encrypt(EVP_PKEY_CTX *ctx, unsigned char *out,
 {
     GOST_KEY_TRANSPORT *gkt = NULL;
     unsigned char shared_key[32], ukm[8], crypted_key[44];
-    const struct gost_cipher_info *param = get_encryption_params(NULL);
+    const struct gost_cipher_info *param =
+        get_encryption_params(OBJ_nid2obj
+                              (NID_id_Gost28147_89_CryptoPro_A_ParamSet));
     EVP_PKEY *pubk = EVP_PKEY_CTX_get0_pkey(ctx);
     struct gost_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
     gost_ctx cctx;

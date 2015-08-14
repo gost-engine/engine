@@ -54,23 +54,29 @@ DSA_SIG *gost_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
 {
     BIGNUM *k = NULL, *tmp = NULL, *tmp2 = NULL;
     DSA_SIG *newsig = NULL, *ret = NULL;
-    BIGNUM *md = hashsum2bn(dgst);
+    BIGNUM *md = NULL;
     /* check if H(M) mod q is zero */
-    BN_CTX *ctx = BN_CTX_new();
-    if(!ctx) {
+    BN_CTX *ctx;
+
+    OPENSSL_assert(dgst != NULL && dsa != NULL && dlen == 32);
+
+    ctx = BN_CTX_new();
+    if (!ctx) {
         GOSTerr(GOST_F_GOST_DO_SIGN, ERR_R_MALLOC_FAILURE);
-        goto err;
+        return NULL;
     }
+
     BN_CTX_start(ctx);
+    md = hashsum2bn(dgst, dlen);
     newsig = DSA_SIG_new();
-    if (!newsig) {
+    if (!md || !newsig) {
         GOSTerr(GOST_F_GOST_DO_SIGN, GOST_R_NO_MEMORY);
         goto err;
     }
     tmp = BN_CTX_get(ctx);
     k = BN_CTX_get(ctx);
     tmp2 = BN_CTX_get(ctx);
-    if(!tmp || !k || !tmp2) {
+    if (!tmp || !k || !tmp2) {
         GOSTerr(GOST_F_GOST_DO_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -88,7 +94,7 @@ DSA_SIG *gost_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
             BN_mod_exp(tmp, dsa->g, k, dsa->p, ctx);
             if (!(newsig->r)) {
                 newsig->r = BN_new();
-                if(!newsig->r) {
+                if (!newsig->r) {
                     GOSTerr(GOST_F_GOST_DO_SIGN, ERR_R_MALLOC_FAILURE);
                     goto err;
                 }
@@ -101,7 +107,7 @@ DSA_SIG *gost_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
         BN_mod_mul(tmp2, k, md, dsa->q, ctx);
         if (!newsig->s) {
             newsig->s = BN_new();
-            if(!newsig->s) {
+            if (!newsig->s) {
                 GOSTerr(GOST_F_GOST_DO_SIGN, ERR_R_MALLOC_FAILURE);
                 goto err;
             }
@@ -112,12 +118,11 @@ DSA_SIG *gost_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
 
     ret = newsig;
  err:
-    BN_free(md);
-    if(ctx) {
-        BN_CTX_end(ctx);
-        BN_CTX_free(ctx);
-    }
-    if(!ret && newsig) {
+    if (md)
+        BN_free(md);
+    BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
+    if (!ret && newsig) {
         DSA_SIG_free(newsig);
     }
     return ret;
@@ -167,19 +172,23 @@ int gost_do_verify(const unsigned char *dgst, int dgst_len,
     BIGNUM *u = NULL, *v = NULL, *z1 = NULL, *z2 = NULL;
     BIGNUM *tmp2 = NULL, *tmp3 = NULL;
     int ok = 0;
-    BN_CTX *ctx = BN_CTX_new();
-    if(!ctx) {
+    BN_CTX *ctx;
+
+    OPENSSL_assert(dgst != NULL && dgst_len == 32 && sig != NULL && dsa != NULL);
+    if (BN_cmp(sig->s, dsa->q) >= 1 || BN_cmp(sig->r, dsa->q) >= 1) {
+        GOSTerr(GOST_F_GOST_DO_VERIFY, GOST_R_SIGNATURE_PARTS_GREATER_THAN_Q);
+        return 0;
+    }
+
+    ctx = BN_CTX_new();
+    if (!ctx) {
         GOSTerr(GOST_F_GOST_DO_VERIFY, ERR_R_MALLOC_FAILURE);
-        goto err;
+        return 0;
     }
 
     BN_CTX_start(ctx);
-    if (BN_cmp(sig->s, dsa->q) >= 1 || BN_cmp(sig->r, dsa->q) >= 1) {
-        GOSTerr(GOST_F_GOST_DO_VERIFY, GOST_R_SIGNATURE_PARTS_GREATER_THAN_Q);
-        goto err;
-    }
-    md = hashsum2bn(dgst);
 
+    md = hashsum2bn(dgst, dgst_len);
     tmp = BN_CTX_get(ctx);
     v = BN_CTX_get(ctx);
     q2 = BN_CTX_get(ctx);
@@ -188,7 +197,7 @@ int gost_do_verify(const unsigned char *dgst, int dgst_len,
     tmp2 = BN_CTX_get(ctx);
     tmp3 = BN_CTX_get(ctx);
     u = BN_CTX_get(ctx);
-    if(!tmp || !v || !q2 || !z1 || !z2 || !tmp2 || !tmp3 || !u) {
+    if (!tmp || !v || !q2 || !z1 || !z2 || !tmp2 || !tmp3 || !u) {
         GOSTerr(GOST_F_GOST_DO_VERIFY, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -213,11 +222,10 @@ int gost_do_verify(const unsigned char *dgst, int dgst_len,
         GOSTerr(GOST_F_GOST_DO_VERIFY, GOST_R_SIGNATURE_MISMATCH);
     }
 err:
-    if(md) BN_free(md);
-    if(ctx) {
-        BN_CTX_end(ctx);
-        BN_CTX_free(ctx);
-    }
+    if (md)
+        BN_free(md);
+    BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
     return ok;
 }
 
@@ -229,18 +237,19 @@ int gost94_compute_public(DSA *dsa)
 {
     /* Now fill algorithm parameters with correct values */
     BN_CTX *ctx;
-    if (!dsa->g) {
+    if (!dsa || !dsa->g) {
         GOSTerr(GOST_F_GOST94_COMPUTE_PUBLIC, GOST_R_KEY_IS_NOT_INITALIZED);
         return 0;
     }
+
     ctx = BN_CTX_new();
-    if(!ctx) {
+    if (!ctx) {
         GOSTerr(GOST_F_GOST94_COMPUTE_PUBLIC, ERR_R_MALLOC_FAILURE);
         return 0;
     }
 
     dsa->pub_key = BN_new();
-    if(!dsa->pub_key) {
+    if (!dsa->pub_key) {
         GOSTerr(GOST_F_GOST94_COMPUTE_PUBLIC, ERR_R_MALLOC_FAILURE);
         BN_CTX_free(ctx);
         return 0;
@@ -259,27 +268,20 @@ int gost94_compute_public(DSA *dsa)
 int fill_GOST94_params(DSA *dsa, int nid)
 {
     R3410_params *params = R3410_paramset;
+    if (!dsa || nid == NID_undef) {
+        GOSTerr(GOST_F_FILL_GOST94_PARAMS, GOST_R_UNSUPPORTED_PARAMETER_SET);
+        return 0;
+    }
+
     while (params->nid != NID_undef && params->nid != nid)
         params++;
     if (params->nid == NID_undef) {
         GOSTerr(GOST_F_FILL_GOST94_PARAMS, GOST_R_UNSUPPORTED_PARAMETER_SET);
         return 0;
     }
-#define dump_signature(a,b,c)
-    if (dsa->p) {
-        BN_free(dsa->p);
-    }
-    dsa->p = NULL;
+
     BN_dec2bn(&(dsa->p), params->p);
-    if (dsa->q) {
-        BN_free(dsa->q);
-    }
-    dsa->q = NULL;
     BN_dec2bn(&(dsa->q), params->q);
-    if (dsa->g) {
-        BN_free(dsa->g);
-    }
-    dsa->g = NULL;
     BN_dec2bn(&(dsa->g), params->a);
     return 1;
 }
@@ -291,8 +293,10 @@ int fill_GOST94_params(DSA *dsa, int nid)
  */
 int gost_sign_keygen(DSA *dsa)
 {
+    OPENSSL_assert(dsa != NULL);
+
     dsa->priv_key = BN_new();
-    if(!dsa->priv_key) {
+    if (!dsa->priv_key) {
         GOSTerr(GOST_F_GOST_SIGN_KEYGEN, ERR_R_MALLOC_FAILURE);
         return 0;
     }
@@ -332,14 +336,18 @@ DSA_SIG *unpack_cp_signature(const unsigned char *sig, size_t siglen)
 }
 
 /* Convert little-endian byte array into bignum */
-BIGNUM *hashsum2bn(const unsigned char *dgst)
+BIGNUM *hashsum2bn(const unsigned char *dgst, int len)
 {
-    unsigned char buf[32];
+    unsigned char buf[64];
     int i;
-    for (i = 0; i < 32; i++) {
-        buf[31 - i] = dgst[i];
+
+    if (len > sizeof(buf))
+        return NULL;
+
+    for (i = 0; i < len; i++) {
+        buf[len - i - 1] = dgst[i];
     }
-    return getbnfrombuf(buf, 32);
+    return getbnfrombuf(buf, len);
 }
 
 /* Convert byte buffer to bignum, skipping leading zeros*/
