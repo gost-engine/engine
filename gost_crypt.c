@@ -8,6 +8,7 @@
  **********************************************************************/
 #include <string.h>
 #include "gost89.h"
+#include <openssl/err.h>
 #include <openssl/rand.h>
 #include "e_gost_err.h"
 #include "gost_lcl.h"
@@ -117,7 +118,6 @@ struct gost_cipher_info gost_cipher_list[] = {
     /*
      * {NID_id_GostR3411_94_CryptoProParamSet,&GostR3411_94_CryptoProParamSet,0},
      */
-    {NID_id_Gost28147_89_cc, &GostR3411_94_CryptoProParamSet, 0},
     {NID_id_Gost28147_89_CryptoPro_A_ParamSet, &Gost28147_CryptoProParamSetA,
      1},
     {NID_id_Gost28147_89_CryptoPro_B_ParamSet, &Gost28147_CryptoProParamSetB,
@@ -433,22 +433,22 @@ int gost89_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
     GOST_CIPHER_PARAMS *gcp = GOST_CIPHER_PARAMS_new();
     ASN1_OCTET_STRING *os = NULL;
     if (!gcp) {
-        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, GOST_R_NO_MEMORY);
+        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, ERR_R_MALLOC_FAILURE);
         return 0;
     }
     if (!ASN1_OCTET_STRING_set(gcp->iv, ctx->iv, ctx->cipher->iv_len)) {
         GOST_CIPHER_PARAMS_free(gcp);
-        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, GOST_R_NO_MEMORY);
+        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, ERR_R_MALLOC_FAILURE);
         return 0;
     }
     ASN1_OBJECT_free(gcp->enc_param_set);
     gcp->enc_param_set = OBJ_nid2obj(c->paramNID);
 
     len = i2d_GOST_CIPHER_PARAMS(gcp, NULL);
-    p = buf = (unsigned char *)OPENSSL_malloc(len);
+    p = buf = OPENSSL_malloc(len);
     if (!buf) {
         GOST_CIPHER_PARAMS_free(gcp);
-        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, GOST_R_NO_MEMORY);
+        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, ERR_R_MALLOC_FAILURE);
         return 0;
     }
     i2d_GOST_CIPHER_PARAMS(gcp, &p);
@@ -458,7 +458,7 @@ int gost89_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 
     if (!os || !ASN1_OCTET_STRING_set(os, buf, len)) {
         OPENSSL_free(buf);
-        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, GOST_R_NO_MEMORY);
+        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, ERR_R_MALLOC_FAILURE);
         return 0;
     }
     OPENSSL_free(buf);

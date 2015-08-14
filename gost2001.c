@@ -7,7 +7,6 @@
  *          Requires OpenSSL 0.9.9 for compilation                    *
  **********************************************************************/
 #include "gost_lcl.h"
-#include "gost_params.h"
 #include <string.h>
 #include <openssl/rand.h>
 #include <openssl/ecdsa.h>
@@ -41,7 +40,7 @@ int fill_GOST2001_params(EC_KEY *eckey, int nid)
     BN_CTX *ctx = BN_CTX_new();
     int ok = 0;
 
-    if(!ctx) {
+    if (!ctx) {
         GOSTerr(GOST_F_FILL_GOST2001_PARAMS, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -53,7 +52,7 @@ int fill_GOST2001_params(EC_KEY *eckey, int nid)
     x = BN_CTX_get(ctx);
     y = BN_CTX_get(ctx);
     q = BN_CTX_get(ctx);
-    if(!p || !a || !b || !x || !y || !q) {
+    if (!p || !a || !b || !x || !y || !q) {
         GOSTerr(GOST_F_FILL_GOST2001_PARAMS, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -64,7 +63,7 @@ int fill_GOST2001_params(EC_KEY *eckey, int nid)
                 GOST_R_UNSUPPORTED_PARAMETER_SET);
         goto err;
     }
-    if(!BN_hex2bn(&p, params->p)
+    if (!BN_hex2bn(&p, params->p)
         || !BN_hex2bn(&a, params->a)
         || !BN_hex2bn(&b, params->b)) {
         GOSTerr(GOST_F_FILL_GOST2001_PARAMS,
@@ -73,18 +72,18 @@ int fill_GOST2001_params(EC_KEY *eckey, int nid)
     }
 
     grp = EC_GROUP_new_curve_GFp(p, a, b, ctx);
-    if(!grp)  {
+    if (!grp)  {
         GOSTerr(GOST_F_FILL_GOST2001_PARAMS, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
     P = EC_POINT_new(grp);
-    if(!P)  {
+    if (!P)  {
         GOSTerr(GOST_F_FILL_GOST2001_PARAMS, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
-    if(!BN_hex2bn(&x, params->x)
+    if (!BN_hex2bn(&x, params->x)
         || !BN_hex2bn(&y, params->y)
         || !EC_POINT_set_affine_coordinates_GFp(grp, P, x, y, ctx)
         || !BN_hex2bn(&q, params->q))  {
@@ -98,23 +97,22 @@ int fill_GOST2001_params(EC_KEY *eckey, int nid)
     fprintf(stderr, "\n");
 #endif
 
-    if(!EC_GROUP_set_generator(grp, P, q, NULL)) {
+    if (!EC_GROUP_set_generator(grp, P, q, NULL)) {
         GOSTerr(GOST_F_FILL_GOST2001_PARAMS, ERR_R_INTERNAL_ERROR);
         goto err;
     }
     EC_GROUP_set_curve_name(grp, params->nid);
-    if(!EC_KEY_set_group(eckey, grp)) {
+    if (!EC_KEY_set_group(eckey, grp)) {
         GOSTerr(GOST_F_FILL_GOST2001_PARAMS, ERR_R_INTERNAL_ERROR);
         goto err;
     }
     ok = 1;
  err:
-    if (P) EC_POINT_free(P);
-    if (grp) EC_GROUP_free(grp);
-    if (ctx) {
+    EC_POINT_free(P);
+    EC_GROUP_free(grp);
+    if (ctx)
         BN_CTX_end(ctx);
-        BN_CTX_free(ctx);
-    }
+    BN_CTX_free(ctx);
     return ok;
 }
 
@@ -134,7 +132,7 @@ DSA_SIG *gost2001_do_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
         NULL, *e = NULL;
     EC_POINT *C = NULL;
     BN_CTX *ctx = BN_CTX_new();
-    if(!ctx || !md) {
+    if (!ctx || !md) {
         GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -142,26 +140,26 @@ DSA_SIG *gost2001_do_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     OPENSSL_assert(dlen == 32);
     newsig = DSA_SIG_new();
     if (!newsig) {
-        GOSTerr(GOST_F_GOST2001_DO_SIGN, GOST_R_NO_MEMORY);
+        GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
     }
     group = EC_KEY_get0_group(eckey);
-    if(!group) {
+    if (!group) {
         GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_INTERNAL_ERROR);
         goto err;
     }
     order = BN_CTX_get(ctx);
-    if(!order || !EC_GROUP_get_order(group, order, ctx)) {
+    if (!order || !EC_GROUP_get_order(group, order, ctx)) {
         GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_INTERNAL_ERROR);
         goto err;
     }
     priv_key = EC_KEY_get0_private_key(eckey);
-    if(!priv_key) {
+    if (!priv_key) {
         GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_INTERNAL_ERROR);
         goto err;
     }
     e = BN_CTX_get(ctx);
-    if(!e || !BN_mod(e, md, order, ctx)) {
+    if (!e || !BN_mod(e, md, order, ctx)) {
         GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_INTERNAL_ERROR);
         goto err;
     }
@@ -177,7 +175,7 @@ DSA_SIG *gost2001_do_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     }
     k = BN_CTX_get(ctx);
     C = EC_POINT_new(group);
-    if(!k || !C) {
+    if (!k || !C) {
         GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -205,7 +203,7 @@ DSA_SIG *gost2001_do_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
                 goto err;
             }
 
-            if(!BN_nnmod(r, X, order, ctx)) {
+            if (!BN_nnmod(r, X, order, ctx)) {
                 GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_INTERNAL_ERROR);
                 goto err;
             }
@@ -223,7 +221,7 @@ DSA_SIG *gost2001_do_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
             goto err;
         }
 
-        if(!BN_mod_mul(tmp, priv_key, r, order, ctx)
+        if (!BN_mod_mul(tmp, priv_key, r, order, ctx)
             || !BN_mod_mul(tmp2, k, e, order, ctx)
             || !BN_mod_add(s, tmp, tmp2, order, ctx)) {
             GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_INTERNAL_ERROR);
@@ -234,22 +232,20 @@ DSA_SIG *gost2001_do_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
 
     newsig->s = BN_dup(s);
     newsig->r = BN_dup(r);
-    if(!newsig->s || !newsig->r) {
+    if (!newsig->s || !newsig->r) {
         GOSTerr(GOST_F_GOST2001_DO_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
     ret = newsig;
  err:
-    if(ctx) {
+    if (ctx)
         BN_CTX_end(ctx);
-        BN_CTX_free(ctx);
-    }
-    if (C) EC_POINT_free(C);
-    if (md) BN_free(md);
-    if (!ret && newsig) {
+    BN_CTX_free(ctx);
+    EC_POINT_free(C);
+    BN_free(md);
+    if (!ret)
         DSA_SIG_free(newsig);
-    }
     return ret;
 }
 
@@ -270,7 +266,7 @@ int gost2001_do_verify(const unsigned char *dgst, int dgst_len,
     const EC_POINT *pub_key = NULL;
     int ok = 0;
 
-    if(!ctx || !group) {
+    if (!ctx || !group) {
         GOSTerr(GOST_F_GOST2001_DO_VERIFY, ERR_R_INTERNAL_ERROR);
         goto err;
     }
@@ -284,13 +280,13 @@ int gost2001_do_verify(const unsigned char *dgst, int dgst_len,
     X = BN_CTX_get(ctx);
     R = BN_CTX_get(ctx);
     v = BN_CTX_get(ctx);
-    if(!order || !e || !z1 || !z2 || !tmp || !X || !R || !v) {
+    if (!order || !e || !z1 || !z2 || !tmp || !X || !R || !v) {
         GOSTerr(GOST_F_GOST2001_DO_VERIFY, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
     pub_key = EC_KEY_get0_public_key(ec);
-    if(!pub_key || !EC_GROUP_get_order(group, order, ctx)) {
+    if (!pub_key || !EC_GROUP_get_order(group, order, ctx)) {
         GOSTerr(GOST_F_GOST2001_DO_VERIFY, ERR_R_INTERNAL_ERROR);
         goto err;
     }
@@ -304,7 +300,7 @@ int gost2001_do_verify(const unsigned char *dgst, int dgst_len,
     }
     md = hashsum2bn(dgst);
 
-    if(!md || !BN_mod(e, md, order, ctx)) {
+    if (!md || !BN_mod(e, md, order, ctx)) {
         GOSTerr(GOST_F_GOST2001_DO_VERIFY, ERR_R_INTERNAL_ERROR);
         goto err;
     }
@@ -319,7 +315,7 @@ int gost2001_do_verify(const unsigned char *dgst, int dgst_len,
         goto err;
     }
     v = BN_mod_inverse(v, e, order, ctx);
-    if(!v
+    if (!v
         || !BN_mod_mul(z1, sig->s, v, order, ctx)
         || !BN_sub(tmp, order, sig->r)
         || !BN_mod_mul(z2, tmp, v, order, ctx)) {
@@ -347,7 +343,7 @@ int gost2001_do_verify(const unsigned char *dgst, int dgst_len,
         GOSTerr(GOST_F_GOST2001_DO_VERIFY, ERR_R_EC_LIB);
         goto err;
     }
-    if(!BN_mod(R, X, order, ctx)) {
+    if (!BN_mod(R, X, order, ctx)) {
         GOSTerr(GOST_F_GOST2001_DO_VERIFY, ERR_R_INTERNAL_ERROR);
         goto err;
     }
@@ -364,12 +360,11 @@ int gost2001_do_verify(const unsigned char *dgst, int dgst_len,
         ok = 1;
     }
  err:
-    if (C) EC_POINT_free(C);
-    if (ctx) {
+    EC_POINT_free(C);
+    if (ctx)
         BN_CTX_end(ctx);
-        BN_CTX_free(ctx);
-    }
-    if (md) BN_free(md);
+    BN_CTX_free(ctx);
+    BN_free(md);
     return ok;
 }
 
@@ -392,18 +387,18 @@ int gost2001_compute_public(EC_KEY *ec)
         return 0;
     }
     ctx = BN_CTX_new();
-    if(!ctx) {
+    if (!ctx) {
         GOSTerr(GOST_F_GOST2001_COMPUTE_PUBLIC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
     BN_CTX_start(ctx);
-    if (!(priv_key = EC_KEY_get0_private_key(ec))) {
+    if ((priv_key = EC_KEY_get0_private_key(ec)) == NULL) {
         GOSTerr(GOST_F_GOST2001_COMPUTE_PUBLIC, ERR_R_EC_LIB);
         goto err;
     }
 
     pub_key = EC_POINT_new(group);
-    if(!pub_key) {
+    if (!pub_key) {
         GOSTerr(GOST_F_GOST2001_COMPUTE_PUBLIC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -417,11 +412,10 @@ int gost2001_compute_public(EC_KEY *ec)
     }
     ok = 256;
  err:
-    if (pub_key) EC_POINT_free(pub_key);
-    if (ctx) {
+    EC_POINT_free(pub_key);
+    if (ctx)
         BN_CTX_end(ctx);
-        BN_CTX_free(ctx);
-    }
+    BN_CTX_free(ctx);
     return ok;
 }
 
@@ -436,7 +430,7 @@ int gost2001_keygen(EC_KEY *ec)
     BIGNUM *order = BN_new(), *d = BN_new();
     const EC_GROUP *group = EC_KEY_get0_group(ec);
 
-    if(!group || !EC_GROUP_get_order(group, order, NULL)) {
+    if (!group || !EC_GROUP_get_order(group, order, NULL)) {
         GOSTerr(GOST_F_GOST2001_KEYGEN, ERR_R_INTERNAL_ERROR);
         BN_free(d);
         BN_free(order);
@@ -454,7 +448,7 @@ int gost2001_keygen(EC_KEY *ec)
     }
     while (BN_is_zero(d));
 
-    if(!EC_KEY_set_private_key(ec, d)) {
+    if (!EC_KEY_set_private_key(ec, d)) {
         GOSTerr(GOST_F_GOST2001_KEYGEN, ERR_R_INTERNAL_ERROR);
         BN_free(d);
         BN_free(order);
