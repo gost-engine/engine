@@ -32,8 +32,6 @@
 void init_gost2012_hash_ctx(gost2012_hash_ctx * CTX,
                             const unsigned int digest_size)
 {
-    unsigned int i;
-
     memset(CTX, 0, sizeof(gost2012_hash_ctx));
 
     CTX->digest_size = digest_size;

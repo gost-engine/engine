@@ -7,7 +7,6 @@
  *          Requires OpenSSL 1.0.0+ for compilation                   *
  **********************************************************************/
 #include "gost_lcl.h"
-#include "gost_params.h"
 #include <string.h>
 #include <openssl/rand.h>
 #include <openssl/ecdsa.h>
@@ -23,6 +22,21 @@ void dump_dsa_sig(const char *message, DSA_SIG *sig);
 # define dump_signature(a,b,c)
 # define dump_dsa_sig(a,b)
 #endif
+
+/* Convert little-endian byte array into bignum */
+BIGNUM *hashsum2bn(const unsigned char *dgst, int len)
+{
+    unsigned char buf[64];
+    int i;
+
+    if (len > sizeof(buf))
+        return NULL;
+
+    for (i = 0; i < len; i++) {
+        buf[len - i - 1] = dgst[i];
+    }
+    return getbnfrombuf(buf, len);
+}
 
 static R3410_ec_params *gost_nid2params(int nid)
 {

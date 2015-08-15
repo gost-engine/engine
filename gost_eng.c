@@ -50,7 +50,6 @@ static int gost_digest_nids[] = {
 };
 
 static int gost_pkey_meth_nids[] = {
-    NID_id_GostR3410_94,
     NID_id_GostR3410_2001,
     NID_id_Gost28147_89_MAC,
     NID_id_GostR3410_2012_256,
@@ -59,15 +58,13 @@ static int gost_pkey_meth_nids[] = {
     0
 };
 
-static EVP_PKEY_METHOD *pmeth_GostR3410_94 = NULL,
-    *pmeth_GostR3410_2001 = NULL,
+static EVP_PKEY_METHOD *pmeth_GostR3410_2001 = NULL,
     *pmeth_GostR3410_2012_256 = NULL,
     *pmeth_GostR3410_2012_512 = NULL,
     *pmeth_Gost28147_MAC = NULL,
     *pmeth_Gost28147_MAC_12 = NULL;
 
-static EVP_PKEY_ASN1_METHOD *ameth_GostR3410_94 = NULL,
-    *ameth_GostR3410_2001 = NULL,
+static EVP_PKEY_ASN1_METHOD *ameth_GostR3410_2001 = NULL,
     *ameth_GostR3410_2012_256 = NULL,
     *ameth_GostR3410_2012_512 = NULL,
     *ameth_Gost28147_MAC = NULL,
@@ -87,14 +84,12 @@ static int gost_engine_destroy(ENGINE *e)
 {
     gost_param_free();
 
-    pmeth_GostR3410_94 = NULL;
     pmeth_GostR3410_2001 = NULL;
     pmeth_Gost28147_MAC = NULL;
     pmeth_GostR3410_2012_256 = NULL;
     pmeth_GostR3410_2012_512 = NULL;
     pmeth_Gost28147_MAC_12 = NULL;
 
-    ameth_GostR3410_94 = NULL;
     ameth_GostR3410_2001 = NULL;
     ameth_Gost28147_MAC = NULL;
     ameth_GostR3410_2012_256 = NULL;
@@ -109,8 +104,7 @@ static int bind_gost(ENGINE *e, const char *id)
     int ret = 0;
     if (id && strcmp(id, engine_gost_id))
         return 0;
-
-    if (ameth_GostR3410_94) {
+    if (ameth_GostR3410_2001) {
         printf("GOST engine already loaded\n");
         goto end;
     }
@@ -154,10 +148,6 @@ static int bind_gost(ENGINE *e, const char *id)
     }
 
     if (!register_ameth_gost
-        (NID_id_GostR3410_94, &ameth_GostR3410_94, "GOST94",
-         "GOST R 34.10-94"))
-        goto end;
-    if (!register_ameth_gost
         (NID_id_GostR3410_2001, &ameth_GostR3410_2001, "GOST2001",
          "GOST R 34.10-2001"))
         goto end;
@@ -177,10 +167,9 @@ static int bind_gost(ENGINE *e, const char *id)
                              "GOST 28147-89 MAC with 2012 params"))
         goto end;
 
-    if (!register_pmeth_gost(NID_id_GostR3410_94, &pmeth_GostR3410_94, 0))
-        goto end;
     if (!register_pmeth_gost(NID_id_GostR3410_2001, &pmeth_GostR3410_2001, 0))
         goto end;
+
     if (!register_pmeth_gost
         (NID_id_GostR3410_2012_256, &pmeth_GostR3410_2012_256, 0))
         goto end;
@@ -270,13 +259,10 @@ static int gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth,
 {
     if (!pmeth) {
         *nids = gost_pkey_meth_nids;
-        return 6;
+        return sizeof(gost_pkey_meth_nids)/sizeof(int) - 1;
     }
 
     switch (nid) {
-    case NID_id_GostR3410_94:
-        *pmeth = pmeth_GostR3410_94;
-        return 1;
     case NID_id_GostR3410_2001:
         *pmeth = pmeth_GostR3410_2001;
         return 1;
@@ -305,12 +291,9 @@ static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
 {
     if (!ameth) {
         *nids = gost_pkey_meth_nids;
-        return 6;
+        return sizeof(gost_pkey_meth_nids)/sizeof(int) - 1;
     }
     switch (nid) {
-    case NID_id_GostR3410_94:
-        *ameth = ameth_GostR3410_94;
-        return 1;
     case NID_id_GostR3410_2001:
         *ameth = ameth_GostR3410_2001;
         return 1;
@@ -350,7 +333,7 @@ static ENGINE *engine_gost(void)
 void ENGINE_load_gost(void)
 {
     ENGINE *toadd;
-    if (pmeth_GostR3410_94)
+    if (pmeth_GostR3410_2001)
         return;
     toadd = engine_gost();
     if (!toadd)
