@@ -58,7 +58,9 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
 /* For GOST 28147 MAC */
 # define key_ctrl_string "key"
 # define hexkey_ctrl_string "hexkey"
+# define maclen_ctrl_string "size"
 # define EVP_PKEY_CTRL_GOST_MAC_HEXKEY (EVP_PKEY_ALG_CTRL+3)
+# define EVP_PKEY_CTRL_MAC_LEN (EVP_PKEY_ALG_CTRL+5)
 /* Pmeth internal representation */
 struct gost_pmeth_data {
     int sign_param_nid;         /* Should be set whenever parameters are
@@ -69,7 +71,8 @@ struct gost_pmeth_data {
 };
 
 struct gost_mac_pmeth_data {
-    int key_set;
+    short int key_set;
+	short int mac_size;
     EVP_MD *md;
     unsigned char key[32];
 };
@@ -184,6 +187,7 @@ struct ossl_gost_imit_ctx {
     int key_meshing;
     int bytes_left;
     int key_set;
+	int dgst_size;
 };
 /* Table which maps parameter NID to S-blocks */
 extern struct gost_cipher_info gost_cipher_list[];
@@ -191,10 +195,12 @@ extern struct gost_cipher_info gost_cipher_list[];
 const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj);
 /* Implementation of GOST 28147-89 cipher in CFB and CNT modes */
 extern EVP_CIPHER cipher_gost;
+extern EVP_CIPHER cipher_gost_cbc;
 extern EVP_CIPHER cipher_gost_cpacnt;
 extern EVP_CIPHER cipher_gost_cpcnt_12;
 # define EVP_MD_CTRL_KEY_LEN (EVP_MD_CTRL_ALG_CTRL+3)
 # define EVP_MD_CTRL_SET_KEY (EVP_MD_CTRL_ALG_CTRL+4)
+# define EVP_MD_CTRL_MAC_LEN (EVP_MD_CTRL_ALG_CTRL+5)
 /* EVP_PKEY_METHOD key encryption callbacks */
 /* From gost_ec_keyx.c */
 int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *ctx, unsigned char *out,

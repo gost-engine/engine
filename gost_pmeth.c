@@ -470,6 +470,7 @@ static int pkey_gost_mac_init(EVP_PKEY_CTX *ctx)
     if (!data)
         return 0;
     memset(data, 0, sizeof(*data));
+	data->mac_size = 4;
     EVP_PKEY_CTX_set_data(ctx, data);
     return 1;
 }
@@ -553,6 +554,17 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
             }
             return mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_SET_KEY, 32, key);
         }
+	case EVP_PKEY_CTRL_MAC_LEN:	
+		{
+			if (p1<1 || p1>8)
+				{
+					
+					GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL,GOST_R_INVALID_MAC_SIZE);
+					return 0;
+				}
+				data->mac_size = p1;
+				return 1;
+		}
     }
     return -2;
 }
@@ -584,6 +596,16 @@ static int pkey_gost_mac_ctrl_str(EVP_PKEY_CTX *ctx,
         return ret;
 
     }
+	if (!strcmp(type,maclen_ctrl_string)) {
+		char *endptr;
+		long size=strtol(value,&endptr,10);
+		if (*endptr!='\0') {
+			GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL_STR,
+				   GOST_R_INVALID_MAC_SIZE);
+			return 0;
+		}
+		return pkey_gost_mac_ctrl(ctx, EVP_PKEY_CTRL_MAC_LEN,size,NULL);
+	}
     return -2;
 }
 
@@ -624,6 +646,7 @@ static int pkey_gost_mac_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig,
 {
     unsigned int tmpsiglen;
     int ret;
+	struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
 
     if (!siglen)
         return 0;
@@ -631,11 +654,13 @@ static int pkey_gost_mac_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig,
                                  * sizeof(size_t) */
 
     if (!sig) {
-        *siglen = 4;
+        *siglen = data->mac_size;
         return 1;
     }
+
+	mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_MAC_LEN, data->mac_size, NULL);
     ret = EVP_DigestFinal_ex(mctx, sig, &tmpsiglen);
-    *siglen = tmpsiglen;
+    *siglen = data->mac_size;
     return ret;
 }
 

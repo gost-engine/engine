@@ -139,6 +139,8 @@ static ERR_STRING_DATA GOST_str_reasons[] = {
     {ERR_REASON(GOST_R_INVALID_DIGEST_TYPE), "invalid digest type"},
     {ERR_REASON(GOST_R_INVALID_IV_LENGTH), "invalid iv length"},
     {ERR_REASON(GOST_R_INVALID_MAC_KEY_LENGTH), "invalid mac key length"},
+    {ERR_REASON(GOST_R_INVALID_MAC_KEY_SIZE) ,"invalid mac key size"},
+    {ERR_REASON(GOST_R_INVALID_MAC_SIZE)     ,"invalid mac size"},
     {ERR_REASON(GOST_R_INVALID_PARAMSET), "invalid paramset"},
     {ERR_REASON(GOST_R_KEY_IS_NOT_INITALIZED), "key is not initalized"},
     {ERR_REASON(GOST_R_KEY_IS_NOT_INITIALIZED), "key is not initialized"},

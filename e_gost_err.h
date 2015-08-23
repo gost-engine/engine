@@ -132,6 +132,8 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_R_INVALID_DIGEST_TYPE                       110
 # define GOST_R_INVALID_IV_LENGTH                         111
 # define GOST_R_INVALID_MAC_KEY_LENGTH                    112
+# define GOST_R_INVALID_MAC_KEY_SIZE                      145
+# define GOST_R_INVALID_MAC_SIZE                          146
 # define GOST_R_INVALID_PARAMSET                          113
 # define GOST_R_KEY_IS_NOT_INITALIZED                     114
 # define GOST_R_KEY_IS_NOT_INITIALIZED                    115

@@ -37,6 +37,7 @@ static int gost_cipher_nids[] = {
     NID_id_Gost28147_89,
     NID_gost89_cnt,
     NID_gost89_cnt_12,
+    NID_gost89_cbc,
     0
 };
 
@@ -186,6 +187,7 @@ static int bind_gost(ENGINE *e, const char *id)
         || !ENGINE_register_pkey_meths(e)
         /* These two actually should go in LIST_ADD command */
         || !EVP_add_cipher(&cipher_gost)
+        || !EVP_add_cipher(&cipher_gost_cbc)
         || !EVP_add_cipher(&cipher_gost_cpacnt)
         || !EVP_add_cipher(&cipher_gost_cpcnt_12)
         || !EVP_add_digest(&digest_gost)
@@ -238,7 +240,7 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
     int ok = 1;
     if (!cipher) {
         *nids = gost_cipher_nids;
-        return 3;               /* three ciphers are supported */
+        return 4;               /* three ciphers are supported */
     }
 
     if (nid == NID_id_Gost28147_89) {
@@ -247,6 +249,8 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
         *cipher = &cipher_gost_cpacnt;
     } else if (nid == NID_gost89_cnt_12) {
         *cipher = &cipher_gost_cpcnt_12;
+    } else if (nid == NID_gost89_cbc) {
+        *cipher = &cipher_gost_cbc;
     } else {
         ok = 0;
         *cipher = NULL;
