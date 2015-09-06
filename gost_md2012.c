@@ -83,7 +83,7 @@ static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md)
 static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
     if (to->md_data && from->md_data)
-        memcpy(to->md_data, from->md_data, sizeof(*(from->md_data)));
+        memcpy(to->md_data, from->md_data, sizeof(gost2012_hash_ctx));
 
     return 1;
 }
