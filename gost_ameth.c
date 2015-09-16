@@ -55,13 +55,11 @@ static int pkey_bits_gost(const EVP_PKEY *pk)
     if (!pk)
         return -1;
 
-    switch (EVP_PKEY_base_id(pk)) {
-    case NID_id_GostR3410_2001:
-    case NID_id_GostR3410_2012_256:
+    int id= (EVP_PKEY_base_id(pk));
+    if ( id == NID_id_GostR3410_2001 ||id == NID_gost2012_256)
         return 256;
-    case NID_id_GostR3410_2012_512:
+	if (id == NID_gost2012_512) 
         return 512;
-    }
 
     return -1;
 }
@@ -71,6 +69,7 @@ static ASN1_STRING *encode_gost_algor_params(const EVP_PKEY *key)
     ASN1_STRING *params = ASN1_STRING_new();
     GOST_KEY_PARAMS *gkp = GOST_KEY_PARAMS_new();
     int pkey_param_nid = NID_undef;
+	int base_id = EVP_PKEY_base_id(key);
     void *key_ptr = EVP_PKEY_get0((EVP_PKEY *)key);
     int result = 0;
 
@@ -78,19 +77,15 @@ static ASN1_STRING *encode_gost_algor_params(const EVP_PKEY *key)
         GOSTerr(GOST_F_ENCODE_GOST_ALGOR_PARAMS, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    switch (EVP_PKEY_base_id(key)) {
-    case NID_id_GostR3410_2012_256:
+    if (base_id == NID_gost2012_256) {
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
-        gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_256);
-        break;
-    case NID_id_GostR3410_2012_512:
+        gkp->hash_params = OBJ_nid2obj(NID_md_gost12_256);
+    } else if (base_id == NID_gost2012_512) {
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
-        gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_512);
-        break;
-    case NID_id_GostR3410_2001:
+        gkp->hash_params = OBJ_nid2obj(NID_md_gost12_512);
+    } else if (base_id ==  NID_id_GostR3410_2001) {
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
         gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_94_CryptoProParamSet);
-        break;
     }
 
     if (pkey_param_nid == NID_undef) {
@@ -124,15 +119,14 @@ static int gost_decode_nid_params(EVP_PKEY *pkey, int pkey_nid, int param_nid)
 {
     void *key_ptr = EVP_PKEY_get0(pkey);
 
-    switch (pkey_nid) {
-    case NID_id_GostR3410_2012_256:
-    case NID_id_GostR3410_2012_512:
-    case NID_id_GostR3410_2001:
+    if (pkey_nid == NID_gost2012_256 ||
+        pkey_nid == NID_gost2012_512 ||
+        pkey_nid == NID_id_GostR3410_2001) {
         if (!key_ptr) {
             key_ptr = EC_KEY_new();
             if (!EVP_PKEY_assign(pkey, pkey_nid, key_ptr)) {
                 EC_KEY_free(key_ptr);
-                break;
+                return 0;
             }
         }
         return fill_GOST_EC_params(key_ptr, param_nid);
@@ -182,10 +176,11 @@ static int decode_gost_algor_params(EVP_PKEY *pkey, X509_ALGOR *palg)
 
 static int gost_set_priv_key(EVP_PKEY *pkey, BIGNUM *priv)
 {
-    switch (EVP_PKEY_base_id(pkey)) {
-    case NID_id_GostR3410_2012_512:
-    case NID_id_GostR3410_2012_256:
-    case NID_id_GostR3410_2001:
+    int id = EVP_PKEY_base_id(pkey);
+
+	if (id ==  NID_gost2012_512 ||
+        id ==  NID_gost2012_256 ||
+        id ==  NID_id_GostR3410_2001)
         {
             EC_KEY *ec = EVP_PKEY_get0(pkey);
             if (!ec) {
@@ -196,27 +191,23 @@ static int gost_set_priv_key(EVP_PKEY *pkey, BIGNUM *priv)
                 return 0;
             if (!EVP_PKEY_missing_parameters(pkey))
                 gost_ec_compute_public(ec);
-            break;
+			return 1;
         }
-    default:
-        return 0;
-    }
-    return 1;
+	return 0;
 }
 
 BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey)
 {
-    switch (EVP_PKEY_base_id(pkey)) {
-    case NID_id_GostR3410_2012_512:
-    case NID_id_GostR3410_2012_256:
-    case NID_id_GostR3410_2001:
-        {
-            EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pkey);
-            if (ec)
-                return (BIGNUM *)EC_KEY_get0_private_key(ec);
-            break;
-        }
-    }
+    int id =EVP_PKEY_base_id(pkey);
+	
+    if (id ==  NID_gost2012_512 ||
+        id == NID_gost2012_256||
+        id == NID_id_GostR3410_2001) 
+	{
+		EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pkey);
+		if (ec)
+			return (BIGNUM *)EC_KEY_get0_private_key(ec);
+	}
     return NULL;
 }
 
@@ -228,18 +219,14 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     int nid = EVP_PKEY_base_id(pkey), md_nid = NID_undef;
     X509_ALGOR *alg1 = NULL, *alg2 = NULL;
 
-    switch (nid) {
-    case NID_id_GostR3410_2012_512:
-        md_nid = NID_id_GostR3411_2012_512;
-        break;
-    case NID_id_GostR3410_2012_256:
-        md_nid = NID_id_GostR3411_2012_256;
-        break;
-    case NID_id_GostR3410_2001:
-    case NID_id_GostR3410_94:
+    if (nid == NID_gost2012_512) {
+        md_nid = NID_md_gost12_512;
+    } else if (nid == NID_gost2012_256) {
+        md_nid = NID_md_gost12_256;
+    } else if (nid == NID_id_GostR3410_2001 ||
+               nid ==  NID_id_GostR3410_94) {
         md_nid = NID_id_GostR3411_94;
-        break;
-    default:
+    } else {
         return -1;
     }
 
@@ -803,17 +790,18 @@ static int pub_cmp_gost_ec(const EVP_PKEY *a, const EVP_PKEY *b)
 
 static int pkey_size_gost(const EVP_PKEY *pk)
 {
-    if (!pk)
+    int id;
+	if (!pk)
         return -1;
-
-    switch (EVP_PKEY_base_id(pk)) {
-    case NID_id_GostR3410_94:
-    case NID_id_GostR3410_2001:
-    case NID_id_GostR3410_2012_256:
+	id = EVP_PKEY_base_id(pk);
+	if (id == NID_id_GostR3410_94 ||
+        id == NID_id_GostR3410_2001 ||
+        id ==NID_gost2012_256 )
+	{
         return 64;
-    case NID_id_GostR3410_2012_512:
+    } else if (id == NID_gost2012_512) {
         return 128;
-    }
+    } 
 
     return -1;
 }
@@ -877,8 +865,7 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
     *ameth = EVP_PKEY_asn1_new(nid, ASN1_PKEY_SIGPARAM_NULL, pemstr, info);
     if (!*ameth)
         return 0;
-    switch (nid) {
-    case NID_id_GostR3410_2001:
+    if (nid == NID_id_GostR3410_2001) {
         EVP_PKEY_asn1_set_free(*ameth, pkey_free_gost_ec);
         EVP_PKEY_asn1_set_private(*ameth,
                                   priv_decode_gost, priv_encode_gost,
@@ -894,9 +881,7 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                                  pkey_size_gost, pkey_bits_gost);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
-        break;
-    case NID_id_GostR3410_2012_256:
-    case NID_id_GostR3410_2012_512:
+    } else if (nid == NID_gost2012_256 || nid == NID_gost2012_512) {
         EVP_PKEY_asn1_set_free(*ameth, pkey_free_gost_ec);
         EVP_PKEY_asn1_set_private(*ameth,
                                   priv_decode_gost, priv_encode_gost,
@@ -913,15 +898,12 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                                  pkey_size_gost, pkey_bits_gost);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
-        break;
-    case NID_id_Gost28147_89_MAC:
+    } else if (nid == NID_id_Gost28147_89_MAC) {
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
         EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost);
-        break;
-    case NID_gost_mac_12:
+    } else if (nid == NID_gost_mac_12) {
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
         EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost_12);
-        break;
     }
     return 1;
 }

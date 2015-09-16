@@ -26,7 +26,7 @@ const char micalg_256[] = "gostr3411-2012-256";
 const char micalg_512[] = "gostr3411-2012-512";
 
 EVP_MD digest_gost2012_512 = {
-    NID_id_GostR3411_2012_512,
+    NID_undef /* NID_md_gost12_512 */,
     NID_undef,
     64,                         /* digest size */
     EVP_MD_FLAG_PKEY_METHOD_SIGNATURE,
@@ -44,7 +44,7 @@ EVP_MD digest_gost2012_512 = {
 };
 
 EVP_MD digest_gost2012_256 = {
-    NID_id_GostR3411_2012_256,
+    NID_undef /*NID_md_gost12_256*/,
     NID_undef,
     32,                         /* digest size */
     EVP_MD_FLAG_PKEY_METHOD_SIGNATURE,

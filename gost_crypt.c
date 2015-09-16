@@ -99,7 +99,7 @@ EVP_CIPHER cipher_gost_cpacnt = {
 };
 
 EVP_CIPHER cipher_gost_cpcnt_12 = {
-    NID_gost89_cnt_12,
+    NID_undef /* NID_gost89_cnt_12 */,
     1,                          /* block_size */
     32,                         /* key_size */
     8,                          /* iv_len */
@@ -148,7 +148,7 @@ EVP_MD imit_gost_cpa = {
 };
 
 EVP_MD imit_gost_cp_12 = {
-    NID_gost_mac_12,
+    NID_undef, /* NID_gost_mac_12,*/
     NID_undef,
     4,
     0,
@@ -188,7 +188,7 @@ struct gost_cipher_info gost_cipher_list[] = {
      1},
     {NID_id_Gost28147_89_CryptoPro_D_ParamSet, &Gost28147_CryptoProParamSetD,
      1},
-    {NID_id_tc26_gost_28147_param_Z, &Gost28147_TC26ParamSetZ, 1},
+    {NID_undef/*,NID_id_tc26_gost_28147_param_Z*/, &Gost28147_TC26ParamSetZ, 1},
     {NID_id_Gost28147_89_TestParamSet, &Gost28147_TestParamSet, 1},
     {NID_undef, NULL, 0}
 };

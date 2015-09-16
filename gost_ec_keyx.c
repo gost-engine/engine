@@ -29,9 +29,9 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     BN_CTX *ctx = BN_CTX_new();
     EVP_MD_CTX mdctx;
     const EVP_MD *md;
-    int effective_dgst_nid = (dgst_nid == NID_id_GostR3411_2012_512) ?
-        NID_id_GostR3411_2012_256 : dgst_nid;
-    int buf_len = (dgst_nid == NID_id_GostR3411_2012_512) ? 128 : 64,
+    int effective_dgst_nid = (dgst_nid == NID_md_gost12_512) ?
+        NID_md_gost12_256 : dgst_nid;
+    int buf_len = (dgst_nid == NID_md_gost12_512) ? 128 : 64,
         half_len = buf_len >> 1;
 
     if (!ctx) {

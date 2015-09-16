@@ -36,26 +36,26 @@ static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
 static int gost_cipher_nids[] = {
     NID_id_Gost28147_89,
     NID_gost89_cnt,
-    NID_gost89_cnt_12,
-    NID_gost89_cbc,
+    NID_undef /*NID_gost89_cnt_12*/,
+    NID_undef /* NID_gost89_cbc */,
     0
 };
 
 static int gost_digest_nids[] = {
     NID_id_GostR3411_94,
     NID_id_Gost28147_89_MAC,
-    NID_id_GostR3411_2012_256,
-    NID_id_GostR3411_2012_512,
-    NID_gost_mac_12,
+    NID_undef /*NID_md_gost12_256*/,
+    NID_undef /*NID_md_gost12_512*/,
+    NID_undef /*NID_gost_mac_12*/,
     0
 };
 
 static int gost_pkey_meth_nids[] = {
     NID_id_GostR3410_2001,
     NID_id_Gost28147_89_MAC,
-    NID_id_GostR3410_2012_256,
-    NID_id_GostR3410_2012_512,
-    NID_gost_mac_12,
+    NID_undef /*NID_gost2012_256*/,
+    NID_undef /*NID_gost2012_512*/,
+    NID_undef /*NID_gost_mac_12*/,
     0
 };
 
@@ -99,38 +99,62 @@ static int gost_engine_destroy(ENGINE *e)
 
     return 1;
 }
-
+extern int gost_define_nids(void);
 static int bind_gost(ENGINE *e, const char *id)
 {
     int ret = 0;
     if (id && strcmp(id, engine_gost_id))
         return 0;
     if (ameth_GostR3410_2001) {
-        printf("GOST engine already loaded\n");
-        goto end;
+		/* Engine already loaded */
+        return 1;
     }
+	if (!gost_define_nids()) {
+		return 0;
+	}
+	/* Set up nids which might be undefined in the core object database */
+	/* Arrays of algoritmhs */
+	gost_cipher_nids[1]=NID_gost89_cnt;
+	gost_cipher_nids[2]=NID_gost89_cnt_12;
+	gost_cipher_nids[3]=NID_gost89_cbc;
+	gost_digest_nids[2]=NID_md_gost12_256;
+	gost_digest_nids[3]=NID_md_gost12_512;
+	gost_digest_nids[4]=NID_gost_mac_12;
+	gost_pkey_meth_nids[2]=NID_gost2012_256;
+	gost_pkey_meth_nids[3]=NID_gost2012_512;
+	/* EVP_CIPHERs */
+	cipher_gost_cbc.nid = NID_gost89_cbc;
+	cipher_gost_cpcnt_12.nid = NID_gost89_cnt_12;
+	/* EVP_MDs */
+	digest_gost2012_512.type = NID_md_gost12_512;
+	digest_gost2012_256.type = NID_md_gost12_256;
+	imit_gost_cp_12.type = NID_gost_mac_12;
+	/* Algorithm parameters */
+	R3410_2012_512_paramset[0].nid = NID_id_tc26_gost_3410_2012_512_paramSetA;
+	R3410_2012_512_paramset[1].nid = NID_id_tc26_gost_3410_2012_512_paramSetB;
+
     if (!ENGINE_set_id(e, engine_gost_id)) {
-        printf("ENGINE_set_id failed\n");
+        fprintf(stderr,"ENGINE_set_id failed\n");
         goto end;
     }
     if (!ENGINE_set_name(e, engine_gost_name)) {
-        printf("ENGINE_set_name failed\n");
+        fprintf(stderr,"ENGINE_set_name failed\n");
         goto end;
     }
     if (!ENGINE_set_digests(e, gost_digests)) {
-        printf("ENGINE_set_digests failed\n");
+        fprintf(stderr,"ENGINE_set_digests failed\n");
         goto end;
     }
     if (!ENGINE_set_ciphers(e, gost_ciphers)) {
-        printf("ENGINE_set_ciphers failed\n");
+        fprintf(stderr,"ENGINE_set_ciphers failed\n");
         goto end;
     }
     if (!ENGINE_set_pkey_meths(e, gost_pkey_meths)) {
-        printf("ENGINE_set_pkey_meths failed\n");
+        fprintf(stderr,"ENGINE_set_pkey_meths failed\n");
         goto end;
     }
     if (!ENGINE_set_pkey_asn1_meths(e, gost_pkey_asn1_meths)) {
-        printf("ENGINE_set_pkey_asn1_meths failed\n");
+        fprintf(stderr,"ENGINE_set_pkey_asn1_meths failed\n");
         goto end;
     }
     /* Control function and commands */
@@ -153,11 +177,11 @@ static int bind_gost(ENGINE *e, const char *id)
          "GOST R 34.10-2001"))
         goto end;
     if (!register_ameth_gost
-        (NID_id_GostR3410_2012_256, &ameth_GostR3410_2012_256, "GOST2012_256",
+        (NID_gost2012_256, &ameth_GostR3410_2012_256, "GOST2012_256",
          "GOST R 34.10-2012 with 256 bit key"))
         goto end;
     if (!register_ameth_gost
-        (NID_id_GostR3410_2012_512, &ameth_GostR3410_2012_512, "GOST2012_512",
+        (NID_gost2012_512, &ameth_GostR3410_2012_512, "GOST2012_512",
          "GOST R 34.10-2012 with 512 bit key"))
         goto end;
     if (!register_ameth_gost(NID_id_Gost28147_89_MAC, &ameth_Gost28147_MAC,
@@ -172,10 +196,10 @@ static int bind_gost(ENGINE *e, const char *id)
         goto end;
 
     if (!register_pmeth_gost
-        (NID_id_GostR3410_2012_256, &pmeth_GostR3410_2012_256, 0))
+        (NID_gost2012_256, &pmeth_GostR3410_2012_256, 0))
         goto end;
     if (!register_pmeth_gost
-        (NID_id_GostR3410_2012_512, &pmeth_GostR3410_2012_512, 0))
+        (NID_gost2012_512, &pmeth_GostR3410_2012_512, 0))
         goto end;
     if (!register_pmeth_gost
         (NID_id_Gost28147_89_MAC, &pmeth_Gost28147_MAC, 0))
@@ -219,9 +243,9 @@ static int gost_digests(ENGINE *e, const EVP_MD **digest,
     }
     if (nid == NID_id_GostR3411_94) {
         *digest = &digest_gost;
-    } else if (nid == NID_id_GostR3411_2012_256) {
+    } else if (nid == NID_md_gost12_256) {
         *digest = &digest_gost2012_256;
-    } else if (nid == NID_id_GostR3411_2012_512) {
+    } else if (nid == NID_md_gost12_512) {
         *digest = &digest_gost2012_512;
     } else if (nid == NID_id_Gost28147_89_MAC) {
         *digest = &imit_gost_cpa;
@@ -266,26 +290,26 @@ static int gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth,
         return sizeof(gost_pkey_meth_nids)/sizeof(int) - 1;
     }
 
-    switch (nid) {
-    case NID_id_GostR3410_2001:
+   	if (nid ==  NID_id_GostR3410_2001) {
         *pmeth = pmeth_GostR3410_2001;
         return 1;
-    case NID_id_GostR3410_2012_256:
+    }
+    if (nid == NID_gost2012_256) {
         *pmeth = pmeth_GostR3410_2012_256;
         return 1;
-    case NID_id_GostR3410_2012_512:
+	}
+    if (nid == NID_gost2012_512) {
         *pmeth = pmeth_GostR3410_2012_512;
         return 1;
-    case NID_id_Gost28147_89_MAC:
+	}
+    if (nid == NID_id_Gost28147_89_MAC) {
         *pmeth = pmeth_Gost28147_MAC;
         return 1;
-    case NID_gost_mac_12:
+	}
+    if (nid == NID_gost_mac_12) {
         *pmeth = pmeth_Gost28147_MAC_12;
         return 1;
-
-    default:;
-    }
-
+	}
     *pmeth = NULL;
     return 0;
 }
@@ -297,25 +321,26 @@ static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
         *nids = gost_pkey_meth_nids;
         return sizeof(gost_pkey_meth_nids)/sizeof(int) - 1;
     }
-    switch (nid) {
-    case NID_id_GostR3410_2001:
+    if (nid == NID_id_GostR3410_2001) {
         *ameth = ameth_GostR3410_2001;
         return 1;
-    case NID_id_GostR3410_2012_256:
+	}
+    if (nid == NID_gost2012_256) {
         *ameth = ameth_GostR3410_2012_256;
         return 1;
-    case NID_id_GostR3410_2012_512:
+    }
+    if (nid ==  NID_gost2012_512) {
         *ameth = ameth_GostR3410_2012_512;
         return 1;
-    case NID_id_Gost28147_89_MAC:
+	}
+    if (nid == NID_id_Gost28147_89_MAC) {
         *ameth = ameth_Gost28147_MAC;
         return 1;
-    case NID_gost_mac_12:
+	}
+    if (nid == NID_gost_mac_12) {
         *ameth = ameth_Gost28147_MAC_12;
         return 1;
-
-    default:;
-    }
+	}
 
     *ameth = NULL;
     return 0;

@@ -19,7 +19,7 @@
 :gost89-ecb:
 :gost89-ofb:
 :gost89-cnt:
-:gost89-cin-12:
+:gost89-cnt-12:
 :gost-mac-12:
 # Russia-specific DN fields and X.509v3 extensions
 1.2.643.3.131.1.1:INN:Individual Fiscal Number
