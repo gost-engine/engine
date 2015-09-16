@@ -8,9 +8,9 @@ AR= ar r
 CFLAGS= $(INCLUDES) $(CFLAG)
 LIB=$(TOP)/libcrypto.a
 
-LIBSRC= gost_md2012.c gosthash2012.c gost_ec_sign.c gost_ec_keyx.c gost89.c gost_ameth.c gost_asn1.c gost_crypt.c gost_ctl.c gost_eng.c gosthash.c gost_keywrap.c gost_md.c gost_params.c gost_pmeth.c
+LIBSRC= gost_md2012.c gosthash2012.c gost_ec_sign.c gost_ec_keyx.c gost89.c gost_ameth.c gost_asn1.c gost_crypt.c gost_ctl.c gost_eng.c gosthash.c gost_keywrap.c gost_md.c gost_params.c gost_pmeth.c obj_create.c newnids.c
 
-LIBOBJ= gost_md2012.o gosthash2012.o e_gost_err.o gost_ec_keyx.o gost_ec_sign.o gost89.o gost_ameth.o gost_asn1.o gost_crypt.o gost_ctl.o gost_eng.o gosthash.o gost_keywrap.o gost_md.o gost_params.o gost_pmeth.o
+LIBOBJ= gost_md2012.o gosthash2012.o e_gost_err.o gost_ec_keyx.o gost_ec_sign.o gost89.o gost_ameth.o gost_asn1.o gost_crypt.o gost_ctl.o gost_eng.o gosthash.o gost_keywrap.o gost_md.o gost_params.o gost_pmeth.o newnids.o
 
 SRC=$(LIBSRC)
 
@@ -84,9 +84,17 @@ dclean:
 clean:
 	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff *.so *.sl *.dll *.dylib
 
+newnids.c: mkobj.pl gost_objs.txt
+	$(PERL) mkobj.pl
+
+newnids.h: mkobj.pl gost_objs.txt
+	$(PERL) mkobj.pl
+
+
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
 gost89.o: gost89.c gost89.h
+newnids.o: ../../include/openssl/objects.h
 gost_ameth.o: ../../include/openssl/asn1.h ../../include/openssl/asn1t.h
 gost_ameth.o: ../../include/openssl/bio.h ../../include/openssl/bn.h
 gost_ameth.o: ../../include/openssl/buffer.h ../../include/openssl/cms.h

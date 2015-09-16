@@ -18,6 +18,7 @@
 # include <openssl/ec.h>
 # include "gost89.h"
 # include "gosthash.h"
+# include "newnids.h"
 /* Control commands */
 # define GOST_PARAM_CRYPT_PARAMS 0
 # define GOST_PARAM_PBE_PARAMS 1
@@ -242,5 +243,7 @@ int pack_sign_cp(DSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
 /* Get private key as BIGNUM from both 34.10-2001 keys*/
 /* Returns pointer into EVP_PKEY structure */
 BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey);
+
+int gost_add_obj(const char *oid, const char *sn, const char *ln);
 
 #endif
