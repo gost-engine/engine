@@ -18,5 +18,5 @@ AC_PROG_LIBTOOL
 AC_CHECK_PROG([PERL],[perl],[perl],[AC_MSG_ERROR([*** perl not found])])
 # Checks for libraries.
 AC_CHECK_LIB([crypto], [ENGINE_new], [], [AC_MSG_ERROR([*** libcrypto not       found])]) 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile test/Makefile])
 AC_OUTPUT
