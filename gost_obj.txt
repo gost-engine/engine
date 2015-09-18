@@ -15,12 +15,12 @@
 1.2.643.7.1.2.1.2.2: id-tc26-gost-3410-2012-512-paramSetB: GOST R 34.10-2012 (512 bit) ParamSet B
 1.2.643.7.1.2.5.1.1:id-tc26-gost-28147-param-Z : GOST 28147-89 TC26 parameter set
 # Additional GOST 28147-89 cipher modes 
-:gost89-cbc:
-:gost89-ecb:
-:gost89-ofb:
-:gost89-cnt:
-:gost89-cnt-12:
-:gost-mac-12:
+1.2.643.2.2.21.2:gost89-cbc:
+1.2.643.2.2.21.3:gost89-ecb:
+1.2.643.2.2.21.4:gost89-ofb:
+1.2.643.2.2.21.5:gost89-cnt:
+1.2.643.2.2.21.6:gost89-cnt-12:
+1.2.643.2.2.22.2:gost-mac-12:
 # Russia-specific DN fields and X.509v3 extensions
 1.2.643.3.131.1.1:INN:Individual Fiscal Number
 1.2.643.100.1:OGRN:Main state registration number
