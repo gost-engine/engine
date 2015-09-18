@@ -122,6 +122,7 @@ static int bind_gost(ENGINE *e, const char *id)
 	gost_digest_nids[4]=NID_gost_mac_12;
 	gost_pkey_meth_nids[2]=NID_gost2012_256;
 	gost_pkey_meth_nids[3]=NID_gost2012_512;
+	gost_pkey_meth_nids[4]=NID_gost_mac_12;
 	/* EVP_CIPHERs */
 	cipher_gost_cbc.nid = NID_gost89_cbc;
 	cipher_gost_cpcnt_12.nid = NID_gost89_cnt_12;

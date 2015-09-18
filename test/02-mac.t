@@ -1,5 +1,5 @@
 #!/usr/bin/perl 
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Cwd 'abs_path';
 
 # prepare data for 
@@ -36,6 +36,10 @@ for ($i=1;$i<=8; $i++) {
 is(`openssl dgst -engine ${engine} -mac gost-mac -macopt key:${key} testbig.dat`,
 "GOST-MAC-gost-mac(testbig.dat)= d3978b1a\n",
 "GOST MAC - big data");
+
+is(`openssl dgst -engine ${engine} -mac gost-mac-12 -macopt key:${key} testdata.dat`,
+"GOST-MAC-12-gost-mac-12(testdata.dat)= be4453ec\n",
+"GOST MAC - parameters 2012");
 
 unlink('testdata.dat');
 unlink('testbig.dat');
