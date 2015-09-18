@@ -4,11 +4,14 @@ Makefile.in
 test/Makefile.in
 test/Makefile
 test/tests.err
+core
+*/core
 *.o
 *.lo
 *.la
 .deps
 .libs
+tags
 aclocal.m4
 autom4te.cache/
 config.guess
@@ -23,4 +26,4 @@ libtool
 ltmain.sh
 missing
 stamp-h1
-
+*.swp
