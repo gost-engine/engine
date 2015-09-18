@@ -65,7 +65,12 @@ EVP_CIPHER cipher_gost = {
 
 EVP_CIPHER cipher_gost_cbc =
     {
-    NID_gost89_cbc,
+#ifdef NID_gost89_cbc	
+    NID_gost89_cbc
+#else	
+	NID_undef
+#endif
+	,
     8,/*block_size*/
     32,/*key_size*/
     8,/*iv_len */
@@ -99,7 +104,12 @@ EVP_CIPHER cipher_gost_cpacnt = {
 };
 
 EVP_CIPHER cipher_gost_cpcnt_12 = {
-    NID_undef /* NID_gost89_cnt_12 */,
+#ifdef NID_gost89_cnt_12
+	NID_gost89_cnt_12
+#else
+    NID_undef
+#endif	
+	,
     1,                          /* block_size */
     32,                         /* key_size */
     8,                          /* iv_len */
@@ -148,7 +158,12 @@ EVP_MD imit_gost_cpa = {
 };
 
 EVP_MD imit_gost_cp_12 = {
-    NID_undef, /* NID_gost_mac_12,*/
+#ifdef NID_gost_mac_12
+	NID_gost_mac_12
+#else	
+    NID_undef
+#endif
+	,
     NID_undef,
     4,
     0,

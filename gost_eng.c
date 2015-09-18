@@ -265,7 +265,7 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
     int ok = 1;
     if (!cipher) {
         *nids = gost_cipher_nids;
-        return 4;               /* three ciphers are supported */
+        return 4;               /* four ciphers are supported */
     }
 
     if (nid == NID_id_Gost28147_89) {
