@@ -2,6 +2,12 @@
 use Test::More tests => 48;
 use Cwd 'abs_path';
 
+#
+# If this variable is set, engine would be loaded via configuration
+# file. Otherwise - via command line
+# 
+$use_config = 1;
+
 # prepare data for 
 
 
@@ -28,20 +34,41 @@ our $count=0;
 # -iv  - IV (hex-encoded)
 # 
 
+open F,">","test.cnf";
+if (defined($use_config) && $use_config) {
+	$eng_param = "";
+	open F,">","test.cnf";
+	print F <<EOCFG;
+openssl_conf = openssl_def
+[openssl_def]
+engines = engines
+[engines]
+${engine}=gost_conf
+[gost_conf]
+default_algorithms = ALL
+
+EOCFG
+} else {
+	$eng_param = "-engine $engine"
+}
+close F;
+$ENV{'OPENSSL_CONF'}=abs_path('test.cnf');
+	
 sub crypt_test {
 	my %p = @_;
 	our $count++;
 	open my $f, ">", "test$count.clear";
 	print $f $p{-cleartext};
 	close $f;
+	
 	$ENV{'CRYPT_PARAMS'} = $p{-paramset} if exists $p{-paramset};
-	my $ctext = `openssl enc -engine ${engine} -e -$p{-alg} -K $p{-key} -iv $p{-iv} -in test$count.clear`;
+	my $ctext = `openssl enc ${eng_param} -e -$p{-alg} -K $p{-key} -iv $p{-iv} -in test$count.clear`;
 	is($?,0,"$p{-name} - encrypt successful");
 	is(unpack("H*",$ctext),$p{-ciphertext},"$p{-name} - ciphertext expected");
 	open my $f, ">", "test$count.enc";
 	print $f $ctext;
 	close $f;
-	my $otext = `openssl enc -engine ${engine} -d -$p{-alg} -K $p{-key} -iv $p{-iv} -in test$count.enc`;
+	my $otext = `openssl enc ${eng_param} -d -$p{-alg} -K $p{-key} -iv $p{-iv} -in test$count.enc`;
 	is($?,0,"$p{-name} - decrypt successful");
 	is($otext,$p{-cleartext},"$p{-name} - decrypted correctly");
 	unlink "test$count.enc";
@@ -129,3 +156,4 @@ crypt_test(-paramset=> "1.2.643.2.2.31.4", -key => $key, -iv => $iv,
 		   -alg => 'gost89-cbc',
 		   -name=> 'CBC short text, paramset D');
 
+unlink test.cnf;
