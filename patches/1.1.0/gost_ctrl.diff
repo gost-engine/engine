@@ -1,0 +1,19 @@
+diff --git a/include/openssl/evp.h b/include/openssl/evp.h
+index f92f109..8b03407 100644
+--- a/include/openssl/evp.h
++++ b/include/openssl/evp.h
+@@ -427,6 +427,14 @@ struct evp_cipher_st {
+ # define         EVP_CTRL_TLS1_1_MULTIBLOCK_DECRYPT      0x1b
+ # define         EVP_CTRL_TLS1_1_MULTIBLOCK_MAX_BUFSIZE  0x1c
+ 
++/*
++ * Russian GOST has some parameters defining its usage:
++ * S-blocks, key meshing, padding modes
++ */
++#define          EVP_CTRL_GOST_PARAMS       0x1d
++#define          EVP_CTRL_GOST_KEY_MESHING  0x1e
++#define          EVP_CTRL_GOST_PADDING      0x1f
++
+ /* RFC 5246 defines additional data to be 13 bytes in length */
+ # define         EVP_AEAD_TLS1_AAD_LEN           13
+ 
