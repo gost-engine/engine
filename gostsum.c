@@ -12,6 +12,9 @@
 #include <unistd.h>
 #include <limits.h>
 #include <fcntl.h>
+#ifdef _WIN32
+# include <io.h>
+#endif
 #include <string.h>
 #include "gosthash.h"
 #define BUF_SIZE 262144
@@ -74,7 +77,7 @@ int main(int argc, char **argv)
     init_gost_hash_ctx(&ctx, b);
     if (check_file) {
         char inhash[65], calcsum[65], filename[PATH_MAX];
-        int failcount = 0, count = 0;;
+        int failcount = 0, count = 0, errors = 0;
         if (check_file == stdin && optind < argc) {
             check_file = fopen(argv[optind], "r");
             if (!check_file) {
@@ -83,10 +86,11 @@ int main(int argc, char **argv)
             }
         }
         while (get_line(check_file, inhash, filename)) {
-            if (!hash_file(&ctx, filename, calcsum, open_mode)) {
-                exit(2);
-            }
             count++;
+            if (!hash_file(&ctx, filename, calcsum, open_mode)) {
+                errors ++;
+				continue;
+            }
             if (strncmp(calcsum, inhash, 65) == 0) {
                 if (verbose) {
                     fprintf(stderr, "%s\tOK\n", filename);
@@ -102,15 +106,26 @@ int main(int argc, char **argv)
                 failcount++;
             }
         }
+        if (errors) {
+            fprintf(stderr,
+                    "%s: WARNING %d of %d file(s) cannot be processed\n",
+                    argv[0], errors, count);
+
+        }
         if (verbose && failcount) {
             fprintf(stderr,
                     "%s: %d of %d file(f) failed GOST hash sum check\n",
                     argv[0], failcount, count);
         }
-        exit(failcount ? 1 : 0);
+        exit((failcount || errors)? 1 : 0);
     }
     if (optind == argc) {
         char sum[65];
+#ifdef _WIN32
+		if (open_mode & O_BINARY) {
+			_setmode(fileno(stdin),O_BINARY);
+		}
+#endif
         if (!hash_stream(&ctx, fileno(stdin), sum)) {
             perror("stdin");
             exit(1);
