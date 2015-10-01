@@ -5,6 +5,7 @@ use Cwd 'abs_path';
 # prepare data for 
 
 open F,">","testdata.dat";
+binmode F;
 print F "12345670" x 128;
 close F;
 # Set OPENSSL_ENGINES environment variable to just build engine
@@ -29,6 +30,7 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 testdata.dat`,
 unlink("testdata.dat");
 
 open F,">","testdata2.dat";
+binmode F;
 print F "\x00\x01\x02\x15\x84\x67\x45\x31" x 128;
 close F;
 
@@ -47,6 +49,7 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 testdata2.dat`,
 unlink("testdata2.dat");
 
 open F, ">","testdata3.dat";
+binmode F;
 print F substr("12345670" x 128,0,539);
 close F;
 
@@ -64,6 +67,7 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 testdata3.dat`,
 
 unlink "testdata3.dat";
 open F , ">","bigdata.dat";
+binmode F;
 print F  ("121345678" x 7 . "1234567\n") x 4096,"12345\n";
 close F;
 
