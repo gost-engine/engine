@@ -10,6 +10,7 @@ AC_ARG_WITH([enginedir],
 	[AS_HELP_STRING([--with-enginedir],[specify location of OpenSSL engines])],
 	[ENGINEDIR="$withval"])
 AC_SUBST(ENGINEDIR)
+AC_C_BIGENDIAN([],[AM_CPPFLAGS="-DL_ENDIAN"],[],[])
 
 # Checks for programs.
 AC_PROG_CC
@@ -18,5 +19,6 @@ AC_PROG_LIBTOOL
 AC_CHECK_PROG([PERL],[perl],[perl],[AC_MSG_ERROR([*** perl not found])])
 # Checks for libraries.
 AC_CHECK_LIB([crypto], [ENGINE_new], [], [AC_MSG_ERROR([*** libcrypto not       found])]) 
+AC_SUBST(AM_CPPFLAGS)
 AC_CONFIG_FILES([Makefile test/Makefile])
 AC_OUTPUT

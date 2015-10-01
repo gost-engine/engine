@@ -1,5 +1,6 @@
 enginedir=@ENGINEDIR@
 PERL=@PERL@
+AM_CPPFLAGS=@AM_CPPFLAGS@
 srcdir=.
 lib_LTLIBRARIES=libgost.la
 libgost_enginedir=$(enginedir)
