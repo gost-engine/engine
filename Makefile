@@ -84,6 +84,10 @@ dclean:
 clean:
 	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff *.so *.sl *.dll *.dylib
 
+gostsum$(EXE_EXT): gostsum.o gosthash.o gost89.o
+
+gost12sum$(EXE_EXT): gost12sum.o gosthash2012.o
+
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
 gost89.o: gost89.c gost89.h
