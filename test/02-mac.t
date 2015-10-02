@@ -1,5 +1,5 @@
 #!/usr/bin/perl 
-use Test::More tests => 11;
+use Test::More tests => 19;
 use Cwd 'abs_path';
 
 # prepare data for 
@@ -9,7 +9,7 @@ print F "12345670" x 128;
 close F;
 
 open F,">","testbig.dat";
-print F "12345670" x 1024;
+print F ("12345670" x 8 . "\n") x  4096;
 close F;
 # Set OPENSSL_ENGINES environment variable to just build engine
 $ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
@@ -34,12 +34,18 @@ for ($i=1;$i<=8; $i++) {
 
 
 is(`openssl dgst -engine ${engine} -mac gost-mac -macopt key:${key} testbig.dat`,
-"GOST-MAC-gost-mac(testbig.dat)= d3978b1a\n",
+"GOST-MAC-gost-mac(testbig.dat)= 5efab81f\n",
 "GOST MAC - big data");
 
 is(`openssl dgst -engine ${engine} -mac gost-mac-12 -macopt key:${key} testdata.dat`,
 "GOST-MAC-12-gost-mac-12(testdata.dat)= be4453ec\n",
 "GOST MAC - parameters 2012");
 
+
+for ($i=1;$i<=8; $i++) {
+	is(`openssl dgst -engine ${engine} -mac gost-mac-12 -macopt key:${key} -sigopt size:$i testdata.dat`,
+"GOST-MAC-12-gost-mac-12(testdata.dat)= ".substr("be4453ec1ec327be",0,$i*2)."\n",
+"GOST MAC parameters 2012 - size $i bytes");
+}
 unlink('testdata.dat');
 unlink('testbig.dat');
