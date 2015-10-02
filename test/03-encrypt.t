@@ -140,8 +140,8 @@ crypt_test(-paramset=> "1.2.643.2.2.31.1", -key => $key, -iv => $iv,
 
 crypt_test(-paramset=> "1.2.643.2.2.31.2", -key => $key, -iv => $iv,
 		   -cleartext => $clear1,
-		   -ciphertext => '11465c1c9708033e784fbb5536f2719c38353cb488b01f195c20d4c027022e8300d98bb66c138afbe878c88b', 
-		   -alg => 'gost89',
+		   -ciphertext => 'af2a2167b75852378af176ac9950e3c4bffc94d3d4355191707adbb16d6c8e3f3a07868c4702babef18393edfac60a6d', 
+		   -alg => 'gost89-cbc',
 		   -name=> 'CBC short text, paramset B');
 
 crypt_test(-paramset=> "1.2.643.2.2.31.3", -key => $key, -iv => $iv,
