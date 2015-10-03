@@ -464,8 +464,7 @@ int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
     case EVP_CTRL_RAND_KEY:
         {
             if (RAND_bytes((unsigned char *)ptr, ctx->key_len) <= 0) {
-                GOSTerr(GOST_F_GOST_CIPHER_CTL,
-                        GOST_R_RANDOM_GENERATOR_ERROR);
+                GOSTerr(GOST_F_GOST_CIPHER_CTL, GOST_R_RNG_ERROR);
                 return -1;
             }
             break;

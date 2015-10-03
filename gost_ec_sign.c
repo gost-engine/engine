@@ -175,7 +175,7 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     md = hashsum2bn(dgst, dlen);
     newsig = DSA_SIG_new();
     if (!newsig || !md) {
-        GOSTerr(GOST_F_GOST_EC_SIGN, GOST_R_NO_MEMORY);
+        GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
     }
     group = EC_KEY_get0_group(eckey);
@@ -218,8 +218,7 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     do {
         do {
             if (!BN_rand_range(k, order)) {
-                GOSTerr(GOST_F_GOST_EC_SIGN,
-                        GOST_R_RANDOM_NUMBER_GENERATOR_FAILED);
+                GOSTerr(GOST_F_GOST_EC_SIGN, GOST_R_RNG_ERROR);
                 goto err;
             }
             /*
@@ -315,7 +314,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
     OPENSSL_assert(dgst != NULL && sig != NULL && group != NULL);
 
     if (!(ctx = BN_CTX_new())) {
-        GOSTerr(GOST_F_GOST_EC_VERIFY, GOST_R_NO_MEMORY);
+        GOSTerr(GOST_F_GOST_EC_VERIFY, ERR_R_MALLOC_FAILURE);
         return 0;
     }
 
@@ -502,8 +501,7 @@ int gost_ec_keygen(EC_KEY *ec)
 
     do {
         if (!BN_rand_range(d, order)) {
-            GOSTerr(GOST_F_GOST_EC_KEYGEN,
-                    GOST_R_RANDOM_NUMBER_GENERATOR_FAILED);
+            GOSTerr(GOST_F_GOST_EC_KEYGEN, GOST_R_RNG_ERROR);
             goto end;
         }
     }

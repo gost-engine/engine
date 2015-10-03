@@ -35,7 +35,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
         half_len = buf_len >> 1;
 
     if (!ctx) {
-        GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_NO_MEMORY);
+        GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
         return 0;
     }
     BN_CTX_start(ctx);
@@ -43,7 +43,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     databuf = OPENSSL_malloc(buf_len);
     hashbuf = OPENSSL_malloc(buf_len);
     if (!databuf || !hashbuf) {
-        GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_MALLOC_FAILURE);
+        GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
@@ -60,7 +60,10 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     Y = BN_CTX_get(ctx);
     EC_GROUP_get_order(EC_KEY_get0_group(priv_key), order, ctx);
     BN_mod_mul(p, key, UKM, order, ctx);
-    EC_POINT_mul(EC_KEY_get0_group(priv_key), pnt, NULL, pub_key, p, ctx);
+    if(!EC_POINT_mul(EC_KEY_get0_group(priv_key), pnt, NULL, pub_key, p, ctx)) {
+        GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_ERROR_POINT_MUL);
+        goto err;
+		}
     EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(priv_key),
                                         pnt, X, Y, ctx);
     /*
@@ -163,8 +166,7 @@ int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     } else if (out) {
 
         if (RAND_bytes(ukm, 8) <= 0) {
-            GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT,
-                    GOST_R_RANDOM_GENERATOR_FAILURE);
+            GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT, GOST_R_RNG_ERROR);
             return 0;
         }
     }
