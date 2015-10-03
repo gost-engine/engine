@@ -225,7 +225,7 @@ gost_md2012.o: ../../include/openssl/opensslv.h
 gost_md2012.o: ../../include/openssl/ossl_typ.h
 gost_md2012.o: ../../include/openssl/safestack.h ../../include/openssl/stack.h
 gost_md2012.o: ../../include/openssl/symhacks.h gost_md2012.c gosthash2012.h
-gost_md2012.o: gosthash2012_const.h gosthash2012_precalc.h gosthash2012_sse2.h
+gost_md2012.o: gosthash2012_const.h gosthash2012_precalc.h gosthash2012_ref.h
 gost_params.o: ../../include/openssl/asn1.h ../../include/openssl/asn1t.h
 gost_params.o: ../../include/openssl/bio.h ../../include/openssl/bn.h
 gost_params.o: ../../include/openssl/buffer.h ../../include/openssl/crypto.h
@@ -257,22 +257,6 @@ gost_pmeth.o: ../../include/openssl/sha.h ../../include/openssl/stack.h
 gost_pmeth.o: ../../include/openssl/symhacks.h ../../include/openssl/x509.h
 gost_pmeth.o: ../../include/openssl/x509_vfy.h ../../include/openssl/x509v3.h
 gost_pmeth.o: e_gost_err.h gost89.h gost_lcl.h gost_pmeth.c gosthash.h
-gost_sign.o: ../../include/openssl/asn1.h ../../include/openssl/asn1t.h
-gost_sign.o: ../../include/openssl/bio.h ../../include/openssl/bn.h
-gost_sign.o: ../../include/openssl/buffer.h ../../include/openssl/crypto.h
-gost_sign.o: ../../include/openssl/dsa.h ../../include/openssl/e_os2.h
-gost_sign.o: ../../include/openssl/ec.h ../../include/openssl/ecdh.h
-gost_sign.o: ../../include/openssl/ecdsa.h ../../include/openssl/engine.h
-gost_sign.o: ../../include/openssl/err.h ../../include/openssl/evp.h
-gost_sign.o: ../../include/openssl/lhash.h ../../include/openssl/obj_mac.h
-gost_sign.o: ../../include/openssl/objects.h
-gost_sign.o: ../../include/openssl/opensslconf.h
-gost_sign.o: ../../include/openssl/opensslv.h ../../include/openssl/ossl_typ.h
-gost_sign.o: ../../include/openssl/pkcs7.h ../../include/openssl/rand.h
-gost_sign.o: ../../include/openssl/safestack.h ../../include/openssl/sha.h
-gost_sign.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
-gost_sign.o: ../../include/openssl/x509.h ../../include/openssl/x509_vfy.h
-gost_sign.o: e_gost_err.h gost89.h gost_lcl.h gost_sign.c gosthash.h
 gosthash.o: gost89.h gosthash.c gosthash.h
 gosthash2012.o: gosthash2012.c gosthash2012.h gosthash2012_const.h
-gosthash2012.o: gosthash2012_precalc.h gosthash2012_sse2.h
+gosthash2012.o: gosthash2012_precalc.h gosthash2012_ref.h
