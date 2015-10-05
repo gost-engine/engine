@@ -156,4 +156,4 @@ crypt_test(-paramset=> "1.2.643.2.2.31.4", -key => $key, -iv => $iv,
 		   -alg => 'gost89-cbc',
 		   -name=> 'CBC short text, paramset D');
 
-unlink test.cnf;
+unlink "test.cnf";

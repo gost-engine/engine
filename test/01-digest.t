@@ -35,7 +35,7 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 testm2.dat`,
 "md_gost12_512(testm2.dat)= 1e88e62226bfca6f9994f1f2d51569e0daf8475a3b0fe61a5300eee46d961376035fe83549ada2b8620fcd7c496ce5b33f0cb9dddc2b6460143b03dabac9fb28\n",
 "GOST R 34.11-2012 512bit example 2 from standard");
 
-unlink("testm1.dat");
+unlink("testm2.dat");
 
 
 open F,">","testdata.dat";
