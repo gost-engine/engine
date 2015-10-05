@@ -118,11 +118,11 @@ static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
             GOSTerr(GOST_F_PKEY_GOST_CTRL, GOST_R_INVALID_DIGEST_TYPE);
             return 0;
         }
-
+#ifdef EVP_PKEY_CTRL_GET_MD
     case EVP_PKEY_CTRL_GET_MD:
         *(const EVP_MD **)p2 = pctx->md;
         return 1;
-
+#endif
     case EVP_PKEY_CTRL_PKCS7_ENCRYPT:
     case EVP_PKEY_CTRL_PKCS7_DECRYPT:
     case EVP_PKEY_CTRL_PKCS7_SIGN:
@@ -499,11 +499,11 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
             data->md = (EVP_MD *)p2;
             return 1;
         }
-
+#ifdef EVP_PKEY_CTRL_GET_MD
     case EVP_PKEY_CTRL_GET_MD:
         *(const EVP_MD **)p2 = data->md;
         return 1;
-
+#endif
     case EVP_PKEY_CTRL_PKCS7_ENCRYPT:
     case EVP_PKEY_CTRL_PKCS7_DECRYPT:
     case EVP_PKEY_CTRL_PKCS7_SIGN:
