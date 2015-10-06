@@ -22,6 +22,8 @@
 
 static int gost_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                             const unsigned char *iv, int enc);
+static int gost_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                                const unsigned char *iv, int enc);
 static int gost_cipher_init_cpa(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                                 const unsigned char *iv, int enc);
 static int gost_cipher_init_cp_12(EVP_CIPHER_CTX *ctx,
@@ -30,6 +32,9 @@ static int gost_cipher_init_cp_12(EVP_CIPHER_CTX *ctx,
 /* Handles block of data in CFB mode */
 static int gost_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
                               const unsigned char *in, size_t inl);
+/* Handles block of data in CBC mode */
+static int  gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                               const unsigned char *in, size_t inl);
 /* Handles block of data in CNT mode */
 static int gost_cipher_do_cnt(EVP_CIPHER_CTX *ctx, unsigned char *out,
                               const unsigned char *in, size_t inl);
@@ -57,6 +62,24 @@ EVP_CIPHER cipher_gost = {
     gost_cipher_ctl,
     NULL,
 };
+
+EVP_CIPHER cipher_gost_cbc =
+    {
+    NID_gost89_cbc,
+    8,/*block_size*/
+    32,/*key_size*/
+    8,/*iv_len */
+    EVP_CIPH_CBC_MODE|
+    EVP_CIPH_CUSTOM_IV| EVP_CIPH_RAND_KEY | EVP_CIPH_ALWAYS_CALL_INIT,
+    gost_cipher_init_cbc,
+    gost_cipher_do_cbc,
+    gost_cipher_cleanup,
+    sizeof(struct ossl_gost_cipher_ctx),/* ctx_size */
+    gost89_set_asn1_parameters,
+    gost89_get_asn1_parameters,
+    gost_cipher_ctl,
+    NULL,
+    };
 
 EVP_CIPHER cipher_gost_cpacnt = {
     NID_gost89_cnt,
@@ -277,6 +300,15 @@ int gost_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                                   EVP_CIPH_CFB_MODE);
 }
 
+/* Initializes EVP_CIPHER_CTX with default values */
+int gost_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                         const unsigned char *iv, int enc)
+{
+    return gost_cipher_init_param(ctx, key, iv, enc, NID_undef,
+                                  EVP_CIPH_CBC_MODE);
+}
+
+
 /*
  * Wrapper around gostcrypt function from gost89.c which perform key meshing
  * when nesseccary
@@ -326,6 +358,47 @@ static void gost_cnt_next(void *ctx, unsigned char *iv, unsigned char *buf)
     c->count = c->count % 1024 + 8;
 }
 
+/* GOST encryptoon in CBC mode */
+int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
+    const unsigned char *in, size_t inl)
+    {
+    OPENSSL_assert(inl % 8 ==0);
+    unsigned char b[8];
+    const unsigned char *in_ptr=in;
+    unsigned char *out_ptr=out;
+    int i;
+    struct ossl_gost_cipher_ctx *c = ctx->cipher_data;
+    if (ctx->encrypt)
+        {
+        while(inl>0)
+            {
+            for (i=0;i<8;i++)
+               {
+                b[i]=ctx->iv[i]^in_ptr[i];
+                }
+            gostcrypt(&(c->cctx),b,out_ptr);
+            memcpy(ctx->iv,out_ptr,8);
+            out_ptr+=8;
+            in_ptr+=8;
+            inl-=8;
+            }
+        }
+    else
+        {
+        while (inl>0) {
+            gostdecrypt(&(c->cctx),in_ptr,b);
+            for (i=0;i<8;i++)
+                {
+                out_ptr[i]=ctx->iv[i]^b[i];
+                }
+            memcpy(ctx->iv,in_ptr,8);
+            out_ptr+=8;
+            in_ptr+=8;
+            inl-=8;
+            }
+        }
+    return 1;
+    }
 /* GOST encryption in CFB mode */
 int gost_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
                        const unsigned char *in, size_t inl)
@@ -593,6 +666,7 @@ static int gost_imit_init(EVP_MD_CTX *ctx, gost_subst_block * block)
     c->count = 0;
     c->bytes_left = 0;
     c->key_meshing = 1;
+    c->dgst_size = 4;
     gost_init(&(c->cctx), block);
     return 1;
 }
@@ -675,7 +749,7 @@ int gost_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
         }
         mac_block_mesh(c, c->partial_block);
     }
-    get_mac(c->buffer, 32, md);
+    get_mac(c->buffer, 8 * c->dgst_size, md);
     return 1;
 }
 
@@ -688,7 +762,7 @@ int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
     case EVP_MD_CTRL_SET_KEY:
         {
             if (arg != 32) {
-                GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_LENGTH);
+                GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
                 return 0;
             }
 
@@ -698,6 +772,17 @@ int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             return 1;
 
         }
+    case EVP_MD_CTRL_MAC_LEN:
+        {
+            if (arg < 1 || arg > 8) {
+                GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
+                return 0;
+            }
+            struct ossl_gost_imit_ctx *c = ctx->md_data;
+            c->dgst_size=arg;
+            return 1;
+        }
+
     default:
         return 0;
     }

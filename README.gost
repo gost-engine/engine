@@ -28,6 +28,8 @@ GOST 28147-89 MAC mode. Message authentication code. While most MAC
 	It has 256-bit symmetric key and only 32 bits of MAC value
 	(while HMAC has same key size and value size). 
 
+	Really, this algorithm supports from 8 to 64 bits of the MAC value
+
 	It is implemented as combination of EVP_PKEY type and EVP_MD type.
 
 USAGE OF THESE ALGORITHMS
@@ -198,11 +200,30 @@ Russian clients and RSA/DSA ciphersuites for foreign clients.
  implementation of this mac) and OpenSSL is clever enough to find out
  this.
 
+ Following mac options are supported:
+
+ key:(32 bytes of key)
+
+ hexkey:(64 hexadecimal digits of key)
+
+ Engine support calculation of mac with size different from default 32
+ bits. You can set mac size to any value from 1 to 8 bytes using
+
+ -sigopt size:(number from 1 to 8 - mac size in bytes)
+
+ (dgst command uses different EVP_PKEY_CTX for initialization and for
+  finalization of MAC. Option of first are set via -macopt, and for
+  second via -sigopt. Key should be set during initialization and size
+  during finalization. If you use API functions
+  EVP_DigestSignInit/EVP_DigestSignFinal, you can set both options at
+  the same time).
+
  Encryption with GOST 28147 CFB mode
  openssl enc -gost89 -out encrypted-file -in plain-text-file -k <passphrase>  
  Encryption with GOST 28147 CNT mode
  openssl enc -gost89-cnt -out encrypted-file -in plain-text-file -k <passphrase>
-
+ Encryption with GOST 28147 CBC mode
+ openssl enc -gost89-cbc -out encrypted-file -in plain-text-file -k <passphrase>
 
 6. Encrypting private keys and PKCS12
 
@@ -221,6 +242,7 @@ accessed by cipher-specific functions, only via generic evp interface
 
  openssl speed -evp gost89
  openssl speed -evp gost89-cnt
+ openssl speed -evp gost89-cbc
 
 
 PROGRAMMING INTERFACES DETAILS
