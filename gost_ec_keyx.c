@@ -8,6 +8,7 @@
  *          Requires OpenSSL 0.9.9 for compilation                    *
  **********************************************************************/
 #include <openssl/evp.h>
+#include <openssl/err.h>
 #include <openssl/rand.h>
 #include <string.h>
 #include <openssl/objects.h>
