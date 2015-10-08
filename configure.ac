@@ -5,6 +5,8 @@ AC_CONFIG_MACRO_DIR([m4])
 
 m4_include([m4/ax_check_openssl.m4])
 
+AC_ARG_VAR([OPENSSL_SRCDIR],[Set the folder containing OpenSSL source.  Not mandatory])
+
 AM_INIT_AUTOMAKE
 LT_INIT([disable-static pic-only])
 
@@ -28,6 +30,8 @@ if test "x$have_openssl" = "xyes"; then
   CFLAGS="$CFLAGS $OPENSSL_INCLUDES"
   LDFLAGS="$LDFLAGS $OPENSSL_LDFLAGS"
 fi
+
+AC_SUBST([OPENSSL_SRCDIR])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
