@@ -63,6 +63,7 @@ EVP_CIPHER cipher_gost = {
     NULL,
 };
 
+#ifdef NID_gost89_cbc
 EVP_CIPHER cipher_gost_cbc =
     {
     NID_gost89_cbc,
@@ -80,6 +81,7 @@ EVP_CIPHER cipher_gost_cbc =
     gost_cipher_ctl,
     NULL,
     };
+#endif
 
 EVP_CIPHER cipher_gost_cpacnt = {
     NID_gost89_cnt,
@@ -98,6 +100,7 @@ EVP_CIPHER cipher_gost_cpacnt = {
     NULL,
 };
 
+#ifdef NID_gost89_cnt_12
 EVP_CIPHER cipher_gost_cpcnt_12 = {
     NID_gost89_cnt_12,
     1,                          /* block_size */
@@ -114,6 +117,7 @@ EVP_CIPHER cipher_gost_cpcnt_12 = {
     gost_cipher_ctl,
     NULL,
 };
+#endif
 
 /* Implementation of GOST 28147-89 in MAC (imitovstavka) mode */
 /* Init functions which set specific parameters */
@@ -147,6 +151,7 @@ EVP_MD imit_gost_cpa = {
     gost_imit_ctrl
 };
 
+#ifdef NID_gost_mac_12
 EVP_MD imit_gost_cp_12 = {
     NID_gost_mac_12,
     NID_undef,
@@ -164,6 +169,7 @@ EVP_MD imit_gost_cp_12 = {
     sizeof(struct ossl_gost_imit_ctx),
     gost_imit_ctrl
 };
+#endif
 
 /*
  * Correspondence between gost parameter OIDs and substitution blocks
@@ -188,7 +194,9 @@ struct gost_cipher_info gost_cipher_list[] = {
      1},
     {NID_id_Gost28147_89_CryptoPro_D_ParamSet, &Gost28147_CryptoProParamSetD,
      1},
+#ifdef NID_id_tc26_gost_28147_param_Z
     {NID_id_tc26_gost_28147_param_Z, &Gost28147_TC26ParamSetZ, 1},
+#endif
     {NID_id_Gost28147_89_TestParamSet, &Gost28147_TestParamSet, 1},
     {NID_undef, NULL, 0}
 };
@@ -543,6 +551,7 @@ int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
             break;
         }
     case EVP_CTRL_PBE_PRF_NID:
+#ifdef NID_id_tc26_hmac_gost_3411_2012_512
         if (ptr) {
             const char *params = get_gost_engine_param(GOST_PARAM_PBE_PARAMS);
             int nid = NID_id_tc26_hmac_gost_3411_2012_512;
@@ -560,6 +569,9 @@ int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
         } else {
             return 0;
         }
+#else
+	return 0;
+#endif
 
     default:
         GOSTerr(GOST_F_GOST_CIPHER_CTL,

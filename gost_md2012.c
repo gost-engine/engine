@@ -10,6 +10,9 @@
  **********************************************************************/
 
 #include <openssl/evp.h>
+
+#if defined(NID_id_GostR3411_2012_512) && defined(NID_id_GostR3411_2012_256)
+
 #include "gosthash2012.h"
 
 static int gost_digest_init512(EVP_MD_CTX *ctx);
@@ -140,3 +143,4 @@ static int gost_digest_ctrl_512(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
     }
   }
 
+#endif

@@ -32,8 +32,12 @@ static int pkey_gost_init(EVP_PKEY_CTX *ctx)
     if (pkey && EVP_PKEY_get0(pkey)) {
         switch (EVP_PKEY_base_id(pkey)) {
         case NID_id_GostR3410_2001:
+#ifdef NID_id_GostR3410_2012_256
         case NID_id_GostR3410_2012_256:
+#endif
+#ifdef NID_id_GostR3410_2012_512
         case NID_id_GostR3410_2012_512:
+#endif
             {
                 const EC_GROUP *group =
                     EC_KEY_get0_group(EVP_PKEY_get0((EVP_PKEY *)pkey));
@@ -106,19 +110,23 @@ static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
                 }
                 break;
 
+#ifdef NID_id_GostR3411_2012_256
             case NID_id_GostR3411_2012_256:
                 if (pkey_nid == NID_id_GostR3410_2012_256) {
                     pctx->md = (EVP_MD *)p2;
                     return 1;
                 }
                 break;
+#endif
 
+#ifdef NID_id_GostR3411_2012_512
             case NID_id_GostR3411_2012_512:
                 if (pkey_nid == NID_id_GostR3410_2012_512) {
                     pctx->md = (EVP_MD *)p2;
                     return 1;
                 }
                 break;
+#endif
             }
 
             GOSTerr(GOST_F_PKEY_GOST_CTRL, GOST_R_INVALID_DIGEST_TYPE);
@@ -225,6 +233,8 @@ static int pkey_gost_ec_ctrl_str_256(EVP_PKEY_CTX *ctx,
     return -2;
 }
 
+#if defined(NID_id_tc26_gost_3410_2012_512_paramSetA) \
+  && defined(NID_id_tc26_gost_3410_2012_512_paramSetB)
 static int pkey_gost_ec_ctrl_str_512(EVP_PKEY_CTX *ctx,
                                      const char *type, const char *value)
 {
@@ -267,6 +277,7 @@ static int pkey_gost_ec_ctrl_str_512(EVP_PKEY_CTX *ctx,
 
     return pkey_gost_ctrl(ctx, EVP_PKEY_CTRL_GOST_PARAMSET, param_nid, NULL);
 }
+#endif
 
 /* --------------------- key generation  --------------------------------*/
 
@@ -294,6 +305,7 @@ static int pkey_gost2001_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
     return 1;
 }
 
+#if defined(NID_id_GostR3410_2012_256) && defined(NID_id_GostR3410_2012_512)
 static int pkey_gost2012_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 {
     struct gost_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
@@ -337,6 +349,7 @@ static int pkey_gost2012_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 
     return result;
 }
+#endif
 
 /* ----------- keygen callbacks --------------------------------------*/
 /* Generates GOST_R3410 2001 key and assigns it using specified type */
@@ -350,6 +363,7 @@ static int pkey_gost2001cp_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
     return 1;
 }
 
+#if defined(NID_id_GostR3410_2012_256) && defined(NID_id_GostR3410_2012_512)
 /* Generates GOST_R3410 2012 key and assigns it using specified type */
 static int pkey_gost2012cp_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 {
@@ -359,6 +373,7 @@ static int pkey_gost2012cp_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
     gost_ec_keygen(EVP_PKEY_get0(pkey));
     return 1;
 }
+#endif
 
 /* ----------- sign callbacks --------------------------------------*/
 /*
@@ -390,12 +405,18 @@ static int pkey_gost_ec_cp_sign(EVP_PKEY_CTX *ctx, unsigned char *sig,
 
     switch (EVP_PKEY_base_id(pkey)) {
     case NID_id_GostR3410_2001:
+        order = 64;
+        break;
+#ifdef NID_id_GostR3410_2012_256
     case NID_id_GostR3410_2012_256:
         order = 64;
         break;
+#endif
+#ifdef NID_id_GostR3410_2012_512
     case NID_id_GostR3410_2012_512:
         order = 128;
         break;
+#endif
     default:
         return 0;
     }
@@ -506,7 +527,11 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
     case EVP_PKEY_CTRL_MD:
         {
             int nid = EVP_MD_type((const EVP_MD *)p2);
-            if (nid != NID_id_Gost28147_89_MAC && nid != NID_gost_mac_12) {
+            if (nid != NID_id_Gost28147_89_MAC
+#ifdef NID_gost_mac_12
+		&& nid != NID_gost_mac_12
+#endif
+		) {
                 GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL,
                         GOST_R_INVALID_DIGEST_TYPE);
                 return 0;
@@ -626,10 +651,12 @@ static int pkey_gost_mac_keygen_base(EVP_PKEY_CTX *ctx,
     return 1;
 }
 
+#ifdef NID_gost_mac_12
 static int pkey_gost_mac_keygen_12(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 {
     return pkey_gost_mac_keygen_base(ctx, pkey, NID_gost_mac_12);
 }
+#endif
 
 static int pkey_gost_mac_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 {
@@ -689,6 +716,7 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
         EVP_PKEY_meth_set_paramgen(*pmeth, pkey_gost_paramgen_init,
                                    pkey_gost2001_paramgen);
         break;
+#ifdef NID_id_GostR3410_2012_256
     case NID_id_GostR3410_2012_256:
         EVP_PKEY_meth_set_ctrl(*pmeth,
                                pkey_gost_ctrl, pkey_gost_ec_ctrl_str_256);
@@ -707,6 +735,8 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
                                    pkey_gost_paramgen_init,
                                    pkey_gost2012_paramgen);
         break;
+#endif
+#ifdef NID_id_GostR3410_2012_512
     case NID_id_GostR3410_2012_512:
         EVP_PKEY_meth_set_ctrl(*pmeth,
                                pkey_gost_ctrl, pkey_gost_ec_ctrl_str_512);
@@ -725,6 +755,7 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
                                    pkey_gost_paramgen_init,
                                    pkey_gost2012_paramgen);
         break;
+#endif
     case NID_id_Gost28147_89_MAC:
         EVP_PKEY_meth_set_ctrl(*pmeth, pkey_gost_mac_ctrl,
                                pkey_gost_mac_ctrl_str);
@@ -735,6 +766,7 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
         EVP_PKEY_meth_set_cleanup(*pmeth, pkey_gost_mac_cleanup);
         EVP_PKEY_meth_set_copy(*pmeth, pkey_gost_mac_copy);
         return 1;
+#ifdef NID_gost_mac_12
     case NID_gost_mac_12:
         EVP_PKEY_meth_set_ctrl(*pmeth, pkey_gost_mac_ctrl,
                                pkey_gost_mac_ctrl_str);
@@ -745,6 +777,7 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
         EVP_PKEY_meth_set_cleanup(*pmeth, pkey_gost_mac_cleanup);
         EVP_PKEY_meth_set_copy(*pmeth, pkey_gost_mac_copy);
         return 1;
+#endif
     default:                   /* Unsupported method */
         return 0;
     }

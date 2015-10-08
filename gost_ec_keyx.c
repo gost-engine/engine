@@ -17,6 +17,9 @@
 #include "gost_keywrap.h"
 #include "gost_lcl.h"
 
+#if defined(NID_id_GostR3411_2012_512) && defined(NID_id_GostR3411_2012_256) \
+  && defined(NID_id_tc26_gost_28147_param_Z)
+
 /* Implementation of CryptoPro VKO 34.10-2001/2012 algorithm */
 static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
                            const EC_POINT *pub_key, EC_KEY *priv_key,
@@ -338,3 +341,5 @@ int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     GOST_KEY_TRANSPORT_free(gkt);
     return ret;
 }
+
+#endif

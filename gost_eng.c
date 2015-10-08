@@ -36,40 +36,68 @@ static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
 static int gost_cipher_nids[] = {
     NID_id_Gost28147_89,
     NID_gost89_cnt,
+#ifdef NID_gost_mac_12
     NID_gost89_cnt_12,
+#endif
+#ifdef NID_gost89_cbc
     NID_gost89_cbc,
+#endif
     0
 };
 
 static int gost_digest_nids[] = {
     NID_id_GostR3411_94,
     NID_id_Gost28147_89_MAC,
+#ifdef NID_id_GostR3410_2012_256
     NID_id_GostR3411_2012_256,
+#endif
+#ifdef NID_id_GostR3410_2012_512
     NID_id_GostR3411_2012_512,
+#endif
+#ifdef NID_gost_mac_12
     NID_gost_mac_12,
+#endif
     0
 };
 
 static int gost_pkey_meth_nids[] = {
     NID_id_GostR3410_2001,
     NID_id_Gost28147_89_MAC,
+#ifdef NID_id_GostR3410_2012_256
     NID_id_GostR3410_2012_256,
+#endif
+#ifdef NID_id_GostR3410_2012_512
     NID_id_GostR3410_2012_512,
+#endif
+#ifdef NID_gost_mac_12
     NID_gost_mac_12,
+#endif
     0
 };
 
-static EVP_PKEY_METHOD *pmeth_GostR3410_2001 = NULL,
-    *pmeth_GostR3410_2012_256 = NULL,
-    *pmeth_GostR3410_2012_512 = NULL,
-    *pmeth_Gost28147_MAC = NULL,
-    *pmeth_Gost28147_MAC_12 = NULL;
+static EVP_PKEY_METHOD *pmeth_GostR3410_2001 = NULL;
+#ifdef NID_id_GostR3410_2012_256
+static EVP_PKEY_METHOD *pmeth_GostR3410_2012_256 = NULL;
+#endif
+#ifdef NID_id_GostR3410_2012_512
+static EVP_PKEY_METHOD *pmeth_GostR3410_2012_512 = NULL;
+#endif
+static EVP_PKEY_METHOD *pmeth_Gost28147_MAC = NULL;
+#ifdef NID_gost_mac_12
+static EVP_PKEY_METHOD *pmeth_Gost28147_MAC_12 = NULL;
+#endif
 
-static EVP_PKEY_ASN1_METHOD *ameth_GostR3410_2001 = NULL,
-    *ameth_GostR3410_2012_256 = NULL,
-    *ameth_GostR3410_2012_512 = NULL,
-    *ameth_Gost28147_MAC = NULL,
-    *ameth_Gost28147_MAC_12 = NULL;
+static EVP_PKEY_ASN1_METHOD *ameth_GostR3410_2001 = NULL;
+#ifdef NID_id_GostR3410_2012_256
+static EVP_PKEY_ASN1_METHOD *ameth_GostR3410_2012_256 = NULL;
+#endif
+#ifdef NID_id_GostR3410_2012_512
+static EVP_PKEY_ASN1_METHOD *ameth_GostR3410_2012_512 = NULL;
+#endif
+static EVP_PKEY_ASN1_METHOD *ameth_Gost28147_MAC = NULL;
+#ifdef NID_gost_mac_12
+static EVP_PKEY_ASN1_METHOD *ameth_Gost28147_MAC_12 = NULL;
+#endif
 
 static int gost_engine_init(ENGINE *e)
 {
@@ -87,15 +115,27 @@ static int gost_engine_destroy(ENGINE *e)
 
     pmeth_GostR3410_2001 = NULL;
     pmeth_Gost28147_MAC = NULL;
+#ifdef NID_id_GostR3410_2012_256
     pmeth_GostR3410_2012_256 = NULL;
+#endif
+#ifdef NID_id_GostR3410_2012_512
     pmeth_GostR3410_2012_512 = NULL;
+#endif
+#ifdef NID_gost_mac_12
     pmeth_Gost28147_MAC_12 = NULL;
+#endif
 
     ameth_GostR3410_2001 = NULL;
     ameth_Gost28147_MAC = NULL;
+#ifdef NID_id_GostR3410_2012_256
     ameth_GostR3410_2012_256 = NULL;
+#endif
+#ifdef NID_id_GostR3410_2012_512
     ameth_GostR3410_2012_512 = NULL;
+#endif
+#ifdef NID_gost_mac_12
     ameth_Gost28147_MAC_12 = NULL;
+#endif
 
     return 1;
 }
@@ -152,36 +192,48 @@ static int bind_gost(ENGINE *e, const char *id)
         (NID_id_GostR3410_2001, &ameth_GostR3410_2001, "GOST2001",
          "GOST R 34.10-2001"))
         goto end;
+#ifdef NID_id_GostR3410_2012_256
     if (!register_ameth_gost
         (NID_id_GostR3410_2012_256, &ameth_GostR3410_2012_256, "GOST2012_256",
          "GOST R 34.10-2012 with 256 bit key"))
         goto end;
+#endif
+#ifdef NID_id_GostR3410_2012_512
     if (!register_ameth_gost
         (NID_id_GostR3410_2012_512, &ameth_GostR3410_2012_512, "GOST2012_512",
          "GOST R 34.10-2012 with 512 bit key"))
         goto end;
+#endif
     if (!register_ameth_gost(NID_id_Gost28147_89_MAC, &ameth_Gost28147_MAC,
                              "GOST-MAC", "GOST 28147-89 MAC"))
         goto end;
+#ifdef NID_gost_mac_12
     if (!register_ameth_gost(NID_gost_mac_12, &ameth_Gost28147_MAC_12,
                              "GOST-MAC-12",
                              "GOST 28147-89 MAC with 2012 params"))
         goto end;
+#endif
 
     if (!register_pmeth_gost(NID_id_GostR3410_2001, &pmeth_GostR3410_2001, 0))
         goto end;
 
+#ifdef NID_id_GostR3410_2012_256
     if (!register_pmeth_gost
         (NID_id_GostR3410_2012_256, &pmeth_GostR3410_2012_256, 0))
         goto end;
+#endif
+#ifdef NID_id_GostR3410_2012_512
     if (!register_pmeth_gost
         (NID_id_GostR3410_2012_512, &pmeth_GostR3410_2012_512, 0))
         goto end;
+#endif
     if (!register_pmeth_gost
         (NID_id_Gost28147_89_MAC, &pmeth_Gost28147_MAC, 0))
         goto end;
+#ifdef NID_gost_mac_12
     if (!register_pmeth_gost(NID_gost_mac_12, &pmeth_Gost28147_MAC_12, 0))
         goto end;
+#endif
     if (!ENGINE_register_ciphers(e)
         || !ENGINE_register_digests(e)
         || !ENGINE_register_pkey_meths(e)
@@ -191,8 +243,12 @@ static int bind_gost(ENGINE *e, const char *id)
         || !EVP_add_cipher(&cipher_gost_cpacnt)
         || !EVP_add_cipher(&cipher_gost_cpcnt_12)
         || !EVP_add_digest(&digest_gost)
+#ifdef NID_id_GostR3411_2012_512
         || !EVP_add_digest(&digest_gost2012_512)
+#endif
+#ifdef NID_id_GostR3410_2012_256
         || !EVP_add_digest(&digest_gost2012_256)
+#endif
         || !EVP_add_digest(&imit_gost_cpa)
         || !EVP_add_digest(&imit_gost_cp_12)
         ) {
@@ -219,14 +275,20 @@ static int gost_digests(ENGINE *e, const EVP_MD **digest,
     }
     if (nid == NID_id_GostR3411_94) {
         *digest = &digest_gost;
+#if defined(NID_id_GostR3411_2012_256)
     } else if (nid == NID_id_GostR3411_2012_256) {
         *digest = &digest_gost2012_256;
+#endif
+#if defined(NID_id_GostR3411_2012_512)
     } else if (nid == NID_id_GostR3411_2012_512) {
         *digest = &digest_gost2012_512;
+#endif
     } else if (nid == NID_id_Gost28147_89_MAC) {
         *digest = &imit_gost_cpa;
+#if defined(NID_gost_mac_12)
     } else if (nid == NID_gost_mac_12) {
         *digest = &imit_gost_cp_12;
+#endif
     } else {
         ok = 0;
         *digest = NULL;
@@ -247,10 +309,14 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
         *cipher = &cipher_gost;
     } else if (nid == NID_gost89_cnt) {
         *cipher = &cipher_gost_cpacnt;
+#ifdef NID_gost89_cnt_12
     } else if (nid == NID_gost89_cnt_12) {
         *cipher = &cipher_gost_cpcnt_12;
+#endif
+#ifdef NID_gost89_cbc
     } else if (nid == NID_gost89_cbc) {
         *cipher = &cipher_gost_cbc;
+#endif
     } else {
         ok = 0;
         *cipher = NULL;
@@ -270,18 +336,24 @@ static int gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth,
     case NID_id_GostR3410_2001:
         *pmeth = pmeth_GostR3410_2001;
         return 1;
+#ifdef NID_id_GostR3410_2012_256
     case NID_id_GostR3410_2012_256:
         *pmeth = pmeth_GostR3410_2012_256;
         return 1;
+#endif
+#ifdef NID_id_GostR3410_2012_512
     case NID_id_GostR3410_2012_512:
         *pmeth = pmeth_GostR3410_2012_512;
         return 1;
+#endif
     case NID_id_Gost28147_89_MAC:
         *pmeth = pmeth_Gost28147_MAC;
         return 1;
+#ifdef NID_gost_mac_12
     case NID_gost_mac_12:
         *pmeth = pmeth_Gost28147_MAC_12;
         return 1;
+#endif
 
     default:;
     }
@@ -301,18 +373,24 @@ static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
     case NID_id_GostR3410_2001:
         *ameth = ameth_GostR3410_2001;
         return 1;
+#ifdef NID_id_GostR3410_2012_256
     case NID_id_GostR3410_2012_256:
         *ameth = ameth_GostR3410_2012_256;
         return 1;
+#endif
+#ifdef NID_id_GostR3410_2012_512
     case NID_id_GostR3410_2012_512:
         *ameth = ameth_GostR3410_2012_512;
         return 1;
+#endif
     case NID_id_Gost28147_89_MAC:
         *ameth = ameth_Gost28147_MAC;
         return 1;
+#ifdef NID_gost_mac_12
     case NID_gost_mac_12:
         *ameth = ameth_Gost28147_MAC_12;
         return 1;
+#endif
 
     default:;
     }
