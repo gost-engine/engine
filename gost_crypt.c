@@ -205,8 +205,13 @@ const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj)
     struct gost_cipher_info *param;
     if (!obj) {
         const char *params = get_gost_engine_param(GOST_PARAM_CRYPT_PARAMS);
-        if (!params || !strlen(params))
-            return &gost_cipher_list[4];
+        if (!params || !strlen(params)) {
+            int i;
+            for (i = 0; gost_cipher_list[i].nid != NID_undef; i++)
+                if (gost_cipher_list[i].nid == NID_id_tc26_gost_28147_param_Z)
+                    return &gost_cipher_list[i];
+            return &gost_cipher_list[0];
+        }
 
         nid = OBJ_txt2nid(params);
         if (nid == NID_undef) {
