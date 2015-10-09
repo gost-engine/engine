@@ -215,7 +215,7 @@ static int gost_digests(ENGINE *e, const EVP_MD **digest,
     int ok = 1;
     if (!digest) {
         *nids = gost_digest_nids;
-        return 5;
+        return sizeof(gost_digest_nids)/sizeof(gost_digest_nids[0]) - 1;
     }
     if (nid == NID_id_GostR3411_94) {
         *digest = &digest_gost;
@@ -240,7 +240,7 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
     int ok = 1;
     if (!cipher) {
         *nids = gost_cipher_nids;
-        return 4;               /* three ciphers are supported */
+        return sizeof(gost_cipher_nids)/sizeof(gost_cipher_nids[0]) - 1;
     }
 
     if (nid == NID_id_Gost28147_89) {
@@ -263,7 +263,7 @@ static int gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth,
 {
     if (!pmeth) {
         *nids = gost_pkey_meth_nids;
-        return sizeof(gost_pkey_meth_nids)/sizeof(int) - 1;
+        return sizeof(gost_pkey_meth_nids)/sizeof(gost_pkey_meth_nids[0]) - 1;
     }
 
     switch (nid) {
@@ -295,7 +295,7 @@ static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
 {
     if (!ameth) {
         *nids = gost_pkey_meth_nids;
-        return sizeof(gost_pkey_meth_nids)/sizeof(int) - 1;
+        return sizeof(gost_pkey_meth_nids)/sizeof(gost_pkey_meth_nids[0]) - 1;
     }
     switch (nid) {
     case NID_id_GostR3410_2001:
