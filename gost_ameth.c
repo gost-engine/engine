@@ -913,6 +913,9 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                                  pkey_size_gost, pkey_bits_gost);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+        EVP_PKEY_asn1_set_security_bits(*ameth,ce_pkey_bits_gost);
+#endif
         break;
     case NID_id_Gost28147_89_MAC:
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
