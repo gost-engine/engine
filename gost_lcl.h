@@ -159,9 +159,11 @@ struct ossl_gost_digest_ctx {
 };
 /* EVP_MD structure for GOST R 34.11 */
 extern EVP_MD digest_gost;
+#if defined(NID_id_GostR3411_2012_512) && defined(NID_id_GostR3411_2012_256)
 /* EVP MD structure for GOST R 34.11-2012 algorithms */
 extern EVP_MD digest_gost2012_256;
 extern EVP_MD digest_gost2012_512;
+#endif
 /* EVP_MD structure for GOST 28147 in MAC mode */
 extern EVP_MD imit_gost_cpa;
 extern EVP_MD imit_gost_cp_12;

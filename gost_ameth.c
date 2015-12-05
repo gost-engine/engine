@@ -57,10 +57,15 @@ static int pkey_bits_gost(const EVP_PKEY *pk)
 
     switch (EVP_PKEY_base_id(pk)) {
     case NID_id_GostR3410_2001:
+        return 256;
+#if defined(NID_id_GostR3411_2012_256)
     case NID_id_GostR3410_2012_256:
         return 256;
+#endif
+#if defined(NID_id_GostR3411_2012_256)
     case NID_id_GostR3410_2012_512:
         return 512;
+#endif
     }
 
     return -1;
@@ -79,14 +84,18 @@ static ASN1_STRING *encode_gost_algor_params(const EVP_PKEY *key)
         goto err;
     }
     switch (EVP_PKEY_base_id(key)) {
+#if defined(NID_id_GostR3411_2012_256)
     case NID_id_GostR3410_2012_256:
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
         gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_256);
         break;
+#endif
+#if defined(NID_id_GostR3411_2012_512)
     case NID_id_GostR3410_2012_512:
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
         gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_512);
         break;
+#endif
     case NID_id_GostR3410_2001:
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
         gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_94_CryptoProParamSet);
@@ -125,8 +134,12 @@ static int gost_decode_nid_params(EVP_PKEY *pkey, int pkey_nid, int param_nid)
     void *key_ptr = EVP_PKEY_get0(pkey);
 
     switch (pkey_nid) {
+#if defined(NID_id_GostR3411_2012_256)
     case NID_id_GostR3410_2012_256:
+#endif
+#if defined(NID_id_GostR3411_2012_512)
     case NID_id_GostR3410_2012_512:
+#endif
     case NID_id_GostR3410_2001:
         if (!key_ptr) {
             key_ptr = EC_KEY_new();
@@ -183,8 +196,12 @@ static int decode_gost_algor_params(EVP_PKEY *pkey, X509_ALGOR *palg)
 static int gost_set_priv_key(EVP_PKEY *pkey, BIGNUM *priv)
 {
     switch (EVP_PKEY_base_id(pkey)) {
+#if defined(NID_id_GostR3411_2012_512)
     case NID_id_GostR3410_2012_512:
+#endif
+#if defined(NID_id_GostR3411_2012_256)
     case NID_id_GostR3410_2012_256:
+#endif
     case NID_id_GostR3410_2001:
         {
             EC_KEY *ec = EVP_PKEY_get0(pkey);
@@ -207,8 +224,12 @@ static int gost_set_priv_key(EVP_PKEY *pkey, BIGNUM *priv)
 BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey)
 {
     switch (EVP_PKEY_base_id(pkey)) {
+#if defined(NID_id_GostR3411_2012_512)
     case NID_id_GostR3410_2012_512:
+#endif
+#if defined(NID_id_GostR3411_2012_256)
     case NID_id_GostR3410_2012_256:
+#endif
     case NID_id_GostR3410_2001:
         {
             EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pkey);
@@ -229,12 +250,16 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     X509_ALGOR *alg1 = NULL, *alg2 = NULL;
 
     switch (nid) {
+#if defined(NID_id_GostR3411_2012_512)
     case NID_id_GostR3410_2012_512:
         md_nid = NID_id_GostR3411_2012_512;
         break;
+#endif
+#if defined(NID_id_GostR3411_2012_256)
     case NID_id_GostR3410_2012_256:
         md_nid = NID_id_GostR3411_2012_256;
         break;
+#endif
     case NID_id_GostR3410_2001:
     case NID_id_GostR3410_94:
         md_nid = NID_id_GostR3411_94;
@@ -809,10 +834,15 @@ static int pkey_size_gost(const EVP_PKEY *pk)
     switch (EVP_PKEY_base_id(pk)) {
     case NID_id_GostR3410_94:
     case NID_id_GostR3410_2001:
+        return 64;
+#if defined(NID_id_GostR3411_2012_256)
     case NID_id_GostR3410_2012_256:
         return 64;
+#endif
+#if defined(NID_id_GostR3411_2012_512)
     case NID_id_GostR3410_2012_512:
         return 128;
+#endif
     }
 
     return -1;
@@ -839,11 +869,13 @@ static int mac_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 static int mac_ctrl_gost_12(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 {
     switch (op) {
+#if defined(NID_gost_mac_12)
     case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
         if (arg2) {
             *(int *)arg2 = NID_gost_mac_12;
             return 2;
         }
+#endif
     }
     return -2;
 }
@@ -895,6 +927,7 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
         break;
+#if defined(NID_id_GostR3411_2012_512) && defined(NID_id_GostR3411_2012_256)
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2012_512:
         EVP_PKEY_asn1_set_free(*ameth, pkey_free_gost_ec);
@@ -917,14 +950,17 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
         EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);
 #endif
         break;
+#endif
     case NID_id_Gost28147_89_MAC:
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
         EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost);
         break;
+#if defined(NID_gost_mac_12)
     case NID_gost_mac_12:
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
         EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost_12);
         break;
+#endif
     }
     return 1;
 }
