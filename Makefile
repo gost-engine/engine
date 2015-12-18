@@ -63,6 +63,8 @@ install:
 
 tests:
 
+links:
+
 update: local_depend
 	@if [ -z "$(THIS)" ]; then $(MAKE) -f $(TOP)/Makefile reflect THIS=$@; fi
 
