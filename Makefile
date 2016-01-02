@@ -24,6 +24,8 @@ all: lib
 tags:
 	ctags $(SRC)
 
+links:
+
 errors:
 	$(PERL) ../../util/mkerr.pl -conf gost.ec -nostatic -write $(SRC)
 
@@ -159,8 +161,9 @@ gost_ec_keyx.o: ../../include/openssl/buffer.h ../../include/openssl/crypto.h
 gost_ec_keyx.o: ../../include/openssl/dsa.h ../../include/openssl/e_os2.h
 gost_ec_keyx.o: ../../include/openssl/ec.h ../../include/openssl/ecdh.h
 gost_ec_keyx.o: ../../include/openssl/ecdsa.h ../../include/openssl/engine.h
-gost_ec_keyx.o: ../../include/openssl/evp.h ../../include/openssl/lhash.h
-gost_ec_keyx.o: ../../include/openssl/obj_mac.h ../../include/openssl/objects.h
+gost_ec_keyx.o: ../../include/openssl/err.h ../../include/openssl/evp.h
+gost_ec_keyx.o: ../../include/openssl/lhash.h ../../include/openssl/obj_mac.h
+gost_ec_keyx.o: ../../include/openssl/objects.h
 gost_ec_keyx.o: ../../include/openssl/opensslconf.h
 gost_ec_keyx.o: ../../include/openssl/opensslv.h
 gost_ec_keyx.o: ../../include/openssl/ossl_typ.h ../../include/openssl/pkcs7.h
