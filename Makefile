@@ -24,8 +24,6 @@ all: lib
 tags:
 	ctags $(SRC)
 
-links:
-
 errors:
 	$(PERL) ../../util/mkerr.pl -conf gost.ec -nostatic -write $(SRC)
 
