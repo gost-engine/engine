@@ -466,20 +466,20 @@ static int pkey_gost_derive_init(EVP_PKEY_CTX *ctx)
 static int pkey_gost_mac_init(EVP_PKEY_CTX *ctx)
 {
     struct gost_mac_pmeth_data *data = OPENSSL_malloc(sizeof(*data));
-		EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+    EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
 
     if (!data)
         return 0;
     memset(data, 0, sizeof(*data));
-		data->mac_size = 4;
-		data->mac_param_nid = NID_undef;
+    data->mac_size = 4;
+    data->mac_param_nid = NID_undef;
 
-		if (pkey) {
-			struct gost_mac_key *key = EVP_PKEY_get0(pkey);
-			if (key) {
-				data->mac_param_nid = key->mac_param_nid;
-      } 
-		}
+    if (pkey) {
+        struct gost_mac_key *key = EVP_PKEY_get0(pkey);
+        if (key) {
+            data->mac_param_nid = key->mac_param_nid;
+        }
+    }
 
     EVP_PKEY_CTX_set_data(ctx, data);
     return 1;
@@ -543,19 +543,19 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
         data->key_set = 1;
         return 1;
     case EVP_PKEY_CTRL_GOST_PARAMSET:
-		  {
-				struct gost_cipher_info *param = p2;
-				data->mac_param_nid = param->nid;
-				struct gost_mac_key *key = NULL;
-        EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
-        if (pkey) {
-	        key = EVP_PKEY_get0(pkey);
-					if (key) {
-						key->mac_param_nid = param->nid;
-					}
-        } 
-    	  return 1;
-			}
+        {
+            struct gost_cipher_info *param = p2;
+            data->mac_param_nid = param->nid;
+            struct gost_mac_key *key = NULL;
+            EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+            if (pkey) {
+                key = EVP_PKEY_get0(pkey);
+                if (key) {
+                    key->mac_param_nid = param->nid;
+                }
+            }
+            return 1;
+        }
     case EVP_PKEY_CTRL_DIGESTINIT:
         {
             EVP_MD_CTX *mctx = p2;
@@ -573,23 +573,24 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
                             GOST_R_MAC_KEY_NOT_SET);
                     return 0;
                 }
-                return mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_SET_KEY, 0, key);
+                return mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_SET_KEY, 0,
+                                             key);
             } else {
-                return mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_SET_KEY, 32, &(data->key));
+                return mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_SET_KEY, 32,
+                                             &(data->key));
             }
             return mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_SET_KEY, 32, key);
         }
-	case EVP_PKEY_CTRL_MAC_LEN:	
-		{
-			if (p1<1 || p1>8)
-				{
-					
-					GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL,GOST_R_INVALID_MAC_SIZE);
-					return 0;
-				}
-				data->mac_size = p1;
-				return 1;
-		}
+    case EVP_PKEY_CTRL_MAC_LEN:
+        {
+            if (p1 < 1 || p1 > 8) {
+
+                GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL, GOST_R_INVALID_MAC_SIZE);
+                return 0;
+            }
+            data->mac_size = p1;
+            return 1;
+        }
     }
     return -2;
 }
@@ -621,33 +622,32 @@ static int pkey_gost_mac_ctrl_str(EVP_PKEY_CTX *ctx,
         return ret;
 
     }
-	if (!strcmp(type,maclen_ctrl_string)) {
-		char *endptr;
-		long size=strtol(value,&endptr,10);
-		if (*endptr!='\0') {
-			GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL_STR,
-				   GOST_R_INVALID_MAC_SIZE);
-			return 0;
-		}
-		return pkey_gost_mac_ctrl(ctx, EVP_PKEY_CTRL_MAC_LEN,size,NULL);
-	}
-	if (strcmp(type, param_ctrl_string) == 0)
-		{
-			ASN1_OBJECT *obj  = OBJ_txt2obj(value, 0);
-			const struct gost_cipher_info *param = NULL;
-			if (obj == NULL) {
-				GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL_STR, GOST_R_INVALID_MAC_PARAMS);
-				return 0;
-			}
+    if (!strcmp(type, maclen_ctrl_string)) {
+        char *endptr;
+        long size = strtol(value, &endptr, 10);
+        if (*endptr != '\0') {
+            GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL_STR, GOST_R_INVALID_MAC_SIZE);
+            return 0;
+        }
+        return pkey_gost_mac_ctrl(ctx, EVP_PKEY_CTRL_MAC_LEN, size, NULL);
+    }
+    if (strcmp(type, param_ctrl_string) == 0) {
+        ASN1_OBJECT *obj = OBJ_txt2obj(value, 0);
+        const struct gost_cipher_info *param = NULL;
+        if (obj == NULL) {
+            GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL_STR, GOST_R_INVALID_MAC_PARAMS);
+            return 0;
+        }
 
-			param = get_encryption_params(obj);
-			if (param == NULL) {
-				GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL_STR, GOST_R_INVALID_MAC_PARAMS);
-				return 0;
-			}
+        param = get_encryption_params(obj);
+        if (param == NULL) {
+            GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL_STR, GOST_R_INVALID_MAC_PARAMS);
+            return 0;
+        }
 
-			return pkey_gost_mac_ctrl(ctx, EVP_PKEY_CTRL_GOST_PARAMSET, 0, (void *)param);
-		}
+        return pkey_gost_mac_ctrl(ctx, EVP_PKEY_CTRL_GOST_PARAMSET, 0,
+                                  (void *)param);
+    }
     return -2;
 }
 
@@ -664,7 +664,7 @@ static int pkey_gost_mac_keygen_base(EVP_PKEY_CTX *ctx,
     if (keydata == NULL)
         return 0;
     memcpy(keydata->key, data->key, 32);
-		keydata->mac_param_nid = data->mac_param_nid;
+    keydata->mac_param_nid = data->mac_param_nid;
     EVP_PKEY_assign(pkey, mac_nid, keydata);
     return 1;
 }
@@ -689,7 +689,7 @@ static int pkey_gost_mac_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig,
 {
     unsigned int tmpsiglen;
     int ret;
-	struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
+    struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
 
     if (!siglen)
         return 0;
@@ -701,7 +701,7 @@ static int pkey_gost_mac_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig,
         return 1;
     }
 
-	mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_MAC_LEN, data->mac_size, NULL);
+    mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_MAC_LEN, data->mac_size, NULL);
     ret = EVP_DigestFinal_ex(mctx, sig, &tmpsiglen);
     *siglen = data->mac_size;
     return ret;

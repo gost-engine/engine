@@ -88,8 +88,8 @@ int main(int argc, char **argv)
         while (get_line(check_file, inhash, filename)) {
             count++;
             if (!hash_file(&ctx, filename, calcsum, open_mode)) {
-                errors ++;
-				continue;
+                errors++;
+                continue;
             }
             if (strncmp(calcsum, inhash, 65) == 0) {
                 if (verbose) {
@@ -117,14 +117,14 @@ int main(int argc, char **argv)
                     "%s: %d of %d file(f) failed GOST hash sum check\n",
                     argv[0], failcount, count);
         }
-        exit((failcount || errors)? 1 : 0);
+        exit((failcount || errors) ? 1 : 0);
     }
     if (optind == argc) {
         char sum[65];
 #ifdef _WIN32
-		if (open_mode & O_BINARY) {
-			_setmode(fileno(stdin),O_BINARY);
-		}
+        if (open_mode & O_BINARY) {
+            _setmode(fileno(stdin), O_BINARY);
+        }
 #endif
         if (!hash_stream(&ctx, fileno(stdin), sum)) {
             perror("stdin");

@@ -137,7 +137,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
         goto end;
     }
     ok = 1;
-end:
+ end:
     if (P)
         EC_POINT_free(P);
     if (grp)
@@ -362,8 +362,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
         goto err;
     }
     v = BN_mod_inverse(v, e, order, ctx);
-    if (!v
-        || !BN_mod_mul(z1, sig->s, v, order, ctx)
+    if (!v || !BN_mod_mul(z1, sig->s, v, order, ctx)
         || !BN_sub(tmp, order, sig->r)
         || !BN_mod_mul(z2, tmp, v, order, ctx)) {
         GOSTerr(GOST_F_GOST_EC_VERIFY, ERR_R_INTERNAL_ERROR);
@@ -513,11 +512,11 @@ int gost_ec_keygen(EC_KEY *ec)
     }
 
     ok = 1;
-end:
+ end:
     if (d)
         BN_free(d);
     if (order)
         BN_free(order);
-    
+
     return (ok) ? gost_ec_compute_public(ec) : 0;
 }

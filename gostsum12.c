@@ -249,7 +249,7 @@ int get_line(FILE *f, char *hash, char *filename, int verbose)
             filename[len] = 0;
         memmove(filename, filename + 65, len - 63);
         return 1;
-    nextline:
+ nextline:
         if (verbose)
             printf(filename);
     }

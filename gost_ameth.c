@@ -594,7 +594,6 @@ static int param_missing_gost_ec(const EVP_PKEY *pk)
     return 0;
 }
 
-
 static int param_copy_gost_ec(EVP_PKEY *to, const EVP_PKEY *from)
 {
     EC_KEY *eto = EVP_PKEY_get0(to);
@@ -772,7 +771,7 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
 
     ret = i2d_ASN1_OCTET_STRING(octet, &buf);
     ASN1_BIT_STRING_free(octet);
-err:
+ err:
     if (X)
         BN_free(X);
     if (Y)

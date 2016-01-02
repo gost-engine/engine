@@ -36,8 +36,7 @@ typedef struct R3410_ec {
 } R3410_ec_params;
 
 extern R3410_ec_params R3410_2001_paramset[],
-                      *R3410_2012_256_paramset,
-                       R3410_2012_512_paramset[];
+    *R3410_2012_256_paramset, R3410_2012_512_paramset[];
 
 extern const ENGINE_CMD_DEFN gost_cmds[];
 int gost_control_func(ENGINE *e, int cmd, long i, void *p, void (*f) (void));
@@ -72,8 +71,8 @@ struct gost_pmeth_data {
 
 struct gost_mac_pmeth_data {
     short int key_set;
-  	short int mac_size;
-		int mac_param_nid;
+    short int mac_size;
+    int mac_param_nid;
     EVP_MD *md;
     unsigned char key[32];
 };
@@ -151,14 +150,14 @@ typedef struct {
 DECLARE_ASN1_FUNCTIONS(MASKED_GOST_KEY)
 
 /*============== Message digest  and cipher related structures  ==========*/
-         /*
-          * Structure used as EVP_MD_CTX-md_data. It allows to avoid storing
-          * in the md-data pointers to dynamically allocated memory. I
-          * cannot invent better way to avoid memory leaks, because openssl
-          * insist on invoking Init on Final-ed digests, and there is no
-          * reliable way to find out whether pointer in the passed md_data is
-          * valid or not.
-          */
+    /*
+     * Structure used as EVP_MD_CTX-md_data. It allows to avoid storing
+     * in the md-data pointers to dynamically allocated memory. I
+     * cannot invent better way to avoid memory leaks, because openssl
+     * insist on invoking Init on Final-ed digests, and there is no
+     * reliable way to find out whether pointer in the passed md_data is
+     * valid or not.
+     */
 struct ossl_gost_digest_ctx {
     gost_hash_ctx dctx;
     gost_ctx cctx;
@@ -193,7 +192,7 @@ struct ossl_gost_imit_ctx {
     int key_meshing;
     int bytes_left;
     int key_set;
-	int dgst_size;
+    int dgst_size;
 };
 /* Table which maps parameter NID to S-blocks */
 extern struct gost_cipher_info gost_cipher_list[];

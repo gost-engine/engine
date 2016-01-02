@@ -61,10 +61,11 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     Y = BN_CTX_get(ctx);
     EC_GROUP_get_order(EC_KEY_get0_group(priv_key), order, ctx);
     BN_mod_mul(p, key, UKM, order, ctx);
-    if(!EC_POINT_mul(EC_KEY_get0_group(priv_key), pnt, NULL, pub_key, p, ctx)) {
+    if (!EC_POINT_mul
+        (EC_KEY_get0_group(priv_key), pnt, NULL, pub_key, p, ctx)) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_ERROR_POINT_MUL);
         goto err;
-		}
+    }
     EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(priv_key),
                                         pnt, X, Y, ctx);
     /*

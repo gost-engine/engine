@@ -14,7 +14,7 @@
 #include <limits.h>
 #include <fcntl.h>
 #ifdef _WIN32
-#include <io.h>
+# include <io.h>
 #endif
 #include <string.h>
 #include "gosthash2012.h"
@@ -82,9 +82,9 @@ int main(int argc, char **argv)
 
     while ((c = getopt(argc, argv, "bxlvc::")) != -1) {
         switch (c) {
-		case 'b':
-			open_mode = open_mode | O_BINARY;
-			break;
+        case 'b':
+            open_mode = open_mode | O_BINARY;
+            break;
         case 'v':
             verbose = 1;
             break;
@@ -111,7 +111,8 @@ int main(int argc, char **argv)
         }
     }
     if (check_file) {
-        char inhash[MAX_HASH_SIZE+1], calcsum[MAX_HASH_SIZE+1], filename[PATH_MAX];
+        char inhash[MAX_HASH_SIZE + 1], calcsum[MAX_HASH_SIZE + 1],
+            filename[PATH_MAX];
         int failcount = 0, count = 0;;
         if (check_file == stdin && optind < argc) {
             check_file = fopen(argv[optind], "r");
@@ -124,9 +125,9 @@ int main(int argc, char **argv)
             count++;
             if (!hash_file(&ctx, filename, calcsum, open_mode)) {
                 errors++;
-				continue;
+                continue;
             }
-            if (!strncmp(calcsum, inhash, hashsize/4+1)) {
+            if (!strncmp(calcsum, inhash, hashsize / 4 + 1)) {
                 if (verbose) {
                     fprintf(stderr, "%s\tOK\n", filename);
                 }
@@ -172,9 +173,9 @@ int main(int argc, char **argv)
     } else if (optind == argc) {
         char sum[65];
 #ifdef _WIN32
-		if (open_mode & O_BINARY) {
-			_setmode(fileno(stdin), O_BINARY);
-		}
+        if (open_mode & O_BINARY) {
+            _setmode(fileno(stdin), O_BINARY);
+        }
 #endif
         if (!hash_stream(&ctx, fileno(stdin), sum)) {
             perror("stdin");
@@ -213,9 +214,9 @@ int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode)
 int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
 {
     unsigned char buffer[BUF_SIZE];
-	unsigned char reverted_buffer[BUF_SIZE];
+    unsigned char reverted_buffer[BUF_SIZE];
     ssize_t bytes;
-    int i,j,k;
+    int i, j, k;
     start_hash12(ctx);
     while ((bytes = read(fd, buffer, BUF_SIZE)) > 0) {
         hash12_block(ctx, reverted_buffer, bytes);
@@ -233,12 +234,12 @@ int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
 int get_line(FILE *f, char *hash, char *filename, int verbose)
 {
     int i, len;
-	int hashstrlen = hashsize/4;
+    int hashstrlen = hashsize / 4;
     while (!feof(f)) {
         if (!fgets(filename, PATH_MAX, f))
             return 0;
         len = strlen(filename);
-        if (len < hashstrlen+2) {
+        if (len < hashstrlen + 2) {
             goto nextline;
         }
         if (filename[hashstrlen] != ' ') {
@@ -255,9 +256,9 @@ int get_line(FILE *f, char *hash, char *filename, int verbose)
         hash[hashstrlen] = 0;
         while (filename[--len] == '\n' || filename[len] == '\r')
             filename[len] = 0;
-        memmove(filename, filename + hashstrlen+1, len - hashstrlen +1);
+        memmove(filename, filename + hashstrlen + 1, len - hashstrlen + 1);
         return 1;
-    nextline:
+ nextline:
         if (verbose)
             printf(filename);
     }
