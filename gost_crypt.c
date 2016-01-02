@@ -766,24 +766,46 @@ int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
         return 1;
     case EVP_MD_CTRL_SET_KEY:
         {
-            if (arg != 32) {
-                GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
-                return 0;
+				    struct ossl_gost_imit_ctx *gost_imit_ctx = ctx->md_data;
+
+				    if (ctx->digest->init(ctx) <= 0) {
+				    	GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
+				    	return 0;
+				    }
+					  ctx->flags |= EVP_MD_CTX_FLAG_NO_INIT;
+
+            if (arg == 0) {
+						    struct gost_mac_key *key = (struct gost_mac_key*) ptr;
+								if (key->mac_param_nid != NID_undef) {
+									const struct gost_cipher_info *param = get_encryption_params(OBJ_nid2obj(key->mac_param_nid));
+									if (param == NULL)
+									{
+                    GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_PARAMS);
+                    return 0;
+									}
+									gost_init(&(gost_imit_ctx->cctx), param->sblock);
+								}
+								gost_key(&(gost_imit_ctx->cctx), key->key);
+                gost_imit_ctx->key_set = 1;
+
+								return 1;
             }
-
-            gost_key(&(((struct ossl_gost_imit_ctx *)(ctx->md_data))->cctx),
-                     ptr);
-            ((struct ossl_gost_imit_ctx *)(ctx->md_data))->key_set = 1;
+						else if (arg == 32)
+						{
+            gost_key(&(gost_imit_ctx->cctx), ptr);
+            gost_imit_ctx->key_set = 1;
             return 1;
-
+						}
+            GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
+            return 0;
         }
     case EVP_MD_CTRL_MAC_LEN:
         {
+            struct ossl_gost_imit_ctx *c = ctx->md_data;
             if (arg < 1 || arg > 8) {
                 GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
                 return 0;
             }
-            struct ossl_gost_imit_ctx *c = ctx->md_data;
             c->dgst_size=arg;
             return 1;
         }
