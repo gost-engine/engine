@@ -478,6 +478,7 @@ static int pkey_gost_mac_init(EVP_PKEY_CTX *ctx)
         struct gost_mac_key *key = EVP_PKEY_get0(pkey);
         if (key) {
             data->mac_param_nid = key->mac_param_nid;
+						data->mac_size      = key->mac_size;
         }
     }
 
@@ -546,14 +547,6 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
         {
             struct gost_cipher_info *param = p2;
             data->mac_param_nid = param->nid;
-            struct gost_mac_key *key = NULL;
-            EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
-            if (pkey) {
-                key = EVP_PKEY_get0(pkey);
-                if (key) {
-                    key->mac_param_nid = param->nid;
-                }
-            }
             return 1;
         }
     case EVP_PKEY_CTRL_DIGESTINIT:
@@ -665,6 +658,7 @@ static int pkey_gost_mac_keygen_base(EVP_PKEY_CTX *ctx,
         return 0;
     memcpy(keydata->key, data->key, 32);
     keydata->mac_param_nid = data->mac_param_nid;
+		keydata->mac_size      = data->mac_size;
     EVP_PKEY_assign(pkey, mac_nid, keydata);
     return 1;
 }
@@ -681,6 +675,18 @@ static int pkey_gost_mac_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 
 static int pkey_gost_mac_signctx_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx)
 {
+    struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
+
+		if (data == NULL) {
+			pkey_gost_mac_init(ctx);
+		}
+
+    data = EVP_PKEY_CTX_get_data(ctx);
+    if (!data) {
+        GOSTerr(GOST_F_PKEY_GOST_MAC_SIGNCTX_INIT, GOST_R_MAC_KEY_NOT_SET);
+        return 0;
+    }
+
     return 1;
 }
 

@@ -80,6 +80,7 @@ struct gost_mac_pmeth_data {
 struct gost_mac_key {
     int mac_param_nid;
     unsigned char key[32];
+    short int mac_size;
 };
 /* GOST-specific ASN1 structures */
 
