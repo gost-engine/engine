@@ -790,7 +790,7 @@ int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
         {
             struct ossl_gost_imit_ctx *gost_imit_ctx = EVP_MD_CTX_md_data(ctx);
 
-            if (EVP_DigestInit(ctx, EVP_MD_CTX_md(ctx)) <= 0) {
+            if (EVP_MD_meth_get_init(EVP_MD_CTX_md(ctx))(ctx) <= 0) {
                 GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
                 return 0;
             }
