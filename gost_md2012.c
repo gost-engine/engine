@@ -27,78 +27,103 @@ static int gost_digest_ctrl_512(EVP_MD_CTX *ctx, int type, int arg,
 const char micalg_256[] = "gostr3411-2012-256";
 const char micalg_512[] = "gostr3411-2012-512";
 
-EVP_MD digest_gost2012_512 = {
-    NID_id_GostR3411_2012_512,
-    NID_undef,
-    64,                         /* digest size */
-    EVP_MD_FLAG_PKEY_METHOD_SIGNATURE,
-    gost_digest_init512,
-    gost_digest_update,
-    gost_digest_final,
-    gost_digest_copy,
-    gost_digest_cleanup,
-    NULL,
-    NULL,
-    {NID_undef, NID_undef, 0, 0, 0},
-    64,                         /* block size */
-    sizeof(gost2012_hash_ctx),
-    gost_digest_ctrl_512,
-};
+static EVP_MD *_hidden_GostR3411_2012_256_md = NULL;
+static EVP_MD *_hidden_GostR3411_2012_512_md = NULL;
 
-EVP_MD digest_gost2012_256 = {
-    NID_id_GostR3411_2012_256,
-    NID_undef,
-    32,                         /* digest size */
-    EVP_MD_FLAG_PKEY_METHOD_SIGNATURE,
-    gost_digest_init256,
-    gost_digest_update,
-    gost_digest_final,
-    gost_digest_copy,
-    gost_digest_cleanup,
-    NULL,
-    NULL,
-    {NID_undef, NID_undef, 0, 0, 0},
-    64,                         /* block size */
-    sizeof(gost2012_hash_ctx),
-    gost_digest_ctrl_256
-};
+EVP_MD *digest_gost2012_256(void)
+{
+    if (_hidden_GostR3411_2012_256_md == NULL) {
+        EVP_MD *md;
+
+        if ((md = EVP_MD_meth_new(NID_id_GostR3411_2012_256, NID_undef)) == NULL
+            || !EVP_MD_meth_set_result_size(md, 32)
+            || !EVP_MD_meth_set_input_blocksize(md, 64)
+            || !EVP_MD_meth_set_app_datasize(md, sizeof(gost2012_hash_ctx))
+            || !EVP_MD_meth_set_init(md, gost_digest_init256)
+            || !EVP_MD_meth_set_update(md, gost_digest_update)
+            || !EVP_MD_meth_set_final(md, gost_digest_final)
+            || !EVP_MD_meth_set_copy(md, gost_digest_copy)
+            || !EVP_MD_meth_set_ctrl(md, gost_digest_ctrl_256)
+            || !EVP_MD_meth_set_cleanup(md, gost_digest_cleanup)) {
+            EVP_MD_meth_free(md);
+            md = NULL;
+        }
+        _hidden_GostR3411_2012_256_md = md;
+    }
+    return _hidden_GostR3411_2012_256_md;
+}
+
+void digest_gost2012_256_destroy(void)
+{
+    EVP_MD_meth_free(_hidden_GostR3411_2012_256_md);
+    _hidden_GostR3411_2012_256_md = NULL;
+}
+
+EVP_MD *digest_gost2012_512(void)
+{
+    if (_hidden_GostR3411_2012_512_md == NULL) {
+        EVP_MD *md;
+
+        if ((md = EVP_MD_meth_new(NID_id_GostR3411_2012_512, NID_undef)) == NULL
+            || !EVP_MD_meth_set_result_size(md, 64)
+            || !EVP_MD_meth_set_input_blocksize(md, 64)
+            || !EVP_MD_meth_set_app_datasize(md, sizeof(gost2012_hash_ctx))
+            || !EVP_MD_meth_set_init(md, gost_digest_init512)
+            || !EVP_MD_meth_set_update(md, gost_digest_update)
+            || !EVP_MD_meth_set_final(md, gost_digest_final)
+            || !EVP_MD_meth_set_copy(md, gost_digest_copy)
+            || !EVP_MD_meth_set_ctrl(md, gost_digest_ctrl_512)
+            || !EVP_MD_meth_set_cleanup(md, gost_digest_cleanup)) {
+            EVP_MD_meth_free(md);
+            md = NULL;
+        }
+        _hidden_GostR3411_2012_512_md = md;
+    }
+    return _hidden_GostR3411_2012_512_md;
+}
+
+void digest_gost2012_512_destroy(void)
+{
+    EVP_MD_meth_free(_hidden_GostR3411_2012_512_md);
+    _hidden_GostR3411_2012_512_md = NULL;
+}
 
 static int gost_digest_init512(EVP_MD_CTX *ctx)
 {
-    init_gost2012_hash_ctx((gost2012_hash_ctx *) ctx->md_data, 512);
+    init_gost2012_hash_ctx((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), 512);
     return 1;
 }
 
 static int gost_digest_init256(EVP_MD_CTX *ctx)
 {
-    init_gost2012_hash_ctx((gost2012_hash_ctx *) ctx->md_data, 256);
+    init_gost2012_hash_ctx((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), 256);
     return 1;
 }
 
 static int gost_digest_update(EVP_MD_CTX *ctx, const void *data, size_t count)
 {
-    gost2012_hash_block((gost2012_hash_ctx *) ctx->md_data, data, count);
+    gost2012_hash_block((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), data, count);
     return 1;
 }
 
 static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md)
 {
-    gost2012_finish_hash((gost2012_hash_ctx *) ctx->md_data, md);
+    gost2012_finish_hash((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), md);
     return 1;
 }
 
 static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
-    if (to->md_data && from->md_data)
-        memcpy(to->md_data, from->md_data, sizeof(gost2012_hash_ctx));
+    if (EVP_MD_CTX_md_data(to) && EVP_MD_CTX_md_data(from))
+        memcpy(EVP_MD_CTX_md_data(to), EVP_MD_CTX_md_data(from), sizeof(gost2012_hash_ctx));
 
     return 1;
 }
 
 static int gost_digest_cleanup(EVP_MD_CTX *ctx)
 {
-    if (ctx->md_data)
-        memset(ctx->md_data, 0x00, sizeof(gost2012_hash_ctx));
+    if (EVP_MD_CTX_md_data(ctx))
+        memset(EVP_MD_CTX_md_data(ctx), 0x00, sizeof(gost2012_hash_ctx));
 
     return 1;
 }

@@ -28,8 +28,8 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     EC_POINT *pnt = EC_POINT_new(EC_KEY_get0_group(priv_key));
     int i;
     BN_CTX *ctx = BN_CTX_new();
-    EVP_MD_CTX mdctx;
-    const EVP_MD *md;
+    EVP_MD_CTX *mdctx = NULL;
+    const EVP_MD *md = NULL;
     int effective_dgst_nid = (dgst_nid == NID_id_GostR3411_2012_512) ?
         NID_id_GostR3411_2012_256 : dgst_nid;
     int buf_len = (dgst_nid == NID_id_GostR3411_2012_512) ? 128 : 64,
@@ -77,11 +77,11 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     for (i = 0; i < buf_len; i++) {
         hashbuf[buf_len - 1 - i] = databuf[i];
     }
-    EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx, md, NULL);
-    EVP_DigestUpdate(&mdctx, hashbuf, buf_len);
-    EVP_DigestFinal_ex(&mdctx, shared_key, NULL);
-    EVP_MD_CTX_cleanup(&mdctx);
+    EVP_MD_CTX_init(mdctx);
+    EVP_DigestInit_ex(mdctx, md, NULL);
+    EVP_DigestUpdate(mdctx, hashbuf, buf_len);
+    EVP_DigestFinal_ex(mdctx, shared_key, NULL);
+    EVP_MD_CTX_free(mdctx);
  err:
     BN_free(UKM);
     BN_CTX_end(ctx);

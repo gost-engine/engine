@@ -128,41 +128,70 @@ static int gost_imit_cleanup(EVP_MD_CTX *ctx);
 /* Control function, knows how to set MAC key.*/
 static int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr);
 
-EVP_MD imit_gost_cpa = {
-    NID_id_Gost28147_89_MAC,
-    NID_undef,
-    4,
-    0,
-    gost_imit_init_cpa,
-    gost_imit_update,
-    gost_imit_final,
-    gost_imit_copy,
-    gost_imit_cleanup,
-    NULL,
-    NULL,
-    {0, 0, 0, 0, 0},
-    8,
-    sizeof(struct ossl_gost_imit_ctx),
-    gost_imit_ctrl
-};
+static EVP_MD *_hidden_Gost28147_89_MAC_md = NULL;
+static EVP_MD *_hidden_Gost28147_89_12_MAC_md = NULL;
 
-EVP_MD imit_gost_cp_12 = {
-    NID_gost_mac_12,
-    NID_undef,
-    4,
-    0,
-    gost_imit_init_cp_12,
-    gost_imit_update,
-    gost_imit_final,
-    gost_imit_copy,
-    gost_imit_cleanup,
-    NULL,
-    NULL,
-    {0, 0, 0, 0, 0},
-    8,
-    sizeof(struct ossl_gost_imit_ctx),
-    gost_imit_ctrl
-};
+EVP_MD *imit_gost_cpa(void)
+{
+    if (_hidden_Gost28147_89_MAC_md == NULL) {
+        EVP_MD *md;
+
+        if ((md = EVP_MD_meth_new(NID_id_Gost28147_89_MAC, NID_undef)) == NULL
+            || !EVP_MD_meth_set_result_size(md, 4)
+            || !EVP_MD_meth_set_input_blocksize(md, 8)
+            || !EVP_MD_meth_set_app_datasize(md,
+                                             sizeof(struct ossl_gost_imit_ctx))
+            || !EVP_MD_meth_set_flags(md, 0)
+            || !EVP_MD_meth_set_init(md, gost_imit_init_cpa)
+            || !EVP_MD_meth_set_update(md, gost_imit_update)
+            || !EVP_MD_meth_set_final(md, gost_imit_final)
+            || !EVP_MD_meth_set_copy(md, gost_imit_copy)
+            || !EVP_MD_meth_set_cleanup(md, gost_imit_cleanup)
+            || !EVP_MD_meth_set_ctrl(md, gost_imit_ctrl)) {
+            EVP_MD_meth_free(md);
+            md = NULL;
+        }
+        _hidden_Gost28147_89_MAC_md = md;
+    }
+    return _hidden_Gost28147_89_MAC_md;
+}
+
+void imit_gost_cpa_destroy(void)
+{
+    EVP_MD_meth_free(_hidden_Gost28147_89_MAC_md);
+    _hidden_Gost28147_89_MAC_md = NULL;
+}
+
+EVP_MD *imit_gost_cp_12(void)
+{
+    if (_hidden_Gost28147_89_12_MAC_md == NULL) {
+        EVP_MD *md;
+
+        if ((md = EVP_MD_meth_new(NID_gost_mac_12, NID_undef)) == NULL
+            || !EVP_MD_meth_set_result_size(md, 4)
+            || !EVP_MD_meth_set_input_blocksize(md, 8)
+            || !EVP_MD_meth_set_app_datasize(md,
+                                             sizeof(struct ossl_gost_imit_ctx))
+            || !EVP_MD_meth_set_flags(md, 0)
+            || !EVP_MD_meth_set_init(md, gost_imit_init_cp_12)
+            || !EVP_MD_meth_set_update(md, gost_imit_update)
+            || !EVP_MD_meth_set_final(md, gost_imit_final)
+            || !EVP_MD_meth_set_copy(md, gost_imit_copy)
+            || !EVP_MD_meth_set_cleanup(md, gost_imit_cleanup)
+            || !EVP_MD_meth_set_ctrl(md, gost_imit_ctrl)) {
+            EVP_MD_meth_free(md);
+            md = NULL;
+        }
+        _hidden_Gost28147_89_12_MAC_md = md;
+    }
+    return _hidden_Gost28147_89_12_MAC_md;
+}
+
+void imit_gost_cp_12_destroy(void)
+{
+    EVP_MD_meth_free(_hidden_Gost28147_89_12_MAC_md);
+    _hidden_Gost28147_89_12_MAC_md = NULL;
+}
 
 /*
  * Correspondence between gost parameter OIDs and substitution blocks
@@ -658,7 +687,7 @@ int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 
 static int gost_imit_init(EVP_MD_CTX *ctx, gost_subst_block * block)
 {
-    struct ossl_gost_imit_ctx *c = ctx->md_data;
+    struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
     memset(c->buffer, 0, sizeof(c->buffer));
     memset(c->partial_block, 0, sizeof(c->partial_block));
     c->count = 0;
@@ -698,7 +727,7 @@ static void mac_block_mesh(struct ossl_gost_imit_ctx *c,
 
 int gost_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
 {
-    struct ossl_gost_imit_ctx *c = ctx->md_data;
+    struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
     const unsigned char *p = data;
     size_t bytes = count, i;
     if (!(c->key_set)) {
@@ -730,7 +759,7 @@ int gost_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
 
 int gost_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
 {
-    struct ossl_gost_imit_ctx *c = ctx->md_data;
+    struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
     if (!c->key_set) {
         GOSTerr(GOST_F_GOST_IMIT_FINAL, GOST_R_MAC_KEY_NOT_SET);
         return 0;
@@ -759,13 +788,13 @@ int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
         return 1;
     case EVP_MD_CTRL_SET_KEY:
         {
-            struct ossl_gost_imit_ctx *gost_imit_ctx = ctx->md_data;
+            struct ossl_gost_imit_ctx *gost_imit_ctx = EVP_MD_CTX_md_data(ctx);
 
-            if (ctx->digest->init(ctx) <= 0) {
+            if (EVP_DigestInit(ctx, EVP_MD_CTX_md(ctx)) <= 0) {
                 GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
                 return 0;
             }
-            ctx->flags |= EVP_MD_CTX_FLAG_NO_INIT;
+            EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NO_INIT);
 
             if (arg == 0) {
                 struct gost_mac_key *key = (struct gost_mac_key *)ptr;
@@ -794,7 +823,7 @@ int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
         }
     case EVP_MD_CTRL_MAC_LEN:
         {
-            struct ossl_gost_imit_ctx *c = ctx->md_data;
+            struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
             if (arg < 1 || arg > 8) {
                 GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
                 return 0;
@@ -810,13 +839,16 @@ int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 
 int gost_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
-    memcpy(to->md_data, from->md_data, sizeof(struct ossl_gost_imit_ctx));
+    if (EVP_MD_CTX_md_data(to) && EVP_MD_CTX_md_data(from)) {
+        memcpy(EVP_MD_CTX_md_data(to), EVP_MD_CTX_md_data(from),
+               sizeof(struct ossl_gost_imit_ctx));
+    }
     return 1;
 }
 
 /* Clean up imit ctx */
 int gost_imit_cleanup(EVP_MD_CTX *ctx)
 {
-    memset(ctx->md_data, 0, sizeof(struct ossl_gost_imit_ctx));
+    memset(EVP_MD_CTX_md_data(ctx), 0, sizeof(struct ossl_gost_imit_ctx));
     return 1;
 }

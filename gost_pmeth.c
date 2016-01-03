@@ -146,8 +146,10 @@ static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
     case EVP_PKEY_CTRL_SET_IV:
         OPENSSL_assert(p2 != NULL);
         pctx->shared_ukm = OPENSSL_malloc((int)p1);
-        if (!pctx->shared_ukm)
+        if (pctx->shared_ukm == NULL) {
+            GOSTerr(GOST_F_PKEY_GOST_CTRL, ERR_R_MALLOC_FAILURE);
             return 0;
+        }
         memcpy(pctx->shared_ukm, p2, (int)p1);
         return 1;
     case EVP_PKEY_CTRL_PEER_KEY:
@@ -566,13 +568,12 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
                             GOST_R_MAC_KEY_NOT_SET);
                     return 0;
                 }
-                return mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_SET_KEY, 0,
-                                             key);
+            return EVP_MD_meth_get_ctrl(EVP_MD_CTX_md(mctx))
+                (mctx, EVP_MD_CTRL_SET_KEY, 0, key);
             } else {
-                return mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_SET_KEY, 32,
-                                             &(data->key));
+            return EVP_MD_meth_get_ctrl(EVP_MD_CTX_md(mctx))
+                (mctx, EVP_MD_CTRL_SET_KEY, 32, &(data->key));
             }
-            return mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_SET_KEY, 32, key);
         }
     case EVP_PKEY_CTRL_MAC_LEN:
         {
@@ -707,7 +708,8 @@ static int pkey_gost_mac_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig,
         return 1;
     }
 
-    mctx->digest->md_ctrl(mctx, EVP_MD_CTRL_MAC_LEN, data->mac_size, NULL);
+    EVP_MD_meth_get_ctrl(EVP_MD_CTX_md(mctx))
+        (mctx, EVP_MD_CTRL_MAC_LEN, data->mac_size, NULL);
     ret = EVP_DigestFinal_ex(mctx, sig, &tmpsiglen);
     *siglen = data->mac_size;
     return ret;

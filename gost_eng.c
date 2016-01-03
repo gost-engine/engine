@@ -41,14 +41,30 @@ static int gost_cipher_nids[] = {
     0
 };
 
-static int gost_digest_nids[] = {
-    NID_id_GostR3411_94,
-    NID_id_Gost28147_89_MAC,
-    NID_id_GostR3411_2012_256,
-    NID_id_GostR3411_2012_512,
-    NID_gost_mac_12,
-    0
-};
+static int gost_digest_nids(const int **nids)
+{
+    static int digest_nids[6] = { 0, 0, 0, 0, 0, 0 };
+    static int pos = 0;
+    static int init = 0;
+
+    if (!init) {
+        const EVP_MD *md;
+        if ((md = digest_gost()) != NULL)
+            digest_nids[pos++] = EVP_MD_type(md);
+        if ((md = imit_gost_cpa()) != NULL)
+            digest_nids[pos++] = EVP_MD_type(md);
+        if ((md = digest_gost2012_256()) != NULL)
+            digest_nids[pos++] = EVP_MD_type(md);
+        if ((md = digest_gost2012_512()) != NULL)
+            digest_nids[pos++] = EVP_MD_type(md);
+        if ((md = imit_gost_cp_12()) != NULL)
+            digest_nids[pos++] = EVP_MD_type(md);
+        digest_nids[pos] = 0;
+        init = 1;
+    }
+    *nids = digest_nids;
+    return pos;
+}
 
 static int gost_pkey_meth_nids[] = {
     NID_id_GostR3410_2001,
@@ -81,6 +97,12 @@ static int gost_engine_finish(ENGINE *e)
 
 static int gost_engine_destroy(ENGINE *e)
 {
+    digest_gost_destroy();
+    digest_gost2012_256_destroy();
+    digest_gost2012_512_destroy();
+    imit_gost_cpa_destroy();
+    imit_gost_cp_12_destroy();
+
     gost_param_free();
 
     pmeth_GostR3410_2001 = NULL;
@@ -188,11 +210,11 @@ static int bind_gost(ENGINE *e, const char *id)
         || !EVP_add_cipher(&cipher_gost_cbc)
         || !EVP_add_cipher(&cipher_gost_cpacnt)
         || !EVP_add_cipher(&cipher_gost_cpcnt_12)
-        || !EVP_add_digest(&digest_gost)
-        || !EVP_add_digest(&digest_gost2012_512)
-        || !EVP_add_digest(&digest_gost2012_256)
-        || !EVP_add_digest(&imit_gost_cpa)
-        || !EVP_add_digest(&imit_gost_cp_12)
+        || !EVP_add_digest(digest_gost())
+        || !EVP_add_digest(digest_gost2012_512())
+        || !EVP_add_digest(digest_gost2012_256())
+        || !EVP_add_digest(imit_gost_cpa())
+        || !EVP_add_digest(imit_gost_cp_12())
         ) {
         goto end;
     }
@@ -212,19 +234,12 @@ static int gost_digests(ENGINE *e, const EVP_MD **digest,
 {
     int ok = 1;
     if (!digest) {
-        *nids = gost_digest_nids;
-        return sizeof(gost_digest_nids) / sizeof(gost_digest_nids[0]) - 1;
+        return gost_digest_nids(nids);
     }
     if (nid == NID_id_GostR3411_94) {
-        *digest = &digest_gost;
-    } else if (nid == NID_id_GostR3411_2012_256) {
-        *digest = &digest_gost2012_256;
-    } else if (nid == NID_id_GostR3411_2012_512) {
-        *digest = &digest_gost2012_512;
+        *digest = digest_gost();
     } else if (nid == NID_id_Gost28147_89_MAC) {
-        *digest = &imit_gost_cpa;
-    } else if (nid == NID_gost_mac_12) {
-        *digest = &imit_gost_cp_12;
+        *digest = imit_gost_cpa();
     } else {
         ok = 0;
         *digest = NULL;
