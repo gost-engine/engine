@@ -34,22 +34,6 @@ int store_bignum(BIGNUM *bn, unsigned char *buf, int len)
     return 1;
 }
 
-/* Convert byte buffer to bignum, skipping leading zeros*/
-BIGNUM *getbnfrombuf(const unsigned char *buf, size_t len)
-{
-    BIGNUM *b;
-
-    while (*buf == 0 && len > 0) {
-        buf++;
-        len--;
-    }
-    if (len)
-        return BN_bin2bn(buf, len, NULL);
-    b = BN_new();
-    BN_zero(b);
-    return b;
-}
-
 static int pkey_bits_gost(const EVP_PKEY *pk)
 {
     if (!pk)
@@ -684,8 +668,8 @@ static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub)
     len = octet->length / 2;
     ASN1_OCTET_STRING_free(octet);
 
-    Y = getbnfrombuf(databuf, len);
-    X = getbnfrombuf(databuf + len, len);
+    Y = BN_bin2bn(databuf, len, NULL);
+    X = BN_bin2bn(databuf + len, len, NULL);
     OPENSSL_free(databuf);
     pub_key = EC_POINT_new(group);
     if (!EC_POINT_set_affine_coordinates_GFp(group, pub_key, X, Y, NULL)) {

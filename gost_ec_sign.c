@@ -35,7 +35,7 @@ BIGNUM *hashsum2bn(const unsigned char *dgst, int len)
     for (i = 0; i < len; i++) {
         buf[len - i - 1] = dgst[i];
     }
-    return getbnfrombuf(buf, len);
+    return BN_bin2bn(buf, len, NULL);
 }
 
 static R3410_ec_params *gost_nid2params(int nid)
