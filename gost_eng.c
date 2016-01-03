@@ -244,7 +244,7 @@ static int gost_digests(ENGINE *e, const EVP_MD **digest,
         *digest = digest_gost2012_256();
     } else if (nid == NID_id_GostR3411_2012_512) {
         *digest = digest_gost2012_512();
-    } else if (nid == NID_id_Gost28147_89_MAC) {
+    } else if (nid == NID_gost_mac_12) {
         *digest = imit_gost_cp_12();
     } else {
         ok = 0;
