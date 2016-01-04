@@ -877,6 +877,9 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                                  pkey_size_gost, pkey_bits_gost);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+        EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);
+#endif
         break;
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2012_512:
