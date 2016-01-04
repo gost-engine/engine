@@ -77,20 +77,26 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     for (i = 0; i < buf_len; i++) {
         hashbuf[buf_len - 1 - i] = databuf[i];
     }
+    mdctx = EVP_MD_CTX_new();
+    if (!mdctx) {
+      GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
+      goto err;
+    }
     EVP_MD_CTX_init(mdctx);
     EVP_DigestInit_ex(mdctx, md, NULL);
     EVP_DigestUpdate(mdctx, hashbuf, buf_len);
     EVP_DigestFinal_ex(mdctx, shared_key, NULL);
-    EVP_MD_CTX_free(mdctx);
  err:
     BN_free(UKM);
     BN_CTX_end(ctx);
     BN_CTX_free(ctx);
+
     EC_POINT_free(pnt);
-    if (databuf)
-        OPENSSL_free(databuf);
-    if (hashbuf)
-        OPENSSL_free(hashbuf);
+
+    EVP_MD_CTX_free(mdctx);
+
+    OPENSSL_free(databuf);
+    OPENSSL_free(hashbuf);
 
     return 32;
 }
