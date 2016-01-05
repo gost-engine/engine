@@ -38,6 +38,12 @@ static int gost_cipher_nids[] = {
     NID_gost89_cnt,
     NID_gost89_cnt_12,
     NID_gost89_cbc,
+    // TODO: implement
+    //NID_grasshopper_ecb,
+    //NID_grasshopper_ctr,
+    //NID_grasshopper_ofb,
+    //NID_grasshopper_cbc,
+    //NID_grasshopper_cfb,
     0
 };
 
@@ -47,6 +53,8 @@ static int gost_digest_nids[] = {
     NID_id_GostR3411_2012_256,
     NID_id_GostR3411_2012_512,
     NID_gost_mac_12,
+    // TODO: implement
+    //NID_grasshopper_mac,
     0
 };
 
@@ -193,6 +201,7 @@ static int bind_gost(ENGINE *e, const char *id)
         || !EVP_add_digest(&digest_gost2012_256)
         || !EVP_add_digest(&imit_gost_cpa)
         || !EVP_add_digest(&imit_gost_cp_12)
+        // TODO: add grasshopper
         ) {
         goto end;
     }
@@ -250,6 +259,7 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
     } else if (nid == NID_gost89_cbc) {
         *cipher = &cipher_gost_cbc;
     } else {
+        // TODO: add grasshopper
         ok = 0;
         *cipher = NULL;
     }

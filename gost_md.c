@@ -7,6 +7,9 @@
  *          Requires OpenSSL 0.9.9 for compilation                    *
  **********************************************************************/
 #include <string.h>
+#include <openssl/evp.h>
+#include <evp/evp_locl.h>
+#include <evp_int.h>
 #include "gost_lcl.h"
 #include "gosthash.h"
 #include "e_gost_err.h"
@@ -19,6 +22,10 @@ static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md);
 static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from);
 static int gost_digest_cleanup(EVP_MD_CTX *ctx);
 
+#ifndef EVP_MD_FLAG_PKEY_METHOD_SIGNATURE
+#define EVP_MD_FLAG_PKEY_METHOD_SIGNATURE 0
+#endif
+
 EVP_MD digest_gost = {
     NID_id_GostR3411_94,
     NID_undef,
@@ -29,9 +36,11 @@ EVP_MD digest_gost = {
     gost_digest_final,
     gost_digest_copy,
     gost_digest_cleanup,
+    /*
     NULL,
     NULL,
     {NID_undef, NID_undef, 0, 0, 0},
+     */
     32,
     sizeof(struct ossl_gost_digest_ctx),
     NULL

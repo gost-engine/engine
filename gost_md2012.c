@@ -10,6 +10,8 @@
  **********************************************************************/
 
 #include <openssl/evp.h>
+#include <evp/evp_locl.h>
+#include <evp_int.h>
 #include "gosthash2012.h"
 
 static int gost_digest_init512(EVP_MD_CTX *ctx);
@@ -27,6 +29,10 @@ static int gost_digest_ctrl_512(EVP_MD_CTX *ctx, int type, int arg,
 const char micalg_256[] = "gostr3411-2012-256";
 const char micalg_512[] = "gostr3411-2012-512";
 
+#ifndef EVP_MD_FLAG_PKEY_METHOD_SIGNATURE
+#define EVP_MD_FLAG_PKEY_METHOD_SIGNATURE 0
+#endif
+
 EVP_MD digest_gost2012_512 = {
     NID_id_GostR3411_2012_512,
     NID_undef,
@@ -37,9 +43,11 @@ EVP_MD digest_gost2012_512 = {
     gost_digest_final,
     gost_digest_copy,
     gost_digest_cleanup,
+    /*
     NULL,
     NULL,
     {NID_undef, NID_undef, 0, 0, 0},
+     */
     64,                         /* block size */
     sizeof(gost2012_hash_ctx),
     gost_digest_ctrl_512,
@@ -55,9 +63,11 @@ EVP_MD digest_gost2012_256 = {
     gost_digest_final,
     gost_digest_copy,
     gost_digest_cleanup,
+    /*
     NULL,
     NULL,
     {NID_undef, NID_undef, 0, 0, 0},
+     */
     64,                         /* block size */
     sizeof(gost2012_hash_ctx),
     gost_digest_ctrl_256

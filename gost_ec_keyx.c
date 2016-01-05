@@ -10,6 +10,7 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <evp/evp_locl.h>
 #include <string.h>
 #include <openssl/objects.h>
 #include "gost89.h"
@@ -81,7 +82,10 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     EVP_DigestInit_ex(&mdctx, md, NULL);
     EVP_DigestUpdate(&mdctx, hashbuf, buf_len);
     EVP_DigestFinal_ex(&mdctx, shared_key, NULL);
-    EVP_MD_CTX_cleanup(&mdctx);
+    /*
+     * EVP_MD_CTX_init should be called to reinit already created mdctx
+     */
+    //EVP_MD_CTX_cleanup(&mdctx);
  err:
     BN_free(UKM);
     BN_CTX_end(ctx);

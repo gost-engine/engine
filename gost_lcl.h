@@ -25,6 +25,8 @@
 # define GOST_CTRL_CRYPT_PARAMS (ENGINE_CMD_BASE+GOST_PARAM_CRYPT_PARAMS)
 # define GOST_CTRL_PBE_PARAMS   (ENGINE_CMD_BASE+GOST_PARAM_PBE_PARAMS)
 
+// TODO: add grasshopper externs
+
 typedef struct R3410_ec {
     int nid;
     char *a;

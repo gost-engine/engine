@@ -12,6 +12,8 @@
 #include <openssl/ec.h>
 #include <openssl/err.h>
 #include <openssl/x509v3.h>     /* For string_to_hex */
+#include <evp/evp_locl.h>
+#include <evp_int.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
