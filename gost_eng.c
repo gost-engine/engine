@@ -100,8 +100,11 @@ static int gost_engine_destroy(ENGINE *e)
     digest_gost_destroy();
     digest_gost2012_256_destroy();
     digest_gost2012_512_destroy();
+
     imit_gost_cpa_destroy();
     imit_gost_cp_12_destroy();
+
+    cipher_gost_destroy();
 
     gost_param_free();
 
@@ -206,10 +209,10 @@ static int bind_gost(ENGINE *e, const char *id)
         || !ENGINE_register_digests(e)
         || !ENGINE_register_pkey_meths(e)
         /* These two actually should go in LIST_ADD command */
-        || !EVP_add_cipher(&cipher_gost)
-        || !EVP_add_cipher(&cipher_gost_cbc)
-        || !EVP_add_cipher(&cipher_gost_cpacnt)
-        || !EVP_add_cipher(&cipher_gost_cpcnt_12)
+        || !EVP_add_cipher(cipher_gost())
+        || !EVP_add_cipher(cipher_gost_cbc())
+        || !EVP_add_cipher(cipher_gost_cpacnt())
+        || !EVP_add_cipher(cipher_gost_cpcnt_12())
         || !EVP_add_digest(digest_gost())
         || !EVP_add_digest(digest_gost2012_512())
         || !EVP_add_digest(digest_gost2012_256())
@@ -263,13 +266,13 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
     }
 
     if (nid == NID_id_Gost28147_89) {
-        *cipher = &cipher_gost;
+        *cipher = cipher_gost();
     } else if (nid == NID_gost89_cnt) {
-        *cipher = &cipher_gost_cpacnt;
+        *cipher = cipher_gost_cpacnt();
     } else if (nid == NID_gost89_cnt_12) {
-        *cipher = &cipher_gost_cpcnt_12;
+        *cipher = cipher_gost_cpcnt_12();
     } else if (nid == NID_gost89_cbc) {
-        *cipher = &cipher_gost_cbc;
+        *cipher = cipher_gost_cbc();
     } else {
         ok = 0;
         *cipher = NULL;
