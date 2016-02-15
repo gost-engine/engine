@@ -365,12 +365,12 @@ static void gost_cnt_next(void *ctx, unsigned char *iv, unsigned char *buf)
 int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
                        const unsigned char *in, size_t inl)
 {
-    OPENSSL_assert(inl % 8 == 0);
     unsigned char b[8];
     const unsigned char *in_ptr = in;
     unsigned char *out_ptr = out;
     int i;
     struct ossl_gost_cipher_ctx *c = ctx->cipher_data;
+    OPENSSL_assert(inl % 8 == 0);
     if (ctx->encrypt) {
         while (inl > 0) {
             for (i = 0; i < 8; i++) {
