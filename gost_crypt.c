@@ -649,7 +649,12 @@ int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
         GOST_CIPHER_PARAMS_free(gcp);
         return -1;
     }
-    memcpy(ctx->oiv, gcp->iv->data, len);
+
+    {
+        ASN1_TYPE tmp;
+        ASN1_TYPE_set(&tmp, V_ASN1_OCTET_STRING, gcp->iv);
+        EVP_CIPHER_get_asn1_iv(ctx, &tmp);
+    }
 
     GOST_CIPHER_PARAMS_free(gcp);
 
