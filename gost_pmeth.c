@@ -633,10 +633,12 @@ static int pkey_gost_mac_ctrl_str(EVP_PKEY_CTX *ctx,
         }
 
         param = get_encryption_params(obj);
+				ASN1_OBJECT_free(obj);
         if (param == NULL) {
             GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL_STR, GOST_R_INVALID_MAC_PARAMS);
             return 0;
         }
+
 
         return pkey_gost_mac_ctrl(ctx, EVP_PKEY_CTRL_GOST_PARAMSET, 0,
                                   (void *)param);
