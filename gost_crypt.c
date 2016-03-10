@@ -558,7 +558,52 @@ int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
         } else {
             return 0;
         }
+#ifdef EVP_CTRL_SET_SBOX
+    case EVP_CTRL_SET_SBOX:
+        if (ptr) {
+            struct ossl_gost_cipher_ctx *c = ctx->cipher_data;
+            int nid;
+            int cur_meshing;
+            int ret;
 
+            if (c == NULL) {
+                return -1;
+            }
+
+            if (c->count != 0) {
+                return -1;
+            }
+
+            nid = OBJ_txt2nid(ptr);
+            if (nid == NID_undef) {
+                return 0;
+            }
+
+            cur_meshing = c->key_meshing;
+            ret = gost_cipher_set_param(c, nid);
+            c->key_meshing = cur_meshing;
+            return ret;
+        } else {
+          return 0;
+        }
+#endif
+#ifdef EVP_CTRL_KEY_MESH
+    case EVP_CTRL_KEY_MESH:
+        {
+            struct ossl_gost_cipher_ctx *c = ctx->cipher_data;
+
+            if (c == NULL) {
+                return -1;
+            }
+
+            if (c->count != 0) {
+                return -1;
+            }
+
+            c->key_meshing = arg;
+            return 1;
+        }				
+#endif
     default:
         GOSTerr(GOST_F_GOST_CIPHER_CTL,
                 GOST_R_UNSUPPORTED_CIPHER_CTL_COMMAND);
