@@ -253,7 +253,7 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
                 return -1;
             }
             PKCS7_RECIP_INFO_get0_alg((PKCS7_RECIP_INFO *)arg2, &alg1);
-            X509_ALGOR_set0(alg1, OBJ_nid2obj(pkey->type),
+            X509_ALGOR_set0(alg1, OBJ_nid2obj(EVP_PKEY_id(pkey)),
                             V_ASN1_SEQUENCE, params);
         }
         return 1;
@@ -266,8 +266,8 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
             }
             CMS_RecipientInfo_ktri_get0_algs((CMS_RecipientInfo *)arg2, NULL,
                                              NULL, &alg1);
-            X509_ALGOR_set0(alg1, OBJ_nid2obj(pkey->type), V_ASN1_SEQUENCE,
-                            params);
+            X509_ALGOR_set0(alg1, OBJ_nid2obj(EVP_PKEY_id(pkey)),
+                            V_ASN1_SEQUENCE, params);
         }
         return 1;
 #endif
@@ -282,7 +282,7 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 /* --------------------- free functions * ------------------------------*/
 static void pkey_free_gost_ec(EVP_PKEY *key)
 {
-    EC_KEY_free(key->pkey.ec);
+    EC_KEY_free(EVP_PKEY_get0_EC_KEY(key));
 }
 
 /* ------------------ private key functions  -----------------------------*/
@@ -704,7 +704,7 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     int ptype = V_ASN1_UNDEF;
 
     algobj = OBJ_nid2obj(EVP_PKEY_base_id(pk));
-    if (pk->save_parameters) {
+    if (EVP_PKEY_save_parameters((EVP_PKEY *)pk, -1)) {
         ASN1_STRING *params = encode_gost_algor_params(pk);
         pval = params;
         ptype = V_ASN1_SEQUENCE;
@@ -804,7 +804,7 @@ static int pkey_size_gost(const EVP_PKEY *pk)
 /* ---------------------- ASN1 METHOD for GOST MAC  -------------------*/
 static void mackey_free_gost(EVP_PKEY *pk)
 {
-    OPENSSL_free(pk->pkey.ptr);
+    OPENSSL_free(EVP_PKEY_get0(pk));
 }
 
 static int mac_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)

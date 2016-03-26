@@ -79,8 +79,8 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     }
     mdctx = EVP_MD_CTX_new();
     if (!mdctx) {
-      GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
-      goto err;
+        GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
+        goto err;
     }
     EVP_MD_CTX_init(mdctx);
     EVP_DigestInit_ex(mdctx, md, NULL);
