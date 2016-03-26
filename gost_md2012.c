@@ -35,7 +35,8 @@ EVP_MD *digest_gost2012_256(void)
     if (_hidden_GostR3411_2012_256_md == NULL) {
         EVP_MD *md;
 
-        if ((md = EVP_MD_meth_new(NID_id_GostR3411_2012_256, NID_undef)) == NULL
+        if ((md =
+             EVP_MD_meth_new(NID_id_GostR3411_2012_256, NID_undef)) == NULL
             || !EVP_MD_meth_set_result_size(md, 32)
             || !EVP_MD_meth_set_input_blocksize(md, 64)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(gost2012_hash_ctx))
@@ -64,7 +65,8 @@ EVP_MD *digest_gost2012_512(void)
     if (_hidden_GostR3411_2012_512_md == NULL) {
         EVP_MD *md;
 
-        if ((md = EVP_MD_meth_new(NID_id_GostR3411_2012_512, NID_undef)) == NULL
+        if ((md =
+             EVP_MD_meth_new(NID_id_GostR3411_2012_512, NID_undef)) == NULL
             || !EVP_MD_meth_set_result_size(md, 64)
             || !EVP_MD_meth_set_input_blocksize(md, 64)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(gost2012_hash_ctx))
@@ -90,19 +92,22 @@ void digest_gost2012_512_destroy(void)
 
 static int gost_digest_init512(EVP_MD_CTX *ctx)
 {
-    init_gost2012_hash_ctx((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), 512);
+    init_gost2012_hash_ctx((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx),
+                           512);
     return 1;
 }
 
 static int gost_digest_init256(EVP_MD_CTX *ctx)
 {
-    init_gost2012_hash_ctx((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), 256);
+    init_gost2012_hash_ctx((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx),
+                           256);
     return 1;
 }
 
 static int gost_digest_update(EVP_MD_CTX *ctx, const void *data, size_t count)
 {
-    gost2012_hash_block((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), data, count);
+    gost2012_hash_block((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), data,
+                        count);
     return 1;
 }
 
@@ -115,7 +120,8 @@ static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md)
 static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
     if (EVP_MD_CTX_md_data(to) && EVP_MD_CTX_md_data(from))
-        memcpy(EVP_MD_CTX_md_data(to), EVP_MD_CTX_md_data(from), sizeof(gost2012_hash_ctx));
+        memcpy(EVP_MD_CTX_md_data(to), EVP_MD_CTX_md_data(from),
+               sizeof(gost2012_hash_ctx));
 
     return 1;
 }
