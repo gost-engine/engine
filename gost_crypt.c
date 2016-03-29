@@ -584,7 +584,7 @@ int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
             c->key_meshing = cur_meshing;
             return ret;
         } else {
-          return 0;
+            return 0;
         }
 #endif
 #ifdef EVP_CTRL_KEY_MESH
@@ -602,7 +602,7 @@ int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 
             c->key_meshing = arg;
             return 1;
-        }				
+        }
 #endif
     default:
         GOSTerr(GOST_F_GOST_CIPHER_CTL,
@@ -696,9 +696,15 @@ int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
     }
 
     {
-        ASN1_TYPE tmp;
-        ASN1_TYPE_set(&tmp, V_ASN1_OCTET_STRING, gcp->iv);
-        EVP_CIPHER_get_asn1_iv(ctx, &tmp);
+        ASN1_TYPE *tmp = ASN1_TYPE_new();
+        if (tmp == NULL) {
+            GOST_CIPHER_PARAMS_free(gcp);
+            GOSTerr(GOST_F_GOST89_GET_ASN1_PARAMETERS, ERR_R_MALLOC_FAILURE);
+            return -1;
+        }
+        ASN1_TYPE_set(tmp, V_ASN1_OCTET_STRING, gcp->iv);
+        EVP_CIPHER_get_asn1_iv(ctx, tmp);
+        ASN1_TYPE_free(tmp);
     }
 
     GOST_CIPHER_PARAMS_free(gcp);
