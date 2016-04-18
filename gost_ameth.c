@@ -431,10 +431,10 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
 {
     ASN1_OBJECT *algobj = OBJ_nid2obj(EVP_PKEY_base_id(pk));
     ASN1_STRING *params = encode_gost_algor_params(pk);
-    unsigned char *priv_buf = NULL, *buf = NULL;
-    int key_len = pkey_bits_gost(pk), priv_len = 0, i = 0;
+    unsigned char /**priv_buf = NULL,*/ *buf = NULL;
+    int key_len = pkey_bits_gost(pk), /*priv_len = 0,*/ i = 0;
 
-    ASN1_STRING *octet = NULL;
+    /*ASN1_STRING *octet = NULL;*/
     if (!params) {
         return 0;
     }
@@ -456,6 +456,7 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
         buf[key_len - 1 - i] = tmp;
     }
 
+/*
     octet = ASN1_STRING_new();
     ASN1_OCTET_STRING_set(octet, buf, key_len);
 
@@ -464,7 +465,9 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
     OPENSSL_free(buf);
 
     return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
-                           priv_buf, priv_len);
+                           priv_buf, priv_len); */
+    return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
+                           buf, key_len); 
 }
 
 /* --------- printing keys --------------------------------*/
