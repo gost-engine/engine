@@ -57,7 +57,8 @@ static GRASSHOPPER_INLINE void grasshopper_zero128(grasshopper_w128_t* x) {
 #if(GRASSHOPPER_BITS == 8 || GRASSHOPPER_BITS == 16)
     memset(&x, 0, sizeof(x));
 #else
-    for (int i = 0; i < GRASSHOPPER_BIT_PARTS; i++) {
+		int i;
+    for (i = 0; i < GRASSHOPPER_BIT_PARTS; i++) {
         GRASSHOPPER_ACCESS_128_VALUE(*x, i) = 0;
     }
 #endif
@@ -67,14 +68,16 @@ static GRASSHOPPER_INLINE void grasshopper_copy128(grasshopper_w128_t* to, const
 #if(GRASSHOPPER_BITS == 8 || GRASSHOPPER_BITS == 16)
     __builtin_memcpy(&to, &from, sizeof(w128_t));
 #else
-    for (int i = 0; i < GRASSHOPPER_BIT_PARTS; i++) {
+		int i;
+    for (i = 0; i < GRASSHOPPER_BIT_PARTS; i++) {
         GRASSHOPPER_ACCESS_128_VALUE(*to, i) = GRASSHOPPER_ACCESS_128_VALUE(*from, i);
     }
 #endif
 }
 
 static GRASSHOPPER_INLINE void grasshopper_append128(grasshopper_w128_t* x, const grasshopper_w128_t* y) {
-    for (int i = 0; i < GRASSHOPPER_BIT_PARTS; i++) {
+		int i;
+    for (i = 0; i < GRASSHOPPER_BIT_PARTS; i++) {
         GRASSHOPPER_ACCESS_128_VALUE(*x, i) ^= GRASSHOPPER_ACCESS_128_VALUE(*y, i);
     }
 }
@@ -88,8 +91,9 @@ static GRASSHOPPER_INLINE void grasshopper_plus128(grasshopper_w128_t* result, c
 // result & x must be different
 static GRASSHOPPER_INLINE void grasshopper_plus128multi(grasshopper_w128_t* result, const grasshopper_w128_t* x,
                                                     const grasshopper_w128_t array[][256]) {
+		int i;
     grasshopper_zero128(result);
-    for (int i = 0; i < GRASSHOPPER_MAX_BIT_PARTS; i++) {
+    for (i = 0; i < GRASSHOPPER_MAX_BIT_PARTS; i++) {
         grasshopper_append128(result, &array[i][GRASSHOPPER_ACCESS_128_VALUE_8(*x, i)]);
     }
 }
@@ -101,7 +105,8 @@ static GRASSHOPPER_INLINE void grasshopper_append128multi(grasshopper_w128_t* re
 }
 
 static GRASSHOPPER_INLINE void grasshopper_convert128(grasshopper_w128_t* x, const uint8_t* array) {
-    for (int i = 0; i < GRASSHOPPER_MAX_BIT_PARTS; i++) {
+		int i;
+    for (i = 0; i < GRASSHOPPER_MAX_BIT_PARTS; i++) {
         GRASSHOPPER_ACCESS_128_VALUE_8(*x, i) = array[GRASSHOPPER_ACCESS_128_VALUE_8(*x, i)];
     }
 }
