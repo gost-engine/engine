@@ -95,6 +95,8 @@ static int gost_engine_destroy(ENGINE *e)
     ameth_GostR3410_2012_512 = NULL;
     ameth_Gost28147_MAC_12 = NULL;
 
+	ERR_unload_GOST_strings();
+	
     return 1;
 }
 
