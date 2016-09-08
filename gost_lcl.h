@@ -205,10 +205,10 @@ extern struct gost_cipher_info gost_cipher_list[];
 /* Find encryption params from ASN1_OBJECT */
 const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj);
 /* Implementation of GOST 28147-89 cipher in CFB and CNT modes */
-const EVP_CIPHER* cipher_gost();
-const EVP_CIPHER* cipher_gost_cbc();
-const EVP_CIPHER* cipher_gost_cpacnt();
-const EVP_CIPHER* cipher_gost_cpcnt_12();
+const EVP_CIPHER *cipher_gost();
+const EVP_CIPHER *cipher_gost_cbc();
+const EVP_CIPHER *cipher_gost_cpacnt();
+const EVP_CIPHER *cipher_gost_cpcnt_12();
 void cipher_gost_destroy();
 # define EVP_MD_CTRL_KEY_LEN (EVP_MD_CTRL_ALG_CTRL+3)
 # define EVP_MD_CTRL_SET_KEY (EVP_MD_CTRL_ALG_CTRL+4)

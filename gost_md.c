@@ -30,7 +30,8 @@ EVP_MD *digest_gost(void)
             || !EVP_MD_meth_set_result_size(md, 32)
             || !EVP_MD_meth_set_input_blocksize(md, 32)
             || !EVP_MD_meth_set_app_datasize(md,
-                                             sizeof(struct ossl_gost_digest_ctx))
+                                             sizeof(struct
+                                                    ossl_gost_digest_ctx))
             || !EVP_MD_meth_set_init(md, gost_digest_init)
             || !EVP_MD_meth_set_update(md, gost_digest_update)
             || !EVP_MD_meth_set_final(md, gost_digest_final)
@@ -84,6 +85,7 @@ int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 int gost_digest_cleanup(EVP_MD_CTX *ctx)
 {
     if (EVP_MD_CTX_md_data(ctx))
-        memset(EVP_MD_CTX_md_data(ctx), 0, sizeof(struct ossl_gost_digest_ctx));
+        memset(EVP_MD_CTX_md_data(ctx), 0,
+               sizeof(struct ossl_gost_digest_ctx));
     return 1;
 }
