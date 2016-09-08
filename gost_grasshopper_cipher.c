@@ -96,7 +96,7 @@ static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[5] = {
                 gost_grasshopper_cipher_do_ctr,
                 gost_grasshopper_cipher_destroy_ctr,
                 1,
-                sizeof(gost_grasshopper_cipher_ctx),
+                sizeof(gost_grasshopper_cipher_ctx_ctr),
                 8,
                 false
         },
@@ -295,13 +295,15 @@ static int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* ou
     memcpy(&c->iv_buffer, iv, 8);
 
     // full parts
-    for (size_t i = 0; i < blocks; i++, current_in += GRASSHOPPER_BLOCK_SIZE, current_out += GRASSHOPPER_BLOCK_SIZE) {
+    for (size_t i = 0; i < blocks; i++) {
         currentInputBlock = (grasshopper_w128_t*) current_in;
         currentOutputBlock = (grasshopper_w128_t*) current_out;
         memcpy(c->iv_buffer.b + 8, &c->counter, 8);
         grasshopper_encrypt_block(&c->c.encrypt_round_keys, &c->iv_buffer, currentOutputBlock, &c->c.buffer);
         grasshopper_append128(currentOutputBlock, currentInputBlock);
         c->counter += 1;
+        current_in += GRASSHOPPER_BLOCK_SIZE;
+        current_out += GRASSHOPPER_BLOCK_SIZE;
     }
 
     // last part
