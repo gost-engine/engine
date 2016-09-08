@@ -19,8 +19,6 @@
 #include "gost_lcl.h"
 #include "e_gost_err.h"
 
-#include <internal/evp_int.h>
-
 /*
  * Pack bignum into byte buffer of given size, filling all leading bytes by
  * zeros
