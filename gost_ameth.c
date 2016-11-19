@@ -23,7 +23,7 @@
  * Pack bignum into byte buffer of given size, filling all leading bytes by
  * zeros
  */
-int store_bignum(BIGNUM *bn, unsigned char *buf, int len)
+int store_bignum(const BIGNUM *bn, unsigned char *buf, int len)
 {
     int bytes = BN_num_bytes(bn);
 
@@ -32,22 +32,6 @@ int store_bignum(BIGNUM *bn, unsigned char *buf, int len)
     memset(buf, 0, len);
     BN_bn2bin(bn, buf + len - bytes);
     return 1;
-}
-
-/* Convert byte buffer to bignum, skipping leading zeros*/
-BIGNUM *getbnfrombuf(const unsigned char *buf, size_t len)
-{
-    BIGNUM *b;
-
-    while (*buf == 0 && len > 0) {
-        buf++;
-        len--;
-    }
-    if (len)
-        return BN_bin2bn(buf, len, NULL);
-    b = BN_new();
-    BN_zero(b);
-    return b;
 }
 
 static int pkey_bits_gost(const EVP_PKEY *pk)
@@ -145,9 +129,9 @@ static int gost_decode_nid_params(EVP_PKEY *pkey, int pkey_nid, int param_nid)
  * Parses GOST algorithm parameters from X509_ALGOR and modifies pkey setting
  * NID and parameters
  */
-static int decode_gost_algor_params(EVP_PKEY *pkey, X509_ALGOR *palg)
+static int decode_gost_algor_params(EVP_PKEY *pkey, const X509_ALGOR *palg)
 {
-    ASN1_OBJECT *palg_obj = NULL;
+    const ASN1_OBJECT *palg_obj = NULL;
     int ptype = V_ASN1_UNDEF;
     int pkey_nid = NID_undef, param_nid = NID_undef;
     ASN1_STRING *pval = NULL;
@@ -156,7 +140,7 @@ static int decode_gost_algor_params(EVP_PKEY *pkey, X509_ALGOR *palg)
 
     if (!pkey || !palg)
         return 0;
-    X509_ALGOR_get0(&palg_obj, &ptype, (void **)&pval, palg);
+    X509_ALGOR_get0(&palg_obj, &ptype, (const void **)&pval, palg);
     if (ptype != V_ASN1_SEQUENCE) {
         GOSTerr(GOST_F_DECODE_GOST_ALGOR_PARAMS,
                 GOST_R_BAD_KEY_PARAMETERS_FORMAT);
@@ -269,7 +253,7 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
                 return -1;
             }
             PKCS7_RECIP_INFO_get0_alg((PKCS7_RECIP_INFO *)arg2, &alg1);
-            X509_ALGOR_set0(alg1, OBJ_nid2obj(pkey->type),
+            X509_ALGOR_set0(alg1, OBJ_nid2obj(EVP_PKEY_id(pkey)),
                             V_ASN1_SEQUENCE, params);
         }
         return 1;
@@ -282,8 +266,8 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
             }
             CMS_RecipientInfo_ktri_get0_algs((CMS_RecipientInfo *)arg2, NULL,
                                              NULL, &alg1);
-            X509_ALGOR_set0(alg1, OBJ_nid2obj(pkey->type), V_ASN1_SEQUENCE,
-                            params);
+            X509_ALGOR_set0(alg1, OBJ_nid2obj(EVP_PKEY_id(pkey)),
+                            V_ASN1_SEQUENCE, params);
         }
         return 1;
 #endif
@@ -298,7 +282,7 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 /* --------------------- free functions * ------------------------------*/
 static void pkey_free_gost_ec(EVP_PKEY *key)
 {
-    EC_KEY_free(key->pkey.ec);
+    EC_KEY_free(EVP_PKEY_get0_EC_KEY(key));
 }
 
 /* ------------------ private key functions  -----------------------------*/
@@ -345,14 +329,14 @@ static BIGNUM *unmask_priv_key(EVP_PKEY *pk,
     return pknum_masked;
 }
 
-static int priv_decode_gost(EVP_PKEY *pk, PKCS8_PRIV_KEY_INFO *p8inf)
+static int priv_decode_gost(EVP_PKEY *pk, const PKCS8_PRIV_KEY_INFO *p8inf)
 {
     const unsigned char *pkey_buf = NULL, *p = NULL;
     int priv_len = 0;
     BIGNUM *pk_num = NULL;
     int ret = 0;
-    X509_ALGOR *palg = NULL;
-    ASN1_OBJECT *palg_obj = NULL;
+    const X509_ALGOR *palg = NULL;
+    const ASN1_OBJECT *palg_obj = NULL;
     ASN1_INTEGER *priv_key = NULL;
     int expected_key_len = 32;
 
@@ -687,8 +671,8 @@ static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub)
     len = octet->length / 2;
     ASN1_OCTET_STRING_free(octet);
 
-    Y = getbnfrombuf(databuf, len);
-    X = getbnfrombuf(databuf + len, len);
+    Y = BN_bin2bn(databuf, len, NULL);
+    X = BN_bin2bn(databuf + len, len, NULL);
     OPENSSL_free(databuf);
     pub_key = EC_POINT_new(group);
     if (!EC_POINT_set_affine_coordinates_GFp(group, pub_key, X, Y, NULL)) {
@@ -723,7 +707,7 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     int ptype = V_ASN1_UNDEF;
 
     algobj = OBJ_nid2obj(EVP_PKEY_base_id(pk));
-    if (pk->save_parameters) {
+    if (EVP_PKEY_save_parameters((EVP_PKEY *)pk, -1)) {
         ASN1_STRING *params = encode_gost_algor_params(pk);
         pval = params;
         ptype = V_ASN1_SEQUENCE;
@@ -761,15 +745,17 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     store_bignum(X, databuf + data_len / 2, data_len / 2);
     store_bignum(Y, databuf, data_len / 2);
 
+		BUF_reverse(NULL, databuf, data_len);
+
     octet = ASN1_OCTET_STRING_new();
     if (octet == NULL) {
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    ASN1_STRING_set(octet, NULL, data_len);
-    sptr = ASN1_STRING_data(octet);
-    for (i = 0, j = data_len - 1; i < data_len; i++, j--) {
-        sptr[i] = databuf[j];
+
+    if (0 == ASN1_STRING_set(octet, databuf, data_len)) {
+        GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_MALLOC_FAILURE);
+        goto err;
     }
 
     ret = i2d_ASN1_OCTET_STRING(octet, &buf);
@@ -823,7 +809,7 @@ static int pkey_size_gost(const EVP_PKEY *pk)
 /* ---------------------- ASN1 METHOD for GOST MAC  -------------------*/
 static void mackey_free_gost(EVP_PKEY *pk)
 {
-    OPENSSL_free(pk->pkey.ptr);
+    OPENSSL_free(EVP_PKEY_get0(pk));
 }
 
 static int mac_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
@@ -896,6 +882,9 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                                  pkey_size_gost, pkey_bits_gost);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+        EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);
+#endif
         break;
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2012_512:

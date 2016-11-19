@@ -164,13 +164,18 @@ struct ossl_gost_digest_ctx {
     gost_ctx cctx;
 };
 /* EVP_MD structure for GOST R 34.11 */
-extern EVP_MD digest_gost;
+EVP_MD *digest_gost(void);
+void digest_gost_destroy(void);
 /* EVP MD structure for GOST R 34.11-2012 algorithms */
-extern EVP_MD digest_gost2012_256;
-extern EVP_MD digest_gost2012_512;
+EVP_MD *digest_gost2012_256(void);
+EVP_MD *digest_gost2012_512(void);
+void digest_gost2012_256_destroy(void);
+void digest_gost2012_512_destroy(void);
 /* EVP_MD structure for GOST 28147 in MAC mode */
-extern EVP_MD imit_gost_cpa;
-extern EVP_MD imit_gost_cp_12;
+EVP_MD *imit_gost_cpa(void);
+void imit_gost_cpa_destroy(void);
+EVP_MD *imit_gost_cp_12(void);
+void imit_gost_cp_12_destroy(void);
 /* Cipher context used for EVP_CIPHER operation */
 struct ossl_gost_cipher_ctx {
     int paramNID;
@@ -200,10 +205,11 @@ extern struct gost_cipher_info gost_cipher_list[];
 /* Find encryption params from ASN1_OBJECT */
 const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj);
 /* Implementation of GOST 28147-89 cipher in CFB and CNT modes */
-extern EVP_CIPHER cipher_gost;
-extern EVP_CIPHER cipher_gost_cbc;
-extern EVP_CIPHER cipher_gost_cpacnt;
-extern EVP_CIPHER cipher_gost_cpcnt_12;
+const EVP_CIPHER *cipher_gost();
+const EVP_CIPHER *cipher_gost_cbc();
+const EVP_CIPHER *cipher_gost_cpacnt();
+const EVP_CIPHER *cipher_gost_cpcnt_12();
+void cipher_gost_destroy();
 # define EVP_MD_CTRL_KEY_LEN (EVP_MD_CTRL_ALG_CTRL+3)
 # define EVP_MD_CTRL_SET_KEY (EVP_MD_CTRL_ALG_CTRL+4)
 # define EVP_MD_CTRL_MAC_LEN (EVP_MD_CTRL_ALG_CTRL+5)
@@ -239,9 +245,7 @@ BIGNUM *hashsum2bn(const unsigned char *dgst, int len);
  * Store bignum in byte array of given length, prepending by zeros if
  * nesseccary
  */
-int store_bignum(BIGNUM *bn, unsigned char *buf, int len);
-/* Read bignum, which can have few MSB all-zeros    from buffer*/
-BIGNUM *getbnfrombuf(const unsigned char *buf, size_t len);
+int store_bignum(const BIGNUM *bn, unsigned char *buf, int len);
 /* Pack GOST R 34.10 signature according to CryptoPro rules */
 int pack_sign_cp(DSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
 /* from ameth.c */

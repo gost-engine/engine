@@ -35,7 +35,7 @@ BIGNUM *hashsum2bn(const unsigned char *dgst, int len)
     for (i = 0; i < len; i++) {
         buf[len - i - 1] = dgst[i];
     }
-    return getbnfrombuf(buf, len);
+    return BN_bin2bn(buf, len, NULL);
 }
 
 static R3410_ec_params *gost_nid2params(int nid)
@@ -160,6 +160,9 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     const BIGNUM *priv_key;
     BIGNUM *r = NULL, *s = NULL, *X = NULL, *tmp = NULL, *tmp2 = NULL,
         *k = NULL, *e = NULL;
+
+    const BIGNUM *new_r = NULL, *new_s = NULL;
+
     EC_POINT *C = NULL;
     BN_CTX *ctx;
 
@@ -273,9 +276,10 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     }
     while (BN_is_zero(s));
 
-    newsig->s = BN_dup(s);
-    newsig->r = BN_dup(r);
-    if (!newsig->s || !newsig->r) {
+    DSA_SIG_get0(newsig, &new_r, &new_s);
+    new_s = BN_dup(s);
+    new_r = BN_dup(r);
+    if (!new_s || !new_r) {
         GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -306,6 +310,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
     BIGNUM *order;
     BIGNUM *md = NULL, *e = NULL, *R = NULL, *v = NULL,
         *z1 = NULL, *z2 = NULL;
+    const BIGNUM *sig_s = NULL, *sig_r = NULL;
     BIGNUM *X = NULL, *tmp = NULL;
     EC_POINT *C = NULL;
     const EC_POINT *pub_key = NULL;
@@ -338,8 +343,10 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
         goto err;
     }
 
-    if (BN_is_zero(sig->s) || BN_is_zero(sig->r) ||
-        (BN_cmp(sig->s, order) >= 1) || (BN_cmp(sig->r, order) >= 1)) {
+    DSA_SIG_get0(sig, &sig_r, &sig_s);
+
+    if (BN_is_zero(sig_s) || BN_is_zero(sig_r) ||
+        (BN_cmp(sig_s, order) >= 1) || (BN_cmp(sig_r, order) >= 1)) {
         GOSTerr(GOST_F_GOST_EC_VERIFY, GOST_R_SIGNATURE_PARTS_GREATER_THAN_Q);
         goto err;
 
@@ -362,8 +369,8 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
         goto err;
     }
     v = BN_mod_inverse(v, e, order, ctx);
-    if (!v || !BN_mod_mul(z1, sig->s, v, order, ctx)
-        || !BN_sub(tmp, order, sig->r)
+    if (!v || !BN_mod_mul(z1, sig_s, v, order, ctx)
+        || !BN_sub(tmp, order, sig_r)
         || !BN_mod_mul(z2, tmp, v, order, ctx)) {
         GOSTerr(GOST_F_GOST_EC_VERIFY, ERR_R_INTERNAL_ERROR);
         goto err;
@@ -400,7 +407,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
     BN_print_fp(stderr, R);
     fprintf(stderr, "\n");
 #endif
-    if (BN_cmp(R, sig->r) != 0) {
+    if (BN_cmp(R, sig_r) != 0) {
         GOSTerr(GOST_F_GOST_EC_VERIFY, GOST_R_SIGNATURE_MISMATCH);
     } else {
         ok = 1;
