@@ -691,12 +691,6 @@ int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
         } else {
             return 0;
         }
-    case EVP_CTRL_SET_SBOX:
-        if (ptr) {
-            struct ossl_gost_cipher_ctx *c = ctx->cipher_data;
-            int nid;
-            int cur_meshing;
-            int ret;
 
     case EVP_CTRL_SET_SBOX:
         if (ptr) {
