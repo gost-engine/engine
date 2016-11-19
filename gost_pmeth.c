@@ -369,8 +369,8 @@ static int pkey_gost2012cp_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
  */
 int pack_sign_cp(DSA_SIG *s, int order, unsigned char *sig, size_t *siglen)
 {
-    BIGNUM *sig_r = NULL, *sig_s = NULL;
-    DSA_SIG_get0(&sig_r, &sig_s, s);
+    const BIGNUM *sig_r = NULL, *sig_s = NULL;
+    DSA_SIG_get0(s, &sig_r, &sig_s);
     *siglen = 2 * order;
     memset(sig, 0, *siglen);
     store_bignum(sig_s, sig, order);
@@ -420,14 +420,14 @@ static int pkey_gost_ec_cp_sign(EVP_PKEY_CTX *ctx, unsigned char *sig,
 DSA_SIG *unpack_cp_signature(const unsigned char *sig, size_t siglen)
 {
     DSA_SIG *s;
-    BIGNUM *sig_r = NULL, *sig_s = NULL;
+    const BIGNUM *sig_r = NULL, *sig_s = NULL;
 
     s = DSA_SIG_new();
     if (s == NULL) {
         GOSTerr(GOST_F_UNPACK_CP_SIGNATURE, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
-    DSA_SIG_get0(&sig_r, &sig_s, s);
+    DSA_SIG_get0(s, &sig_r, &sig_s);
     sig_s = BN_bin2bn(sig, siglen / 2, NULL);
     sig_r = BN_bin2bn(sig + siglen / 2, siglen / 2, NULL);
     return s;

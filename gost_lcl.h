@@ -245,7 +245,7 @@ BIGNUM *hashsum2bn(const unsigned char *dgst, int len);
  * Store bignum in byte array of given length, prepending by zeros if
  * nesseccary
  */
-int store_bignum(BIGNUM *bn, unsigned char *buf, int len);
+int store_bignum(const BIGNUM *bn, unsigned char *buf, int len);
 /* Pack GOST R 34.10 signature according to CryptoPro rules */
 int pack_sign_cp(DSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
 /* from ameth.c */

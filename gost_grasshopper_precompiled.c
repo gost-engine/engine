@@ -7,7 +7,7 @@
 #include "gost_grasshopper_defines.h"
 #include "gost_grasshopper_math.h"
 
-grasshopper_w128_t grasshopper_pil_enc128[GRASSHOPPER_MAX_BIT_PARTS][256] = {
+const grasshopper_w128_t grasshopper_pil_enc128[GRASSHOPPER_MAX_BIT_PARTS][256] = {
 {
 {
 233, 251, 213, 12, 122, 192, 128, 150, 25, 17, 135, 147, 27, 201, 174, 181,
@@ -12329,7 +12329,7 @@ grasshopper_w128_t grasshopper_pil_enc128[GRASSHOPPER_MAX_BIT_PARTS][256] = {
 },
 },
 };
-grasshopper_w128_t grasshopper_pil_dec128[GRASSHOPPER_MAX_BIT_PARTS][256] = {
+const grasshopper_w128_t grasshopper_pil_dec128[GRASSHOPPER_MAX_BIT_PARTS][256] = {
 {
 {
 165, 204, 14, 134, 194, 79, 186, 89, 59, 227, 239, 121, 130, 83, 17, 240,
@@ -24651,7 +24651,7 @@ grasshopper_w128_t grasshopper_pil_dec128[GRASSHOPPER_MAX_BIT_PARTS][256] = {
 },
 },
 };
-grasshopper_w128_t grasshopper_l_dec128[GRASSHOPPER_MAX_BIT_PARTS][256] = {
+const grasshopper_w128_t grasshopper_l_dec128[GRASSHOPPER_MAX_BIT_PARTS][256] = {
 {
 {
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

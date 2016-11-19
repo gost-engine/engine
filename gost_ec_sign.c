@@ -161,7 +161,7 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     BIGNUM *r = NULL, *s = NULL, *X = NULL, *tmp = NULL, *tmp2 = NULL,
         *k = NULL, *e = NULL;
 
-    BIGNUM *new_r = NULL, *new_s = NULL;
+    const BIGNUM *new_r = NULL, *new_s = NULL;
 
     EC_POINT *C = NULL;
     BN_CTX *ctx;
@@ -276,7 +276,7 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     }
     while (BN_is_zero(s));
 
-    DSA_SIG_get0(&new_r, &new_s, newsig);
+    DSA_SIG_get0(newsig, &new_r, &new_s);
     new_s = BN_dup(s);
     new_r = BN_dup(r);
     if (!new_s || !new_r) {
@@ -310,7 +310,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
     BIGNUM *order;
     BIGNUM *md = NULL, *e = NULL, *R = NULL, *v = NULL,
         *z1 = NULL, *z2 = NULL;
-    BIGNUM *sig_s = NULL, *sig_r = NULL;
+    const BIGNUM *sig_s = NULL, *sig_r = NULL;
     BIGNUM *X = NULL, *tmp = NULL;
     EC_POINT *C = NULL;
     const EC_POINT *pub_key = NULL;
@@ -343,7 +343,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
         goto err;
     }
 
-    DSA_SIG_get0(&sig_r, &sig_s, sig);
+    DSA_SIG_get0(sig, &sig_r, &sig_s);
 
     if (BN_is_zero(sig_s) || BN_is_zero(sig_r) ||
         (BN_cmp(sig_s, order) >= 1) || (BN_cmp(sig_r, order) >= 1)) {
