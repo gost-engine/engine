@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(ccgost)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3 -Werror -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -Werror")
 
 set(GOST_INCLUDE_DIRECTORIES "${OPENSSL_PATH}/include" "${OPENSSL_PATH}/crypto/include")
 
