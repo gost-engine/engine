@@ -124,7 +124,7 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
 
     if (key == NULL) {
         *keylen = 32;
-        return 32;
+        return 1;
     }
 
     EVP_PKEY_get_default_digest_nid(my_key, &dgst_nid);
