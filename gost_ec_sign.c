@@ -161,7 +161,7 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     BIGNUM *r = NULL, *s = NULL, *X = NULL, *tmp = NULL, *tmp2 = NULL,
         *k = NULL, *e = NULL;
 
-    const BIGNUM *new_r = NULL, *new_s = NULL;
+    BIGNUM *new_r = NULL, *new_s = NULL;
 
     EC_POINT *C = NULL;
     BN_CTX *ctx;
@@ -276,13 +276,13 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     }
     while (BN_is_zero(s));
 
-    DSA_SIG_get0(newsig, &new_r, &new_s);
     new_s = BN_dup(s);
     new_r = BN_dup(r);
     if (!new_s || !new_r) {
         GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
     }
+    DSA_SIG_set0(newsig, new_r, new_s);
 
     ret = newsig;
  err:
