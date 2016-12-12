@@ -282,7 +282,7 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 /* --------------------- free functions * ------------------------------*/
 static void pkey_free_gost_ec(EVP_PKEY *key)
 {
-    EC_KEY_free(EVP_PKEY_get0_EC_KEY(key));
+    EC_KEY_free((EC_KEY *)EVP_PKEY_get0(key));
 }
 
 /* ------------------ private key functions  -----------------------------*/
