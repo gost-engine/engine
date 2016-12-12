@@ -745,7 +745,7 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     store_bignum(X, databuf + data_len / 2, data_len / 2);
     store_bignum(Y, databuf, data_len / 2);
 
-		BUF_reverse(NULL, databuf, data_len);
+		BUF_reverse(databuf, NULL, data_len);
 
     octet = ASN1_OCTET_STRING_new();
     if (octet == NULL) {
