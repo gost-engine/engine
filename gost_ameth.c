@@ -707,11 +707,11 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     int ptype = V_ASN1_UNDEF;
 
     algobj = OBJ_nid2obj(EVP_PKEY_base_id(pk));
-    if (EVP_PKEY_save_parameters((EVP_PKEY *)pk, -1)) {
-        ASN1_STRING *params = encode_gost_algor_params(pk);
-        pval = params;
-        ptype = V_ASN1_SEQUENCE;
-    }
+
+		ASN1_STRING *params = encode_gost_algor_params(pk);
+		pval = params;
+		ptype = V_ASN1_SEQUENCE;
+
     order = BN_new();
     if (!order) {
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_MALLOC_FAILURE);
