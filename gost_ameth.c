@@ -665,9 +665,8 @@ static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub)
         ASN1_OCTET_STRING_free(octet);
         return 0;
     }
-    for (i = 0, j = octet->length - 1; i < octet->length; i++, j--) {
-        databuf[j] = octet->data[i];
-    }
+
+		BUF_reverse(databuf, octet->data, octet->length);
     len = octet->length / 2;
     ASN1_OCTET_STRING_free(octet);
 
@@ -735,12 +734,11 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
         goto err;
     }
     data_len = 2 * BN_num_bytes(order);
-    databuf = OPENSSL_malloc(data_len);
+    databuf = OPENSSL_zalloc(data_len);
     if (databuf == NULL) {
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    memset(databuf, 0, data_len);
 
     store_bignum(X, databuf + data_len / 2, data_len / 2);
     store_bignum(Y, databuf, data_len / 2);
