@@ -22,7 +22,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
                            const EC_POINT *pub_key, EC_KEY *priv_key,
                            const unsigned char *ukm, int dgst_nid)
 {
-    unsigned char *databuf = NULL, *hashbuf = NULL;
+    unsigned char *databuf = NULL;
     BIGNUM *UKM = NULL, *p = NULL, *order = NULL, *X = NULL, *Y = NULL;
     const BIGNUM *key = EC_KEY_get0_private_key(priv_key);
     EC_POINT *pnt = EC_POINT_new(EC_KEY_get0_group(priv_key));
@@ -34,6 +34,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
         NID_id_GostR3411_2012_256 : dgst_nid;
     int buf_len = (dgst_nid == NID_id_GostR3411_2012_512) ? 128 : 64,
         half_len = buf_len >> 1;
+		int ret = 0;
 
     if (!ctx) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
@@ -41,9 +42,8 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     }
     BN_CTX_start(ctx);
 
-    databuf = OPENSSL_malloc(buf_len);
-    hashbuf = OPENSSL_malloc(buf_len);
-    if (!databuf || !hashbuf) {
+    databuf = OPENSSL_zalloc(buf_len);
+    if (!databuf) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -74,9 +74,8 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     store_bignum(Y, databuf, half_len);
     store_bignum(X, databuf + half_len, half_len);
     /* And reverse byte order of whole buffer */
-    for (i = 0; i < buf_len; i++) {
-        hashbuf[buf_len - 1 - i] = databuf[i];
-    }
+		BUF_reverse(databuf, NULL, buf_len);
+
     mdctx = EVP_MD_CTX_new();
     if (!mdctx) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
@@ -84,8 +83,10 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     }
     EVP_MD_CTX_init(mdctx);
     EVP_DigestInit_ex(mdctx, md, NULL);
-    EVP_DigestUpdate(mdctx, hashbuf, buf_len);
+    EVP_DigestUpdate(mdctx, databuf, buf_len);
     EVP_DigestFinal_ex(mdctx, shared_key, NULL);
+		ret = 32;
+
  err:
     BN_free(UKM);
     BN_CTX_end(ctx);
@@ -96,9 +97,8 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     EVP_MD_CTX_free(mdctx);
 
     OPENSSL_free(databuf);
-    OPENSSL_free(hashbuf);
 
-    return 32;
+    return ret;
 }
 
 /*
@@ -137,10 +137,6 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
     return (*keylen) ? 1 : 0;
 }
 
-/*
- * EVP_PKEY_METHOD callback encrypt
- * Implementation of GOST2001 key transport, cryptocom variation
- */
 /*
  * Generates ephemeral key based on pubk algorithm computes shared key using
  * VKO and returns filled up GOST_KEY_TRANSPORT structure
@@ -190,9 +186,11 @@ int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         key_is_ephemeral = 1;
         if (out) {
             sec_key = EVP_PKEY_new();
-            EVP_PKEY_assign(sec_key, EVP_PKEY_base_id(pubk), EC_KEY_new());
-            EVP_PKEY_copy_parameters(sec_key, pubk);
-            if (!gost_ec_keygen(EVP_PKEY_get0(sec_key))) {
+            if (! EVP_PKEY_assign(sec_key, EVP_PKEY_base_id(pubk), EC_KEY_new()) ||
+			          ! EVP_PKEY_copy_parameters(sec_key, pubk) ||
+                ! gost_ec_keygen(EVP_PKEY_get0(sec_key))) {
+            GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT,
+                    GOST_R_ERROR_COMPUTING_SHARED_KEY);
                 goto err;
             }
         }
