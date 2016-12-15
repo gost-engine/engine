@@ -2,7 +2,17 @@ cmake_minimum_required(VERSION 2.8)
 project(ccgost)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3 -Werror -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -Werror")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -Werror -ggdb")
+
+include (TestBigEndian)
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+if(IS_BIG_ENDIAN)
+ message(STATUS "BIG_ENDIAN")
+else()
+ message(STATUS "LITTLE_ENDIAN")
+ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3 -Werror -Wall")
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DL_ENDIAN")
+endif()
 
 set(GOST_INCLUDE_DIRECTORIES "${OPENSSL_PATH}/include" "${OPENSSL_PATH}/crypto/include")
 
