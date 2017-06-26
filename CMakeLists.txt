@@ -100,6 +100,7 @@ add_library(gost STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
+set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
 
 target_link_libraries(gost_engine crypto gost)
 
