@@ -1,21 +1,25 @@
 ## CMake Config
 
-Required variables:
-1. `OPENSSL_PATH` - full path to local [openssl](https://github.com/openssl/openssl) source tree
+Configuring with `cmake` is can very simply be done like this:
 
-For Example:
-
-~~~bash
-cmake -DOPENSSL_PATH=/home/user/openssl .
+~~~ bash
+cmake .
 ~~~
 
-Build Example:
+If you want to build against a specific OpenSSL installation (if you have
+more than one, or your own private install, or...), you can use the `cmake`
+variable `CMAKE_C_FLAGS`:
 
-~~~bash
-cd ~/gost-engine
+~~~ bash
+cmake -DCMAKE_C_FLAGS='-I/PATH/TO/OPENSSL/include -L/PATH/TO/OPENSSL/lib' .
+~~~
+
+Build example:
+
+~~~ bash
 mkdir build
 cd build
-cmake -DOPENSSL_PATH=/home/user/openssl ..
+cmake -DCMAKE_C_FLAGS='-I/PATH/TO/OPENSSL/include -L/PATH/TO/OPENSSL/lib' ..
 make -j 8
 cd ../bin
 ~~~

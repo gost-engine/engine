@@ -14,12 +14,6 @@ else()
  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DL_ENDIAN")
 endif()
 
-set(GOST_INCLUDE_DIRECTORIES "${OPENSSL_PATH}/include" "${OPENSSL_PATH}/crypto/include")
-
-set(GOST_LINK_DIRECTORIES "${OPENSSL_PATH}")
-
-include_directories("${GOST_INCLUDE_DIRECTORIES}")
-
 set(BIN_DIRECTORY bin)
 
 set(OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${BIN_DIRECTORY})
@@ -93,8 +87,6 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_md.c
         gost_md2012.c
         gost_pmeth.c)
-
-link_directories(${GOST_LINK_DIRECTORIES})
 
 add_library(gost STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost PROPERTIES POSITION_INDEPENDENT_CODE ON)
