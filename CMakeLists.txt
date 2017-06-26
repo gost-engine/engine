@@ -24,7 +24,7 @@ set(BIN_DIRECTORY bin)
 
 set(OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${BIN_DIRECTORY})
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
+#set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 
@@ -80,23 +80,28 @@ set(GOST_EC_SOURCE_FILES
         gost_ec_sign.c
         )
 
-set(GOST_ENGINE_SOURCE_FILES
-        ${GOST_CORE_SOURCE_FILES}
+set(GOST_LIB_SOURCE_FILES
         ${GOST_EC_SOURCE_FILES}
         ${GOST_89_SOURCE_FILES}
-        gost_ameth.c
-        gost_md.c
-        gost_md2012.c
-        gost_pmeth.c
         ${GOST_HASH_SOURCE_FILES}
         ${GOST_GRASSHOPPER_SOURCE_FILES}
         ${GOST_HASH_2012_SOURCE_FILES})
 
+set(GOST_ENGINE_SOURCE_FILES
+        ${GOST_CORE_SOURCE_FILES}
+        gost_ameth.c
+        gost_md.c
+        gost_md2012.c
+        gost_pmeth.c)
+
 link_directories(${GOST_LINK_DIRECTORIES})
 
-add_library(gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
+add_library(gost STATIC ${GOST_LIB_SOURCE_FILES})
+set_target_properties(gost PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_link_libraries(gost_engine crypto)
+add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
+
+target_link_libraries(gost_engine crypto gost)
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
@@ -104,7 +109,7 @@ set(GOST_12_SUM_SOURCE_FILES
 
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
 
-target_link_libraries(gost12sum gost_engine)
+target_link_libraries(gost12sum gost)
 
 set(GOST_SUM_SOURCE_FILES
         gostsum.c
@@ -112,7 +117,7 @@ set(GOST_SUM_SOURCE_FILES
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
 
-target_link_libraries(gostsum gost_engine)
+target_link_libraries(gostsum gost)
 
 set(GOST_SUM_12_SOURCE_FILES
         gostsum12.c
@@ -120,4 +125,4 @@ set(GOST_SUM_12_SOURCE_FILES
 
 add_executable(gostsum12 ${GOST_SUM_12_SOURCE_FILES})
 
-target_link_libraries(gostsum12 gost_engine)
+target_link_libraries(gostsum12 gost)
