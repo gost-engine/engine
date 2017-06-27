@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 project(ccgost)
 
+if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+   message(STATUS "Using Clang and adding -Qunused-arguments flag")
+   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
+endif()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3 -Werror -Qunused-arguments -Wno-unused-function -Wno-missing-braces -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -Werror -Wall -Qunused-arguments -Wno-unused-function -Wno-missing-braces -ggdb")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb")
 
 include (TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
