@@ -14,13 +14,10 @@ else()
  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DL_ENDIAN")
 endif()
 
-set(GOST_INCLUDE_DIRECTORIES "${OPENSSL_PATH}/include" "${OPENSSL_PATH}/crypto/include")
-
-set(GOST_LINK_DIRECTORIES "${OPENSSL_PATH}")
 
 # module linker flags
-SET (CMAKE_MODULE_LINKER_FLAGS "-L${OPENSSL_PATH}" "-L${OPENSSL_PATH}/lib" $ENV{LDFLAGS}
-     CACHE STRING "Flags used by the linker during the creation of modules.")
+//SET (CMAKE_MODULE_LINKER_FLAGS "-L${OPENSSL_PATH}" "-L${OPENSSL_PATH}/lib" $ENV{LDFLAGS}
+//     CACHE STRING "Flags used by the linker during the creation of modules.")
 # exe linker flags
 SET (CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS_INIT} $ENV{LDFLAGS}
      CACHE STRING "Flags used by the linker during the creation of executables.")
@@ -104,8 +101,6 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_md.c
         gost_md2012.c
         gost_pmeth.c)
-
-link_directories(${GOST_LINK_DIRECTORIES})
 
 add_library(gost STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost PROPERTIES POSITION_INDEPENDENT_CODE ON)
