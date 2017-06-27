@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(ccgost)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3 -Werror -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -Werror -ggdb")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3 -Werror -Qunused-arguments -Wno-unused-function -Wno-missing-braces -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -Werror -Wall -Qunused-arguments -Wno-unused-function -Wno-missing-braces -ggdb")
 
 include (TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
@@ -13,24 +13,6 @@ else()
  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3 -Werror -Wall")
  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DL_ENDIAN")
 endif()
-
-# include and lib directories for OpenSSL
-set(GOST_INCLUDE_DIRECTORIES "${OPENSSL_PATH}/include")
-set(GOST_LINK_DIRECTORIES "${OPENSSL_PATH}/lib")
-
-# module linker flags
-SET (CMAKE_MODULE_LINKER_FLAGS "-L${OPENSSL_PATH}/lib" $ENV{LDFLAGS}
-     CACHE STRING "Flags used by the linker during the creation of modules.")
-# exe linker flags
-SET (CMAKE_EXE_LINKER_FLAGS "-L${OPENSSL_PATH}/lib" $ENV{LDFLAGS}
-     CACHE STRING "Flags used by the linker during the creation of executables.")
-# shared lib linker flags
-SET (CMAKE_SHARED_LINKER_FLAGS "-L${OPENSSL_PATH}/lib" $ENV{LDFLAGS}
-     CACHE STRING "Flags used by the linker during the creation of shared libraries.")
-
-
-include_directories("${GOST_INCLUDE_DIRECTORIES}")
-link_directories("${GOST_LINK_DIRECTORIES}")
 
 set(BIN_DIRECTORY bin)
 
