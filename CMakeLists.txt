@@ -18,6 +18,17 @@ set(GOST_INCLUDE_DIRECTORIES "${OPENSSL_PATH}/include" "${OPENSSL_PATH}/crypto/i
 
 set(GOST_LINK_DIRECTORIES "${OPENSSL_PATH}")
 
+# module linker flags
+SET (CMAKE_MODULE_LINKER_FLAGS "-L${OPENSSL_PATH}" "-L${OPENSSL_PATH}/lib" $ENV{LDFLAGS}
+     CACHE STRING "Flags used by the linker during the creation of modules.")
+# exe linker flags
+SET (CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS_INIT} $ENV{LDFLAGS}
+     CACHE STRING "Flags used by the linker during the creation of executables.")
+# shared lib linker flags
+SET (CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS_INIT} $ENV{LDFLAGS}
+     CACHE STRING "Flags used by the linker during the creation of shared libraries.")
+
+
 include_directories("${GOST_INCLUDE_DIRECTORIES}")
 
 set(BIN_DIRECTORY bin)
