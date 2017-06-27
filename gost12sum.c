@@ -260,7 +260,7 @@ int get_line(FILE *f, char *hash, char *filename, int verbose)
         return 1;
  nextline:
         if (verbose)
-            printf(filename);
+	    printf("%s\n", filename);
     }
     return 0;
 }

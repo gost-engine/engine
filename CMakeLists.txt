@@ -14,6 +14,24 @@ else()
  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DL_ENDIAN")
 endif()
 
+# include and lib directories for OpenSSL
+set(GOST_INCLUDE_DIRECTORIES "${OPENSSL_PATH}/include")
+set(GOST_LINK_DIRECTORIES "${OPENSSL_PATH}/lib")
+
+# module linker flags
+SET (CMAKE_MODULE_LINKER_FLAGS "-L${OPENSSL_PATH}/lib" $ENV{LDFLAGS}
+     CACHE STRING "Flags used by the linker during the creation of modules.")
+# exe linker flags
+SET (CMAKE_EXE_LINKER_FLAGS "-L${OPENSSL_PATH}/lib" $ENV{LDFLAGS}
+     CACHE STRING "Flags used by the linker during the creation of executables.")
+# shared lib linker flags
+SET (CMAKE_SHARED_LINKER_FLAGS "-L${OPENSSL_PATH}/lib" $ENV{LDFLAGS}
+     CACHE STRING "Flags used by the linker during the creation of shared libraries.")
+
+
+include_directories("${GOST_INCLUDE_DIRECTORIES}")
+link_directories("${GOST_LINK_DIRECTORIES}")
+
 set(BIN_DIRECTORY bin)
 
 set(OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${BIN_DIRECTORY})
