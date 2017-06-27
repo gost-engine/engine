@@ -526,7 +526,6 @@ int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX* ctx) {
 int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX* ctx, ASN1_TYPE* params) {
     int len = 0;
     unsigned char* buf = NULL;
-    unsigned char* p = NULL;
     ASN1_OCTET_STRING* os = NULL;
 
     os = ASN1_OCTET_STRING_new();
