@@ -6,16 +6,25 @@ without changing its core. If OpenSSL is compiled with dynamic engine
 support, new algorithms can be added even without recompilation of
 OpenSSL and applications which use it.
 
+COMPILING AND INSTALLATION
+
+This engine is a drop-in replacement of the GOST engine included in openssl
+1.0.2. The original version does not support GOST2012 algorithms.  To compile
+it, you MUST apply the required patches (from the patches/ folder) to the
+openssl 1.0.2 source tree and copy all files from the current directory to the
+openssl/engines/ccgost folder.  After that you will be able to configure and
+build openssl using standard options.
+
 ALGORITHMS SUPPORTED
 
-GOST R 34.10-94 and GOST R 34.10-2001 - digital signature algorithms.
+GOST R 34.10-2001 and GOST R 34.10-2012 - digital signature algorithms.
    Also support key exchange based on public keys. See RFC 4357 for
    details of VKO key exchange algorithm. These algorithms use
    256 bit private keys. Public keys are 1024 bit for 94 and 512 bit for
    2001 (which is elliptic-curve based). Key exchange algorithms
    (VKO R 34.10) are supported on these keys too.
    
-GOST R 34.11-94  Message digest algorithm. 256-bit hash value
+GOST R 34.11-2012  Message digest algorithm. 256-bit hash value
 
 GOST 28147-89 - Symmetric cipher  with 256-bit key. Various modes are
    defined in the standard, but only CFB and CNT modes are implemented
