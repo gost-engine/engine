@@ -214,13 +214,12 @@ int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode)
 int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
 {
     unsigned char buffer[BUF_SIZE];
-    unsigned char reverted_buffer[BUF_SIZE];
     ssize_t bytes;
 		size_t i;
 
     start_hash12(ctx);
     while ((bytes = read(fd, buffer, BUF_SIZE)) > 0) {
-        hash12_block(ctx, reverted_buffer, bytes);
+        hash12_block(ctx, buffer, bytes);
     }
     if (bytes < 0) {
         return 0;
