@@ -216,6 +216,7 @@ int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
     unsigned char buffer[BUF_SIZE];
     unsigned char reverted_buffer[BUF_SIZE];
     ssize_t bytes;
+		size_t i;
 
     start_hash12(ctx);
     while ((bytes = read(fd, buffer, BUF_SIZE)) > 0) {
@@ -225,7 +226,7 @@ int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
         return 0;
     }
     finish_hash12(ctx, buffer);
-    for (size_t i = 0; i < (hashsize / 8); i++) {
+    for (i = 0; i < (hashsize / 8); i++) {
         sprintf(sum + 2 * i, "%02x", buffer[i]);
     }
     return 1;
