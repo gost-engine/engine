@@ -8,14 +8,14 @@ OpenSSL and applications which use it.
 
 ALGORITHMS SUPPORTED
 
-GOST R 34.10-94 and GOST R 34.10-2001 - digital signature algorithms.
+GOST R 34.10-2001 and GOST R 34.10-2012 - digital signature algorithms.
    Also support key exchange based on public keys. See RFC 4357 for
    details of VKO key exchange algorithm. These algorithms use
    256 bit private keys. Public keys are 1024 bit for 94 and 512 bit for
    2001 (which is elliptic-curve based). Key exchange algorithms
    (VKO R 34.10) are supported on these keys too.
    
-GOST R 34.11-94  Message digest algorithm. 256-bit hash value
+GOST R 34.11-2012  Message digest algorithm. 256- and 512-bit hash values.
 
 GOST 28147-89 - Symmetric cipher  with 256-bit key. Various modes are
    defined in the standard, but only CFB and CNT modes are implemented
@@ -31,6 +31,8 @@ GOST 28147-89 MAC mode. Message authentication code. While most MAC
 	Really, this algorithm supports from 8 to 64 bits of the MAC value
 
 	It is implemented as combination of EVP_PKEY type and EVP_MD type.
+
+GOST R 34.13–2015 - Symmetric cypher Grasshopper ("Kuznechik")
 
 USAGE OF THESE ALGORITHMS
 
