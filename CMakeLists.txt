@@ -121,6 +121,6 @@ set(GOST_SUM_12_SOURCE_FILES
         gostsum12.c
         )
 
-add_executable(gostsum12 ${GOST_SUM_12_SOURCE_FILES})
-
-target_link_libraries(gostsum12 gost)
+#add_executable(gostsum12 ${GOST_SUM_12_SOURCE_FILES})
+#
+#target_link_libraries(gostsum12 gost)
