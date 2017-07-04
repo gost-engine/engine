@@ -641,11 +641,11 @@ static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub)
     const unsigned char *pubkey_buf = NULL;
     unsigned char *databuf;
     ASN1_OBJECT *palgobj = NULL;
-    int pub_len, i, j;
+    int pub_len;
     EC_POINT *pub_key;
     BIGNUM *X, *Y;
     ASN1_OCTET_STRING *octet = NULL;
-    int len;
+    size_t len;
     const EC_GROUP *group;
 
     if (!X509_PUBKEY_get0_param(&palgobj, &pubkey_buf, &pub_len, &palg, pub))
@@ -698,8 +698,8 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     ASN1_OBJECT *algobj = NULL;
     ASN1_OCTET_STRING *octet = NULL;
     void *pval = NULL;
-    unsigned char *buf = NULL, *databuf = NULL, *sptr;
-    int i, j, data_len, ret = -1;
+    unsigned char *buf = NULL, *databuf = NULL;
+    int data_len, ret = -1;
     const EC_POINT *pub_key;
     BIGNUM *X = NULL, *Y = NULL, *order = NULL;
     const EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pk);

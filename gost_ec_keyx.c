@@ -26,7 +26,6 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     BIGNUM *UKM = NULL, *p = NULL, *order = NULL, *X = NULL, *Y = NULL;
     const BIGNUM *key = EC_KEY_get0_private_key(priv_key);
     EC_POINT *pnt = EC_POINT_new(EC_KEY_get0_group(priv_key));
-    int i;
     BN_CTX *ctx = BN_CTX_new();
     EVP_MD_CTX *mdctx = NULL;
     const EVP_MD *md = NULL;
