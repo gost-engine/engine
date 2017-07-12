@@ -19,7 +19,7 @@
 #include "gost_lcl.h"
 #include "e_gost_err.h"
 
-#define PK_UNMASK_PARAM "UNMASK"
+#define PK_WRAP_PARAM "LEGACY_PK_WRAP"
 
 /*
  * Pack bignum into byte buffer of given size, filling all leading bytes by
@@ -443,7 +443,7 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
 
     /* unmasked private key */
     const char *pk_param = get_gost_engine_param(GOST_PARAM_PK_PARAMS);
-    if(pk_param != NULL && strcmp(pk_param, PK_UNMASK_PARAM) == 0) {
+    if(pk_param != NULL && strcmp(pk_param, PK_WRAP_PARAM) == 0) {
         ASN1_STRING *octet = NULL;
         int priv_len = 0;
         unsigned char *priv_buf = NULL;
