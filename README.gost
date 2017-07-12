@@ -81,6 +81,10 @@ And section which describes configuration of the engine should contain
 	default_algorithms = ALL
 	CRYPT_PARAMS = id-Gost28147-89-CryptoPro-A-ParamSet
 
+If you want use unmask private key format, you must add:
+  PK_PARAMS = UNMASK
+to [gost_section]
+
 Where engine_id parameter specifies name of engine (should be "gost").
 dynamic_path is a location of the loadable shared library implementing the
 engine. If the engine is compiled statically or is located in the OpenSSL

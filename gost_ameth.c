@@ -19,6 +19,8 @@
 #include "gost_lcl.h"
 #include "e_gost_err.h"
 
+#define PK_UNMASK_PARAM "UNMASK"
+
 /*
  * Pack bignum into byte buffer of given size, filling all leading bytes by
  * zeros
@@ -415,10 +417,9 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
 {
     ASN1_OBJECT *algobj = OBJ_nid2obj(EVP_PKEY_base_id(pk));
     ASN1_STRING *params = encode_gost_algor_params(pk);
-    unsigned char /**priv_buf = NULL,*/ *buf = NULL;
-    int key_len = pkey_bits_gost(pk), /*priv_len = 0,*/ i = 0;
+    unsigned char *buf = NULL;
+    int key_len = pkey_bits_gost(pk), i = 0;
 
-    /*ASN1_STRING *octet = NULL;*/
     if (!params) {
         return 0;
     }
@@ -440,18 +441,25 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
         buf[key_len - 1 - i] = tmp;
     }
 
-/*
-    octet = ASN1_STRING_new();
-    ASN1_OCTET_STRING_set(octet, buf, key_len);
+    /* unmasked private key */
+    const char *pk_param = get_gost_engine_param(GOST_PARAM_PK_PARAMS);
+    if(pk_param != NULL && strcmp(pk_param, PK_UNMASK_PARAM) == 0) {
+        ASN1_STRING *octet = NULL;
+        int priv_len = 0;
+        unsigned char *priv_buf = NULL;
 
-    priv_len = i2d_ASN1_OCTET_STRING(octet, &priv_buf);
-    ASN1_STRING_free(octet);
-    OPENSSL_free(buf);
+        octet = ASN1_STRING_new();
+        ASN1_OCTET_STRING_set(octet, buf, key_len);
+        priv_len = i2d_ASN1_OCTET_STRING(octet, &priv_buf);
+        ASN1_STRING_free(octet);
+        OPENSSL_free(buf);
+
+        return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
+                           priv_buf, priv_len); 
+    }
 
     return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
-                           priv_buf, priv_len); */
-    return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
-                           buf, key_len); 
+                           buf, key_len);
 }
 
 /* --------- printing keys --------------------------------*/
