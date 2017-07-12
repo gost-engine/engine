@@ -15,7 +15,7 @@
 #include "gost_lcl.h"
 
 static char *gost_params[GOST_PARAM_MAX + 1] = { NULL };
-static const char *gost_envnames[] = { "CRYPT_PARAMS", "GOST_PBE_HMAC", "PK_PARAMS" };
+static const char *gost_envnames[] = { "CRYPT_PARAMS", "GOST_PBE_HMAC", "GOST_PK_FORMAT" };
 
 const ENGINE_CMD_DEFN gost_cmds[] = {
     {GOST_CTRL_CRYPT_PARAMS,
@@ -26,8 +26,8 @@ const ENGINE_CMD_DEFN gost_cmds[] = {
      "PBE_PARAMS",
      "Shortname of default digest alg for PBE",
      ENGINE_CMD_FLAG_STRING},
-     {GOST_CTRL_PK_PARAMS,
-     "PK_PARAMS",
+     {GOST_CTRL_PK_FORMAT,
+     "GOST_PK_FORMAT",
      "Private key format params",
      ENGINE_CMD_FLAG_STRING},
     {0, NULL, NULL, 0}

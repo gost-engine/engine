@@ -442,8 +442,8 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
     }
 
     /* unmasked private key */
-    const char *pk_param = get_gost_engine_param(GOST_PARAM_PK_PARAMS);
-    if(pk_param != NULL && strcmp(pk_param, PK_WRAP_PARAM) == 0) {
+    const char *pk_format = get_gost_engine_param(GOST_PARAM_PK_FORMAT);
+    if(pk_format != NULL && strcmp(pk_format, PK_WRAP_PARAM) == 0) {
         ASN1_STRING *octet = NULL;
         int priv_len = 0;
         unsigned char *priv_buf = NULL;
