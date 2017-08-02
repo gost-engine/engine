@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(ccgost)
+project(ccgost C)
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
    message(STATUS "Using Clang and adding -Qunused-arguments flag")
