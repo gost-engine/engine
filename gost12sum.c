@@ -227,7 +227,7 @@ int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
     }
     finish_hash12(ctx, buffer);
     for (i = 0; i < (hashsize / 8); i++) {
-        sprintf(sum + 2 * i, "%02x", buffer[i]);
+        sprintf(sum + 2 * i, "%02x", buffer[hashsize/8-1-i]);
     }
     return 1;
 }
