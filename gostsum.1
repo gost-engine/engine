@@ -65,6 +65,12 @@ of GOST 28147-89 block cipher) specified in the IETF draft
 By default, cryptopro paramset is used. This option enables use of test
 paramset as specified in appendices to the GOST.
 
+.SH CAVEATS
+
+The output of gost12sum has a reversed byte order compared to output of 
+.B openssl dgst
+command because of the Russian GOST requrements. 
+
 .SH BUGS
 
 This manpage is not quite accurate and has formatting inconsistent
