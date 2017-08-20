@@ -34,18 +34,17 @@ int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode);
 int hash_stream(gost_hash_ctx * ctx, int fd, char *sum);
 int get_line(FILE *f, char *hash, char *filename, int verbose);
 
-void help(const char *progname)
+void help()
 {
     fprintf(stderr, "Calculates GOST R 34.11-2012 hash function\n\n");
-    fprintf(stderr, "%s [-bvl] [-c [file]]| [files]|-x\n"
+    fprintf(stderr, "gostsum12 [-bvl] [-c [file]]| [files]|-x\n"
             "\t-c check message digests (default is generate)\n"
             "\t-v verbose, print file names when checking\n"
             "\t-b read files in binary mode\n"
             "\t-l use 512 bit hash (default 256 bit)\n"
             "\t-x read filenames from stdin rather than from arguments \n"
             "The input for -c should be the list of message digests and file names\n"
-		   "that is printed on stdout by this program when it generates"
-		   "digests.\n", progname);
+            "that is printed on stdout by this program when it generates digests.\n");
     exit(3);
 }
 
@@ -108,7 +107,7 @@ int main(int argc, char **argv)
             break;
         default:
             fprintf(stderr, "invalid option %c", optopt);
-            help(argv[0]);
+            help();
         }
     }
     if (check_file) {
@@ -227,7 +226,7 @@ int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
     }
     finish_hash12(ctx, buffer);
     for (i = 0; i < (hashsize / 8); i++) {
-        sprintf(sum + 2 * i, "%02x", buffer[hashsize/8-1-i]);
+        sprintf(sum + 2 * i, "%02x", buffer[i]);
     }
     return 1;
 }
