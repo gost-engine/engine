@@ -1,10 +1,20 @@
-GOST ENGINE
+OPENSSL GOST ENGINE
 
-This engine provides implementation of Russian cryptography standard.
-This is also an example of adding new cryptoalgorithms into OpenSSL
-without changing its core. If OpenSSL is compiled with dynamic engine
-support, new algorithms can be added even without recompilation of
-OpenSSL and applications which use it.
+An implementation of Russian cryptography standards for OpenSSL.
+
+Since v.1.0.0 OpenSSL provides facilities for creating external
+dynamically loaded cryptographic engines (OpenSSL should be built
+with dynamic engine support to be able to use it).
+
+This engine provides an implementation of various Russian cryptographic
+algorithms, known generally as GOST cryptographic algorithms (see detailed
+list below). These algorithms, can be used both via OpenSSL command line
+tools and via high-level libopenssl calls.
+
+OpenSSL GOST Engine also includes gostsum и gost12sum command line tools,
+for generating and checking GOST R34.11-94 and GOST R34.11-2012 hash sums.
+They have the same purposes and behavior as well known sha1sum and md5sum
+utilities.
 
 ALGORITHMS SUPPORTED
 
@@ -309,22 +319,3 @@ requires UKM to be derived from shared secret.
 
 If UKM is not set by this control command, encrypt operation would
 generate random UKM.
-
-
-This sources include implementation of GOST 28147-89 and GOST R 34.11-94
-which are completely indepentent from OpenSSL and can be used separately
-(files gost89.c, gost89.h, gosthash.c, gosthash.h) Utility gostsum (file
-gostsum.c) is provided as example of such separate usage. This is
-program, simular to md5sum and sha1sum utilities, but calculates GOST R
-34.11-94 hash.
-
-Makefile doesn't include rule for compiling gostsum.
-Use command
-
-$(CC) -o gostsum gostsum.c gost89.c gosthash.c
-where $(CC) is name of your C compiler.
-
-Implementations of GOST R 34.10-xx, including VKO algorithms heavily
-depends on OpenSSL BIGNUM and Elliptic Curve libraries.
-
-
