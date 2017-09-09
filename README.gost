@@ -2,59 +2,57 @@ OPENSSL GOST ENGINE
 
 An implementation of Russian cryptography standards for OpenSSL.
 
-Since v.1.0.0 OpenSSL provides facilities for creating external
-dynamically loaded cryptographic engines (OpenSSL should be built
-with dynamic engine support to be able to use it).
+Since v.0.9.6 OpenSSL provides facilities for creating external dynamically
+loaded cryptographic engines (OpenSSL should be built with dynamic engine
+support to be able to use it). Since v 1.0 it became possible to provide
+digital signature algorithms via engines.
 
 This engine provides an implementation of various Russian cryptographic
-algorithms, known generally as GOST cryptographic algorithms (see detailed
-list below). These algorithms, can be used both via OpenSSL command line
-tools and via high-level libopenssl calls.
+algorithms, known generally as GOST cryptographic algorithms (see detailed list
+below). These algorithms can be used both via OpenSSL command line tools and
+via high-level libopenssl calls.
 
-OpenSSL GOST Engine also includes gostsum и gost12sum command line tools,
-for generating and checking GOST R34.11-94 and GOST R34.11-2012 hash sums.
+OpenSSL GOST Engine also includes 'gostsum' and 'gost12sum' command line tools
+for generating and checking GOST R34.11-94 and GOST R34.11-2012 hashsums.
 They have the same purposes and behavior as well known sha1sum and md5sum
-utilities.
+utilities. These utilities can be used independently from OpenSSL.
 
 ALGORITHMS SUPPORTED
 
 GOST R 34.10-2001 and GOST R 34.10-2012 - digital signature algorithms.
    Also support key exchange based on public keys. See RFC 4357 for
    details of VKO key exchange algorithm. These algorithms use
-   256 bit private keys. Public keys are 1024 bit for 94 and 512 bit for
-   2001 (which is elliptic-curve based). Key exchange algorithms
-   (VKO R 34.10) are supported on these keys too.
-   
+   256 bit private keys for GOST 2001, 256/512 bits for GOST 2012. 
+	 Public keys are 512 bit for GOST 2001 and 512/1024 for GOST 2012. 
+	 Key exchange algorithms (VKO R 34.10) are supported on these keys too.
+  
+GOST R 34.11-94  Message digest algorithm. 256-bit hash value.
+
 GOST R 34.11-2012  Message digest algorithm. 256- and 512-bit hash values.
 
-GOST 28147-89 - Symmetric cipher  with 256-bit key. Various modes are
-   defined in the standard, but only CFB and CNT modes are implemented
+GOST 28147-89 - Symmetric cipher with 256-bit key. Various modes are
+   defined in the standard, but only CBC, CFB and CNT modes are implemented
    in the engine. To make statistical analysis more difficult, key
    meshing is supported (see RFC 4357).
 
-GOST 28147-89 MAC mode. Message authentication code. While most MAC
-    algorithms  out there are based on hash functions using HMAC
-	algorithm, this algoritm is based on symmetric cipher. 
-	It has 256-bit symmetric key and only 32 bits of MAC value
+GOST 28147-89 MAC mode. Message authentication code. While a lot of MAC
+  algorithms out there are based on hash functions using HMAC algorithm, 
+	this algoritm is based on symmetric cipher. 
+	It has 256-bit symmetric key and 8-64 (default 32) bits of MAC value
 	(while HMAC has same key size and value size). 
-
-	Really, this algorithm supports from 8 to 64 bits of the MAC value
-
 	It is implemented as combination of EVP_PKEY type and EVP_MD type.
 
 GOST R 34.13–2015 - Symmetric cypher Grasshopper ("Kuznechik")
 
-USAGE OF THESE ALGORITHMS
+USAGE OF GOST ALGORITHMS
 
-This engine is designed to allow usage of this algorithms in the
-high-level openssl functions, such as PKI, S/MIME and TLS.
+This engine is designed to allow usage of this algorithms in the high-level
+openssl functions, such as PKI, S/MIME and TLS. All the necessary constants are
+added to the main source tree of OpenSSL.
 
-See RFC 4490 for S/MIME with GOST algorithms and RFC 4491 for PKI.
-TLS support is implemented according IETF
-draft-chudov-cryptopro-cptls-03.txt and is compatible with
-CryptoPro CSP 3.0 and 3.6 as well as with MagPro CSP. 
-GOST ciphersuites implemented in CryptoPro CSP 2.0 are not supported
-because they use ciphersuite numbers used now by AES ciphersuites.
+See RFC 4490 for S/MIME with GOST algorithms and RFC 4491 for PKI.  TLS support
+is implemented according IETF draft-chudov-cryptopro-cptls-03.txt and is
+compatible with CryptoPro CSP 3.0+.
 
 To use the engine you have to load it via openssl configuration
 file. Applications should read openssl configuration file or provide
@@ -63,6 +61,9 @@ private keys, should use generic EVP_PKEY API instead of using RSA or
 other algorithm-specific API.
 
 CONFIGURATION FILE
+
+The very minimal example of the configuration file is provided  in this
+distribution and named 'example.conf'.
 
 Configuration file should include following statement in the global
 section, i.e. before first bracketed section header (see config(5) for details)
@@ -95,6 +96,7 @@ BouncyCastle cryptoprovider has some problems with private key parsing from Priv
 so if you want to use old private key representation format, which supported by BC,
 you must add:
   PK_PARAMS = LEGACY_PK_WRAP
+
 to [gost_section]
 
 Where engine_id parameter specifies name of engine (should be "gost").
@@ -123,8 +125,9 @@ USAGE WITH COMMAND LINE openssl UTILITY
   Use -algorithm option to specify algorithm.
   Use -pkeyopt option to pass paramset to algorithm. The following paramsets
   are supported by 
-  	gost94: 0,A,B,C,D,XA,XB,XC
-	gost2001: 0,A,B,C,XA,XB
+	gost2001:     0,A,B,C,XA,XB
+	gost2012_256: 0,A,B,C,XA,XB
+	gost2012_512:   A,B
   You can also use numeric representation of OID as to destinate
   paramset.
 
@@ -168,16 +171,15 @@ ciphersuites which use GOST 28147-89 encryption are enabled.
 Ciphersuites with NULL encryption should be enabled explicitely if
 needed.
 
-GOST2001-GOST89-GOST89 Uses GOST R 34.10-2001 for auth and key exchange
-		GOST 28147-89 for encryption and GOST 28147-89 MAC
-GOST94-GOST89-GOST89 Uses GOST R 34.10-94 for auth and key exchange
+GOST2001-GOST89-GOST89 Uses GOST R 34.10-2001 for auth and key exchange,
 		GOST 28147-89 for encryption and GOST 28147-89 MAC
 GOST2001-NULL-GOST94 Uses GOST R 34.10-2001 for auth and key exchange,
-        no encryption and HMAC, based on GOST R 34.11-94
-GOST94-NULL-GOST94 Uses GOST R 34.10-94 for auth and key exchange,
-        no encryption and HMAC, based on GOST R 34.11-94
+    no encryption and HMAC, based on GOST R 34.11-94
+GOST2012-GOST8912-GOST8912 Uses GOST R 34.10-2001 or 2012 for auth and key exchange,
+		GOST 28147-89 with paramset Z for encryption and GOST 28147-89 MAC with paramset Z
+GOST2012-NULL-GOST1 Uses GOST R 34.10-2001 or 2012 for auth and key exchange,
+    no encryption and HMAC, based on GOST R 34.11-2012 256-bit.
 
-Gost 94 and gost 2001 keys can be used simultaneously in the TLS server.
 RSA, DSA and EC keys can be used simultaneously with GOST keys, if
 server implementation supports loading more than two private
 key/certificate pairs. In this case ciphersuites which use any of loaded
