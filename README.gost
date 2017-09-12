@@ -14,7 +14,7 @@ via high-level libopenssl calls.
 
 OpenSSL GOST Engine also includes 'gostsum' and 'gost12sum' command line tools
 for generating and checking GOST R34.11-94 and GOST R34.11-2012 hashsums.
-They have the same purposes and behavior as well known sha1sum and md5sum
+They have the same purposes and behavior as the well-known sha1sum and md5sum
 utilities. These utilities can be used independently from OpenSSL.
 
 ALGORITHMS SUPPORTED
