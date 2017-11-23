@@ -26,6 +26,8 @@ shared libraries of the desirable OpenSSL instance
 
     $ cmake -DCMAKE_C_FLAGS='-I/PATH/TO/OPENSSL/include -L/PATH/TO/OPENSSL/lib' ..
 
+If you use Visual Studio, see READMEWIN.txt for details.
+
 How to Install
 --------------
 
