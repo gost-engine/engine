@@ -119,7 +119,7 @@ extern uint8_t grasshopper_galois_alpha_to[256];
 extern uint8_t grasshopper_galois_index_of[256];
 
 static GRASSHOPPER_INLINE uint8_t grasshopper_galois_mul(uint8_t x, uint8_t y) {
-    if (__builtin_expect(x != 0 && y != 0, 1)) {
+    if (likely(x != 0 && y != 0)) {
         return grasshopper_galois_alpha_to[(grasshopper_galois_index_of[x] + grasshopper_galois_index_of[y]) %
                                          GRASSHOPPER_GALOIS_FIELD_SIZE];
     } else {
