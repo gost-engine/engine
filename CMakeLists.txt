@@ -1,13 +1,23 @@
-cmake_minimum_required(VERSION 2.8)
-project(ccgost C)
+cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+project(gost-engine LANGUAGES C)
+
+include(GNUInstallDirs)
+
+find_package(OpenSSL 1.1 REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
-   message(STATUS "Using Clang and adding -Qunused-arguments flag")
-   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
+ add_compile_options(-Qunused-arguments)
+elseif(CMAKE_C_COMPILER_ID MATCHES "GNU")
+ add_compile_options(-O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb)
+elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
+ add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+ add_definitions(-D_CRT_DEPRECATED_NO_WARNINGS)
+ add_definitions(-D_CRT_NONSTDC_NO_WARNINGS)
+ add_compile_options(/MP /WX /W4 /wd4100 /wd4267 /wd4206 /wd4706 /wd4244 /wd4115)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3 -Werror -Qunused-arguments -Wno-unused-function -Wno-missing-braces -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb")
+set(CMAKE_C_STANDARD 90)
 
 include (TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
@@ -15,8 +25,7 @@ if(IS_BIG_ENDIAN)
  message(STATUS "BIG_ENDIAN")
 else()
  message(STATUS "LITTLE_ENDIAN")
- set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c98 -O3 -Werror -Wall")
- set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DL_ENDIAN")
+ add_definitions(-DL_ENDIAN)
 endif()
 
 set(BIN_DIRECTORY bin)
@@ -80,47 +89,51 @@ set(GOST_EC_SOURCE_FILES
         )
 
 set(GOST_LIB_SOURCE_FILES
-        ${GOST_EC_SOURCE_FILES}
         ${GOST_89_SOURCE_FILES}
         ${GOST_HASH_SOURCE_FILES}
+        ${GOST_HASH_2012_SOURCE_FILES}
         ${GOST_GRASSHOPPER_SOURCE_FILES}
-        ${GOST_HASH_2012_SOURCE_FILES})
+        ${GOST_EC_SOURCE_FILES}
+        )
 
 set(GOST_ENGINE_SOURCE_FILES
         ${GOST_CORE_SOURCE_FILES}
         gost_ameth.c
         gost_md.c
         gost_md2012.c
-        gost_pmeth.c)
+        gost_pmeth.c
+        )
 
-add_library(gost STATIC ${GOST_LIB_SOURCE_FILES})
-set_target_properties(gost PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
+set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
-
-target_link_libraries(gost_engine crypto gost)
-
-set(GOST_12_SUM_SOURCE_FILES
-        gost12sum.c
-        )
-
-add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
-
-target_link_libraries(gost12sum gost)
+target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 
 set(GOST_SUM_SOURCE_FILES
         gostsum.c
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
+target_link_libraries(gostsum gost_core)
 
-target_link_libraries(gostsum gost)
-
-set(GOST_SUM_12_SOURCE_FILES
-        gostsum12.c
+set(GOST_12_SUM_SOURCE_FILES
+        gost12sum.c
         )
 
-#add_executable(gostsum12 ${GOST_SUM_12_SOURCE_FILES})
-#
-#target_link_libraries(gostsum12 gost)
+add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
+target_link_libraries(gost12sum gost_core)
+
+# install
+set(OPENSSL_ENGINES_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/engines-${OPENSSL_VERSION_MAJOR}_${OPENSSL_VERSION_MINOR})
+set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
+
+install(TARGETS gost_engine gostsum gost12sum EXPORT GostEngineConfig
+        LIBRARY  DESTINATION ${OPENSSL_ENGINES_INSTALL_DIR}
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES gostsum.1 gost12sum.1 DESTINATION ${OPENSSL_MAN_INSTALL_DIR})
+if (MSVC)
+ install(FILES $<TARGET_PDB_FILE:gost_engine> DESTINATION ${OPENSSL_ENGINES_INSTALL_DIR} OPTIONAL)
+ install(FILES $<TARGET_PDB_FILE:gostsum> $<TARGET_PDB_FILE:gost12sum> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+endif()

@@ -18,6 +18,7 @@ extern "C" {
 #   define GRASSHOPPER_INLINE inline
 #  elif defined(__GNUC__) && __GNUC__ >= 2
 #   define GRASSHOPPER_INLINE __inline__
+#   define likely(x) __builtin_expect(!!(x), 1)
 #  elif defined(_MSC_VER)
 #   define GRASSHOPPER_INLINE __inline
 #  else
@@ -25,6 +26,10 @@ extern "C" {
 #  endif
 # else
 #  define GRASSHOPPER_INLINE inline
+# endif
+
+# if !defined(likely)
+#   define likely(x) x
 # endif
 
 typedef union {

@@ -10,7 +10,16 @@
  **********************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _MSC_VER
+#include "getopt.h"
+# ifndef PATH_MAX
+#  define PATH_MAX _MAX_PATH
+# endif
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
 #include <unistd.h>
+#endif
 #include <limits.h>
 #include <fcntl.h>
 #ifdef _WIN32

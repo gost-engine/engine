@@ -9,7 +9,16 @@
  **********************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _MSC_VER
+#include "getopt.h"
+# ifndef PATH_MAX
+#  define PATH_MAX _MAX_PATH
+# endif
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
 #include <unistd.h>
+#endif
 #include <limits.h>
 #include <fcntl.h>
 #ifdef _WIN32
@@ -77,7 +86,8 @@ int main(int argc, char **argv)
     init_gost_hash_ctx(&ctx, b);
     if (check_file) {
         char inhash[65], calcsum[65], filename[PATH_MAX];
-        int failcount = 0, count = 0, errors = 0;
+        int failcount = 0, count = 0;
+        errors = 0;
         if (check_file == stdin && optind < argc) {
             check_file = fopen(argv[optind], "r");
             if (!check_file) {

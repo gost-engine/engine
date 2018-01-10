@@ -8,54 +8,58 @@ To build and install OpenSSL GOST Engine, you will need
 
 * OpenSSL 1.1.*
 * an ANSI C compiler
-* CMake (2.8 or newer)
+* CMake (3.0 or newer)
 
 Here is a quick build guide:
 
     $ mkdir build
     $ cd build
-    $ cmake ..
-    $ make
+    $ cmake -DCMAKE_BUILD_TYPE=Release ..
+    $ cmake --build . --config Release
 
+Instead of `Release` you can use `Debug`, `RelWithDebInfo` or `MinSizeRel` configuration.
+See [cmake docs](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) for details.
 You will find built binaries in `../bin` directory.
 
 If you want to build against a specific OpenSSL instance (you will need it
 if you have more than one OpenSSL instance for example), you can use
-the `cmake` variable `CMAKE_C_FLAGS` to specify path to include files and
-shared libraries of the desirable OpenSSL instance
+the `cmake` variable `OPENSSL_ROOT_DIR` to specify path of the desirable
+OpenSSL instance:
 
-    $ cmake -DCMAKE_C_FLAGS='-I/PATH/TO/OPENSSL/include -L/PATH/TO/OPENSSL/lib' ..
+    $ cmake -DOPENSSL_ROOT_DIR=/PATH/TO/OPENSSL/ ..
 
-If you use Visual Studio, see READMEWIN.txt for details.
+If you use Visual Studio, you can also set `CMAKE_INSTALL_PREFIX` variable
+to set install path, like this:
+
+    > cmake -G "Visual Studio 15 Win64" -DCMAKE_PREFIX_PATH=c:\OpenSSL\vc-win64a\ -DCMAKE_INSTALL_PREFIX=c:\OpenSSL\vc-win64a\ ..
+
+Also instead of `cmake --build` tool you can just open `gost-engine.sln`
+in Visual Studio, select configuration and call `Build Solution` manually.
+
+Instructions how to build OpenSSL 1.1.0 with Microsoft Visual Studio
+you can find [there](https://gist.github.com/terrillmoore/995421ea6171a9aa50552f6aa4be0998).
 
 How to Install
 --------------
 
-For now OpenSSL GOST Engine does not have an installation script, so you have to
-do it manually.
+To install GOST Engine you can call:
 
-Copy `gostsum` and `gost12sum` binaries to your binary directory. For example
-`/usr/local/bin`:
+    # cmake --build . --target install --config Release
 
-    # cd ../bin
-    # cp gostsum gost12sum /usr/local/bin
+or old plain and Unix only:
 
-Then, if you like to install man files properly, you can do it as follows:
-
-    # cd ..
-    # mkdir -p /usr/local/man/man1
-    # cp gost12sum.1 gostsum.1 /usr/local/man/man1
+    # make install
 
 The engine library `gost.so` should be installed into OpenSSL engine directory.
-Use the following command to get its name:
+
+To ensure that it is installed propery call:
 
     $ openssl version -e
     ENGINESDIR: "/usr/lib/i386-linux-gnu/engines-1.1"
 
-Then simply copy `gost.so` there
+Then check that `gost.so` there
 
-    # cp bin/gost.so /usr/lib/i386-linux-gnu/engines-1.1
-
+    # ls /usr/lib/i386-linux-gnu/engines-1.1
 
 Finally, to start using GOST Engine through OpenSSL, you should edit
 `openssl.cnf` configuration file as specified below.

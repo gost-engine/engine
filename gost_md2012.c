@@ -161,9 +161,7 @@ static int gost_digest_ctrl_512(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
                 strcpy(*((char **)ptr), micalg_512);
                 return 1;
             }
-            return 0;
         }
-        return 1;
     default:
         return 0;
     }
