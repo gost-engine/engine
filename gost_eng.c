@@ -224,6 +224,7 @@ static int bind_gost(ENGINE* e, const char* id) {
         || !EVP_add_cipher(cipher_gost_grasshopper_cfb())
         || !EVP_add_cipher(cipher_gost_grasshopper_ofb())
         || !EVP_add_cipher(cipher_gost_grasshopper_ctr())
+        || !EVP_add_cipher(cipher_magma_cbc())
         || !EVP_add_digest(digest_gost())
         || !EVP_add_digest(digest_gost2012_512())
         || !EVP_add_digest(digest_gost2012_256())

@@ -449,6 +449,17 @@ void gost_key(gost_ctx * c, const byte * k)
     }
 }
 
+/* Set 256 bit  key into context */
+void magma_key(gost_ctx * c, const byte * k)
+{
+    int i, j;
+    for (i = 7, j = 0; i >= 0; i--, j += 4) {
+        c->k[i] =
+            k[j] | (k[j + 1] << 8) | (k[j + 2] << 16) | ((word32) k[j + 3] <<
+                                                         24);
+    }
+}
+
 /* Retrieve 256-bit key from context */
 void gost_get_key(gost_ctx * c, byte * k)
 {

@@ -46,6 +46,8 @@ static int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params);
 /* Control function */
 static int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
 
+static int magma_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                                const unsigned char *iv, int enc);
 static EVP_CIPHER *_hidden_Gost28147_89_cipher = NULL;
 const EVP_CIPHER *cipher_gost(void)
 {
@@ -185,6 +187,40 @@ const EVP_CIPHER *cipher_gost_cpcnt_12(void)
         _hidden_gost89_cnt_12 = NULL;
     }
     return _hidden_gost89_cnt_12;
+}
+
+static EVP_CIPHER *_hidden_magma_cbc = NULL;
+const EVP_CIPHER *cipher_magma_cbc(void)
+{
+    if (_hidden_magma_cbc == NULL
+        && ((_hidden_magma_cbc =
+             EVP_CIPHER_meth_new(NID_magma_cbc, 8 /* block_size */ ,
+                                 32 /* key_size */ )) == NULL
+            || !EVP_CIPHER_meth_set_iv_length(_hidden_magma_cbc, 8)
+            || !EVP_CIPHER_meth_set_flags(_hidden_magma_cbc,
+                                          EVP_CIPH_CBC_MODE |
+                                          EVP_CIPH_CUSTOM_IV |
+                                          EVP_CIPH_RAND_KEY |
+                                          EVP_CIPH_ALWAYS_CALL_INIT)
+            || !EVP_CIPHER_meth_set_init(_hidden_magma_cbc,
+                                         magma_cipher_init_cbc)
+            || !EVP_CIPHER_meth_set_do_cipher(_hidden_magma_cbc,
+                                              gost_cipher_do_cbc)
+            || !EVP_CIPHER_meth_set_cleanup(_hidden_magma_cbc,
+                                            gost_cipher_cleanup)
+            || !EVP_CIPHER_meth_set_impl_ctx_size(_hidden_magma_cbc,
+                                                  sizeof(struct
+                                                         ossl_gost_cipher_ctx))
+            || !EVP_CIPHER_meth_set_set_asn1_params(_hidden_magma_cbc,
+                                                    gost89_set_asn1_parameters)
+            || !EVP_CIPHER_meth_set_get_asn1_params(_hidden_magma_cbc,
+                                                    gost89_get_asn1_parameters)
+            || !EVP_CIPHER_meth_set_ctrl(_hidden_magma_cbc,
+                                         gost_cipher_ctl))) {
+        EVP_CIPHER_meth_free(_hidden_magma_cbc);
+        _hidden_magma_cbc = NULL;
+    }
+    return _hidden_magma_cbc;
 }
 
 void cipher_gost_destroy(void)
@@ -385,6 +421,28 @@ static int gost_cipher_init_param(EVP_CIPHER_CTX *ctx,
     return 1;
 }
 
+static int magma_cipher_init_param(EVP_CIPHER_CTX *ctx,
+                                  const unsigned char *key,
+                                  const unsigned char *iv, int enc,
+                                  int paramNID, int mode)
+{
+    struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
+    if (EVP_CIPHER_CTX_get_app_data(ctx) == NULL) {
+        if (!gost_cipher_set_param(c, paramNID))
+            return 0;
+        EVP_CIPHER_CTX_set_app_data(ctx, EVP_CIPHER_CTX_get_cipher_data(ctx));
+    }
+    if (key)
+        magma_key(&(c->cctx), key);
+    if (iv) {
+        memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx), iv,
+               EVP_CIPHER_CTX_iv_length(ctx));
+    }
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx),
+           EVP_CIPHER_CTX_original_iv(ctx), EVP_CIPHER_CTX_iv_length(ctx));
+    return 1;
+}
+
 static int gost_cipher_init_cnt(EVP_CIPHER_CTX *ctx,
                                 const unsigned char *key,
                                 const unsigned char *iv,
@@ -431,6 +489,14 @@ int gost_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                          const unsigned char *iv, int enc)
 {
     return gost_cipher_init_param(ctx, key, iv, enc, NID_undef,
+                                  EVP_CIPH_CBC_MODE);
+}
+
+/* Initializes EVP_CIPHER_CTX with default values */
+int magma_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                         const unsigned char *iv, int enc)
+{
+    return magma_cipher_init_param(ctx, key, iv, enc, NID_undef,
                                   EVP_CIPH_CBC_MODE);
 }
 
