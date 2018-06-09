@@ -453,9 +453,9 @@ void gost_key(gost_ctx * c, const byte * k)
 void magma_key(gost_ctx * c, const byte * k)
 {
     int i, j;
-    for (i = 7, j = 0; i >= 0; i--, j += 4) {
+    for (i = 0, j = 0; i < 8; i++, j += 4) {
         c->k[i] =
-            k[j] | (k[j + 1] << 8) | (k[j + 2] << 16) | ((word32) k[j + 3] <<
+            k[j+3] | (k[j + 2] << 8) | (k[j + 1] << 16) | ((word32) k[j] <<
                                                          24);
     }
 }
