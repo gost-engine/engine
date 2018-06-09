@@ -236,6 +236,8 @@ void cipher_gost_destroy(void)
     _hidden_Gost28147_89_cbc = NULL;
     EVP_CIPHER_meth_free(_hidden_gost89_cnt_12);
     _hidden_gost89_cnt_12 = NULL;
+    EVP_CIPHER_meth_free(_hidden_magma_cbc);
+    _hidden_magma_cbc = NULL;
 }
 
 /* Implementation of GOST 28147-89 in MAC (imitovstavka) mode */
