@@ -6,7 +6,7 @@ How to Build
 
 To build and install OpenSSL GOST Engine, you will need
 
-* OpenSSL 1.1.*
+* OpenSSL 1.1.1
 * an ANSI C compiler
 * CMake (3.0 or newer)
 
