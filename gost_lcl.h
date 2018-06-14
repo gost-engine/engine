@@ -178,6 +178,10 @@ EVP_MD *imit_gost_cpa(void);
 void imit_gost_cpa_destroy(void);
 EVP_MD *imit_gost_cp_12(void);
 void imit_gost_cp_12_destroy(void);
+EVP_MD *magma_omac(void);
+void magma_omac_destroy(void);
+EVP_MD *grasshopper_omac(void);
+void grasshopper_omac_destroy(void);
 /* Cipher context used for EVP_CIPHER operation */
 struct ossl_gost_cipher_ctx {
     int paramNID;

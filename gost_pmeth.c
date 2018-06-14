@@ -523,7 +523,8 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
     case EVP_PKEY_CTRL_MD:
         {
             int nid = EVP_MD_type((const EVP_MD *)p2);
-            if (nid != NID_id_Gost28147_89_MAC && nid != NID_gost_mac_12) {
+            if (nid != NID_id_Gost28147_89_MAC && nid != NID_gost_mac_12
+                && nid != NID_magma_mac && nid != NID_grasshopper_mac) {
                 GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL,
                         GOST_R_INVALID_DIGEST_TYPE);
                 return 0;
@@ -802,6 +803,28 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
         EVP_PKEY_meth_set_cleanup(*pmeth, pkey_gost_mac_cleanup);
         EVP_PKEY_meth_set_copy(*pmeth, pkey_gost_mac_copy);
         return 1;
+/* TODO				
+    case NID_magma_mac:
+        EVP_PKEY_meth_set_ctrl(*pmeth, pkey_gost_mac_ctrl,
+                               pkey_gost_mac_ctrl_str);
+        EVP_PKEY_meth_set_signctx(*pmeth, pkey_gost_mac_signctx_init,
+                                  pkey_gost_mac_signctx);
+        EVP_PKEY_meth_set_keygen(*pmeth, NULL, pkey_gost_mac_keygen_12);
+        EVP_PKEY_meth_set_init(*pmeth, pkey_gost_mac_init);
+        EVP_PKEY_meth_set_cleanup(*pmeth, pkey_gost_mac_cleanup);
+        EVP_PKEY_meth_set_copy(*pmeth, pkey_gost_mac_copy);
+        return 1;
+    case NID_grasshopper_mac:
+        EVP_PKEY_meth_set_ctrl(*pmeth, pkey_gost_mac_ctrl,
+                               pkey_gost_mac_ctrl_str);
+        EVP_PKEY_meth_set_signctx(*pmeth, pkey_gost_mac_signctx_init,
+                                  pkey_gost_mac_signctx);
+        EVP_PKEY_meth_set_keygen(*pmeth, NULL, pkey_gost_mac_keygen_12);
+        EVP_PKEY_meth_set_init(*pmeth, pkey_gost_mac_init);
+        EVP_PKEY_meth_set_cleanup(*pmeth, pkey_gost_mac_cleanup);
+        EVP_PKEY_meth_set_copy(*pmeth, pkey_gost_mac_copy);
+        return 1;
+*/ 				
     default:                   /* Unsupported method */
         return 0;
     }

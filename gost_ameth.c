@@ -922,6 +922,16 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
         EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost_12);
         break;
+/* TODO				
+    case NID_magma_mac:
+        EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
+        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost);
+        break;
+    case NID_grasshopper_mac:
+        EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
+        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost_12);
+        break;
+*/				
     }
     return 1;
 }

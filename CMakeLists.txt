@@ -88,12 +88,17 @@ set(GOST_EC_SOURCE_FILES
         gost_ec_sign.c
         )
 
+set (GOST_OMAC_SOURCE_FILES
+        gost_omac.c
+        )
+
 set(GOST_LIB_SOURCE_FILES
         ${GOST_89_SOURCE_FILES}
         ${GOST_HASH_SOURCE_FILES}
         ${GOST_HASH_2012_SOURCE_FILES}
         ${GOST_GRASSHOPPER_SOURCE_FILES}
         ${GOST_EC_SOURCE_FILES}
+        ${GOST_OMAC_SOURCE_FILES}
         )
 
 set(GOST_ENGINE_SOURCE_FILES
@@ -102,6 +107,7 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_md.c
         gost_md2012.c
         gost_pmeth.c
+        gost_omac.c
         )
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
