@@ -56,10 +56,14 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_PKEY_GOST_EC_CTRL_STR_256                 125
 # define GOST_F_PKEY_GOST_EC_CTRL_STR_512                 126
 # define GOST_F_PKEY_GOST_EC_DERIVE                       127
+# define GOST_F_PKEY_GOST_GRASSHOPPER_MAC_SIGNCTX_INIT    141
 # define GOST_F_PKEY_GOST_MAC_CTRL                        128
 # define GOST_F_PKEY_GOST_MAC_CTRL_STR                    129
 # define GOST_F_PKEY_GOST_MAC_KEYGEN_BASE                 130
 # define GOST_F_PKEY_GOST_MAC_SIGNCTX_INIT                131
+# define GOST_F_PKEY_GOST_MAGMA_MAC_SIGNCTX_INIT          142
+# define GOST_F_PKEY_GOST_OMAC_CTRL                       139
+# define GOST_F_PKEY_GOST_OMAC_CTRL_STR                   140
 # define GOST_F_PRINT_GOST_EC_PUB                         132
 # define GOST_F_PRIV_DECODE_GOST                          133
 # define GOST_F_PUB_DECODE_GOST_EC                        134

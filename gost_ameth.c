@@ -842,6 +842,30 @@ static int mac_ctrl_gost_12(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     return -2;
 }
 
+static int mac_ctrl_magma(EVP_PKEY *pkey, int op, long arg1, void *arg2)
+{
+    switch (op) {
+    case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
+        if (arg2) {
+            *(int *)arg2 = NID_magma_mac;
+            return 2;
+        }
+    }
+    return -2;
+}
+
+static int mac_ctrl_grasshopper(EVP_PKEY *pkey, int op, long arg1, void *arg2)
+{
+    switch (op) {
+    case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
+        if (arg2) {
+            *(int *)arg2 = NID_grasshopper_mac;
+            return 2;
+        }
+    }
+    return -2;
+}
+
 static int gost2001_param_encode(const EVP_PKEY *pkey, unsigned char **pder)
 {
     int nid =
@@ -922,16 +946,14 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
         EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost_12);
         break;
-/* TODO				
     case NID_magma_mac:
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
-        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost);
+        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_magma);
         break;
     case NID_grasshopper_mac:
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
-        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost_12);
+        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_grasshopper);
         break;
-*/				
     }
     return 1;
 }
