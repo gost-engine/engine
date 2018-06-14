@@ -283,7 +283,7 @@ static int pkey_gost2001_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
     EC_KEY *ec = NULL;
 
     if (!data || data->sign_param_nid == NID_undef) {
-        GOSTerr(GOST_F_PKEY_GOST01_PARAMGEN, GOST_R_NO_PARAMETERS_SET);
+        GOSTerr(GOST_F_PKEY_GOST2001_PARAMGEN, GOST_R_NO_PARAMETERS_SET);
         return 0;
     }
 
@@ -303,7 +303,7 @@ static int pkey_gost2012_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
     int result = 0;
 
     if (!data || data->sign_param_nid == NID_undef) {
-        GOSTerr(GOST_F_PKEY_GOST12_PARAMGEN, GOST_R_NO_PARAMETERS_SET);
+        GOSTerr(GOST_F_PKEY_GOST2012_PARAMGEN, GOST_R_NO_PARAMETERS_SET);
         return 0;
     }
 
@@ -657,7 +657,7 @@ static int pkey_gost_mac_keygen_base(EVP_PKEY_CTX *ctx,
     struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
     struct gost_mac_key *keydata;
     if (!data || !data->key_set) {
-        GOSTerr(GOST_F_PKEY_GOST_MAC_KEYGEN, GOST_R_MAC_KEY_NOT_SET);
+        GOSTerr(GOST_F_PKEY_GOST_MAC_KEYGEN_BASE, GOST_R_MAC_KEY_NOT_SET);
         return 0;
     }
     keydata = OPENSSL_malloc(sizeof(struct gost_mac_key));

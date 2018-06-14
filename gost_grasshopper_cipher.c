@@ -541,7 +541,7 @@ int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX* ctx, ASN1_TYPE* params)
 
     if (!os || !ASN1_OCTET_STRING_set(os, buf, len)) {
         OPENSSL_free(buf);
-        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, ERR_R_MALLOC_FAILURE);
+        GOSTerr(GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS, ERR_R_MALLOC_FAILURE);
         return 0;
     }
     OPENSSL_free(buf);
@@ -564,13 +564,13 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX* ctx, int type, int arg, void* pt
     switch (type) {
         case EVP_CTRL_RAND_KEY: {
             if (RAND_bytes((unsigned char*) ptr, EVP_CIPHER_CTX_key_length(ctx)) <= 0) {
-                GOSTerr(GOST_F_GOST_CIPHER_CTL, GOST_R_RNG_ERROR);
+                GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, GOST_R_RNG_ERROR);
                 return -1;
             }
             break;
         }
         default:
-            GOSTerr(GOST_F_GOST_CIPHER_CTL, GOST_R_UNSUPPORTED_CIPHER_CTL_COMMAND);
+            GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, GOST_R_UNSUPPORTED_CIPHER_CTL_COMMAND);
             return -1;
     }
     return 1;
