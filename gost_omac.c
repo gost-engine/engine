@@ -133,7 +133,23 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
     case EVP_MD_CTRL_SET_KEY:
 				{
 					OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
-					const EVP_CIPHER *cipher = EVP_get_cipherbynid(c->cipher_nid);
+					const EVP_MD *md = EVP_MD_CTX_md(ctx);
+					const EVP_CIPHER *cipher = NULL;
+
+					if (c->cipher_nid == NID_undef)
+					{
+						switch (EVP_MD_nid(md))
+						{
+							case NID_magma_mac:
+								c->cipher_nid = NID_magma_cbc;
+								break;
+
+							case NID_grasshopper_mac:
+								c->cipher_nid = NID_grasshopper_cbc;
+								break;
+						}
+					}
+					cipher = EVP_get_cipherbynid(c->cipher_nid);
 
 					if (cipher == NULL)
 					{
