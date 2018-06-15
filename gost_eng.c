@@ -257,6 +257,8 @@ static int bind_gost(ENGINE* e, const char* id) {
         || !EVP_add_digest(digest_gost2012_256())
         || !EVP_add_digest(imit_gost_cpa())
         || !EVP_add_digest(imit_gost_cp_12())
+        || !EVP_add_digest(magma_omac())
+        || !EVP_add_digest(grasshopper_omac())
             ) {
         goto end;
     }
