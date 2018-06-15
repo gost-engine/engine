@@ -214,10 +214,10 @@ static int bind_gost(ENGINE* e, const char* id) {
                              "GOST 28147-89 MAC with 2012 params"))
         goto end;
     if (!register_ameth_gost(NID_magma_mac, &ameth_magma_mac,
-                             "MAGMA-OMAC", "GOST R 34.13-2015 Magma MAC"))
+                             "MAGMA-MAC", "GOST R 34.13-2015 Magma MAC"))
         goto end;
     if (!register_ameth_gost(NID_grasshopper_mac, &ameth_grasshopper_mac,
-                             "GRASSHOPPER-OMAC", "GOST R 34.13-2015 Grasshopper MAC"))
+                             "GRASSHOPPER-MAC", "GOST R 34.13-2015 Grasshopper MAC"))
         goto end;
 
     if (!register_pmeth_gost(NID_id_GostR3410_2001, &pmeth_GostR3410_2001, 0))

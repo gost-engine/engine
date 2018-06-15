@@ -556,8 +556,7 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
     case EVP_PKEY_CTRL_MD:
         {
             int nid = EVP_MD_type((const EVP_MD *)p2);
-            if (nid != NID_id_Gost28147_89_MAC && nid != NID_gost_mac_12
-                && nid != NID_magma_mac && nid != NID_grasshopper_mac) {
+            if (nid != NID_id_Gost28147_89_MAC && nid != NID_gost_mac_12) {
                 GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL,
                         GOST_R_INVALID_DIGEST_TYPE);
                 return 0;
