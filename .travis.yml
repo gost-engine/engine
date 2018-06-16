@@ -1,0 +1,25 @@
+sudo: required
+dist: trusty
+
+os: linux
+
+language: c
+
+env:
+  global:
+    - PREFIX="${HOME}/opt"
+
+matrix:
+  include:
+    - env: OPENSSL_BRANCH=OpenSSL_1_1_0-stable
+      os: linux
+      compiler: gcc
+#    - env: OPENSSL_BRANCH=OpenSSL_1_0_2-stable
+#      os: linux
+#      compiler: gcc
+
+before_script:
+  - .ci/build-openssl.sh > build.log 2>&1 || (cat build.log && exit 1)
+
+script:
+  - .ci/build-check.sh
