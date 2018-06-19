@@ -48,6 +48,7 @@ static int gost_cipher_nids[] = {
         NID_grasshopper_ofb,
         NID_grasshopper_ctr,
         NID_magma_cbc,
+        NID_magma_ctr,
         0
 };
 
@@ -252,6 +253,7 @@ static int bind_gost(ENGINE* e, const char* id) {
         || !EVP_add_cipher(cipher_gost_grasshopper_ofb())
         || !EVP_add_cipher(cipher_gost_grasshopper_ctr())
         || !EVP_add_cipher(cipher_magma_cbc())
+        || !EVP_add_cipher(cipher_magma_ctr())
         || !EVP_add_digest(digest_gost())
         || !EVP_add_digest(digest_gost2012_512())
         || !EVP_add_digest(digest_gost2012_256())
@@ -331,6 +333,8 @@ static int gost_ciphers(ENGINE* e, const EVP_CIPHER** cipher,
         *cipher = cipher_gost_grasshopper_ctr();
     } else if (nid == NID_magma_cbc) {
         *cipher = cipher_magma_cbc();
+    } else if (nid == NID_magma_ctr) {
+        *cipher = cipher_magma_ctr();
     } else {
         ok = 0;
         *cipher = NULL;

@@ -46,11 +46,14 @@ static int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params);
 /* Control function */
 static int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
 
-static int magma_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+static int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                                 const unsigned char *iv, int enc);
 /* Handles block of data in CBC mode */
 static int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
                               const unsigned char *in, size_t inl);
+static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                       const unsigned char *in, size_t inl);
+
 static EVP_CIPHER *_hidden_Gost28147_89_cipher = NULL;
 const EVP_CIPHER *cipher_gost(void)
 {
@@ -192,6 +195,41 @@ const EVP_CIPHER *cipher_gost_cpcnt_12(void)
     return _hidden_gost89_cnt_12;
 }
 
+static EVP_CIPHER *_hidden_magma_ctr = NULL;
+const EVP_CIPHER *cipher_magma_ctr(void)
+{
+    if (_hidden_magma_ctr == NULL
+        && ((_hidden_magma_ctr =
+             EVP_CIPHER_meth_new(NID_magma_ctr, 1 /* block_size */ ,
+                                 32 /* key_size */ )) == NULL
+            || !EVP_CIPHER_meth_set_iv_length(_hidden_magma_ctr, 8)
+            || !EVP_CIPHER_meth_set_flags(_hidden_magma_ctr,
+                                          EVP_CIPH_CTR_MODE |
+                                          EVP_CIPH_NO_PADDING |
+                                          EVP_CIPH_CUSTOM_IV |
+                                          EVP_CIPH_RAND_KEY |
+                                          EVP_CIPH_ALWAYS_CALL_INIT)
+            || !EVP_CIPHER_meth_set_init(_hidden_magma_ctr,
+                                         magma_cipher_init)
+            || !EVP_CIPHER_meth_set_do_cipher(_hidden_magma_ctr,
+                                              magma_cipher_do_ctr)
+            || !EVP_CIPHER_meth_set_cleanup(_hidden_magma_ctr,
+                                            gost_cipher_cleanup)
+            || !EVP_CIPHER_meth_set_impl_ctx_size(_hidden_magma_ctr,
+                                                  sizeof(struct
+                                                         ossl_gost_cipher_ctx))
+            || !EVP_CIPHER_meth_set_set_asn1_params(_hidden_magma_ctr,
+                                                    gost89_set_asn1_parameters)
+            || !EVP_CIPHER_meth_set_get_asn1_params(_hidden_magma_ctr,
+                                                    gost89_get_asn1_parameters)
+            || !EVP_CIPHER_meth_set_ctrl(_hidden_magma_ctr,
+                                         gost_cipher_ctl))) {
+        EVP_CIPHER_meth_free(_hidden_magma_ctr);
+        _hidden_magma_ctr = NULL;
+    }
+    return _hidden_magma_ctr;
+}
+
 static EVP_CIPHER *_hidden_magma_cbc = NULL;
 const EVP_CIPHER *cipher_magma_cbc(void)
 {
@@ -206,7 +244,7 @@ const EVP_CIPHER *cipher_magma_cbc(void)
                                           EVP_CIPH_RAND_KEY |
                                           EVP_CIPH_ALWAYS_CALL_INIT)
             || !EVP_CIPHER_meth_set_init(_hidden_magma_cbc,
-                                         magma_cipher_init_cbc)
+                                         magma_cipher_init)
             || !EVP_CIPHER_meth_set_do_cipher(_hidden_magma_cbc,
                                               magma_cipher_do_cbc)
             || !EVP_CIPHER_meth_set_cleanup(_hidden_magma_cbc,
@@ -238,6 +276,8 @@ void cipher_gost_destroy(void)
     _hidden_gost89_cnt_12 = NULL;
     EVP_CIPHER_meth_free(_hidden_magma_cbc);
     _hidden_magma_cbc = NULL;
+    EVP_CIPHER_meth_free(_hidden_magma_ctr);
+    _hidden_magma_ctr = NULL;
 }
 
 /* Implementation of GOST 28147-89 in MAC (imitovstavka) mode */
@@ -498,7 +538,7 @@ int gost_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 }
 
 /* Initializes EVP_CIPHER_CTX with default values */
-int magma_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                          const unsigned char *iv, int enc)
 {
     return magma_cipher_init_param(ctx, key, iv, enc, NID_undef,
@@ -591,7 +631,7 @@ int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
     return 1;
 }
 
-/* GOST encryption in CBC mode */
+/* MAGMA encryption in CBC mode */
 int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
                        const unsigned char *in, size_t inl)
 {
@@ -634,6 +674,62 @@ int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
         }
     }
     return 1;
+}
+
+/* increment counter (64-bit int) by 1 */
+static void ctr64_inc(unsigned char *counter)
+{
+	inc_counter(counter, 8);
+}
+
+/* MAGMA encryption in CTR mode */
+static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                       const unsigned char *in, size_t inl)
+{
+    const unsigned char *in_ptr = in;
+    unsigned char *out_ptr = out;
+    size_t i = 0;
+    size_t j;
+    struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
+    unsigned char *buf = EVP_CIPHER_CTX_buf_noconst(ctx);
+    unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
+/* Process partial blocks */
+    if (EVP_CIPHER_CTX_num(ctx)) {
+        for (j = EVP_CIPHER_CTX_num(ctx), i = 0; j < 8 && i < inl;
+             j++, i++, in_ptr++, out_ptr++) {
+            *out_ptr = buf[j] ^ (*in_ptr);
+        }
+        if (j == 8) {
+            EVP_CIPHER_CTX_set_num(ctx, 0);
+        } else {
+            EVP_CIPHER_CTX_set_num(ctx, j);
+            return 1;
+        }
+    }
+
+/* Process full blocks */
+		for (; i + 8 < inl; i += 8, in_ptr += 8, out_ptr += 8) {
+			gostcrypt(&(c->cctx), iv, buf);
+			for (j = 0; j < 8; j++) {
+				out_ptr[j] = buf[j] ^ in_ptr[j];
+			}
+			ctr64_inc(iv);
+		}
+
+/* Process the rest of plaintext */
+    if (i < inl) {
+			gostcrypt(&(c->cctx), iv, buf);
+			ctr64_inc(iv);
+      for (j = 0; i < inl; j++, i++) {
+         out_ptr[j] = buf[j] ^ in_ptr[j];
+      }
+
+      EVP_CIPHER_CTX_set_num(ctx, j);
+    } else {
+       EVP_CIPHER_CTX_set_num(ctx, 0);
+		}
+
+	return 1; 
 }
 
 /* GOST encryption in CFB mode */

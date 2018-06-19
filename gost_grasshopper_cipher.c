@@ -17,6 +17,7 @@ extern "C" {
 #include <openssl/err.h>
 #include <string.h>
 
+#include "gost_lcl.h"
 #include "e_gost_err.h"
 
 enum GRASSHOPPER_CIPHER_TYPE {
@@ -279,11 +280,10 @@ int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX* ctx, unsigned char* out,
     return 1;
 }
 
-/* increment counter (128-bit int) by 1 */
-static void ctr128_inc(unsigned char *counter)
+void inc_counter(unsigned char* counter, size_t counter_bytes)
 {
-    unsigned int n = 16;
     unsigned char c;
+    unsigned int n = counter_bytes;
 
     do {
         --n;
@@ -292,6 +292,12 @@ static void ctr128_inc(unsigned char *counter)
         counter[n] = c;
         if (c) return;
     } while (n);
+}
+
+/* increment counter (128-bit int) by 1 */
+static void ctr128_inc(unsigned char *counter)
+{
+	inc_counter(counter, 16);
 }
 
 int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* out,
