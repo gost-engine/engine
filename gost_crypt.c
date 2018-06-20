@@ -693,11 +693,12 @@ static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
     struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     unsigned char *buf = EVP_CIPHER_CTX_buf_noconst(ctx);
     unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
+    unsigned char b[8];
 /* Process partial blocks */
     if (EVP_CIPHER_CTX_num(ctx)) {
         for (j = EVP_CIPHER_CTX_num(ctx), i = 0; j < 8 && i < inl;
              j++, i++, in_ptr++, out_ptr++) {
-            *out_ptr = buf[j] ^ (*in_ptr);
+            *out_ptr = buf[7-j] ^ (*in_ptr);
         }
         if (j == 8) {
             EVP_CIPHER_CTX_set_num(ctx, 0);
@@ -708,20 +709,26 @@ static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
     }
 
 /* Process full blocks */
-		for (; i + 8 < inl; i += 8, in_ptr += 8, out_ptr += 8) {
-			gostcrypt(&(c->cctx), iv, buf);
+		for (; i + 8 <= inl; i += 8, in_ptr += 8, out_ptr += 8) {
 			for (j = 0; j < 8; j++) {
-				out_ptr[j] = buf[j] ^ in_ptr[j];
+				b[7-j] = iv[j];
+			}
+			gostcrypt(&(c->cctx), b, buf);
+			for (j = 0; j < 8; j++) {
+				out_ptr[j] = buf[7-j] ^ in_ptr[j];
 			}
 			ctr64_inc(iv);
 		}
 
 /* Process the rest of plaintext */
     if (i < inl) {
+			for (j = 0; j < 8; j++) {
+				b[7-j] = iv[j];
+			}
 			gostcrypt(&(c->cctx), iv, buf);
 			ctr64_inc(iv);
       for (j = 0; i < inl; j++, i++) {
-         out_ptr[j] = buf[j] ^ in_ptr[j];
+         out_ptr[j] = buf[7-j] ^ in_ptr[j];
       }
 
       EVP_CIPHER_CTX_set_num(ctx, j);
