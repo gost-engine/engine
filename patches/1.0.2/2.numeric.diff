@@ -1,0 +1,29 @@
+diff --git a/crypto/asn1/a_mbstr.c b/crypto/asn1/a_mbstr.c
+index 5b8028aaa3..ae84919076 100644
+--- a/crypto/asn1/a_mbstr.c
++++ b/crypto/asn1/a_mbstr.c
+@@ -173,6 +173,8 @@ int ASN1_mbstring_ncopy(ASN1_STRING **out, const unsigned char *in, int len,
+         str_type = V_ASN1_PRINTABLESTRING;
+     else if (mask & B_ASN1_IA5STRING)
+         str_type = V_ASN1_IA5STRING;
++    else if (mask & B_ASN1_NUMERICSTRING)
++        str_type = V_ASN1_NUMERICSTRING;
+     else if (mask & B_ASN1_T61STRING)
+         str_type = V_ASN1_T61STRING;
+     else if (mask & B_ASN1_BMPSTRING) {
+diff --git a/crypto/asn1/a_strnid.c b/crypto/asn1/a_strnid.c
+index 99ffe73787..6c960f025c 100644
+--- a/crypto/asn1/a_strnid.c
++++ b/crypto/asn1/a_strnid.c
+@@ -193,7 +193,10 @@ static const ASN1_STRING_TABLE tbl_standard[] = {
+     {NID_dnQualifier, -1, -1, B_ASN1_PRINTABLESTRING, STABLE_NO_MASK},
+     {NID_domainComponent, 1, -1, B_ASN1_IA5STRING, STABLE_NO_MASK},
+     {NID_ms_csp_name, -1, -1, B_ASN1_BMPSTRING, STABLE_NO_MASK},
+-    {NID_jurisdictionCountryName, 2, 2, B_ASN1_PRINTABLESTRING, STABLE_NO_MASK}
++    {NID_jurisdictionCountryName, 2, 2, B_ASN1_PRINTABLESTRING, STABLE_NO_MASK},
++    {NID_INN, 1, 12, B_ASN1_NUMERICSTRING, STABLE_NO_MASK},
++    {NID_OGRN, 1, 13, B_ASN1_NUMERICSTRING, STABLE_NO_MASK},
++    {NID_SNILS, 1, 11, B_ASN1_NUMERICSTRING, STABLE_NO_MASK}
+ };
+ 
+ static int sk_table_cmp(const ASN1_STRING_TABLE *const *a,
