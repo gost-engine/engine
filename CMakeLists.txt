@@ -131,6 +131,11 @@ set(GOST_12_SUM_SOURCE_FILES
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
 target_link_libraries(gost12sum gost_core)
 
+set_source_files_properties(tags PROPERTIES GENERATED true)
+add_custom_target(tags
+    COMMAND ctags -R . ${OPENSSL_ROOT_DIR}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 # install
 set(OPENSSL_ENGINES_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/engines-${OPENSSL_VERSION_MAJOR}_${OPENSSL_VERSION_MINOR})
 set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
