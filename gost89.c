@@ -695,14 +695,22 @@ int main(void)
 	hexdump(stdout, "Initial key", buf, 32);
 
 	acpkm_magma_key_meshing(&ctx);
-
 	magma_get_key(&ctx, buf);
-	hexdump(stdout, "Meshed key", buf, 32);
+	hexdump(stdout, "Meshed key - K2", buf, 32);
 
 	if (memcmp(meshed_key, buf, 32))
 	{
 		fprintf(stderr, "Magma meshing failed");
 	}
+
+	acpkm_magma_key_meshing(&ctx);
+	magma_get_key(&ctx, buf);
+	hexdump(stdout, "Meshed key - K3", buf, 32);
+
+	acpkm_magma_key_meshing(&ctx);
+	magma_get_key(&ctx, buf);
+	hexdump(stdout, "Meshed key - K4", buf, 32);
+
 }
 
 #endif
