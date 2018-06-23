@@ -125,6 +125,17 @@ set(GOST_12_SUM_SOURCE_FILES
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
 target_link_libraries(gost12sum gost_core)
 
+# install
+set(OPENSSL_ENGINES_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/engines-${OPENSSL_VERSION_MAJOR}.${OPENSSL_VERSION_MINOR})
+#
+# try to make a better guess of engines dir 
+#
+# if we do a native (not cross) build we can call "OpenSSL_version(OPENSSL_ENGINES_DIR)"
+# for example, it's output can be:
+# ENGINESDIR: "/usr/lib64/engines-1.1"
+#
+if(NOT CMAKE_CROSSCOMPILING)
+
 FILE(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/conftest.c"
   "#include <stdio.h>                                      \n"
   "#include <openssl/crypto.h>                             \n"
@@ -140,14 +151,12 @@ EXECUTE_PROCESS(COMMAND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/con
   OUTPUT_VARIABLE OUTPUT
   RESULT_VARIABLE RESULT)
 
-IF(RESULT)
-  MESSAGE(FATAL_ERROR "engines directory is not detected.\n RESULT=${RESULT} OUTPUT=${OUTPUT}")
-ENDIF(RESULT)
-
 STRING(REGEX MATCH "\"([^\"]+)\"" OUTPUT1 ${OUTPUT})
 STRING(REPLACE "\"" "" OPENSSL_ENGINES_INSTALL_DIR ${OUTPUT1})
 
-# install
+MESSAGE("engines directory detected: ${OPENSSL_ENGINES_INSTALL_DIR}")
+endif()
+
 set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
 
 install(TARGETS gost_engine gostsum gost12sum EXPORT GostEngineConfig
