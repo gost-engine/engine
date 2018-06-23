@@ -125,8 +125,29 @@ set(GOST_12_SUM_SOURCE_FILES
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
 target_link_libraries(gost12sum gost_core)
 
+FILE(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/conftest.c"
+  "#include <stdio.h>                                      \n"
+  "#include <openssl/crypto.h>                             \n"
+  "int main(){                                             \n"
+  "  printf(\"%s\", OpenSSL_version(OPENSSL_ENGINES_DIR)); \n"
+  "}                                                         "
+  )
+
+EXECUTE_PROCESS(COMMAND ${CMAKE_C_COMPILER} -o conftest conftest.c -I${OPENSSL_INCLUDE_DIR} -lcrypto -lssl
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp)
+
+EXECUTE_PROCESS(COMMAND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/conftest
+  OUTPUT_VARIABLE OUTPUT
+  RESULT_VARIABLE RESULT)
+
+IF(RESULT)
+  MESSAGE(FATAL_ERROR "engines directory is not detected.\n RESULT=${RESULT} OUTPUT=${OUTPUT}")
+ENDIF(RESULT)
+
+STRING(REGEX MATCH "\"([^\"]+)\"" OUTPUT1 ${OUTPUT})
+STRING(REPLACE "\"" "" OPENSSL_ENGINES_INSTALL_DIR ${OUTPUT1})
+
 # install
-set(OPENSSL_ENGINES_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/engines-${OPENSSL_VERSION_MAJOR}_${OPENSSL_VERSION_MINOR})
 set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
 
 install(TARGETS gost_engine gostsum gost12sum EXPORT GostEngineConfig
