@@ -1,0 +1,5 @@
+#!/usr/bin/perl
+use TAP::Harness;
+
+my $harness = TAP::Harness->new();
+$harness->runtests(glob("*.t"));
