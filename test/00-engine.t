@@ -8,8 +8,10 @@ open F,">","testdata.dat";
 print F "12345670" x 128;
 close F;
 
-# Set OPENSSL_ENGINES environment variable to just build engine
-$ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
+# Set OPENSSL_ENGINES environment variable to just built engine
+if(!defined $ENV{'OPENSSL_ENGINES'}){
+	$ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
+}
 
 $key='0123456789abcdef' x 2;
 
@@ -38,7 +40,7 @@ if ( -f $engine . ".info") {
 
 $engine_info= <<EOINF;
 (gost) Reference implementation of GOST engine
- [gost89, gost89-cnt, gost89-cnt-12, gost89-cbc, md_gost94, gost-mac, md_gost12_256, md_gost12_512, gost-mac-12, gost2001, gost-mac, gost2012_256, gost2012_512, gost-mac-12]
+ [gost89, gost89-cnt, gost89-cnt-12, gost89-cbc, grasshopper-ecb, grasshopper-cbc, grasshopper-cfb, grasshopper-ofb, grasshopper-ctr, md_gost94, gost-mac, md_gost12_256, md_gost12_512, gost-mac-12, gost2001, gost-mac, gost2012_256, gost2012_512, gost-mac-12]
 EOINF
 }
 
