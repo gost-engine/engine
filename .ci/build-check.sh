@@ -7,5 +7,8 @@ make
 cp ./bin/gost.so ${PREFIX}/lib/engines-1.1
 
 export LD_LIBRARY_PATH=${PREFIX}/lib
+export PATH=${PREFIX}/bin:${PATH}
+export OPENSSL_ENGINES=${PREFIX}/lib/engines-1.1
 
-${PREFIX}/bin/openssl ciphers |grep GOST
+prove -v test/{00-engine.t,01-digest.t,02-mac.t,03-encrypt.t}
+
