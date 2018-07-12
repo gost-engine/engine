@@ -74,7 +74,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
     R3410_ec_params *params = gost_nid2params(nid);
     EC_GROUP *grp = NULL;
     EC_POINT *P = NULL;
-    BIGNUM *p = NULL, *q = NULL, *a = NULL, *b = NULL, *x = NULL, *y = NULL;
+    BIGNUM *p = NULL, *q = NULL, *a = NULL, *b = NULL, *x = NULL, *y = NULL, *cofactor = NULL;
     BN_CTX *ctx;
     int ok = 0;
 
@@ -95,14 +95,16 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
     x = BN_CTX_get(ctx);
     y = BN_CTX_get(ctx);
     q = BN_CTX_get(ctx);
-    if (!p || !a || !b || !x || !y || !q) {
+		cofactor = BN_CTX_get(ctx);
+    if (!p || !a || !b || !x || !y || !q || !cofactor) {
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_MALLOC_FAILURE);
         goto end;
     }
 
     if (!BN_hex2bn(&p, params->p)
         || !BN_hex2bn(&a, params->a)
-        || !BN_hex2bn(&b, params->b)) {
+        || !BN_hex2bn(&b, params->b)
+				|| !BN_hex2bn(&cofactor, params->cofactor) ) {
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_INTERNAL_ERROR);
         goto end;
     }
@@ -127,7 +129,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
         goto end;
     }
 
-    if (!EC_GROUP_set_generator(grp, P, q, NULL)) {
+    if (!EC_GROUP_set_generator(grp, P, q, cofactor)) {
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_INTERNAL_ERROR);
         goto end;
     }

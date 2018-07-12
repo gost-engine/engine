@@ -33,6 +33,7 @@ typedef struct R3410_ec {
     char *q;
     char *x;
     char *y;
+		char *cofactor;
 } R3410_ec_params;
 
 extern R3410_ec_params R3410_2001_paramset[],
