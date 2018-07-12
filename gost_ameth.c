@@ -181,7 +181,7 @@ static int gost_set_priv_key(EVP_PKEY *pkey, BIGNUM *priv)
             if (!EC_KEY_set_private_key(ec, priv))
                 return 0;
             if (!EVP_PKEY_missing_parameters(pkey))
-                gost_ec_compute_public(ec);
+                return gost_ec_compute_public(ec);
             break;
         }
     default:
