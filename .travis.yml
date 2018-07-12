@@ -1,0 +1,35 @@
+sudo: required
+dist: trusty
+
+os: linux
+
+language: c
+
+env:
+  global:
+    - PREFIX=${HOME}/opt
+    - LD_LIBRARY_PATH=${PREFIX}/lib
+    - PATH=${PREFIX}/bin:${PATH}
+    - OPENSSL_ENGINES=${TRAVIS_BUILD_DIR}/bin
+
+matrix:
+  include:
+    - env: OPENSSL_BRANCH=master
+      os: linux
+      compiler: gcc
+    - env: OPENSSL_BRANCH=OpenSSL_1_1_0-stable
+      os: linux
+      compiler: gcc
+#    - env: OPENSSL_BRANCH=OpenSSL_1_0_2-stable
+#      os: linux
+#      compiler: gcc
+
+before_script:
+  - git clone -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
+  - cd openssl
+  - ./config shared --prefix=${PREFIX} --openssldir=${PREFIX} && make all install_sw > build.log 2>&1 || (cat build.log && exit 1)
+  - cd ..
+
+script:
+  - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib && make
+  - prove -v test/{00-engine.t,01-digest.t,02-mac.t,03-encrypt.t}
