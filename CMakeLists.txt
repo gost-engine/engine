@@ -3,7 +3,7 @@ project(gost-engine LANGUAGES C)
 
 include(GNUInstallDirs)
 
-find_package(OpenSSL 1.1 REQUIRED)
+find_package(OpenSSL 1.0.2 REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
