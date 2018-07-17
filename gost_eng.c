@@ -110,6 +110,7 @@ static int gost_engine_destroy(ENGINE* e) {
     imit_gost_cp_12_destroy();
 
     cipher_gost_destroy();
+    cipher_gost_grasshopper_destroy();
 
     gost_param_free();
 
