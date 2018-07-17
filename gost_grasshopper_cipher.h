@@ -100,6 +100,8 @@ extern const EVP_CIPHER* cipher_gost_grasshopper_ofb();
 extern const EVP_CIPHER* cipher_gost_grasshopper_cfb();
 extern const EVP_CIPHER* cipher_gost_grasshopper_ctr();
 
+void cipher_gost_grasshopper_destroy(void);
+
 #if defined(__cplusplus)
 }
 #endif
