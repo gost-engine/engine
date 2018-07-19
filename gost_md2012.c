@@ -37,6 +37,7 @@ EVP_MD *digest_gost2012_256(void)
 
         if ((md =
              EVP_MD_meth_new(NID_id_GostR3411_2012_256, NID_undef)) == NULL
+	    || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_PKEY_METHOD_SIGNATURE)
             || !EVP_MD_meth_set_result_size(md, 32)
             || !EVP_MD_meth_set_input_blocksize(md, 64)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(gost2012_hash_ctx))
@@ -67,6 +68,7 @@ EVP_MD *digest_gost2012_512(void)
 
         if ((md =
              EVP_MD_meth_new(NID_id_GostR3411_2012_512, NID_undef)) == NULL
+	    || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_PKEY_METHOD_SIGNATURE)
             || !EVP_MD_meth_set_result_size(md, 64)
             || !EVP_MD_meth_set_input_blocksize(md, 64)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(gost2012_hash_ctx))

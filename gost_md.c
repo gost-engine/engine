@@ -27,6 +27,7 @@ EVP_MD *digest_gost(void)
         EVP_MD *md;
 
         if ((md = EVP_MD_meth_new(NID_id_GostR3411_94, NID_undef)) == NULL
+	    || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_PKEY_METHOD_SIGNATURE)
             || !EVP_MD_meth_set_result_size(md, 32)
             || !EVP_MD_meth_set_input_blocksize(md, 32)
             || !EVP_MD_meth_set_app_datasize(md,
