@@ -31,7 +31,6 @@ typedef struct {
 
 typedef struct {
     gost_grasshopper_cipher_ctx c;
-    grasshopper_w128_t iv_buffer;
     grasshopper_w128_t partial_buffer;
     uint64_t counter;
 } gost_grasshopper_cipher_ctx_ctr;
