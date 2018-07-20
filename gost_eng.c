@@ -47,11 +47,13 @@ static int gost_cipher_nids[] = {
         NID_grasshopper_cfb,
         NID_grasshopper_ofb,
         NID_grasshopper_ctr,
+        NID_magma_cbc,
+        NID_magma_ctr,
         0
 };
 
 static int gost_digest_nids(const int** nids) {
-    static int digest_nids[6] = {0, 0, 0, 0, 0, 0};
+    static int digest_nids[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     static int pos = 0;
     static int init = 0;
 
@@ -67,6 +69,12 @@ static int gost_digest_nids(const int** nids) {
             digest_nids[pos++] = EVP_MD_type(md);
         if ((md = imit_gost_cp_12()) != NULL)
             digest_nids[pos++] = EVP_MD_type(md);
+        if ((md = magma_omac()) != NULL)
+            digest_nids[pos++] = EVP_MD_type(md);
+        if ((md = grasshopper_omac()) != NULL)
+            digest_nids[pos++] = EVP_MD_type(md);
+
+
         digest_nids[pos] = 0;
         init = 1;
     }
@@ -80,18 +88,22 @@ static int gost_pkey_meth_nids[] = {
         NID_id_GostR3410_2012_256,
         NID_id_GostR3410_2012_512,
         NID_gost_mac_12,
+        NID_magma_mac,
+        NID_grasshopper_mac,
         0
 };
 
 static EVP_PKEY_METHOD* pmeth_GostR3410_2001 = NULL,
         * pmeth_GostR3410_2012_256 = NULL,
         * pmeth_GostR3410_2012_512 = NULL,
-        * pmeth_Gost28147_MAC = NULL, * pmeth_Gost28147_MAC_12 = NULL;
+        * pmeth_Gost28147_MAC = NULL, * pmeth_Gost28147_MAC_12 = NULL,
+        * pmeth_magma_mac = NULL,  * pmeth_grasshopper_mac = NULL;
 
 static EVP_PKEY_ASN1_METHOD* ameth_GostR3410_2001 = NULL,
         * ameth_GostR3410_2012_256 = NULL,
         * ameth_GostR3410_2012_512 = NULL,
-        * ameth_Gost28147_MAC = NULL, * ameth_Gost28147_MAC_12 = NULL;
+        * ameth_Gost28147_MAC = NULL, * ameth_Gost28147_MAC_12 = NULL,
+        * ameth_magma_mac = NULL,  * ameth_grasshopper_mac = NULL;
 
 static int gost_engine_init(ENGINE* e) {
     return 1;
@@ -108,6 +120,8 @@ static int gost_engine_destroy(ENGINE* e) {
 
     imit_gost_cpa_destroy();
     imit_gost_cp_12_destroy();
+    magma_omac_destroy();
+    grasshopper_omac_destroy();
 
     cipher_gost_destroy();
     cipher_gost_grasshopper_destroy();
@@ -119,12 +133,16 @@ static int gost_engine_destroy(ENGINE* e) {
     pmeth_GostR3410_2012_256 = NULL;
     pmeth_GostR3410_2012_512 = NULL;
     pmeth_Gost28147_MAC_12 = NULL;
+    pmeth_magma_mac = NULL;
+    pmeth_grasshopper_mac = NULL;
 
     ameth_GostR3410_2001 = NULL;
     ameth_Gost28147_MAC = NULL;
     ameth_GostR3410_2012_256 = NULL;
     ameth_GostR3410_2012_512 = NULL;
     ameth_Gost28147_MAC_12 = NULL;
+    ameth_magma_mac = NULL;
+    ameth_grasshopper_mac = NULL;
 
 	ERR_unload_GOST_strings();
 	
@@ -197,6 +215,12 @@ static int bind_gost(ENGINE* e, const char* id) {
                              "GOST-MAC-12",
                              "GOST 28147-89 MAC with 2012 params"))
         goto end;
+    if (!register_ameth_gost(NID_magma_mac, &ameth_magma_mac,
+                             "MAGMA-MAC", "GOST R 34.13-2015 Magma MAC"))
+        goto end;
+    if (!register_ameth_gost(NID_grasshopper_mac, &ameth_grasshopper_mac,
+                             "GRASSHOPPER-MAC", "GOST R 34.13-2015 Grasshopper MAC"))
+        goto end;
 
     if (!register_pmeth_gost(NID_id_GostR3410_2001, &pmeth_GostR3410_2001, 0))
         goto end;
@@ -212,6 +236,10 @@ static int bind_gost(ENGINE* e, const char* id) {
         goto end;
     if (!register_pmeth_gost(NID_gost_mac_12, &pmeth_Gost28147_MAC_12, 0))
         goto end;
+    if (!register_pmeth_gost(NID_magma_mac, &pmeth_magma_mac, 0))
+        goto end;
+    if (!register_pmeth_gost(NID_grasshopper_mac, &pmeth_grasshopper_mac, 0))
+        goto end;
     if (!ENGINE_register_ciphers(e)
         || !ENGINE_register_digests(e)
         || !ENGINE_register_pkey_meths(e)
@@ -225,11 +253,15 @@ static int bind_gost(ENGINE* e, const char* id) {
         || !EVP_add_cipher(cipher_gost_grasshopper_cfb())
         || !EVP_add_cipher(cipher_gost_grasshopper_ofb())
         || !EVP_add_cipher(cipher_gost_grasshopper_ctr())
+        || !EVP_add_cipher(cipher_magma_cbc())
+        || !EVP_add_cipher(cipher_magma_ctr())
         || !EVP_add_digest(digest_gost())
         || !EVP_add_digest(digest_gost2012_512())
         || !EVP_add_digest(digest_gost2012_256())
         || !EVP_add_digest(imit_gost_cpa())
         || !EVP_add_digest(imit_gost_cp_12())
+        || !EVP_add_digest(magma_omac())
+        || !EVP_add_digest(grasshopper_omac())
             ) {
         goto end;
     }
@@ -263,6 +295,10 @@ static int gost_digests(ENGINE* e, const EVP_MD** digest,
         *digest = digest_gost2012_512();
     } else if (nid == NID_gost_mac_12) {
         *digest = imit_gost_cp_12();
+    } else if (nid == NID_magma_mac) {
+        *digest = magma_omac();
+    } else if (nid == NID_grasshopper_mac) {
+        *digest = grasshopper_omac();
     } else {
         ok = 0;
         *digest = NULL;
@@ -296,6 +332,10 @@ static int gost_ciphers(ENGINE* e, const EVP_CIPHER** cipher,
         *cipher = cipher_gost_grasshopper_ofb();
     } else if (nid == NID_grasshopper_ctr) {
         *cipher = cipher_gost_grasshopper_ctr();
+    } else if (nid == NID_magma_cbc) {
+        *cipher = cipher_magma_cbc();
+    } else if (nid == NID_magma_ctr) {
+        *cipher = cipher_magma_ctr();
     } else {
         ok = 0;
         *cipher = NULL;
@@ -325,6 +365,12 @@ static int gost_pkey_meths(ENGINE* e, EVP_PKEY_METHOD** pmeth,
             return 1;
         case NID_gost_mac_12:
             *pmeth = pmeth_Gost28147_MAC_12;
+            return 1;
+        case NID_magma_mac:
+            *pmeth = pmeth_magma_mac;
+            return 1;
+        case NID_grasshopper_mac:
+            *pmeth = pmeth_grasshopper_mac;
             return 1;
 
         default:;
@@ -356,6 +402,12 @@ static int gost_pkey_asn1_meths(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
             return 1;
         case NID_gost_mac_12:
             *ameth = ameth_Gost28147_MAC_12;
+            return 1;
+        case NID_magma_mac:
+            *ameth = ameth_magma_mac;
+            return 1;
+        case NID_grasshopper_mac:
+            *ameth = ameth_grasshopper_mac;
             return 1;
 
         default:;

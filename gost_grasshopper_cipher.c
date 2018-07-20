@@ -17,6 +17,7 @@ extern "C" {
 #include <openssl/err.h>
 #include <string.h>
 
+#include "gost_lcl.h"
 #include "e_gost_err.h"
 
 enum GRASSHOPPER_CIPHER_TYPE {
@@ -279,11 +280,10 @@ int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX* ctx, unsigned char* out,
     return 1;
 }
 
-/* increment counter (128-bit int) by 1 */
-static void ctr128_inc(unsigned char *counter)
+void inc_counter(unsigned char* counter, size_t counter_bytes)
 {
-    unsigned int n = 16;
     unsigned char c;
+    unsigned int n = counter_bytes;
 
     do {
         --n;
@@ -292,6 +292,12 @@ static void ctr128_inc(unsigned char *counter)
         counter[n] = c;
         if (c) return;
     } while (n);
+}
+
+/* increment counter (128-bit int) by 1 */
+static void ctr128_inc(unsigned char *counter)
+{
+	inc_counter(counter, 16);
 }
 
 int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* out,
@@ -541,7 +547,7 @@ int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX* ctx, ASN1_TYPE* params)
 
     if (!os || !ASN1_OCTET_STRING_set(os, buf, len)) {
         OPENSSL_free(buf);
-        GOSTerr(GOST_F_GOST89_SET_ASN1_PARAMETERS, ERR_R_MALLOC_FAILURE);
+        GOSTerr(GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS, ERR_R_MALLOC_FAILURE);
         return 0;
     }
     OPENSSL_free(buf);
@@ -564,13 +570,13 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX* ctx, int type, int arg, void* pt
     switch (type) {
         case EVP_CTRL_RAND_KEY: {
             if (RAND_bytes((unsigned char*) ptr, EVP_CIPHER_CTX_key_length(ctx)) <= 0) {
-                GOSTerr(GOST_F_GOST_CIPHER_CTL, GOST_R_RNG_ERROR);
+                GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, GOST_R_RNG_ERROR);
                 return -1;
             }
             break;
         }
         default:
-            GOSTerr(GOST_F_GOST_CIPHER_CTL, GOST_R_UNSUPPORTED_CIPHER_CTL_COMMAND);
+            GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, GOST_R_UNSUPPORTED_CIPHER_CTL_COMMAND);
             return -1;
     }
     return 1;

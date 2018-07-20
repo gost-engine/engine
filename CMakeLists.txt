@@ -88,12 +88,17 @@ set(GOST_EC_SOURCE_FILES
         gost_ec_sign.c
         )
 
+set (GOST_OMAC_SOURCE_FILES
+        gost_omac.c
+        )
+
 set(GOST_LIB_SOURCE_FILES
         ${GOST_89_SOURCE_FILES}
         ${GOST_HASH_SOURCE_FILES}
         ${GOST_HASH_2012_SOURCE_FILES}
         ${GOST_GRASSHOPPER_SOURCE_FILES}
         ${GOST_EC_SOURCE_FILES}
+        ${GOST_OMAC_SOURCE_FILES}
         )
 
 set(GOST_ENGINE_SOURCE_FILES
@@ -102,6 +107,7 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_md.c
         gost_md2012.c
         gost_pmeth.c
+        gost_omac.c
         )
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
@@ -124,6 +130,11 @@ set(GOST_12_SUM_SOURCE_FILES
 
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
 target_link_libraries(gost12sum gost_core)
+
+set_source_files_properties(tags PROPERTIES GENERATED true)
+add_custom_target(tags
+    COMMAND ctags -R . ${OPENSSL_ROOT_DIR}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # install
 set(OPENSSL_ENGINES_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/engines-${OPENSSL_VERSION_MAJOR}_${OPENSSL_VERSION_MINOR})

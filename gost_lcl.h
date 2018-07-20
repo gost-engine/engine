@@ -179,6 +179,10 @@ EVP_MD *imit_gost_cpa(void);
 void imit_gost_cpa_destroy(void);
 EVP_MD *imit_gost_cp_12(void);
 void imit_gost_cp_12_destroy(void);
+EVP_MD *magma_omac(void);
+void magma_omac_destroy(void);
+EVP_MD *grasshopper_omac(void);
+void grasshopper_omac_destroy(void);
 /* Cipher context used for EVP_CIPHER operation */
 struct ossl_gost_cipher_ctx {
     int paramNID;
@@ -212,7 +216,12 @@ const EVP_CIPHER *cipher_gost();
 const EVP_CIPHER *cipher_gost_cbc();
 const EVP_CIPHER *cipher_gost_cpacnt();
 const EVP_CIPHER *cipher_gost_cpcnt_12();
+const EVP_CIPHER *cipher_magma_cbc();
+const EVP_CIPHER *cipher_magma_ctr();
 void cipher_gost_destroy();
+
+void inc_counter(unsigned char* buffer, size_t buf_len);
+
 # define EVP_MD_CTRL_KEY_LEN (EVP_MD_CTRL_ALG_CTRL+3)
 # define EVP_MD_CTRL_SET_KEY (EVP_MD_CTRL_ALG_CTRL+4)
 # define EVP_MD_CTRL_MAC_LEN (EVP_MD_CTRL_ALG_CTRL+5)

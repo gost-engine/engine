@@ -283,7 +283,7 @@ static int pkey_gost2001_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
     EC_KEY *ec = NULL;
 
     if (!data || data->sign_param_nid == NID_undef) {
-        GOSTerr(GOST_F_PKEY_GOST01_PARAMGEN, GOST_R_NO_PARAMETERS_SET);
+        GOSTerr(GOST_F_PKEY_GOST2001_PARAMGEN, GOST_R_NO_PARAMETERS_SET);
         return 0;
     }
 
@@ -303,7 +303,7 @@ static int pkey_gost2012_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
     int result = 0;
 
     if (!data || data->sign_param_nid == NID_undef) {
-        GOSTerr(GOST_F_PKEY_GOST12_PARAMGEN, GOST_R_NO_PARAMETERS_SET);
+        GOSTerr(GOST_F_PKEY_GOST2012_PARAMGEN, GOST_R_NO_PARAMETERS_SET);
         return 0;
     }
 
@@ -492,6 +492,39 @@ static int pkey_gost_mac_init(EVP_PKEY_CTX *ctx)
     return 1;
 }
 
+static int pkey_gost_omac_init(EVP_PKEY_CTX *ctx, size_t mac_size)
+{
+    struct gost_mac_pmeth_data *data = OPENSSL_malloc(sizeof(*data));
+    EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+
+    if (!data)
+        return 0;
+    memset(data, 0, sizeof(*data));
+    data->mac_size = mac_size;
+    data->mac_param_nid = NID_undef;
+
+    if (pkey) {
+        struct gost_mac_key *key = EVP_PKEY_get0(pkey);
+        if (key) {
+            data->mac_param_nid = key->mac_param_nid;
+            data->mac_size = key->mac_size;
+        }
+    }
+
+    EVP_PKEY_CTX_set_data(ctx, data);
+    return 1;
+}
+
+static int pkey_gost_magma_mac_init(EVP_PKEY_CTX *ctx)
+{
+	return pkey_gost_omac_init(ctx, 4);
+}
+
+static int pkey_gost_grasshopper_mac_init(EVP_PKEY_CTX *ctx)
+{
+	return pkey_gost_omac_init(ctx, 8);
+}
+
 static void pkey_gost_mac_cleanup(EVP_PKEY_CTX *ctx)
 {
     struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
@@ -651,13 +684,147 @@ static int pkey_gost_mac_ctrl_str(EVP_PKEY_CTX *ctx,
     return -2;
 }
 
+static int pkey_gost_omac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2, size_t max_size)
+{
+    struct gost_mac_pmeth_data *data =
+        (struct gost_mac_pmeth_data *)EVP_PKEY_CTX_get_data(ctx);
+
+    switch (type) {
+    case EVP_PKEY_CTRL_MD:
+        {
+            int nid = EVP_MD_type((const EVP_MD *)p2);
+            if (nid != NID_magma_mac && nid != NID_grasshopper_mac) {
+                GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL,
+                        GOST_R_INVALID_DIGEST_TYPE);
+                return 0;
+            }
+            data->md = (EVP_MD *)p2;
+            return 1;
+        }
+
+    case EVP_PKEY_CTRL_GET_MD:
+        *(const EVP_MD **)p2 = data->md;
+        return 1;
+
+    case EVP_PKEY_CTRL_PKCS7_ENCRYPT:
+    case EVP_PKEY_CTRL_PKCS7_DECRYPT:
+    case EVP_PKEY_CTRL_PKCS7_SIGN:
+        return 1;
+    case EVP_PKEY_CTRL_SET_MAC_KEY:
+        if (p1 != 32) {
+            GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL, GOST_R_INVALID_MAC_KEY_LENGTH);
+            return 0;
+        }
+
+        memcpy(data->key, p2, 32);
+        data->key_set = 1;
+        return 1;
+    case EVP_PKEY_CTRL_DIGESTINIT:
+        {
+            EVP_MD_CTX *mctx = p2;
+            struct gost_mac_key *key;
+            if (!data->key_set) {
+                EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+                if (!pkey) {
+                    GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL,
+                            GOST_R_MAC_KEY_NOT_SET);
+                    return 0;
+                }
+                key = EVP_PKEY_get0(pkey);
+                if (!key) {
+                    GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL,
+                            GOST_R_MAC_KEY_NOT_SET);
+                    return 0;
+                }
+                return EVP_MD_meth_get_ctrl(EVP_MD_CTX_md(mctx))
+                    (mctx, EVP_MD_CTRL_SET_KEY, 0, key);
+            } else {
+                return EVP_MD_meth_get_ctrl(EVP_MD_CTX_md(mctx))
+                    (mctx, EVP_MD_CTRL_SET_KEY, 32, &(data->key));
+            }
+        }
+    case EVP_PKEY_CTRL_MAC_LEN:
+        {
+            if (p1 < 1 || p1 > max_size) {
+
+                GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL, GOST_R_INVALID_MAC_SIZE);
+                return 0;
+            }
+            data->mac_size = p1;
+            return 1;
+        }
+    }
+    return -2;
+}
+
+static int pkey_gost_magma_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
+{
+	return pkey_gost_omac_ctrl(ctx, type, p1, p2, 8);
+}
+
+static int pkey_gost_grasshopper_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
+{
+	return pkey_gost_omac_ctrl(ctx, type, p1, p2, 16);
+}
+
+static int pkey_gost_omac_ctrl_str(EVP_PKEY_CTX *ctx,
+                                  const char *type, const char *value, size_t max_size)
+{
+    if (strcmp(type, key_ctrl_string) == 0) {
+        if (strlen(value) != 32) {
+            GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL_STR,
+                    GOST_R_INVALID_MAC_KEY_LENGTH);
+            return 0;
+        }
+        return pkey_gost_mac_ctrl(ctx, EVP_PKEY_CTRL_SET_MAC_KEY,
+                                  32, (char *)value);
+    }
+    if (strcmp(type, hexkey_ctrl_string) == 0) {
+        long keylen;
+        int ret;
+        unsigned char *keybuf = string_to_hex(value, &keylen);
+        if (!keybuf || keylen != 32) {
+            GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL_STR,
+                    GOST_R_INVALID_MAC_KEY_LENGTH);
+            OPENSSL_free(keybuf);
+            return 0;
+        }
+        ret = pkey_gost_mac_ctrl(ctx, EVP_PKEY_CTRL_SET_MAC_KEY, 32, keybuf);
+        OPENSSL_free(keybuf);
+        return ret;
+
+    }
+    if (!strcmp(type, maclen_ctrl_string)) {
+        char *endptr;
+        long size = strtol(value, &endptr, 10);
+        if (*endptr != '\0') {
+            GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL_STR, GOST_R_INVALID_MAC_SIZE);
+            return 0;
+        }
+        return pkey_gost_omac_ctrl(ctx, EVP_PKEY_CTRL_MAC_LEN, size, NULL, max_size);
+    }
+    return -2;
+}
+
+static int pkey_gost_magma_mac_ctrl_str(EVP_PKEY_CTX *ctx,
+                                  const char *type, const char *value)
+{
+	return pkey_gost_omac_ctrl_str(ctx, type, value, 8);
+}
+
+static int pkey_gost_grasshopper_mac_ctrl_str(EVP_PKEY_CTX *ctx,
+                                  const char *type, const char *value)
+{
+	return pkey_gost_omac_ctrl_str(ctx, type, value, 8);
+}
+
 static int pkey_gost_mac_keygen_base(EVP_PKEY_CTX *ctx,
                                      EVP_PKEY *pkey, int mac_nid)
 {
     struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
     struct gost_mac_key *keydata;
     if (!data || !data->key_set) {
-        GOSTerr(GOST_F_PKEY_GOST_MAC_KEYGEN, GOST_R_MAC_KEY_NOT_SET);
+        GOSTerr(GOST_F_PKEY_GOST_MAC_KEYGEN_BASE, GOST_R_MAC_KEY_NOT_SET);
         return 0;
     }
     keydata = OPENSSL_malloc(sizeof(struct gost_mac_key));
@@ -680,6 +847,16 @@ static int pkey_gost_mac_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
     return pkey_gost_mac_keygen_base(ctx, pkey, NID_id_Gost28147_89_MAC);
 }
 
+static int pkey_gost_magma_mac_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
+{
+    return pkey_gost_mac_keygen_base(ctx, pkey, NID_magma_mac);
+}
+
+static int pkey_gost_grasshopper_mac_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
+{
+    return pkey_gost_mac_keygen_base(ctx, pkey, NID_grasshopper_mac);
+}
+
 static int pkey_gost_mac_signctx_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx)
 {
     struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
@@ -691,6 +868,40 @@ static int pkey_gost_mac_signctx_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx)
     data = EVP_PKEY_CTX_get_data(ctx);
     if (!data) {
         GOSTerr(GOST_F_PKEY_GOST_MAC_SIGNCTX_INIT, GOST_R_MAC_KEY_NOT_SET);
+        return 0;
+    }
+
+    return 1;
+}
+
+static int pkey_gost_magma_mac_signctx_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx)
+{
+    struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
+
+    if (data == NULL) {
+        pkey_gost_omac_init(ctx, 4);
+    }
+
+    data = EVP_PKEY_CTX_get_data(ctx);
+    if (!data) {
+        GOSTerr(GOST_F_PKEY_GOST_MAGMA_MAC_SIGNCTX_INIT, GOST_R_MAC_KEY_NOT_SET);
+        return 0;
+    }
+
+    return 1;
+}
+
+static int pkey_gost_grasshopper_mac_signctx_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx)
+{
+    struct gost_mac_pmeth_data *data = EVP_PKEY_CTX_get_data(ctx);
+
+    if (data == NULL) {
+        pkey_gost_omac_init(ctx, 8);
+    }
+
+    data = EVP_PKEY_CTX_get_data(ctx);
+    if (!data) {
+        GOSTerr(GOST_F_PKEY_GOST_GRASSHOPPER_MAC_SIGNCTX_INIT, GOST_R_MAC_KEY_NOT_SET);
         return 0;
     }
 
@@ -799,6 +1010,26 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
                                   pkey_gost_mac_signctx);
         EVP_PKEY_meth_set_keygen(*pmeth, NULL, pkey_gost_mac_keygen_12);
         EVP_PKEY_meth_set_init(*pmeth, pkey_gost_mac_init);
+        EVP_PKEY_meth_set_cleanup(*pmeth, pkey_gost_mac_cleanup);
+        EVP_PKEY_meth_set_copy(*pmeth, pkey_gost_mac_copy);
+        return 1;
+    case NID_magma_mac:
+        EVP_PKEY_meth_set_ctrl(*pmeth, pkey_gost_magma_mac_ctrl,
+                               pkey_gost_magma_mac_ctrl_str);
+        EVP_PKEY_meth_set_signctx(*pmeth, pkey_gost_magma_mac_signctx_init,
+                                  pkey_gost_mac_signctx);
+        EVP_PKEY_meth_set_keygen(*pmeth, NULL, pkey_gost_magma_mac_keygen);
+        EVP_PKEY_meth_set_init(*pmeth, pkey_gost_magma_mac_init);
+        EVP_PKEY_meth_set_cleanup(*pmeth, pkey_gost_mac_cleanup);
+        EVP_PKEY_meth_set_copy(*pmeth, pkey_gost_mac_copy);
+        return 1;
+    case NID_grasshopper_mac:
+        EVP_PKEY_meth_set_ctrl(*pmeth, pkey_gost_grasshopper_mac_ctrl,
+                               pkey_gost_grasshopper_mac_ctrl_str);
+        EVP_PKEY_meth_set_signctx(*pmeth, pkey_gost_grasshopper_mac_signctx_init,
+                                  pkey_gost_mac_signctx);
+        EVP_PKEY_meth_set_keygen(*pmeth, NULL, pkey_gost_grasshopper_mac_keygen);
+        EVP_PKEY_meth_set_init(*pmeth, pkey_gost_grasshopper_mac_init);
         EVP_PKEY_meth_set_cleanup(*pmeth, pkey_gost_mac_cleanup);
         EVP_PKEY_meth_set_copy(*pmeth, pkey_gost_mac_copy);
         return 1;
