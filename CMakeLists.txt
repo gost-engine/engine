@@ -102,6 +102,11 @@ add_test(NAME engine
 	 COMMAND perl run_tests
 	 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
 
+add_executable(test_grasshopper test_grasshopper.c)
+target_link_libraries(test_grasshopper gost_engine gost ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME grasshopper
+	COMMAND test_grasshopper)
+
 add_library(gost STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
