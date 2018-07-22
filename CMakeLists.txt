@@ -3,6 +3,8 @@ project(gost-engine LANGUAGES C)
 
 include(GNUInstallDirs)
 
+enable_testing()
+
 find_package(OpenSSL 1.0.2 REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
@@ -109,6 +111,11 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_pmeth.c
         gost_omac.c
         )
+
+add_executable(test_grasshopper test_grasshopper.c)
+target_link_libraries(test_grasshopper gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME grasshopper
+	COMMAND test_grasshopper)
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
