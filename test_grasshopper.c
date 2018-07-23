@@ -223,14 +223,18 @@ int main(int argc, char **argv)
     ret |= test_block(cipher_gost_grasshopper_ctr(), "ctr", E_CTR);
     ret |= test_block(cipher_gost_grasshopper_ctr(), "ctr iv2", E_CTR_IV2);
     ret |= test_stream(cipher_gost_grasshopper_ctr(), "ctr", E_CTR);
-    ret |= test_block(cipher_gost_grasshopper_ofb(), "ofb", E_OFB);
     /*
      * Other modes (ofb, cbc, cfb) is impossible to test to match GOST R
-     * 34.13-2015 test vectors due to these vectors having exceeding IV
-     * length value (m) = 256 bits, while openssl have hardcoded limit
+     * 34.13-2015 test vectors exactly, due to these vectors having exceeding
+     * IV length value (m) = 256 bits, while openssl have hard-coded limit
      * of maximum IV length of 128 bits (EVP_MAX_IV_LENGTH).
      * Also, current grasshopper code having fixed IV length of 128 bits.
+     *
+     * Thus, new test vectors are generated with truncated 128-bit IV using
+     * canonical GOST implementation from TC26.
      */
+    ret |= test_block(cipher_gost_grasshopper_ofb(), "ofb", E_OFB);
+    ret |= test_stream(cipher_gost_grasshopper_ctr(), "ofb", E_CTR);
 
     ret |= test_omac();
 
