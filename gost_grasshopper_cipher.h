@@ -27,8 +27,6 @@ typedef struct {
 typedef struct {
     gost_grasshopper_cipher_ctx c;
     grasshopper_w128_t buffer1;
-    uint32_t g;
-    uint32_t go;
 } gost_grasshopper_cipher_ctx_ofb;
 
 typedef struct {
