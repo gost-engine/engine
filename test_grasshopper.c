@@ -113,9 +113,9 @@ static void hexdump(const void *ptr, size_t len)
 
     for (i = 0; i < len; i += j) {
 	for (j = 0; j < 16 && i + j < len; j++)
-	    printf("%s%02x", j? " " : "\t", p[i + j]);
-	printf("\n");
+	    printf("%s%02x", j? "" : " ", p[i + j]);
     }
+    printf("\n");
 }
 
 /* Test vectors from GOST R 34.13-2015 A.1 which* includes vectors
@@ -129,9 +129,11 @@ static int test_block(const EVP_CIPHER *type, const char *mode, enum e_mode t)
 
     printf("Encryption test from GOST R 34.13-2015 [%s] \n", mode);
     if (!t) {
-	printf("  p[%zu] =\n", sizeof(P));
+	/* output plain-text only once */
+	printf("  p[%zu] = ", sizeof(P));
 	hexdump(P, sizeof(P));
     }
+    /* test with single big chunk */
     EVP_CIPHER_CTX_init(&ctx);
     T(EVP_CipherInit_ex(&ctx, type, NULL, K, iv[t], 1));
     T(EVP_CIPHER_CTX_set_padding(&ctx, 0));
@@ -139,13 +141,38 @@ static int test_block(const EVP_CIPHER *type, const char *mode, enum e_mode t)
     T(EVP_CipherUpdate(&ctx, c, &outlen, P, sizeof(P)));
     T(EVP_CipherFinal_ex(&ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(&ctx);
-    printf("  c[%d] =\n", outlen);
+    printf("  c[%d] = ", outlen);
     hexdump(c, outlen);
 
     TEST_ASSERT(outlen != sizeof(P) ||
 	memcmp(c, E[t], sizeof(P)));
     ret |= test;
 
+    /* test with small chunks of block size */
+    printf("Chunked encryption test from GOST R 34.13-2015 [%s] \n", mode);
+    int blocks = sizeof(P) / GRASSHOPPER_BLOCK_SIZE;
+    int z;
+    EVP_CIPHER_CTX_init(&ctx);
+    T(EVP_CipherInit_ex(&ctx, type, NULL, K, iv[t], 1));
+    T(EVP_CIPHER_CTX_set_padding(&ctx, 0));
+    memset(c, 0, sizeof(c));
+    for (z = 0; z < blocks; z++) {
+	int offset = z * GRASSHOPPER_BLOCK_SIZE;
+	int sz = GRASSHOPPER_BLOCK_SIZE;
+
+	T(EVP_CipherUpdate(&ctx, c + offset, &outlen, P + offset, sz));
+    }
+    outlen = z * GRASSHOPPER_BLOCK_SIZE;
+    T(EVP_CipherFinal_ex(&ctx, c + outlen, &tmplen));
+    EVP_CIPHER_CTX_cleanup(&ctx);
+    printf("  c[%d] = ", outlen);
+    hexdump(c, outlen);
+
+    TEST_ASSERT(outlen != sizeof(P) ||
+	memcmp(c, E[t], sizeof(P)));
+    ret |= test;
+
+    /* test with single big chunk */
     printf("Decryption test from GOST R 34.13-2015 [%s] \n", mode);
     EVP_CIPHER_CTX_init(&ctx);
     T(EVP_CipherInit_ex(&ctx, type, NULL, K, iv[t], 0));
@@ -154,7 +181,7 @@ static int test_block(const EVP_CIPHER *type, const char *mode, enum e_mode t)
     T(EVP_CipherUpdate(&ctx, c, &outlen, E[t], sizeof(P)));
     T(EVP_CipherFinal_ex(&ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(&ctx);
-    printf("  d[%d] =\n", outlen);
+    printf("  d[%d] = ", outlen);
     hexdump(c, outlen);
 
     TEST_ASSERT(outlen != sizeof(P) ||
@@ -227,7 +254,7 @@ static int test_omac()
     T(EVP_DigestUpdate(&ctx, P, sizeof(P)));
     T(EVP_DigestFinal_ex(&ctx, md_value, &md_len));
     EVP_MD_CTX_cleanup(&ctx);
-    printf("  MAC[%u] =\n", md_len);
+    printf("  MAC[%u] = ", md_len);
     hexdump(md_value, md_len);
 
     TEST_ASSERT(md_len != sizeof(mac) ||
@@ -261,5 +288,9 @@ int main(int argc, char **argv)
 
     ret |= test_omac();
 
+    if (ret)
+	printf(cRED "= Some tests FAILED!\n" cNORM);
+    else
+	printf(cGREEN "= All tests passed!\n" cNORM);
     return ret;
 }
