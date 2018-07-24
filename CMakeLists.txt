@@ -117,6 +117,10 @@ target_link_libraries(test_grasshopper gost_engine gost_core ${OPENSSL_CRYPTO_LI
 add_test(NAME grasshopper
 	COMMAND test_grasshopper)
 
+add_test(NAME engine
+	 COMMAND perl run_tests
+	 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
+
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
