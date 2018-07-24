@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(ccgost C)
 
+enable_testing()
+
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
    message(STATUS "Using Clang and adding -Qunused-arguments flag")
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
@@ -92,6 +94,10 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_md.c
         gost_md2012.c
         gost_pmeth.c)
+
+add_test(NAME engine
+	 COMMAND perl run_tests
+	 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
 
 add_library(gost STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost PROPERTIES POSITION_INDEPENDENT_CODE ON)
