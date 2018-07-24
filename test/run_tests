@@ -2,4 +2,4 @@
 use TAP::Harness;
 
 my $harness = TAP::Harness->new();
-$harness->runtests(glob("*.t"));
+exit ($harness->runtests(glob("*.t"))->all_passed() ? 0 : 1);
