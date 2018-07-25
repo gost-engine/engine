@@ -252,7 +252,7 @@ EVP_MD *grasshopper_omac(void)
         EVP_MD *md;
 
         if ((md = EVP_MD_meth_new(NID_grasshopper_mac, NID_undef)) == NULL
-            || !EVP_MD_meth_set_result_size(md, 4)
+            || !EVP_MD_meth_set_result_size(md, 8)
             || !EVP_MD_meth_set_input_blocksize(md, 8)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(OMAC_CTX))
             || !EVP_MD_meth_set_flags(md, 0)
