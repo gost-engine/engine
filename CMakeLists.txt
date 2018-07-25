@@ -68,8 +68,6 @@ set(GOST_GRASSHOPPER_SOURCE_FILES
         gost_grasshopper_precompiled.c
         gost_grasshopper_cipher.h
         gost_grasshopper_cipher.c
-        gost_grasshopper_mac.h
-        gost_grasshopper_mac.c
         )
 
 set(GOST_CORE_SOURCE_FILES
