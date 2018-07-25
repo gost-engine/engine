@@ -80,6 +80,7 @@ set(GOST_CORE_SOURCE_FILES
         gost_keywrap.c
         gost_keywrap.h
         gost_lcl.h
+        compat.h
         gost_params.c
         )
 

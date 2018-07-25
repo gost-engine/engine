@@ -211,7 +211,7 @@ GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ctr(EVP_CIPHER_CTX* ctx, con
     gost_grasshopper_cipher_ctx_ctr* c = EVP_CIPHER_CTX_get_cipher_data(ctx);
 
     c->c.type = GRASSHOPPER_CIPHER_CTR;
-    ctx->num = 0;
+    EVP_CIPHER_CTX_set_num(ctx, 0);
 
     grasshopper_zero128(&c->partial_buffer);
 
@@ -310,7 +310,7 @@ int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* out,
     unsigned char* current_out = out;
     grasshopper_w128_t* currentInputBlock;
     grasshopper_w128_t* currentOutputBlock;
-    unsigned int n = ctx->num;
+    unsigned int n = EVP_CIPHER_CTX_num(ctx);
     size_t lasted;
     size_t i;
 
@@ -319,7 +319,7 @@ int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* out,
 	--inl;
 	n = (n + 1) % GRASSHOPPER_BLOCK_SIZE;
     }
-    ctx->num = n;
+    EVP_CIPHER_CTX_set_num(ctx, n);
     size_t blocks = inl / GRASSHOPPER_BLOCK_SIZE;
 
     grasshopper_w128_t* iv_buffer = (grasshopper_w128_t*) iv;
@@ -344,7 +344,7 @@ int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* out,
         for (i = 0; i < lasted; i++) {
             currentOutputBlock->b[i] = c->partial_buffer.b[i] ^ currentInputBlock->b[i];
         }
-	ctx->num = i;
+	EVP_CIPHER_CTX_set_num(ctx, i);
         ctr128_inc(iv_buffer->b);
     }
 
