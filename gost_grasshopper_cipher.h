@@ -32,6 +32,9 @@ typedef struct {
 typedef struct {
     gost_grasshopper_cipher_ctx c;
     grasshopper_w128_t partial_buffer;
+    unsigned int skip_sections; /* 1 or 0, used to skip meshing for a first section */
+    unsigned int section_size;  /* After how much bytes mesh the key,
+				   if 0 never mesh and work like plain ctr. */
 } gost_grasshopper_cipher_ctx_ctr;
 
 typedef int (* grasshopper_init_cipher_func)(EVP_CIPHER_CTX* ctx, const unsigned char* key, const unsigned char* iv,
@@ -56,6 +59,8 @@ int gost_grasshopper_cipher_init_cfb(EVP_CIPHER_CTX* ctx, const unsigned char* k
 
 int gost_grasshopper_cipher_init_ctr(EVP_CIPHER_CTX* ctx, const unsigned char* key, const unsigned char* iv, int enc);
 
+int gost_grasshopper_cipher_init_ctracpkm(EVP_CIPHER_CTX* ctx, const unsigned char* key, const unsigned char* iv, int enc);
+
 int gost_grasshopper_cipher_init(EVP_CIPHER_CTX* ctx, const unsigned char* key,
                                  const unsigned char* iv, int enc);
 
@@ -75,6 +80,8 @@ int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX* ctx, unsigned char* out,
                                    const unsigned char* in, size_t inl);
 
 int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* out,
+                                   const unsigned char* in, size_t inl);
+int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX* ctx, unsigned char* out,
                                    const unsigned char* in, size_t inl);
 
 int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX* ctx);
@@ -96,6 +103,7 @@ extern const EVP_CIPHER* cipher_gost_grasshopper_cbc();
 extern const EVP_CIPHER* cipher_gost_grasshopper_ofb();
 extern const EVP_CIPHER* cipher_gost_grasshopper_cfb();
 extern const EVP_CIPHER* cipher_gost_grasshopper_ctr();
+extern const EVP_CIPHER* cipher_gost_grasshopper_ctracpkm();
 
 void cipher_gost_grasshopper_destroy(void);
 
