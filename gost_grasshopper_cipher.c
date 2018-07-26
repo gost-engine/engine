@@ -659,13 +659,16 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX* ctx, int type, int arg, void* pt
             }
             break;
         }
-        case EVP_CTRL_KEY_MESH:
-            if (arg <= 1 || ((arg - 1) & arg))
-                return -1;
+        case EVP_CTRL_KEY_MESH: {
             gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
+            if (c->c.type != GRASSHOPPER_CIPHER_CTRACPKM ||
+                arg <= 1 ||
+                ((arg - 1) & arg))
+                return -1;
             c->section_size = arg;
             c->skip_sections = 1;
             break;
+        }
         default:
             GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, GOST_R_UNSUPPORTED_CIPHER_CTL_COMMAND);
             return -1;
