@@ -130,8 +130,8 @@ struct testcase {
 static struct testcase testcases[] = {
     { "ecb", cipher_gost_grasshopper_ecb, 0, P,  E_ecb,  sizeof(P),  NULL,       0, 0 },
     { "ctr", cipher_gost_grasshopper_ctr, 1, P,  E_ctr,  sizeof(P),  iv_ctr,     sizeof(iv_ctr), 0 },
-    { "ctr-no-acpkm", cipher_gost_grasshopper_ctracpkm, 1, P,       E_ctr,   sizeof(P),       iv_ctr, sizeof(iv_ctr), 0 },
-    { "ctracpkm",     cipher_gost_grasshopper_ctracpkm, 1, P_acpkm, E_acpkm, sizeof(P_acpkm), iv_ctr, sizeof(iv_ctr), 1 },
+    { "ctr-no-acpkm", cipher_gost_grasshopper_ctracpkm, 1, P,   E_ctr,   sizeof(P),       iv_ctr, sizeof(iv_ctr), 0 },
+    { "ctracpkm", cipher_gost_grasshopper_ctracpkm, 1, P_acpkm, E_acpkm, sizeof(P_acpkm), iv_ctr, sizeof(iv_ctr), 256 / 8 },
     { "ofb", cipher_gost_grasshopper_ofb, 1, P,  E_ofb,  sizeof(P),  iv_128bit,  sizeof(iv_128bit), 0 },
     { "cbc", cipher_gost_grasshopper_cbc, 0, P,  E_cbc,  sizeof(P),  iv_128bit,  sizeof(iv_128bit), 0 },
     { "cfb", cipher_gost_grasshopper_cfb, 0, P,  E_cfb,  sizeof(P),  iv_128bit,  sizeof(iv_128bit), 0 },
@@ -167,7 +167,7 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
     memset(c, 0, sizeof(c));
     if (acpkm)
-	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, 256 / 8, NULL));
+	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
     T(EVP_CipherUpdate(ctx, c, &outlen, pt, size));
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(ctx);
@@ -186,7 +186,7 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
     memset(c, 0, sizeof(c));
     if (acpkm)
-	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, 256 / 8, NULL));
+	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
     for (z = 0; z < blocks; z++) {
 	int offset = z * GRASSHOPPER_BLOCK_SIZE;
 	int sz = GRASSHOPPER_BLOCK_SIZE;
@@ -209,7 +209,7 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
     memset(c, 0, sizeof(c));
     if (acpkm)
-	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, 256 / 8, NULL));
+	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
     T(EVP_CipherUpdate(ctx, c, &outlen, exp, size));
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(ctx);
@@ -245,7 +245,7 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
 	EVP_CIPHER_CTX_set_padding(ctx, 0);
 	memset(c, 0xff, sizeof(c));
 	if (acpkm)
-	    T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, 256 / 8, NULL));
+	    T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
 	for (i = 0; i < size; i += z) {
 	    if (i + z > size)
 		sz = size - i;

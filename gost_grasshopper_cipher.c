@@ -264,8 +264,8 @@ GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ctracpkm(EVP_CIPHER_CTX *ctx
     /* NB: setting type makes EVP do_cipher callback useless */
     c->c.type = GRASSHOPPER_CIPHER_CTRACPKM;
     EVP_CIPHER_CTX_set_num(ctx, 0);
-    c->section_size  = 0; /* by default meshing is turned off */
-    c->skip_sections = 0; /* will be set to 1 on EVP_CTRL_KEY_MESH */
+    c->section_size  = 4096;
+    c->skip_sections = 1;
 
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
