@@ -126,9 +126,8 @@ static const unsigned char ACPKM_D_2018[] = {
     0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f, /* 256 bit */
 };
 
-static void acpkm_grasshopper(gost_grasshopper_cipher_ctx_ctr *ctx)
+static void acpkm_next(gost_grasshopper_cipher_ctx *c)
 {
-    gost_grasshopper_cipher_ctx *c = &ctx->c;
     unsigned char newkey[GRASSHOPPER_KEY_SIZE];
     const int J = GRASSHOPPER_KEY_SIZE / GRASSHOPPER_BLOCK_SIZE;
     int n;
@@ -265,7 +264,6 @@ GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ctracpkm(EVP_CIPHER_CTX *ctx
     c->c.type = GRASSHOPPER_CIPHER_CTRACPKM;
     EVP_CIPHER_CTX_set_num(ctx, 0);
     c->section_size  = 4096;
-    c->skip_sections = 1;
 
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
@@ -403,20 +401,16 @@ int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* out,
     return 1;
 }
 
-static inline void apply_acpkm_grasshopper(gost_grasshopper_cipher_ctx_ctr *ctx, unsigned int num)
+#define GRASSHOPPER_BLOCK_MASK (GRASSHOPPER_BLOCK_SIZE - 1)
+static inline void apply_acpkm_grasshopper(gost_grasshopper_cipher_ctx_ctr *ctx, unsigned int *num)
 {
     if (!ctx->section_size ||
-        (num & (ctx->section_size - 1)))
+        (*num < ctx->section_size))
         return;
-    if (ctx->skip_sections) {
-        /* In no master key mode first section is using original key */
-        --ctx->skip_sections;
-        return;
-    }
-    acpkm_grasshopper(ctx);
+    acpkm_next(&ctx->c);
+    *num &= GRASSHOPPER_BLOCK_MASK;
 }
 
-#define GRASSHOPPER_BLOCK_MASK (GRASSHOPPER_BLOCK_SIZE - 1)
 /* If meshing is not configured via ctrl (setting section_size)
  * this function works exactly like plain ctr */
 int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx, unsigned char *out,
@@ -435,7 +429,7 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx, unsigned char *out,
 
     // full parts
     for (i = 0; i < blocks; i++) {
-        apply_acpkm_grasshopper(c, num);
+        apply_acpkm_grasshopper(c, &num);
         grasshopper_encrypt_block(&c->c.encrypt_round_keys,
             (grasshopper_w128_t *)iv, (grasshopper_w128_t *)out, &c->c.buffer);
         grasshopper_append128((grasshopper_w128_t *)out, (grasshopper_w128_t *)in);
@@ -448,7 +442,7 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx, unsigned char *out,
     // last part
     size_t lasted = inl - blocks * GRASSHOPPER_BLOCK_SIZE;
     if (lasted > 0) {
-        apply_acpkm_grasshopper(c, num);
+        apply_acpkm_grasshopper(c, &num);
         grasshopper_encrypt_block(&c->c.encrypt_round_keys,
             (grasshopper_w128_t *)iv, &c->partial_buffer, &c->c.buffer);
         for (i = 0; i < lasted; i++)
@@ -662,11 +656,9 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX* ctx, int type, int arg, void* pt
         case EVP_CTRL_KEY_MESH: {
             gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
             if (c->c.type != GRASSHOPPER_CIPHER_CTRACPKM ||
-                arg <= 1 ||
-                ((arg - 1) & arg))
+                !arg || (arg % GRASSHOPPER_BLOCK_SIZE))
                 return -1;
             c->section_size = arg;
-            c->skip_sections = 1;
             break;
         }
         default:

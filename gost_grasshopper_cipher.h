@@ -32,7 +32,6 @@ typedef struct {
 typedef struct {
     gost_grasshopper_cipher_ctx c;
     grasshopper_w128_t partial_buffer;
-    unsigned int skip_sections; /* 1 or 0, used to skip meshing for a first section */
     unsigned int section_size;  /* After how much bytes mesh the key,
 				   if 0 never mesh and work like plain ctr. */
 } gost_grasshopper_cipher_ctx_ctr;
