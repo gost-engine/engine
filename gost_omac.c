@@ -92,6 +92,13 @@ int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 		{
 			return 0;
 		}
+                if (!c_from->cmac_ctx) {
+                    if (c_to->cmac_ctx) {
+                        CMAC_CTX_free(c_to->cmac_ctx);
+                        c_to->cmac_ctx = NULL;
+                    }
+                    return 1;
+                }
 		if (c_to->cmac_ctx == c_from->cmac_ctx)
 		{
 		    c_to->cmac_ctx = CMAC_CTX_new();
