@@ -7,6 +7,8 @@
 #include "e_gost_err.h"
 #include "gost_lcl.h"
 
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+
 typedef struct omac_ctx {
 	CMAC_CTX *cmac_ctx;
 	size_t   dgst_size;
@@ -71,7 +73,8 @@ int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
 
 		CMAC_Final(c->cmac_ctx, mac, &mac_size);
 
-    memcpy(md, mac, c->dgst_size);
+    int md_size = EVP_MD_meth_get_result_size(EVP_MD_CTX_md(ctx));
+    memcpy(md, mac, min(md_size, c->dgst_size));
     return 1;
 }
 

@@ -252,6 +252,11 @@ static inline int EVP_MD_meth_set_result_size(EVP_MD *md, int resultsize)
     return 1;
 }
 
+static int EVP_MD_meth_get_result_size(const EVP_MD *md)
+{
+    return md->md_size;
+}
+
 static inline int EVP_MD_meth_set_input_blocksize(EVP_MD *md, int blocksize)
 {
     md->block_size = blocksize;
