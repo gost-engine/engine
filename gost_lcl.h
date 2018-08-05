@@ -183,7 +183,9 @@ void imit_gost_cp_12_destroy(void);
 EVP_MD *magma_omac(void);
 void magma_omac_destroy(void);
 EVP_MD *grasshopper_omac(void);
+EVP_MD *grasshopper_omac_acpkm(void);
 void grasshopper_omac_destroy(void);
+void grasshopper_omac_acpkm_destroy(void);
 /* Cipher context used for EVP_CIPHER operation */
 struct ossl_gost_cipher_ctx {
     int paramNID;

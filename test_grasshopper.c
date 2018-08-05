@@ -33,7 +33,7 @@
 		 printf(cGREEN "Test passed\n" cNORM);}
 
 /* Test key from both GOST R 34.12-2015 and GOST R 34.13-2015. */
-static const unsigned char K[] = {
+static const unsigned char K[32] = {
     0x88,0x99,0xaa,0xbb,0xcc,0xdd,0xee,0xff,0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,
     0xfe,0xdc,0xba,0x98,0x76,0x54,0x32,0x10,0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef,
 };
@@ -55,6 +55,19 @@ static const unsigned char P_acpkm[] = {
     0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,0x22,
     0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,0x22,0x33,
     0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,0x22,0x33,0x44,
+};
+/* OMAC-ACPKM test vector from R 1323565.1.017-2018 A.4.1 */
+static const unsigned char P_omac_acpkm1[] = {
+    0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x00,0xFF,0xEE,0xDD,0xCC,0xBB,0xAA,0x99,0x88,
+    0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,
+};
+/* OMAC-ACPKM test vector from R 1323565.1.017-2018 A.4.2 */
+static const unsigned char P_omac_acpkm2[] = {
+    0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x00,0xFF,0xEE,0xDD,0xCC,0xBB,0xAA,0x99,0x88,
+    0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,
+    0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,
+    0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,
+    0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,0x22,
 };
 static const unsigned char E_ecb[] = {
     /* ECB test vectors from GOST R 34.13-2015  A.1.1 */
@@ -134,6 +147,14 @@ static const unsigned char iv_128bit[]	= { 0x12,0x34,0x56,0x78,0x90,0xab,0xce,0x
 /* Universal IV for ACPKM-Master. */
 static const unsigned char iv_acpkm_m[]	= { 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
 					    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
+static const unsigned char MAC_omac[] = { 0x33,0x6f,0x4d,0x29,0x60,0x59,0xfb,0xe3 };
+static const unsigned char MAC_omac_acpkm1[] = {
+    0xB5,0x36,0x7F,0x47,0xB6,0x2B,0x99,0x5E,0xEB,0x2A,0x64,0x8C,0x58,0x43,0x14,0x5E,
+};
+static const unsigned char MAC_omac_acpkm2[] = {
+    0xFB,0xB8,0xDC,0xEE,0x45,0xBE,0xA6,0x7C,0x35,0xF5,0x8C,0x57,0x00,0x89,0x8E,0x5D,
+};
+
 struct testcase {
     const char *name;
     const EVP_CIPHER *(*type)(void);
@@ -291,34 +312,37 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
     return ret;
 }
 
-static int test_omac()
+static int test_mac(const char *name, const char *from,
+    const EVP_MD *type, int acpkm, int acpkm_t,
+    const unsigned char *pt, size_t pt_size,
+    const unsigned char *mac, size_t mac_size)
 {
     EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-    unsigned char mac[] = { 0x33,0x6f,0x4d,0x29,0x60,0x59,0xfb,0xe3 };
     unsigned char md_value[EVP_MAX_MD_SIZE];
     unsigned int md_len;
     int test;
 
     OPENSSL_assert(ctx);
-    printf("OMAC test from GOST R 34.13-2015\n");
+    printf("%s test from %s\n", name, from);
     EVP_MD_CTX_init(ctx);
-    /* preload cbc cipher for omac set key */
-    EVP_add_cipher(cipher_gost_grasshopper_cbc());
-    T(EVP_DigestInit_ex(ctx, grasshopper_omac(), NULL));
-    if (EVP_MD_CTX_size(ctx) != sizeof(mac)) {
+    T(EVP_DigestInit_ex(ctx, type, NULL));
+    if (EVP_MD_CTX_size(ctx) != mac_size) {
 	/* strip const out of EVP_MD_CTX_md() to
 	 * overwrite output size, as test vector is 8 bytes */
-	printf("Resize result size from %d to %zu\n", EVP_MD_CTX_size(ctx), sizeof(mac));
-	T(EVP_MD_meth_set_result_size((EVP_MD *)EVP_MD_CTX_md(ctx), sizeof(mac)));
+	printf("Resize result size from %d to %zu\n", EVP_MD_CTX_size(ctx), mac_size);
+	T(EVP_MD_meth_set_result_size((EVP_MD *)EVP_MD_CTX_md(ctx), mac_size));
     }
     T(EVP_MD_meth_get_ctrl(EVP_MD_CTX_md(ctx))(ctx, EVP_MD_CTRL_SET_KEY, sizeof(K), (void *)K));
-    T(EVP_DigestUpdate(ctx, P, sizeof(P)));
+    if (acpkm)
+	T(EVP_MD_meth_get_ctrl(EVP_MD_CTX_md(ctx))(ctx,
+                EVP_CTRL_KEY_MESH, acpkm, acpkm_t ? &acpkm_t : NULL));
+    T(EVP_DigestUpdate(ctx, pt, pt_size));
     T(EVP_DigestFinal_ex(ctx, md_value, &md_len));
     EVP_MD_CTX_free(ctx);
     printf("  MAC[%u] = ", md_len);
     hexdump(md_value, md_len);
 
-    TEST_ASSERT(md_len != sizeof(mac) ||
+    TEST_ASSERT(md_len != mac_size ||
 	memcmp(mac, md_value, md_len));
 
     return test;
@@ -339,7 +363,19 @@ int main(int argc, char **argv)
 		t->iv, t->iv_size, t->acpkm);
     }
 
-    ret |= test_omac();
+    /* preload cbc cipher for omac set key */
+    EVP_add_cipher(cipher_gost_grasshopper_cbc());
+
+    ret |= test_mac("OMAC", "GOST R 34.13-2015", grasshopper_omac(), 0, 0,
+        P, sizeof(P), MAC_omac, sizeof(MAC_omac));
+    ret |= test_mac("OMAC-ACPKM", "R 1323565.1.017-2018 A.4.1",
+        grasshopper_omac_acpkm(), 32, 768 / 8,
+        P_omac_acpkm1, sizeof(P_omac_acpkm1),
+        MAC_omac_acpkm1, sizeof(MAC_omac_acpkm1));
+    ret |= test_mac("OMAC-ACPKM", "R 1323565.1.017-2018 A.4.2",
+        grasshopper_omac_acpkm(), 32, 768 / 8,
+        P_omac_acpkm2, sizeof(P_omac_acpkm2),
+        MAC_omac_acpkm2, sizeof(MAC_omac_acpkm2));
 
     if (ret)
 	printf(cDRED "= Some tests FAILED!\n" cNORM);

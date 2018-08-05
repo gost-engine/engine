@@ -123,6 +123,7 @@ static int gost_engine_destroy(ENGINE* e) {
     imit_gost_cp_12_destroy();
     magma_omac_destroy();
     grasshopper_omac_destroy();
+    grasshopper_omac_acpkm_destroy();
 
     cipher_gost_destroy();
     cipher_gost_grasshopper_destroy();
@@ -301,6 +302,8 @@ static int gost_digests(ENGINE* e, const EVP_MD** digest,
         *digest = magma_omac();
     } else if (nid == NID_grasshopper_mac) {
         *digest = grasshopper_omac();
+    } else if (nid == NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac) {
+        *digest = grasshopper_omac_acpkm();
     } else {
         ok = 0;
         *digest = NULL;

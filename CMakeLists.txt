@@ -91,6 +91,7 @@ set(GOST_EC_SOURCE_FILES
 
 set (GOST_OMAC_SOURCE_FILES
         gost_omac.c
+        gost_omac_acpkm.c
         )
 
 set(GOST_LIB_SOURCE_FILES
@@ -109,6 +110,7 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_md2012.c
         gost_pmeth.c
         gost_omac.c
+        gost_omac_acpkm.c
         )
 
 add_executable(test_grasshopper test_grasshopper.c)
