@@ -344,4 +344,16 @@ static inline int (*EVP_MD_meth_get_ctrl(const EVP_MD *md))(EVP_MD_CTX *ctx, int
 
 # endif /* (OPENSSL_VERSION_NUMBER <= 0x10002100L) */
 
+# ifndef NID_id_tc26_cipher_gostr3412_2015_kuznyechik
+#  define NID_id_tc26_cipher_gostr3412_2015_kuznyechik                  1176
+#  define NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm         1177
+#  define NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac    1178
+#  define NID_magma_ecb							1187
+#  define NID_magma_ctr							1188
+#  define NID_magma_ofb							1189
+#  define NID_magma_cbc							1190
+#  define NID_magma_cfb							1191
+#  define NID_magma_mac							1192
+# endif
+
 #endif /* !_GOST_COMPAT_H */
