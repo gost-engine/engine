@@ -3,7 +3,9 @@ project(gost-engine LANGUAGES C)
 
 include(GNUInstallDirs)
 
-find_package(OpenSSL 1.1 REQUIRED)
+enable_testing()
+
+find_package(OpenSSL 1.0.2 REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -66,8 +68,6 @@ set(GOST_GRASSHOPPER_SOURCE_FILES
         gost_grasshopper_precompiled.c
         gost_grasshopper_cipher.h
         gost_grasshopper_cipher.c
-        gost_grasshopper_mac.h
-        gost_grasshopper_mac.c
         )
 
 set(GOST_CORE_SOURCE_FILES
@@ -80,6 +80,7 @@ set(GOST_CORE_SOURCE_FILES
         gost_keywrap.c
         gost_keywrap.h
         gost_lcl.h
+        compat.h
         gost_params.c
         )
 
@@ -88,12 +89,18 @@ set(GOST_EC_SOURCE_FILES
         gost_ec_sign.c
         )
 
+set (GOST_OMAC_SOURCE_FILES
+        gost_omac.c
+        gost_omac_acpkm.c
+        )
+
 set(GOST_LIB_SOURCE_FILES
         ${GOST_89_SOURCE_FILES}
         ${GOST_HASH_SOURCE_FILES}
         ${GOST_HASH_2012_SOURCE_FILES}
         ${GOST_GRASSHOPPER_SOURCE_FILES}
         ${GOST_EC_SOURCE_FILES}
+        ${GOST_OMAC_SOURCE_FILES}
         )
 
 set(GOST_ENGINE_SOURCE_FILES
@@ -102,13 +109,24 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_md.c
         gost_md2012.c
         gost_pmeth.c
+        gost_omac.c
+        gost_omac_acpkm.c
         )
+
+add_executable(test_grasshopper test_grasshopper.c)
+target_link_libraries(test_grasshopper gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME grasshopper
+	COMMAND test_grasshopper)
+
+add_test(NAME engine
+	 COMMAND perl run_tests
+	 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
-set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
+set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "libgost")
 target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 
 set(GOST_SUM_SOURCE_FILES
@@ -124,6 +142,11 @@ set(GOST_12_SUM_SOURCE_FILES
 
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
 target_link_libraries(gost12sum gost_core)
+
+set_source_files_properties(tags PROPERTIES GENERATED true)
+add_custom_target(tags
+    COMMAND ctags -R . ${OPENSSL_ROOT_DIR}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # install
 set(OPENSSL_ENGINES_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/engines-${OPENSSL_VERSION_MAJOR}_${OPENSSL_VERSION_MINOR})

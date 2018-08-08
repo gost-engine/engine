@@ -21,6 +21,13 @@
 
 #define PK_WRAP_PARAM "LEGACY_PK_WRAP"
 
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+/* some functions have const'ed arguments since openssl-1.1.0 */
+# define OPENSSL110_const const
+#else
+# define OPENSSL110_const
+#endif
+
 /*
  * Pack bignum into byte buffer of given size, filling all leading bytes by
  * zeros
@@ -131,9 +138,9 @@ static int gost_decode_nid_params(EVP_PKEY *pkey, int pkey_nid, int param_nid)
  * Parses GOST algorithm parameters from X509_ALGOR and modifies pkey setting
  * NID and parameters
  */
-static int decode_gost_algor_params(EVP_PKEY *pkey, const X509_ALGOR *palg)
+static int decode_gost_algor_params(EVP_PKEY *pkey, OPENSSL110_const X509_ALGOR *palg)
 {
-    const ASN1_OBJECT *palg_obj = NULL;
+    OPENSSL110_const ASN1_OBJECT *palg_obj = NULL;
     int ptype = V_ASN1_UNDEF;
     int pkey_nid = NID_undef, param_nid = NID_undef;
     ASN1_STRING *pval = NULL;
@@ -142,7 +149,7 @@ static int decode_gost_algor_params(EVP_PKEY *pkey, const X509_ALGOR *palg)
 
     if (!pkey || !palg)
         return 0;
-    X509_ALGOR_get0(&palg_obj, &ptype, (const void **)&pval, palg);
+    X509_ALGOR_get0(&palg_obj, &ptype, (OPENSSL110_const void **)&pval, palg);
     if (ptype != V_ASN1_SEQUENCE) {
         GOSTerr(GOST_F_DECODE_GOST_ALGOR_PARAMS,
                 GOST_R_BAD_KEY_PARAMETERS_FORMAT);
@@ -331,14 +338,14 @@ static BIGNUM *unmask_priv_key(EVP_PKEY *pk,
     return pknum_masked;
 }
 
-static int priv_decode_gost(EVP_PKEY *pk, const PKCS8_PRIV_KEY_INFO *p8inf)
+static int priv_decode_gost(EVP_PKEY *pk, OPENSSL110_const PKCS8_PRIV_KEY_INFO *p8inf)
 {
     const unsigned char *pkey_buf = NULL, *p = NULL;
     int priv_len = 0;
     BIGNUM *pk_num = NULL;
     int ret = 0;
-    const X509_ALGOR *palg = NULL;
-    const ASN1_OBJECT *palg_obj = NULL;
+    OPENSSL110_const X509_ALGOR *palg = NULL;
+    OPENSSL110_const ASN1_OBJECT *palg_obj = NULL;
     ASN1_INTEGER *priv_key = NULL;
     int expected_key_len = 32;
 
@@ -842,6 +849,30 @@ static int mac_ctrl_gost_12(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     return -2;
 }
 
+static int mac_ctrl_magma(EVP_PKEY *pkey, int op, long arg1, void *arg2)
+{
+    switch (op) {
+    case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
+        if (arg2) {
+            *(int *)arg2 = NID_magma_mac;
+            return 2;
+        }
+    }
+    return -2;
+}
+
+static int mac_ctrl_grasshopper(EVP_PKEY *pkey, int op, long arg1, void *arg2)
+{
+    switch (op) {
+    case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
+        if (arg2) {
+            *(int *)arg2 = NID_grasshopper_mac;
+            return 2;
+        }
+    }
+    return -2;
+}
+
 static int gost2001_param_encode(const EVP_PKEY *pkey, unsigned char **pder)
 {
     int nid =
@@ -921,6 +952,14 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
     case NID_gost_mac_12:
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
         EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost_12);
+        break;
+    case NID_magma_mac:
+        EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
+        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_magma);
+        break;
+    case NID_grasshopper_mac:
+        EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
+        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_grasshopper);
         break;
     }
     return 1;

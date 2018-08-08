@@ -59,6 +59,8 @@ void gostcrypt(gost_ctx * c, const byte * in, byte * out);
 void gostdecrypt(gost_ctx * c, const byte * in, byte * out);
 /* Set key into context */
 void gost_key(gost_ctx * ctx, const byte * key);
+/* Set key into context */
+void magma_key(gost_ctx * ctx, const byte * key);
 /* Get key from context */
 void gost_get_key(gost_ctx * ctx, byte * key);
 /* Set S-blocks into context */
