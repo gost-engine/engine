@@ -604,6 +604,10 @@ int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX* ctx, unsigned char* out,
 
 int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX* ctx) {
     gost_grasshopper_cipher_ctx* c = (gost_grasshopper_cipher_ctx*) EVP_CIPHER_CTX_get_cipher_data(ctx);
+
+    if (!c)
+        return 1;
+
     struct GRASSHOPPER_CIPHER_PARAMS* params = &gost_cipher_params[c->type];
 
     gost_grasshopper_cipher_destroy(c);
