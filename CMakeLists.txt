@@ -5,7 +5,7 @@ include(GNUInstallDirs)
 
 enable_testing()
 
-find_package(OpenSSL 1.0.2 REQUIRED)
+find_package(OpenSSL 1.1.1 REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -80,7 +80,6 @@ set(GOST_CORE_SOURCE_FILES
         gost_keywrap.c
         gost_keywrap.h
         gost_lcl.h
-        compat.h
         gost_params.c
         )
 
