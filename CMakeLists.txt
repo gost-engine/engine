@@ -125,7 +125,7 @@ add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
-set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "libgost")
+set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
 target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 
 set(GOST_SUM_SOURCE_FILES
