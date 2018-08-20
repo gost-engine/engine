@@ -102,7 +102,7 @@ BouncyCastle cryptoprovider has some problems with private key parsing from
 PrivateKeyInfo, so if you want to use old private key representation format,
 which supported by BC, you must add:
 
-    PK_PARAMS = LEGACY_PK_WRAP
+    GOST_PK_FORMAT = LEGACY_PK_WRAP
 
 to `[gost_section]`.
 
