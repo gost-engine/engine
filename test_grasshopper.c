@@ -248,39 +248,6 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
     return ret;
 }
 
-static int test_omac()
-{
-    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-    unsigned char mac[] = { 0x33,0x6f,0x4d,0x29,0x60,0x59,0xfb,0xe3 };
-    unsigned char md_value[EVP_MAX_MD_SIZE];
-    unsigned int md_len;
-    int test;
-
-    OPENSSL_assert(ctx);
-    printf("OMAC test from GOST R 34.13-2015\n");
-    EVP_MD_CTX_init(ctx);
-    /* preload cbc cipher for omac set key */
-    EVP_add_cipher(cipher_gost_grasshopper_cbc());
-    T(EVP_DigestInit_ex(ctx, grasshopper_omac(), NULL));
-    if (EVP_MD_CTX_size(ctx) != sizeof(mac)) {
-	/* strip const out of EVP_MD_CTX_md() to
-	 * overwrite output size, as test vector is 8 bytes */
-	printf("Resize result size from %d to %zu\n", EVP_MD_CTX_size(ctx), sizeof(mac));
-	T(EVP_MD_meth_set_result_size((EVP_MD *)EVP_MD_CTX_md(ctx), sizeof(mac)));
-    }
-    T(EVP_MD_meth_get_ctrl(EVP_MD_CTX_md(ctx))(ctx, EVP_MD_CTRL_SET_KEY, sizeof(K), (void *)K));
-    T(EVP_DigestUpdate(ctx, P, sizeof(P)));
-    T(EVP_DigestFinal_ex(ctx, md_value, &md_len));
-    EVP_MD_CTX_free(ctx);
-    printf("  MAC[%u] = ", md_len);
-    hexdump(md_value, md_len);
-
-    TEST_ASSERT(md_len != sizeof(mac) ||
-	memcmp(mac, md_value, md_len));
-
-    return test;
-}
-
 int main(int argc, char **argv)
 {
     int ret = 0;
@@ -295,8 +262,6 @@ int main(int argc, char **argv)
 		t->plaintext, t->expected, t->size,
 		t->iv, t->iv_size, t->acpkm);
     }
-
-    ret |= test_omac();
 
     if (ret)
 	printf(cDRED "= Some tests FAILED!\n" cNORM);
