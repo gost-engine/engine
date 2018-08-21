@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(ccgost C)
 
+find_package(OpenSSL 1.1 REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
+
 enable_testing()
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -105,7 +108,7 @@ set_target_properties(gost PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
 
-target_link_libraries(gost_engine crypto gost)
+target_link_libraries(gost_engine ${OPENSSL_CRYPTO_LIBRARY} gost)
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
