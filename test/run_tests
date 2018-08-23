@@ -1,0 +1,5 @@
+#!/usr/bin/perl
+use TAP::Harness;
+
+my $harness = TAP::Harness->new();
+exit ($harness->runtests(glob("*.t"))->all_passed() ? 0 : 1);
