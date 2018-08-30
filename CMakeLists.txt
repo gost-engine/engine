@@ -81,6 +81,7 @@ set(GOST_CORE_SOURCE_FILES
         gost_keywrap.h
         gost_lcl.h
         gost_params.c
+        gost_keyexpimp.c
         )
 
 set(GOST_EC_SOURCE_FILES

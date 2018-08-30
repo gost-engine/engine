@@ -36,6 +36,7 @@ static ERR_STRING_DATA GOST_str_functs[] = {
     {ERR_PACK(0, GOST_F_GOST_IMIT_CTRL, 0), "gost_imit_ctrl"},
     {ERR_PACK(0, GOST_F_GOST_IMIT_FINAL, 0), "gost_imit_final"},
     {ERR_PACK(0, GOST_F_GOST_IMIT_UPDATE, 0), "gost_imit_update"},
+    {ERR_PACK(0, GOST_F_GOST_KEXP15, 0), "gost_kexp15"},
     {ERR_PACK(0, GOST_F_OMAC_IMIT_CTRL, 0), "omac_imit_ctrl"},
     {ERR_PACK(0, GOST_F_OMAC_IMIT_FINAL, 0), "omac_imit_final"},
     {ERR_PACK(0, GOST_F_OMAC_IMIT_UPDATE, 0), "omac_imit_update"},
