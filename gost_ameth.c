@@ -138,7 +138,8 @@ static int gost_decode_nid_params(EVP_PKEY *pkey, int pkey_nid, int param_nid)
  * Parses GOST algorithm parameters from X509_ALGOR and modifies pkey setting
  * NID and parameters
  */
-static int decode_gost_algor_params(EVP_PKEY *pkey, OPENSSL110_const X509_ALGOR *palg)
+static int decode_gost_algor_params(EVP_PKEY *pkey,
+                                    OPENSSL110_const X509_ALGOR *palg)
 {
     OPENSSL110_const ASN1_OBJECT *palg_obj = NULL;
     int ptype = V_ASN1_UNDEF;
@@ -297,8 +298,7 @@ static void pkey_free_gost_ec(EVP_PKEY *key)
 /* ------------------ private key functions  -----------------------------*/
 
 static BIGNUM *unmask_priv_key(EVP_PKEY *pk,
-                               const unsigned char *buf, int len,
-                               int num_masks)
+                               const unsigned char *buf, int len, int num_masks)
 {
     BIGNUM *pknum_masked = NULL, *q = NULL;
     const EC_KEY *key_ptr = (pk) ? EVP_PKEY_get0(pk) : NULL;
@@ -338,7 +338,8 @@ static BIGNUM *unmask_priv_key(EVP_PKEY *pk,
     return pknum_masked;
 }
 
-static int priv_decode_gost(EVP_PKEY *pk, OPENSSL110_const PKCS8_PRIV_KEY_INFO *p8inf)
+static int priv_decode_gost(EVP_PKEY *pk,
+                            OPENSSL110_const PKCS8_PRIV_KEY_INFO *p8inf)
 {
     const unsigned char *pkey_buf = NULL, *p = NULL;
     int priv_len = 0;
@@ -450,7 +451,7 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
         buf[key_len - 1 - i] = tmp;
     }
 
-    if(pk_format != NULL && strcmp(pk_format, PK_WRAP_PARAM) == 0) {
+    if (pk_format != NULL && strcmp(pk_format, PK_WRAP_PARAM) == 0) {
         ASN1_STRING *octet = NULL;
         int priv_len = 0;
         unsigned char *priv_buf = NULL;
@@ -462,7 +463,7 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
         OPENSSL_free(buf);
 
         return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
-                           priv_buf, priv_len); 
+                               priv_buf, priv_len);
     }
 
     return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
@@ -681,7 +682,7 @@ static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub)
         return 0;
     }
 
-		BUF_reverse(databuf, octet->data, octet->length);
+    BUF_reverse(databuf, octet->data, octet->length);
     len = octet->length / 2;
     ASN1_OCTET_STRING_free(octet);
 
@@ -722,9 +723,9 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
 
     algobj = OBJ_nid2obj(EVP_PKEY_base_id(pk));
 
-		ASN1_STRING *params = encode_gost_algor_params(pk);
-		pval = params;
-		ptype = V_ASN1_SEQUENCE;
+    ASN1_STRING *params = encode_gost_algor_params(pk);
+    pval = params;
+    ptype = V_ASN1_SEQUENCE;
 
     order = BN_new();
     if (!order) {
@@ -758,7 +759,7 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     store_bignum(X, databuf + data_len / 2, data_len / 2);
     store_bignum(Y, databuf, data_len / 2);
 
-		BUF_reverse(databuf, NULL, data_len);
+    BUF_reverse(databuf, NULL, data_len);
 
     octet = ASN1_OCTET_STRING_new();
     if (octet == NULL) {

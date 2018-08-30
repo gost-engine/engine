@@ -33,7 +33,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
         NID_id_GostR3411_2012_256 : dgst_nid;
     int buf_len = (dgst_nid == NID_id_GostR3411_2012_512) ? 128 : 64,
         half_len = buf_len >> 1;
-		int ret = 0;
+    int ret = 0;
 
     if (!ctx) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
@@ -60,8 +60,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     Y = BN_CTX_get(ctx);
     EC_GROUP_get_order(EC_KEY_get0_group(priv_key), order, ctx);
     BN_mod_mul(p, key, UKM, order, ctx);
-    if (!EC_POINT_mul
-        (EC_KEY_get0_group(priv_key), pnt, NULL, pub_key, p, ctx)) {
+    if (!EC_POINT_mul(EC_KEY_get0_group(priv_key), pnt, NULL, pub_key, p, ctx)) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_ERROR_POINT_MUL);
         goto err;
     }
@@ -73,7 +72,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     store_bignum(Y, databuf, half_len);
     store_bignum(X, databuf + half_len, half_len);
     /* And reverse byte order of whole buffer */
-		BUF_reverse(databuf, NULL, buf_len);
+    BUF_reverse(databuf, NULL, buf_len);
 
     mdctx = EVP_MD_CTX_new();
     if (!mdctx) {
@@ -84,7 +83,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     EVP_DigestInit_ex(mdctx, md, NULL);
     EVP_DigestUpdate(mdctx, databuf, buf_len);
     EVP_DigestFinal_ex(mdctx, shared_key, NULL);
-		ret = 32;
+    ret = 32;
 
  err:
     BN_free(UKM);
@@ -185,11 +184,11 @@ int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         key_is_ephemeral = 1;
         if (out) {
             sec_key = EVP_PKEY_new();
-            if (! EVP_PKEY_assign(sec_key, EVP_PKEY_base_id(pubk), EC_KEY_new()) ||
-			          ! EVP_PKEY_copy_parameters(sec_key, pubk) ||
-                ! gost_ec_keygen(EVP_PKEY_get0(sec_key))) {
-            GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT,
-                    GOST_R_ERROR_COMPUTING_SHARED_KEY);
+            if (!EVP_PKEY_assign(sec_key, EVP_PKEY_base_id(pubk), EC_KEY_new())
+                || !EVP_PKEY_copy_parameters(sec_key, pubk)
+                || !gost_ec_keygen(EVP_PKEY_get0(sec_key))) {
+                GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT,
+                        GOST_R_ERROR_COMPUTING_SHARED_KEY);
                 goto err;
             }
         }

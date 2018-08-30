@@ -11,14 +11,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _MSC_VER
-#include "getopt.h"
+# include "getopt.h"
 # ifndef PATH_MAX
 #  define PATH_MAX _MAX_PATH
 # endif
-#include <BaseTsd.h>
+# include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #else
-#include <unistd.h>
+# include <unistd.h>
 #endif
 #include <limits.h>
 #include <fcntl.h>
@@ -224,7 +224,7 @@ int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
 {
     unsigned char buffer[BUF_SIZE];
     ssize_t bytes;
-		size_t i;
+    size_t i;
 
     start_hash12(ctx);
     while ((bytes = read(fd, buffer, BUF_SIZE)) > 0) {
@@ -269,7 +269,7 @@ int get_line(FILE *f, char *hash, char *filename, int verbose)
         return 1;
  nextline:
         if (verbose)
-	    printf("%s\n", filename);
+            printf("%s\n", filename);
     }
     return 0;
 }

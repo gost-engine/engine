@@ -74,7 +74,8 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
     R3410_ec_params *params = gost_nid2params(nid);
     EC_GROUP *grp = NULL;
     EC_POINT *P = NULL;
-    BIGNUM *p = NULL, *q = NULL, *a = NULL, *b = NULL, *x = NULL, *y = NULL, *cofactor = NULL;
+    BIGNUM *p = NULL, *q = NULL, *a = NULL, *b = NULL, *x = NULL, *y =
+        NULL, *cofactor = NULL;
     BN_CTX *ctx;
     int ok = 0;
 
@@ -95,7 +96,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
     x = BN_CTX_get(ctx);
     y = BN_CTX_get(ctx);
     q = BN_CTX_get(ctx);
-		cofactor = BN_CTX_get(ctx);
+    cofactor = BN_CTX_get(ctx);
     if (!p || !a || !b || !x || !y || !q || !cofactor) {
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_MALLOC_FAILURE);
         goto end;
@@ -104,7 +105,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
     if (!BN_hex2bn(&p, params->p)
         || !BN_hex2bn(&a, params->a)
         || !BN_hex2bn(&b, params->b)
-				|| !BN_hex2bn(&cofactor, params->cofactor) ) {
+        || !BN_hex2bn(&cofactor, params->cofactor)) {
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_INTERNAL_ERROR);
         goto end;
     }
@@ -310,8 +311,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
     BN_CTX *ctx;
     const EC_GROUP *group = (ec) ? EC_KEY_get0_group(ec) : NULL;
     BIGNUM *order;
-    BIGNUM *md = NULL, *e = NULL, *R = NULL, *v = NULL,
-        *z1 = NULL, *z2 = NULL;
+    BIGNUM *md = NULL, *e = NULL, *R = NULL, *v = NULL, *z1 = NULL, *z2 = NULL;
     const BIGNUM *sig_s = NULL, *sig_r = NULL;
     BIGNUM *X = NULL, *tmp = NULL;
     EC_POINT *C = NULL;

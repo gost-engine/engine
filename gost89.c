@@ -243,10 +243,10 @@ const byte CryptoProKeyMeshingKey[] = {
 };
 
 const byte ACPKM_D_const[] = {
-	0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 
-	0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F,
-	0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 
-	0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F,
+    0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,
+    0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F,
+    0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97,
+    0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F,
 };
 
 /* Initialization of gost_ctx subst blocks*/
@@ -462,8 +462,8 @@ void magma_key(gost_ctx * c, const byte * k)
     int i, j;
     for (i = 0, j = 0; i < 8; i++, j += 4) {
         c->k[i] =
-            k[j+3] | (k[j + 2] << 8) | (k[j + 1] << 16) | ((word32) k[j] <<
-                                                         24);
+            k[j + 3] | (k[j + 2] << 8) | (k[j + 1] << 16) | ((word32) k[j] <<
+                                                             24);
     }
 }
 
@@ -632,29 +632,27 @@ void cryptopro_key_meshing(gost_ctx * ctx, unsigned char *iv)
     memcpy(iv, newiv, 8);
 }
 
-void acpkm_magma_key_meshing(gost_ctx *ctx)
+void acpkm_magma_key_meshing(gost_ctx * ctx)
 {
     unsigned char newkey[32];
-		int i, j;
-		unsigned char buf[8], keybuf[8];
+    int i, j;
+    unsigned char buf[8], keybuf[8];
 
-		for (i = 0; i < 4; i++)
-		{
-			for (j = 0; j < 8; j++)
-			{
-				buf[j] = ACPKM_D_const[8*i + 7-j];
-			}
-			gostcrypt(ctx, buf, keybuf);
-			memcpy(newkey+8*i,   keybuf+4, 4);
-			memcpy(newkey+8*i+4, keybuf,   4);
-		}
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 8; j++) {
+            buf[j] = ACPKM_D_const[8 * i + 7 - j];
+        }
+        gostcrypt(ctx, buf, keybuf);
+        memcpy(newkey + 8 * i, keybuf + 4, 4);
+        memcpy(newkey + 8 * i + 4, keybuf, 4);
+    }
     /* set new key */
     gost_key(ctx, newkey);
 }
 
 #ifdef ENABLE_UNIT_TESTS
-#include <stdio.h>
-#include <string.h>
+# include <stdio.h>
+# include <string.h>
 
 static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
 {
@@ -671,45 +669,44 @@ static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
 
 int main(void)
 {
-	const unsigned char initial_key[] = {
-		0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
-		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
-		0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
-		0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF
-	};
+    const unsigned char initial_key[] = {
+        0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF
+    };
 
-	const unsigned char meshed_key[] = {
-		0x86, 0x3E, 0xA0, 0x17, 0x84, 0x2C, 0x3D, 0x37, 
-		0x2B, 0x18, 0xA8, 0x5A, 0x28, 0xE2, 0x31, 0x7D,
-		0x74, 0xBE, 0xFC, 0x10, 0x77, 0x20, 0xDE, 0x0C, 
-		0x9E, 0x8A, 0xB9, 0x74, 0xAB, 0xD0, 0x0C, 0xA0,
-	};
+    const unsigned char meshed_key[] = {
+        0x86, 0x3E, 0xA0, 0x17, 0x84, 0x2C, 0x3D, 0x37,
+        0x2B, 0x18, 0xA8, 0x5A, 0x28, 0xE2, 0x31, 0x7D,
+        0x74, 0xBE, 0xFC, 0x10, 0x77, 0x20, 0xDE, 0x0C,
+        0x9E, 0x8A, 0xB9, 0x74, 0xAB, 0xD0, 0x0C, 0xA0,
+    };
 
-	unsigned char buf[32];
+    unsigned char buf[32];
 
-	gost_ctx ctx;
-	kboxinit(&ctx, &Gost28147_TC26ParamSetZ);
-	magma_key(&ctx, initial_key);
-	magma_get_key(&ctx, buf);
+    gost_ctx ctx;
+    kboxinit(&ctx, &Gost28147_TC26ParamSetZ);
+    magma_key(&ctx, initial_key);
+    magma_get_key(&ctx, buf);
 
-	hexdump(stdout, "Initial key", buf, 32);
+    hexdump(stdout, "Initial key", buf, 32);
 
-	acpkm_magma_key_meshing(&ctx);
-	magma_get_key(&ctx, buf);
-	hexdump(stdout, "Meshed key - K2", buf, 32);
+    acpkm_magma_key_meshing(&ctx);
+    magma_get_key(&ctx, buf);
+    hexdump(stdout, "Meshed key - K2", buf, 32);
 
-	if (memcmp(meshed_key, buf, 32))
-	{
-		fprintf(stderr, "Magma meshing failed");
-	}
+    if (memcmp(meshed_key, buf, 32)) {
+        fprintf(stderr, "Magma meshing failed");
+    }
 
-	acpkm_magma_key_meshing(&ctx);
-	magma_get_key(&ctx, buf);
-	hexdump(stdout, "Meshed key - K3", buf, 32);
+    acpkm_magma_key_meshing(&ctx);
+    magma_get_key(&ctx, buf);
+    hexdump(stdout, "Meshed key - K3", buf, 32);
 
-	acpkm_magma_key_meshing(&ctx);
-	magma_get_key(&ctx, buf);
-	hexdump(stdout, "Meshed key - K4", buf, 32);
+    acpkm_magma_key_meshing(&ctx);
+    magma_get_key(&ctx, buf);
+    hexdump(stdout, "Meshed key - K4", buf, 32);
 
 }
 
