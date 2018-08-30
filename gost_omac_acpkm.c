@@ -331,7 +331,7 @@ static int omac_acpkm_imit_update(EVP_MD_CTX *ctx, const void *data,
 {
     OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
     if (!c->key_set) {
-        GOSTerr(GOST_F_OMAC_IMIT_UPDATE, GOST_R_MAC_KEY_NOT_SET);
+        GOSTerr(GOST_F_OMAC_ACPKM_IMIT_UPDATE, GOST_R_MAC_KEY_NOT_SET);
         return 0;
     }
 
@@ -345,7 +345,7 @@ int omac_acpkm_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
     size_t mac_size = sizeof(mac);
 
     if (!c->key_set) {
-        GOSTerr(GOST_F_OMAC_IMIT_FINAL, GOST_R_MAC_KEY_NOT_SET);
+        GOSTerr(GOST_F_OMAC_ACPKM_IMIT_FINAL, GOST_R_MAC_KEY_NOT_SET);
         return 0;
     }
 
@@ -399,7 +399,7 @@ static int omac_acpkm_key(OMAC_ACPKM_CTX *c, const EVP_CIPHER *cipher,
 
     c->cmac_ctx = CMAC_ACPKM_CTX_new();
     if (c->cmac_ctx == NULL) {
-        GOSTerr(GOST_F_OMAC_KEY, ERR_R_MALLOC_FAILURE);
+        GOSTerr(GOST_F_OMAC_ACPKM_KEY, ERR_R_MALLOC_FAILURE);
         return 0;
     }
 
@@ -431,15 +431,15 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             }
             cipher = EVP_get_cipherbynid(c->cipher_nid);
             if (cipher == NULL) {
-                GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_CIPHER_NOT_FOUND);
+                GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_CIPHER_NOT_FOUND);
             }
             if (EVP_MD_meth_get_init(EVP_MD_CTX_md(ctx)) (ctx) <= 0) {
-                GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
+                GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
                 return 0;
             }
             EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NO_INIT);
             if (c->key_set) {
-                GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_BAD_ORDER);
+                GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_BAD_ORDER);
                 return 0;
             }
             if (arg == 0) {
@@ -448,7 +448,7 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             } else if (arg == 32) {
                 return omac_acpkm_key(c, cipher, ptr, 32);
             }
-            GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
+            GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
             return 0;
         }
     case EVP_CTRL_KEY_MESH:
@@ -470,7 +470,7 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             switch (c->cipher_nid) {
             case NID_grasshopper_cbc:
                 if (arg < 1 || arg > 16) {
-                    GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
+                    GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
                     return 0;
                 }
                 c->dgst_size = arg;
