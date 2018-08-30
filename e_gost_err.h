@@ -44,6 +44,10 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_IMIT_FINAL                           114
 # define GOST_F_GOST_IMIT_UPDATE                          115
 # define GOST_F_GOST_KEXP15                               143
+# define GOST_F_OMAC_ACPKM_IMIT_CTRL                      144
+# define GOST_F_OMAC_ACPKM_IMIT_FINAL                     145
+# define GOST_F_OMAC_ACPKM_IMIT_UPDATE                    146
+# define GOST_F_OMAC_ACPKM_KEY                            147
 # define GOST_F_OMAC_IMIT_CTRL                            116
 # define GOST_F_OMAC_IMIT_FINAL                           117
 # define GOST_F_OMAC_IMIT_UPDATE                          118
