@@ -83,9 +83,10 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
 
 int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
                 int cipher_nid, const unsigned char *cipher_key,
-                const size_t cipher_key_len, int mac_nid, char *mac_key,
-                const size_t mac_key_len, const char *iv, const size_t ivlen,
-                char *shared_key, size_t shared_len)
+                const size_t cipher_key_len, int mac_nid,
+                unsigned char *mac_key, const size_t mac_key_len,
+                const unsigned char *iv, const size_t ivlen,
+                unsigned char *shared_key, size_t shared_len)
 {
     unsigned char iv_full[16], out[48], mac_buf[16];
     unsigned int mac_len;
@@ -108,6 +109,12 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
     memset(iv_full, 0, 16);
     memcpy(iv_full, iv, ivlen);
 
+    ciph = EVP_CIPHER_CTX_new();
+    if (ciph == NULL) {
+        GOSTerr(GOST_F_GOST_KEXP15, ERR_R_MALLOC_FAILURE);
+        goto err;
+    }
+
     if (EVP_CipherInit_ex
         (ciph, EVP_get_cipherbynid(cipher_nid), NULL, NULL, NULL, 0) <= 0
         || EVP_CipherInit_ex(ciph, NULL, NULL, cipher_key, iv_full, 0) <= 0
@@ -117,6 +124,12 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
         goto err;
     }
     /*Now we have shared key and mac in out[] */
+
+    mac = EVP_MD_CTX_new();
+    if (mac == NULL) {
+        GOSTerr(GOST_F_GOST_KEXP15, ERR_R_MALLOC_FAILURE);
+        goto err;
+    }
 
     if (EVP_DigestInit_ex(mac, EVP_get_digestbynid(mac_nid), NULL) <= 0
         || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_SET_KEY, mac_key_len, mac_key) <= 0
@@ -173,7 +186,7 @@ static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
 
 int main(void)
 {
-    const unsigned char key[] = {
+    const unsigned char shared_key[] = {
         0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
         0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
         0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
@@ -196,11 +209,11 @@ int main(void)
 
     const unsigned char magma_iv[] = { 0x67, 0xBE, 0xD6, 0x54 };
 
-    const unsigned char magma_export[] =
-        { 0xCF, 0xD5, 0xA1, 0x2D, 0x5B, 0x81, 0xB6, 0xE1, 0xE9, 0x9C, 0x91,
-        0x6D, 0x07, 0x90, 0x0C, 0x6A,
-        0xC1, 0x27, 0x03, 0xFB, 0x3A, 0xBD, 0xED, 0x55, 0x56, 0x7B, 0xF3, 0x74,
-        0x2C, 0x89, 0x9C, 0x75,
+    const unsigned char magma_export[] = {
+        0xCF, 0xD5, 0xA1, 0x2D, 0x5B, 0x81, 0xB6, 0xE1,
+        0xE9, 0x9C, 0x91, 0x6D, 0x07, 0x90, 0x0C, 0x6A,
+        0xC1, 0x27, 0x03, 0xFB, 0x3A, 0xBD, 0xED, 0x55,
+        0x56, 0x7B, 0xF3, 0x74, 0x2C, 0x89, 0x9C, 0x75,
         0x5D, 0xAF, 0xE7, 0xB4, 0x2E, 0x3A, 0x8B, 0xD9
     };
 
@@ -211,7 +224,7 @@ int main(void)
     OpenSSL_add_all_algorithms();
     memset(buf, 0, sizeof(buf));
 
-    ret = gost_kexp15(key, 32,
+    ret = gost_kexp15(shared_key, 32,
                       NID_magma_ctr, magma_key, 32,
                       NID_magma_mac, mac_magma_key, 32,
                       magma_iv, 4, buf, &outlen);
@@ -221,6 +234,19 @@ int main(void)
     else {
         hexdump(stdout, "Magma key export", buf, 40);
         if (memcmp(buf, magma_export, 40) != 0) {
+            fprintf(stdout, "ERROR! test failed\n");
+        }
+    }
+
+    ret = gost_kimp15(magma_export, 40,
+                      NID_magma_ctr, magma_key, 32,
+                      NID_magma_mac, mac_magma_key, 32, magma_iv, 4, buf, 32);
+
+    if (ret <= 0)
+        ERR_print_errors_fp(stderr);
+    else {
+        hexdump(stdout, "Magma key import", buf, 32);
+        if (memcmp(buf, shared_key, 32) != 0) {
             fprintf(stdout, "ERROR! test failed\n");
         }
     }
