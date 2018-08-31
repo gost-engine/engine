@@ -10,10 +10,9 @@
  * */
 int gost_kexp15(const unsigned char *shared_key, const int shared_len,
                 int cipher_nid, const unsigned char *cipher_key,
-                const size_t cipher_key_len, int mac_nid,
-                unsigned char *mac_key, const size_t mac_key_len,
-                const unsigned char *iv, const size_t ivlen, unsigned char *out,
-                int *out_len)
+                int mac_nid, unsigned char *mac_key,
+                const unsigned char *iv, const size_t ivlen,
+                unsigned char *out, int *out_len)
 {
     unsigned char iv_full[16], mac_buf[16];
     unsigned int mac_len;
@@ -43,7 +42,7 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
     }
 
     if (EVP_DigestInit_ex(mac, EVP_get_digestbynid(mac_nid), NULL) <= 0
-        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_SET_KEY, mac_key_len, mac_key) <= 0
+        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_SET_KEY, 32, mac_key) <= 0
         || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_MAC_LEN, mac_len, NULL) <= 0
         || EVP_DigestUpdate(mac, iv, ivlen) <= 0
         || EVP_DigestUpdate(mac, shared_key, shared_len) <= 0
@@ -83,8 +82,7 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
 
 int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
                 int cipher_nid, const unsigned char *cipher_key,
-                const size_t cipher_key_len, int mac_nid,
-                unsigned char *mac_key, const size_t mac_key_len,
+                int mac_nid, unsigned char *mac_key,
                 const unsigned char *iv, const size_t ivlen,
                 unsigned char *shared_key, size_t shared_len)
 {
@@ -132,7 +130,7 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
     }
 
     if (EVP_DigestInit_ex(mac, EVP_get_digestbynid(mac_nid), NULL) <= 0
-        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_SET_KEY, mac_key_len, mac_key) <= 0
+        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_SET_KEY, 32, mac_key) <= 0
         || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_MAC_LEN, mac_len, NULL) <= 0
         || EVP_DigestUpdate(mac, iv, ivlen) <= 0
         || EVP_DigestUpdate(mac, out, shared_len) <= 0
@@ -225,9 +223,8 @@ int main(void)
     memset(buf, 0, sizeof(buf));
 
     ret = gost_kexp15(shared_key, 32,
-                      NID_magma_ctr, magma_key, 32,
-                      NID_magma_mac, mac_magma_key, 32,
-                      magma_iv, 4, buf, &outlen);
+                      NID_magma_ctr, magma_key,
+                      NID_magma_mac, mac_magma_key, magma_iv, 4, buf, &outlen);
 
     if (ret <= 0)
         ERR_print_errors_fp(stderr);
@@ -239,8 +236,8 @@ int main(void)
     }
 
     ret = gost_kimp15(magma_export, 40,
-                      NID_magma_ctr, magma_key, 32,
-                      NID_magma_mac, mac_magma_key, 32, magma_iv, 4, buf, 32);
+                      NID_magma_ctr, magma_key,
+                      NID_magma_mac, mac_magma_key, magma_iv, 4, buf, 32);
 
     if (ret <= 0)
         ERR_print_errors_fp(stderr);
