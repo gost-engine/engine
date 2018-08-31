@@ -37,6 +37,7 @@ static ERR_STRING_DATA GOST_str_functs[] = {
     {ERR_PACK(0, GOST_F_GOST_IMIT_FINAL, 0), "gost_imit_final"},
     {ERR_PACK(0, GOST_F_GOST_IMIT_UPDATE, 0), "gost_imit_update"},
     {ERR_PACK(0, GOST_F_GOST_KEXP15, 0), "gost_kexp15"},
+    {ERR_PACK(0, GOST_F_GOST_KIMP15, 0), "gost_kimp15"},
     {ERR_PACK(0, GOST_F_OMAC_ACPKM_IMIT_CTRL, 0), "omac_acpkm_imit_ctrl"},
     {ERR_PACK(0, GOST_F_OMAC_ACPKM_IMIT_FINAL, 0), "omac_acpkm_imit_final"},
     {ERR_PACK(0, GOST_F_OMAC_ACPKM_IMIT_UPDATE, 0), "omac_acpkm_imit_update"},
@@ -80,6 +81,7 @@ static ERR_STRING_DATA GOST_str_functs[] = {
 static ERR_STRING_DATA GOST_str_reasons[] = {
     {ERR_PACK(0, 0, GOST_R_BAD_KEY_PARAMETERS_FORMAT),
     "bad key parameters format"},
+    {ERR_PACK(0, 0, GOST_R_BAD_MAC), "bad mac"},
     {ERR_PACK(0, 0, GOST_R_BAD_ORDER), "bad order"},
     {ERR_PACK(0, 0, GOST_R_BAD_PKEY_PARAMETERS_FORMAT),
     "bad pkey parameters format"},
@@ -94,6 +96,7 @@ static ERR_STRING_DATA GOST_str_reasons[] = {
     {ERR_PACK(0, 0, GOST_R_ERROR_POINT_MUL), "error point mul"},
     {ERR_PACK(0, 0, GOST_R_INCOMPATIBLE_ALGORITHMS), "incompatible algorithms"},
     {ERR_PACK(0, 0, GOST_R_INCOMPATIBLE_PEER_KEY), "incompatible peer key"},
+    {ERR_PACK(0, 0, GOST_R_INVALID_CIPHER), "invalid cipher"},
     {ERR_PACK(0, 0, GOST_R_INVALID_CIPHER_PARAMS), "invalid cipher params"},
     {ERR_PACK(0, 0, GOST_R_INVALID_CIPHER_PARAM_OID),
     "invalid cipher param oid"},

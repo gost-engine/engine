@@ -44,6 +44,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_IMIT_FINAL                           114
 # define GOST_F_GOST_IMIT_UPDATE                          115
 # define GOST_F_GOST_KEXP15                               143
+# define GOST_F_GOST_KIMP15                               148
 # define GOST_F_OMAC_ACPKM_IMIT_CTRL                      144
 # define GOST_F_OMAC_ACPKM_IMIT_FINAL                     145
 # define GOST_F_OMAC_ACPKM_IMIT_UPDATE                    146
@@ -80,6 +81,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
  * GOST reason codes.
  */
 # define GOST_R_BAD_KEY_PARAMETERS_FORMAT                 100
+# define GOST_R_BAD_MAC                                   133
 # define GOST_R_BAD_ORDER                                 132
 # define GOST_R_BAD_PKEY_PARAMETERS_FORMAT                101
 # define GOST_R_CANNOT_PACK_EPHEMERAL_KEY                 102
@@ -90,6 +92,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_R_ERROR_POINT_MUL                           107
 # define GOST_R_INCOMPATIBLE_ALGORITHMS                   108
 # define GOST_R_INCOMPATIBLE_PEER_KEY                     109
+# define GOST_R_INVALID_CIPHER                            134
 # define GOST_R_INVALID_CIPHER_PARAMS                     110
 # define GOST_R_INVALID_CIPHER_PARAM_OID                  111
 # define GOST_R_INVALID_DIGEST_TYPE                       112

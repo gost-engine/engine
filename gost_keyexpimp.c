@@ -15,7 +15,6 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
                 const unsigned char *iv, const size_t ivlen, unsigned char *out,
                 int *out_len)
 {
-    /* out_len = key_len + mac_len */
     unsigned char iv_full[16], mac_buf[16];
     unsigned int mac_len;
 
@@ -29,7 +28,7 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
         (cipher_nid == NID_grasshopper_ctr) ? 16 : 0;
 
     if (mac_len == 0) {
-        GOSTerr(GOST_F_GOST_KEXP15, ERR_R_INTERNAL_ERROR);
+        GOSTerr(GOST_F_GOST_KEXP15, GOST_R_INVALID_CIPHER);
         goto err;
     }
 
@@ -75,20 +74,74 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
     ret = 1;
 
  err:
-    /* TODO clear mac_buf */
+    OPENSSL_cleanse(mac_buf, mac_len);
     EVP_MD_CTX_free(mac);
     EVP_CIPHER_CTX_free(ciph);
 
     return ret;
 }
 
-int gost_kimp15(const char *expkey, const size_t expkeylen,
-                int cipher_nid, const char *cipher_key,
-                const size_t cipher_key_len, int mac_nid, const char *mac_key,
+int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
+                int cipher_nid, const unsigned char *cipher_key,
+                const size_t cipher_key_len, int mac_nid, char *mac_key,
                 const size_t mac_key_len, const char *iv, const size_t ivlen,
-                char *shared_key, size_t *shared_len)
+                char *shared_key, size_t shared_len)
 {
-    return 0;
+    unsigned char iv_full[16], out[48], mac_buf[16];
+    unsigned int mac_len;
+
+    EVP_CIPHER_CTX *ciph = NULL;
+    EVP_MD_CTX *mac = NULL;
+
+    int ret = 0;
+    int len;
+
+    mac_len = (cipher_nid == NID_magma_ctr) ? 8 :
+        (cipher_nid == NID_grasshopper_ctr) ? 16 : 0;
+
+    if (mac_len == 0) {
+        GOSTerr(GOST_F_GOST_KIMP15, GOST_R_INVALID_CIPHER);
+        goto err;
+    }
+
+    /* we expect IV of half length */
+    memset(iv_full, 0, 16);
+    memcpy(iv_full, iv, ivlen);
+
+    if (EVP_CipherInit_ex
+        (ciph, EVP_get_cipherbynid(cipher_nid), NULL, NULL, NULL, 0) <= 0
+        || EVP_CipherInit_ex(ciph, NULL, NULL, cipher_key, iv_full, 0) <= 0
+        || EVP_CipherUpdate(ciph, out, &len, expkey, expkeylen) <= 0
+        || EVP_CipherFinal_ex(ciph, out + len, &len) <= 0) {
+        GOSTerr(GOST_F_GOST_KIMP15, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+    /*Now we have shared key and mac in out[] */
+
+    if (EVP_DigestInit_ex(mac, EVP_get_digestbynid(mac_nid), NULL) <= 0
+        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_SET_KEY, mac_key_len, mac_key) <= 0
+        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_MAC_LEN, mac_len, NULL) <= 0
+        || EVP_DigestUpdate(mac, iv, ivlen) <= 0
+        || EVP_DigestUpdate(mac, out, shared_len) <= 0
+        /* As we set MAC length directly, we should not allow overwriting it */
+        || EVP_DigestFinal_ex(mac, mac_buf, NULL) <= 0) {
+        GOSTerr(GOST_F_GOST_KIMP15, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+
+    if (CRYPTO_memcmp(mac_buf, out + shared_len, mac_len) != 0) {
+        GOSTerr(GOST_F_GOST_KIMP15, GOST_R_BAD_MAC);
+        goto err;
+    }
+
+    memcpy(shared_key, out, shared_len);
+    ret = 1;
+
+ err:
+    OPENSSL_cleanse(out, sizeof(out));
+    EVP_MD_CTX_free(mac);
+    EVP_CIPHER_CTX_free(ciph);
+    return ret;
 }
 
 /*
@@ -145,9 +198,9 @@ int main(void)
 
     const unsigned char magma_export[] =
         { 0xCF, 0xD5, 0xA1, 0x2D, 0x5B, 0x81, 0xB6, 0xE1, 0xE9, 0x9C, 0x91,
-0x6D, 0x07, 0x90, 0x0C, 0x6A,
+        0x6D, 0x07, 0x90, 0x0C, 0x6A,
         0xC1, 0x27, 0x03, 0xFB, 0x3A, 0xBD, 0xED, 0x55, 0x56, 0x7B, 0xF3, 0x74,
-            0x2C, 0x89, 0x9C, 0x75,
+        0x2C, 0x89, 0x9C, 0x75,
         0x5D, 0xAF, 0xE7, 0xB4, 0x2E, 0x3A, 0x8B, 0xD9
     };
 

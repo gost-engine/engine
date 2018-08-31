@@ -24,6 +24,7 @@ GOST_F_GOST_IMIT_CTRL:113:gost_imit_ctrl
 GOST_F_GOST_IMIT_FINAL:114:gost_imit_final
 GOST_F_GOST_IMIT_UPDATE:115:gost_imit_update
 GOST_F_GOST_KEXP15:143:gost_kexp15
+GOST_F_GOST_KIMP15:148:gost_kimp15
 GOST_F_OMAC_ACPKM_IMIT_CTRL:144:omac_acpkm_imit_ctrl
 GOST_F_OMAC_ACPKM_IMIT_FINAL:145:omac_acpkm_imit_final
 GOST_F_OMAC_ACPKM_IMIT_UPDATE:146:omac_acpkm_imit_update
@@ -59,6 +60,7 @@ GOST_F_VKO_COMPUTE_KEY:137:VKO_compute_key
 
 #Reason codes
 GOST_R_BAD_KEY_PARAMETERS_FORMAT:100:bad key parameters format
+GOST_R_BAD_MAC:133:bad mac
 GOST_R_BAD_ORDER:132:bad order
 GOST_R_BAD_PKEY_PARAMETERS_FORMAT:101:bad pkey parameters format
 GOST_R_CANNOT_PACK_EPHEMERAL_KEY:102:cannot pack ephemeral key
@@ -69,6 +71,7 @@ GOST_R_ERROR_PARSING_KEY_TRANSPORT_INFO:106:error parsing key transport info
 GOST_R_ERROR_POINT_MUL:107:error point mul
 GOST_R_INCOMPATIBLE_ALGORITHMS:108:incompatible algorithms
 GOST_R_INCOMPATIBLE_PEER_KEY:109:incompatible peer key
+GOST_R_INVALID_CIPHER:134:invalid cipher
 GOST_R_INVALID_CIPHER_PARAMS:110:invalid cipher params
 GOST_R_INVALID_CIPHER_PARAM_OID:111:invalid cipher param oid
 GOST_R_INVALID_DIGEST_TYPE:112:invalid digest type
