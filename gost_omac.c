@@ -72,8 +72,7 @@ int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
 
     CMAC_Final(c->cmac_ctx, mac, &mac_size);
 
-    int md_size = EVP_MD_meth_get_result_size(EVP_MD_CTX_md(ctx));
-    memcpy(md, mac, min(md_size, c->dgst_size));
+    memcpy(md, mac, c->dgst_size);
     return 1;
 }
 

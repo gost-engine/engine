@@ -475,6 +475,13 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
                 }
                 c->dgst_size = arg;
                 break;
+            case NID_magma_cbc:
+                if (arg < 1 || arg > 8) {
+                    GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
+                    return 0;
+                }
+                c->dgst_size = arg;
+                break;
             default:
                 return 0;
             }
