@@ -146,7 +146,7 @@ target_link_libraries(gost12sum gost_core)
 add_executable(unit_expimp gost_keyexpimp.c e_gost_err.c)
 target_compile_definitions(unit_expimp PUBLIC -DENABLE_UNIT_TESTS)
 target_compile_definitions(unit_expimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(unit_expimp PUBLIC crypto)
+target_link_libraries(unit_expimp PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
 
 set_source_files_properties(tags PROPERTIES GENERATED true)
 add_custom_target(tags
