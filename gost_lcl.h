@@ -35,7 +35,7 @@ typedef struct R3410_ec {
     char *q;
     char *x;
     char *y;
-		char *cofactor;
+    char *cofactor;
 } R3410_ec_params;
 
 extern R3410_ec_params R3410_2001_paramset[],
@@ -69,9 +69,9 @@ struct gost_pmeth_data {
                                  * filled */
     EVP_MD *md;
     unsigned char *shared_ukm;
-    size_t shared_ukm_size; /* XXX temporary use shared_ukm and hash for 2018 CKE*/
+    size_t shared_ukm_size;     /* XXX temporary use shared_ukm and hash for 2018 CKE */
     int peer_key_used;
-    int cipher_nid; /* KExp15/KImp15 algs*/
+    int cipher_nid;             /* KExp15/KImp15 algs */
 };
 
 struct gost_mac_pmeth_data {
@@ -224,7 +224,7 @@ const EVP_CIPHER *cipher_magma_cbc();
 const EVP_CIPHER *cipher_magma_ctr();
 void cipher_gost_destroy();
 
-void inc_counter(unsigned char* buffer, size_t buf_len);
+void inc_counter(unsigned char *buffer, size_t buf_len);
 
 # define EVP_MD_CTRL_KEY_LEN (EVP_MD_CTRL_ALG_CTRL+3)
 # define EVP_MD_CTRL_SET_KEY (EVP_MD_CTRL_ALG_CTRL+4)
@@ -240,8 +240,7 @@ int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *ctx, unsigned char *out,
                            size_t in_len);
 /* derive functions */
 /* From gost_ec_keyx.c */
-int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key,
-                        size_t *keylen);
+int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen);
 int fill_GOST_EC_params(EC_KEY *eckey, int nid);
 int gost_sign_keygen(DSA *dsa);
 int gost_ec_keygen(EC_KEY *ec);
@@ -253,6 +252,13 @@ int gost_do_verify(const unsigned char *dgst, int dgst_len,
 int gost_ec_verify(const unsigned char *dgst, int dgst_len,
                    DSA_SIG *sig, EC_KEY *ec);
 int gost_ec_compute_public(EC_KEY *ec);
+
+/* KDF TREE */
+int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
+                         const unsigned char *key, size_t keylen,
+                         const unsigned char *label, size_t label_len,
+                         const unsigned char *seed, size_t seed_len,
+                         const size_t representation);
 /*============== miscellaneous functions============================= */
 /* from gost_sign.c */
 /* Convert GOST R 34.11 hash sum to bignum according to standard */
