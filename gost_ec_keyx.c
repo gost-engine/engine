@@ -20,7 +20,8 @@
 /* Implementation of CryptoPro VKO 34.10-2001/2012 algorithm */
 static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
                            const EC_POINT *pub_key, EC_KEY *priv_key,
-                           const unsigned char *ukm, int dgst_nid)
+                           const unsigned char *ukm, size_t ukm_size,
+                           int vko_dgst_nid)
 {
     unsigned char *databuf = NULL;
     BIGNUM *UKM = NULL, *p = NULL, *order = NULL, *X = NULL, *Y = NULL;
@@ -29,10 +30,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     BN_CTX *ctx = BN_CTX_new();
     EVP_MD_CTX *mdctx = NULL;
     const EVP_MD *md = NULL;
-    int effective_dgst_nid = (dgst_nid == NID_id_GostR3411_2012_512) ?
-        NID_id_GostR3411_2012_256 : dgst_nid;
-    int buf_len = (dgst_nid == NID_id_GostR3411_2012_512) ? 128 : 64,
-        half_len = buf_len >> 1;
+    int buf_len, half_len;
     int ret = 0;
 
     if (!ctx) {
@@ -41,19 +39,13 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     }
     BN_CTX_start(ctx);
 
-    databuf = OPENSSL_zalloc(buf_len);
-    if (!databuf) {
-        GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
-        goto err;
-    }
-
-    md = EVP_get_digestbynid(effective_dgst_nid);
+    md = EVP_get_digestbynid(vko_dgst_nid);
     if (!md) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_INVALID_DIGEST_TYPE);
         goto err;
     }
 
-    UKM = hashsum2bn(ukm, 8);
+    UKM = hashsum2bn(ukm, ukm_size);
     p = BN_CTX_get(ctx);
     order = BN_CTX_get(ctx);
     X = BN_CTX_get(ctx);
@@ -66,6 +58,15 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     }
     EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(priv_key),
                                         pnt, X, Y, ctx);
+
+    half_len = BN_num_bytes(order);
+    buf_len = 2 * half_len;
+    databuf = OPENSSL_zalloc(buf_len);
+    if (!databuf) {
+        GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
+        goto err;
+    }
+
     /*
      * Serialize elliptic curve point same way as we do it when saving key
      */
@@ -126,11 +127,13 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
     }
 
     EVP_PKEY_get_default_digest_nid(my_key, &dgst_nid);
+    if (dgst_nid == NID_id_GostR3411_2012_512)
+        dgst_nid = NID_id_GostR3411_2012_256;
 
     *keylen =
         VKO_compute_key(key, 32,
                         EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
-                        (EC_KEY *)EVP_PKEY_get0(my_key), data->shared_ukm,
+                        (EC_KEY *)EVP_PKEY_get0(my_key), data->shared_ukm, 8,
                         dgst_nid);
     return (*keylen) ? 1 : 0;
 }
@@ -200,10 +203,12 @@ int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     if (out) {
         int dgst_nid = NID_undef;
         EVP_PKEY_get_default_digest_nid(pubk, &dgst_nid);
+        if (dgst_nid == NID_id_GostR3411_2012_512)
+            dgst_nid = NID_id_GostR3411_2012_256;
 
         if (!VKO_compute_key(shared_key, 32,
                              EC_KEY_get0_public_key(EVP_PKEY_get0(pubk)),
-                             EVP_PKEY_get0(sec_key), ukm, dgst_nid)) {
+                             EVP_PKEY_get0(sec_key), ukm, 8, dgst_nid)) {
             GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT,
                     GOST_R_ERROR_COMPUTING_SHARED_KEY);
             goto err;
@@ -322,9 +327,12 @@ int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     memcpy(wrappedKey + 40, gkt->key_info->imit->data, 4);
 
     EVP_PKEY_get_default_digest_nid(priv, &dgst_nid);
+    if (dgst_nid == NID_id_GostR3411_2012_512)
+        dgst_nid = NID_id_GostR3411_2012_256;
+
     if (!VKO_compute_key(sharedKey, 32,
                          EC_KEY_get0_public_key(EVP_PKEY_get0(peerkey)),
-                         EVP_PKEY_get0(priv), wrappedKey, dgst_nid)) {
+                         EVP_PKEY_get0(priv), wrappedKey, 8, dgst_nid)) {
         GOSTerr(GOST_F_PKEY_GOST_ECCP_DECRYPT,
                 GOST_R_ERROR_COMPUTING_SHARED_KEY);
         goto err;
