@@ -1,5 +1,7 @@
+#include <arpa/inet.h>
 #include <string.h>
 #include <openssl/evp.h>
+#include <openssl/hmac.h>
 
 #include "gost_lcl.h"
 #include "e_gost_err.h"
@@ -109,7 +111,7 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
 
     ciph = EVP_CIPHER_CTX_new();
     if (ciph == NULL) {
-        GOSTerr(GOST_F_GOST_KEXP15, ERR_R_MALLOC_FAILURE);
+        GOSTerr(GOST_F_GOST_KIMP15, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
@@ -125,7 +127,7 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
 
     mac = EVP_MD_CTX_new();
     if (mac == NULL) {
-        GOSTerr(GOST_F_GOST_KEXP15, ERR_R_MALLOC_FAILURE);
+        GOSTerr(GOST_F_GOST_KIMP15, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
@@ -155,13 +157,64 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
     return ret;
 }
 
-/*
- * keyout expected to be 64 bytes
- * */
-int gost_keg(const unsigned char *seckey, const size_t seckey_len,
-             const EC_POINT *pub, const unsigned char *h, unsigned char *keyout)
+int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
+                         const unsigned char *key, size_t keylen,
+                         const unsigned char *label, size_t label_len,
+                         const unsigned char *seed, size_t seed_len,
+                         const size_t representation)
 {
-    return 0;
+    int iters, i = 0;
+    unsigned char zero = 0;
+    unsigned char *ptr = keyout;
+    HMAC_CTX *ctx = NULL;
+    unsigned char *len_ptr = NULL;
+    uint32_t len_repr = htonl(keyout_len * 8);
+    size_t len_repr_len = 4;
+
+    ctx = HMAC_CTX_new();
+    if (ctx == NULL) {
+        GOSTerr(GOST_F_GOST_KDFTREE2012_256, ERR_R_MALLOC_FAILURE);
+        return 0;
+    }
+
+    if ((keyout_len == 0) || (keyout_len % 32 != 0)) {
+        GOSTerr(GOST_F_GOST_KDFTREE2012_256, ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+    iters = keyout_len / 32;
+
+    len_ptr = (unsigned char *)&len_repr;
+    while (*len_ptr == 0) {
+        len_ptr++;
+        len_repr_len--;
+    }
+
+    for (i = 1; i <= iters; i++) {
+        uint32_t iter_net = htonl(i);
+        unsigned char *rep_ptr =
+            ((unsigned char *)&iter_net) + (4 - representation);
+
+        if (HMAC_Init_ex(ctx, key, keylen,
+                         EVP_get_digestbynid(NID_id_GostR3411_2012_256),
+                         NULL) <= 0
+            || HMAC_Update(ctx, rep_ptr, representation) <= 0
+            || HMAC_Update(ctx, label, label_len) <= 0
+            || HMAC_Update(ctx, &zero, 1) <= 0
+            || HMAC_Update(ctx, seed, seed_len) <= 0
+            || HMAC_Update(ctx, len_ptr, len_repr_len) <= 0
+            || HMAC_Final(ctx, ptr, NULL) <= 0) {
+            GOSTerr(GOST_F_GOST_KDFTREE2012_256, ERR_R_INTERNAL_ERROR);
+            HMAC_CTX_free(ctx);
+            return 0;
+        }
+
+        HMAC_CTX_reset(ctx);
+        ptr += 32;
+    }
+
+    HMAC_CTX_free(ctx);
+
+    return 1;
 }
 
 #ifdef ENABLE_UNIT_TESTS
@@ -215,9 +268,31 @@ int main(void)
         0x5D, 0xAF, 0xE7, 0xB4, 0x2E, 0x3A, 0x8B, 0xD9
     };
 
+    unsigned char kdftree_key[] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+    };
+
+    unsigned char kdf_label[] = { 0x26, 0xBD, 0xB8, 0x78 };
+    unsigned char kdf_seed[] =
+        { 0xAF, 0x21, 0x43, 0x41, 0x45, 0x65, 0x63, 0x78 };
+    const unsigned char kdf_etalon[] = {
+        0x22, 0xB6, 0x83, 0x78, 0x45, 0xC6, 0xBE, 0xF6,
+        0x5E, 0xA7, 0x16, 0x72, 0xB2, 0x65, 0x83, 0x10,
+        0x86, 0xD3, 0xC7, 0x6A, 0xEB, 0xE6, 0xDA, 0xE9,
+        0x1C, 0xAD, 0x51, 0xD8, 0x3F, 0x79, 0xD1, 0x6B,
+        0x07, 0x4C, 0x93, 0x30, 0x59, 0x9D, 0x7F, 0x8D,
+        0x71, 0x2F, 0xCA, 0x54, 0x39, 0x2F, 0x4D, 0xDD,
+        0xE9, 0x37, 0x51, 0x20, 0x6B, 0x35, 0x84, 0xC8,
+        0xF4, 0x3F, 0x9E, 0x6D, 0xC5, 0x15, 0x31, 0xF9
+    };
+
     unsigned char buf[32 + 16];
     int ret = 0;
     int outlen = 40;
+    unsigned char kdf_result[64];
 
     OpenSSL_add_all_algorithms();
     memset(buf, 0, sizeof(buf));
@@ -244,6 +319,17 @@ int main(void)
     else {
         hexdump(stdout, "Magma key import", buf, 32);
         if (memcmp(buf, shared_key, 32) != 0) {
+            fprintf(stdout, "ERROR! test failed\n");
+        }
+    }
+
+    ret = gost_kdftree2012_256(kdf_result, 64, kdftree_key, 32, kdf_label, 4,
+                               kdf_seed, 8, 1);
+    if (ret <= 0)
+        ERR_print_errors_fp(stderr);
+    else {
+        hexdump(stdout, "KDF TREE", kdf_result, 64);
+        if (memcmp(kdf_result, kdf_etalon, 64) != 0) {
             fprintf(stdout, "ERROR! test failed\n");
         }
     }

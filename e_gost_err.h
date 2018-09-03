@@ -43,6 +43,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_IMIT_CTRL                            113
 # define GOST_F_GOST_IMIT_FINAL                           114
 # define GOST_F_GOST_IMIT_UPDATE                          115
+# define GOST_F_GOST_KDFTREE2012_256                      149
 # define GOST_F_GOST_KEXP15                               143
 # define GOST_F_GOST_KIMP15                               148
 # define GOST_F_OMAC_ACPKM_IMIT_CTRL                      144

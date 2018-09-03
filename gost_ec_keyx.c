@@ -84,7 +84,7 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     EVP_DigestInit_ex(mdctx, md, NULL);
     EVP_DigestUpdate(mdctx, databuf, buf_len);
     EVP_DigestFinal_ex(mdctx, shared_key, NULL);
-    ret = 32;
+    ret = (EVP_MD_size(md) > 0) ? EVP_MD_size(md) : 0;
 
  err:
     BN_free(UKM);
@@ -98,6 +98,57 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
     OPENSSL_free(databuf);
 
     return ret;
+}
+
+/*
+ * keyout expected to be 64 bytes
+ * */
+static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
+                    const EC_POINT *pub_key, EC_KEY *priv_key,
+                    unsigned char *keyout)
+{
+/* Adjust UKM */
+    unsigned char real_ukm[16];
+    size_t keylen;
+
+    memset(real_ukm, 0, 16);
+    if (memcmp(ukm_source, real_ukm, 16) == 0)
+        real_ukm[15] = 1;
+    else
+        memcpy(real_ukm, ukm_source, 16);
+
+    switch (pkey_nid) {
+    case NID_id_GostR3410_2012_512:
+        keylen =
+            VKO_compute_key(keyout, 64, pub_key, priv_key, real_ukm, 16,
+                            NID_id_GostR3411_2012_512);
+        return (keylen) ? keylen : 0;
+        break;
+
+    case NID_id_GostR3410_2012_256:
+        {
+            unsigned char tmpkey[32];
+            keylen =
+                VKO_compute_key(tmpkey, 32, pub_key, priv_key, real_ukm, 16,
+                                NID_id_GostR3411_2012_256);
+
+            if (keylen == 0)
+                return 0;
+
+            if (gost_kdftree2012_256
+                (keyout, 64, tmpkey, 32, (const unsigned char *)"kdf tree", 8,
+                 ukm_source + 16, 8, 1) > 0)
+                keylen = 64;
+            else
+                keylen = 0;
+
+            OPENSSL_cleanse(tmpkey, 32);
+            return (keylen) ? keylen : 0;
+            break;
+        }
+    default:
+        return 0;
+    }
 }
 
 /*
@@ -120,22 +171,52 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
         GOSTerr(GOST_F_PKEY_GOST_EC_DERIVE, GOST_R_UKM_NOT_SET);
         return 0;
     }
+    /*
+     * shared_ukm_size = 8 stands for pre-2018 cipher suites
+     * It means 32 bytes of key length, 8 byte UKM, 32-bytes hash
+     *
+     * shared_ukm_size = 32 stands for pre-2018 cipher suites
+     * It means 64 bytes of shared_key, 16 bytes of UKM and either
+     * 64 bytes of hash or 64 bytes of TLSTREE output
+     * */
 
-    if (key == NULL) {
-        *keylen = 32;
-        return 1;
+    switch (data->shared_ukm_size) {
+    case 8:
+        {
+            if (key == NULL) {
+                *keylen = 32;
+                return 1;
+            }
+
+            EVP_PKEY_get_default_digest_nid(my_key, &dgst_nid);
+            if (dgst_nid == NID_id_GostR3411_2012_512)
+                dgst_nid = NID_id_GostR3411_2012_256;
+
+            *keylen =
+                VKO_compute_key(key, 32,
+                                EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
+                                (EC_KEY *)EVP_PKEY_get0(my_key),
+                                data->shared_ukm, 8, dgst_nid);
+            return (*keylen) ? 1 : 0;
+        }
+        break;
+    case 32:
+        {
+            if (key == NULL) {
+                *keylen = 64;
+                return 1;
+            }
+
+            *keylen = gost_keg(data->shared_ukm, EVP_PKEY_id(my_key),
+                               EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
+                               (EC_KEY *)EVP_PKEY_get0(my_key), key);
+            return (*keylen) ? 1 : 0;
+        }
+
+        break;
+    default:
+        return 0;
     }
-
-    EVP_PKEY_get_default_digest_nid(my_key, &dgst_nid);
-    if (dgst_nid == NID_id_GostR3411_2012_512)
-        dgst_nid = NID_id_GostR3411_2012_256;
-
-    *keylen =
-        VKO_compute_key(key, 32,
-                        EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
-                        (EC_KEY *)EVP_PKEY_get0(my_key), data->shared_ukm, 8,
-                        dgst_nid);
-    return (*keylen) ? 1 : 0;
 }
 
 /*
@@ -145,7 +226,7 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
 
 /*
  * EVP_PKEY_METHOD callback encrypt
- * Implementation of GOST2001 key transport, cryptopo variation
+ * Implementation of GOST2001/12 key transport, cryptopro variation
  */
 
 int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
