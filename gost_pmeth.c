@@ -369,17 +369,17 @@ static int pkey_gost2012cp_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 /* ----------- sign callbacks --------------------------------------*/
 /*
  * Packs signature according to Cryptopro rules
- * and frees up DSA_SIG structure
+ * and frees up ECDSA_SIG structure
  */
-int pack_sign_cp(DSA_SIG *s, int order, unsigned char *sig, size_t *siglen)
+int pack_sign_cp(ECDSA_SIG *s, int order, unsigned char *sig, size_t *siglen)
 {
     const BIGNUM *sig_r = NULL, *sig_s = NULL;
-    DSA_SIG_get0(s, &sig_r, &sig_s);
+    ECDSA_SIG_get0(s, &sig_r, &sig_s);
     *siglen = 2 * order;
     memset(sig, 0, *siglen);
     store_bignum(sig_s, sig, order);
     store_bignum(sig_r, sig + order, order);
-    DSA_SIG_free(s);
+    ECDSA_SIG_free(s);
     return 1;
 }
 
@@ -387,7 +387,7 @@ static int pkey_gost_ec_cp_sign(EVP_PKEY_CTX *ctx, unsigned char *sig,
                                 size_t *siglen, const unsigned char *tbs,
                                 size_t tbs_len)
 {
-    DSA_SIG *unpacked_sig = NULL;
+    ECDSA_SIG *unpacked_sig = NULL;
     EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
     int order = 0;
 
@@ -421,19 +421,19 @@ static int pkey_gost_ec_cp_sign(EVP_PKEY_CTX *ctx, unsigned char *sig,
 
 /* ------------------- verify callbacks ---------------------------*/
 /* Unpack signature according to cryptopro rules  */
-DSA_SIG *unpack_cp_signature(const unsigned char *sigbuf, size_t siglen)
+ECDSA_SIG *unpack_cp_signature(const unsigned char *sigbuf, size_t siglen)
 {
-    DSA_SIG *sig;
+    ECDSA_SIG *sig;
     BIGNUM *r = NULL, *s = NULL;
 
-    sig = DSA_SIG_new();
+    sig = ECDSA_SIG_new();
     if (sig == NULL) {
         GOSTerr(GOST_F_UNPACK_CP_SIGNATURE, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
     s = BN_bin2bn(sigbuf, siglen / 2, NULL);
     r = BN_bin2bn(sigbuf + siglen / 2, siglen / 2, NULL);
-		DSA_SIG_set0(sig, r, s);
+		ECDSA_SIG_set0(sig, r, s);
     return sig;
 }
 
@@ -443,7 +443,7 @@ static int pkey_gost_ec_cp_verify(EVP_PKEY_CTX *ctx, const unsigned char *sig,
 {
     int ok = 0;
     EVP_PKEY *pub_key = EVP_PKEY_CTX_get0_pkey(ctx);
-    DSA_SIG *s = (sig) ? unpack_cp_signature(sig, siglen) : NULL;
+    ECDSA_SIG *s = (sig) ? unpack_cp_signature(sig, siglen) : NULL;
     if (!s)
         return 0;
 #ifdef DEBUG_SIGN
@@ -455,7 +455,7 @@ static int pkey_gost_ec_cp_verify(EVP_PKEY_CTX *ctx, const unsigned char *sig,
 #endif
     if (pub_key)
         ok = gost_ec_verify(tbs, tbs_len, s, EVP_PKEY_get0(pub_key));
-    DSA_SIG_free(s);
+    ECDSA_SIG_free(s);
     return ok;
 }
 

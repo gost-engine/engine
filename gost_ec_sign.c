@@ -16,7 +16,7 @@
 extern
 void dump_signature(const char *message, const unsigned char *buffer,
                     size_t len);
-void dump_dsa_sig(const char *message, DSA_SIG *sig);
+void dump_dsa_sig(const char *message, ECDSA_SIG *sig);
 #else
 
 # define dump_signature(a,b,c)
@@ -151,12 +151,12 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
 }
 
 /*
- * Computes gost_ec signature as DSA_SIG structure
+ * Computes gost_ec signature as ECDSA_SIG structure
  *
  */
-DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
+ECDSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
 {
-    DSA_SIG *newsig = NULL, *ret = NULL;
+    ECDSA_SIG *newsig = NULL, *ret = NULL;
     BIGNUM *md = NULL;
     BIGNUM *order = NULL;
     const EC_GROUP *group;
@@ -179,7 +179,7 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     BN_CTX_start(ctx);
     OPENSSL_assert(dlen == 32 || dlen == 64);
     md = hashsum2bn(dgst, dlen);
-    newsig = DSA_SIG_new();
+    newsig = ECDSA_SIG_new();
     if (!newsig || !md) {
         GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
@@ -285,7 +285,7 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
         GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    DSA_SIG_set0(newsig, new_r, new_s);
+    ECDSA_SIG_set0(newsig, new_r, new_s);
 
     ret = newsig;
  err:
@@ -296,7 +296,7 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
     if (md)
         BN_free(md);
     if (!ret && newsig) {
-        DSA_SIG_free(newsig);
+        ECDSA_SIG_free(newsig);
     }
     return ret;
 }
@@ -306,7 +306,7 @@ DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
  *
  */
 int gost_ec_verify(const unsigned char *dgst, int dgst_len,
-                   DSA_SIG *sig, EC_KEY *ec)
+                   ECDSA_SIG *sig, EC_KEY *ec)
 {
     BN_CTX *ctx;
     const EC_GROUP *group = (ec) ? EC_KEY_get0_group(ec) : NULL;
@@ -345,7 +345,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
         goto err;
     }
 
-    DSA_SIG_get0(sig, &sig_r, &sig_s);
+    ECDSA_SIG_get0(sig, &sig_r, &sig_s);
 
     if (BN_is_zero(sig_s) || BN_is_zero(sig_r) ||
         (BN_cmp(sig_s, order) >= 1) || (BN_cmp(sig_r, order) >= 1)) {

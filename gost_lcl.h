@@ -11,7 +11,6 @@
  **********************************************************************/
 # include <openssl/bn.h>
 # include <openssl/evp.h>
-# include <openssl/dsa.h>
 # include <openssl/asn1t.h>
 # include <openssl/x509.h>
 # include <openssl/engine.h>
@@ -242,15 +241,11 @@ int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *ctx, unsigned char *out,
 /* From gost_ec_keyx.c */
 int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen);
 int fill_GOST_EC_params(EC_KEY *eckey, int nid);
-int gost_sign_keygen(DSA *dsa);
 int gost_ec_keygen(EC_KEY *ec);
 
-DSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey);
-
-int gost_do_verify(const unsigned char *dgst, int dgst_len,
-                   DSA_SIG *sig, DSA *dsa);
+ECDSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey);
 int gost_ec_verify(const unsigned char *dgst, int dgst_len,
-                   DSA_SIG *sig, EC_KEY *ec);
+                   ECDSA_SIG *sig, EC_KEY *ec);
 int gost_ec_compute_public(EC_KEY *ec);
 
 /* KDF TREE */
@@ -269,7 +264,7 @@ BIGNUM *hashsum2bn(const unsigned char *dgst, int len);
  */
 int store_bignum(const BIGNUM *bn, unsigned char *buf, int len);
 /* Pack GOST R 34.10 signature according to CryptoPro rules */
-int pack_sign_cp(DSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
+int pack_sign_cp(ECDSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
 /* from ameth.c */
 /* Get private key as BIGNUM from both 34.10-2001 keys*/
 /* Returns pointer into EVP_PKEY structure */
