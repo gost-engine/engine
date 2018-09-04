@@ -342,6 +342,10 @@ int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     return -1;
 }
 
+/*
+ * EVP_PKEY_METHOD callback decrypt
+ * Implementation of GOST2018 key transport
+ */
 int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
                           size_t *out_len, const unsigned char *key,
                           size_t key_len)
@@ -355,17 +359,19 @@ int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     int ret = 0;
     int mac_nid = NID_undef;
     size_t mac_len = 0;
-    int exp_len = 0;
+    int exp_len = 0, iv_len = 0;
     unsigned char *exp_buf = NULL;
 
     switch (data->cipher_nid) {
     case NID_magma_ctr:
         mac_nid = NID_magma_mac;
         mac_len = 8;
+        iv_len = 4;
         break;
     case NID_grasshopper_ctr:
         mac_nid = NID_grasshopper_mac;
         mac_len = 16;
+        iv_len = 8;
         break;
     default:
         GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, GOST_R_INVALID_CIPHER);
@@ -379,30 +385,26 @@ int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         return -1;
     }
 
-    if (out) {
-        sec_key = EVP_PKEY_new();
-        if (!EVP_PKEY_assign(sec_key, EVP_PKEY_base_id(pubk), EC_KEY_new())
-            || !EVP_PKEY_copy_parameters(sec_key, pubk)
-            || !gost_ec_keygen(EVP_PKEY_get0(sec_key))) {
-            GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT,
-                    GOST_R_ERROR_COMPUTING_SHARED_KEY);
-            goto err;
-        }
+    sec_key = EVP_PKEY_new();
+    if (!EVP_PKEY_assign(sec_key, EVP_PKEY_base_id(pubk), EC_KEY_new())
+        || !EVP_PKEY_copy_parameters(sec_key, pubk)
+        || !gost_ec_keygen(EVP_PKEY_get0(sec_key))) {
+        GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT,
+                GOST_R_ERROR_COMPUTING_SHARED_KEY);
+        goto err;
     }
-    ret =
-        gost_keg(data->shared_ukm, pkey_nid,
+
+    if (gost_keg(data->shared_ukm, pkey_nid,
                  EC_KEY_get0_public_key(EVP_PKEY_get0(pubk)),
-                 EVP_PKEY_get0(sec_key), expkeys);
-    if (ret <= 0) {
+                 EVP_PKEY_get0(sec_key), expkeys) <= 0) {
         GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT,
                 GOST_R_ERROR_COMPUTING_EXPORT_KEYS);
         goto err;
     }
 
-    ret = gost_kexp15(key, key_len, data->cipher_nid, expkeys + 32,
-                      mac_nid, expkeys + 0, data->shared_ukm + 24, 4, exp_buf,
-                      &exp_len);
-    if (ret <= 0) {
+    if (gost_kexp15(key, key_len, data->cipher_nid, expkeys + 32,
+                    mac_nid, expkeys + 0, data->shared_ukm + 24, iv_len,
+                    exp_buf, &exp_len) <= 0) {
         GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, GOST_R_CANNOT_PACK_EPHEMERAL_KEY);
         goto err;
     }
@@ -435,7 +437,7 @@ int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
 
 /*
  * EVP_PKEY_METHOD callback decrypt
- * Implementation of GOST2001 key transport, cryptopro variation
+ * Implementation of GOST2001/12 key transport, cryptopro variation
  */
 int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
                            size_t *key_len, const unsigned char *in,
@@ -519,5 +521,75 @@ int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
  err:
     EVP_PKEY_free(eph_key);
     GOST_KEY_TRANSPORT_free(gkt);
+    return ret;
+}
+
+/*
+ * EVP_PKEY_METHOD callback decrypt
+ * Implementation of GOST2018 key transport
+ */
+int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
+                          size_t *key_len, const unsigned char *in,
+                          size_t in_len)
+{
+    const unsigned char *p = in;
+    struct gost_pmeth_data *data = EVP_PKEY_CTX_get_data(pctx);
+    EVP_PKEY *priv = EVP_PKEY_CTX_get0_pkey(pctx);
+    PSKeyTransport_gost *pst = NULL;
+    int ret = 0;
+    unsigned char expkeys[64];
+    EVP_PKEY *eph_key = NULL;
+    int pkey_nid = EVP_PKEY_base_id(eph_key);
+    int mac_nid = NID_undef;
+    int iv_len = 0;
+
+    switch (data->cipher_nid) {
+    case NID_magma_ctr:
+        mac_nid = NID_magma_mac;
+        iv_len = 4;
+        break;
+    case NID_grasshopper_ctr:
+        mac_nid = NID_grasshopper_mac;
+        iv_len = 8;
+        break;
+    default:
+        GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT, GOST_R_INVALID_CIPHER);
+        return -1;
+        break;
+    }
+    if (!key) {
+        *key_len = 32;
+        return 1;
+    }
+
+    pst = d2i_PSKeyTransport_gost(NULL, (const unsigned char **)&p, in_len);
+    if (!pst) {
+        GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT,
+                GOST_R_ERROR_PARSING_KEY_TRANSPORT_INFO);
+        return -1;
+    }
+
+    eph_key = X509_PUBKEY_get(pst->ephem_key);
+
+    if (gost_keg(data->shared_ukm, pkey_nid,
+                 EC_KEY_get0_public_key(EVP_PKEY_get0(eph_key)),
+                 EVP_PKEY_get0(priv), expkeys) <= 0) {
+        GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT,
+                GOST_R_ERROR_COMPUTING_EXPORT_KEYS);
+        goto err;
+    }
+
+    if (gost_kimp15(ASN1_STRING_get0_data(pst->psexp),
+                    ASN1_STRING_length(pst->psexp), data->cipher_nid,
+                    expkeys + 32, mac_nid, expkeys + 0, data->shared_ukm + 24,
+                    iv_len, key) <= 0) {
+        GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT, GOST_R_CANNOT_PACK_EPHEMERAL_KEY);
+        goto err;
+    }
+
+    ret = 1;
+ err:
+    EVP_PKEY_free(eph_key);
+    PSKeyTransport_gost_free(pst);
     return ret;
 }

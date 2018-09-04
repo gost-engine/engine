@@ -82,14 +82,18 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
     return ret;
 }
 
+/*
+ * Function expects that shared_key is a preallocated 32-bytes buffer
+ * */
 int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
                 int cipher_nid, const unsigned char *cipher_key,
                 int mac_nid, unsigned char *mac_key,
                 const unsigned char *iv, const size_t ivlen,
-                unsigned char *shared_key, size_t shared_len)
+                unsigned char *shared_key)
 {
     unsigned char iv_full[16], out[48], mac_buf[16];
     unsigned int mac_len;
+    const size_t shared_len = 32;
 
     EVP_CIPHER_CTX *ciph = NULL;
     EVP_MD_CTX *mac = NULL;
@@ -312,7 +316,7 @@ int main(void)
 
     ret = gost_kimp15(magma_export, 40,
                       NID_magma_ctr, magma_key,
-                      NID_magma_mac, mac_magma_key, magma_iv, 4, buf, 32);
+                      NID_magma_mac, mac_magma_key, magma_iv, 4, buf);
 
     if (ret <= 0)
         ERR_print_errors_fp(stderr);

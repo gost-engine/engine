@@ -57,7 +57,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_PARAM_COPY_GOST_EC                        119
 # define GOST_F_PKEY_GOST2001_PARAMGEN                    120
 # define GOST_F_PKEY_GOST2012_PARAMGEN                    121
-# define GOST_F_PKEY_GOST2018_ECCP_ENCRYPT                150
+# define GOST_F_PKEY_GOST2018_DECRYPT                     150
 # define GOST_F_PKEY_GOST2018_ENCRYPT                     151
 # define GOST_F_PKEY_GOST_CTRL                            122
 # define GOST_F_PKEY_GOST_ECCP_DECRYPT                    123
