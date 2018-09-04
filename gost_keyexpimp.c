@@ -83,7 +83,8 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
 }
 
 /*
- * Function expects that shared_key is a preallocated 32-bytes buffer
+ * Function expects that shared_key is a preallocated buffer
+ * with length defined as expkeylen - mac_len defined by mac_nid
  * */
 int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
                 int cipher_nid, const unsigned char *cipher_key,
