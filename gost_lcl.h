@@ -272,6 +272,17 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
                          const unsigned char *label, size_t label_len,
                          const unsigned char *seed, size_t seed_len,
                          const size_t representation);
+/* KExp/KImp */
+int gost_kexp15(const unsigned char *shared_key, const int shared_len,
+                int cipher_nid, const unsigned char *cipher_key,
+                int mac_nid, unsigned char *mac_key,
+                const unsigned char *iv, const size_t ivlen,
+                unsigned char *out, int *out_len);
+int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
+                int cipher_nid, const unsigned char *cipher_key,
+                int mac_nid, unsigned char *mac_key,
+                const unsigned char *iv, const size_t ivlen,
+                unsigned char *shared_key, size_t shared_len);
 /*============== miscellaneous functions============================= */
 /* from gost_sign.c */
 /* Convert GOST R 34.11 hash sum to bignum according to standard */

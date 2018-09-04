@@ -57,6 +57,8 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_PARAM_COPY_GOST_EC                        119
 # define GOST_F_PKEY_GOST2001_PARAMGEN                    120
 # define GOST_F_PKEY_GOST2012_PARAMGEN                    121
+# define GOST_F_PKEY_GOST2018_ECCP_ENCRYPT                150
+# define GOST_F_PKEY_GOST2018_ENCRYPT                     151
 # define GOST_F_PKEY_GOST_CTRL                            122
 # define GOST_F_PKEY_GOST_ECCP_DECRYPT                    123
 # define GOST_F_PKEY_GOST_ECCP_ENCRYPT                    124
@@ -88,6 +90,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_R_CANNOT_PACK_EPHEMERAL_KEY                 102
 # define GOST_R_CIPHER_NOT_FOUND                          103
 # define GOST_R_CTRL_CALL_FAILED                          104
+# define GOST_R_ERROR_COMPUTING_EXPORT_KEYS               135
 # define GOST_R_ERROR_COMPUTING_SHARED_KEY                105
 # define GOST_R_ERROR_PARSING_KEY_TRANSPORT_INFO          106
 # define GOST_R_ERROR_POINT_MUL                           107
