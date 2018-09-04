@@ -114,6 +114,24 @@ typedef struct {                /* FIXME incomplete */
     GOST_KEY_TRANSPORT *gkt;
 } GOST_CLIENT_KEY_EXCHANGE_PARAMS;
 
+/*   PSKeyTransport ::= SEQUENCE {
+       PSEXP OCTET STRING,
+       ephemeralPublicKey SubjectPublicKeyInfo
+   }
+   SubjectPublicKeyInfo ::= SEQUENCE {
+       algorithm AlgorithmIdentifier,
+       subjectPublicKey BITSTRING
+   }
+   AlgorithmIdentifier ::= SEQUENCE {
+       algorithm OBJECT IDENTIFIER,
+       parameters ANY OPTIONAL
+   }*/
+typedef struct PSKeyTransport_st {
+    ASN1_OCTET_STRING *psexp;
+    X509_PUBKEY       *ephem_key;
+} PSKeyTransport_gost;
+
+DECLARE_ASN1_FUNCTIONS(PSKeyTransport_gost)
 /*
  * Hacks to shorten symbols to 31 characters or less, or OpenVMS. This mimics
  * what's done in symhacks.h, but since this is a very local header file, I
