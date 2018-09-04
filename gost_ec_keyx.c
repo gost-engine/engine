@@ -229,7 +229,7 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
  * Implementation of GOST2001/12 key transport, cryptopro variation
  */
 
-int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
+static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
                            size_t *out_len, const unsigned char *key,
                            size_t key_len)
 {
@@ -346,7 +346,7 @@ int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
  * EVP_PKEY_METHOD callback decrypt
  * Implementation of GOST2018 key transport
  */
-int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
+static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
                           size_t *out_len, const unsigned char *key,
                           size_t key_len)
 {
@@ -435,11 +435,25 @@ int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     return ret;
 }
 
+int pkey_gost_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
+                      size_t *out_len, const unsigned char *key, size_t key_len)
+{
+    struct gost_pmeth_data *data = EVP_PKEY_CTX_get_data(pctx);
+    if (data->shared_ukm == NULL || data->shared_ukm_size == 8)
+        return pkey_GOST_ECcp_encrypt(pctx, out, out_len, key, key_len);
+    else if (data->shared_ukm_size == 32)
+        return pkey_gost2018_encrypt(pctx, out, out_len, key, key_len);
+    else {
+        GOSTerr(GOST_F_PKEY_GOST_ENCRYPT, ERR_R_INTERNAL_ERROR);
+        return -1;
+    }
+}
+
 /*
  * EVP_PKEY_METHOD callback decrypt
  * Implementation of GOST2001/12 key transport, cryptopro variation
  */
-int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
+static int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
                            size_t *key_len, const unsigned char *in,
                            size_t in_len)
 {
@@ -528,7 +542,7 @@ int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
  * EVP_PKEY_METHOD callback decrypt
  * Implementation of GOST2018 key transport
  */
-int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
+static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
                           size_t *key_len, const unsigned char *in,
                           size_t in_len)
 {
@@ -592,4 +606,18 @@ int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     EVP_PKEY_free(eph_key);
     PSKeyTransport_gost_free(pst);
     return ret;
+}
+
+int pkey_gost_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
+                      size_t *key_len, const unsigned char *in, size_t in_len)
+{
+    struct gost_pmeth_data *data = EVP_PKEY_CTX_get_data(pctx);
+    if (data->shared_ukm == NULL || data->shared_ukm_size == 8)
+        return pkey_GOST_ECcp_decrypt(pctx, key, key_len, in, in_len);
+    else if (data->shared_ukm_size == 32)
+        return pkey_gost2018_decrypt(pctx, key, key_len, in, in_len);
+    else {
+        GOSTerr(GOST_F_PKEY_GOST_DECRYPT, ERR_R_INTERNAL_ERROR);
+        return -1;
+    }
 }

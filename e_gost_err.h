@@ -60,11 +60,13 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_PKEY_GOST2018_DECRYPT                     150
 # define GOST_F_PKEY_GOST2018_ENCRYPT                     151
 # define GOST_F_PKEY_GOST_CTRL                            122
+# define GOST_F_PKEY_GOST_DECRYPT                         153
 # define GOST_F_PKEY_GOST_ECCP_DECRYPT                    123
 # define GOST_F_PKEY_GOST_ECCP_ENCRYPT                    124
 # define GOST_F_PKEY_GOST_EC_CTRL_STR_256                 125
 # define GOST_F_PKEY_GOST_EC_CTRL_STR_512                 126
 # define GOST_F_PKEY_GOST_EC_DERIVE                       127
+# define GOST_F_PKEY_GOST_ENCRYPT                         152
 # define GOST_F_PKEY_GOST_GRASSHOPPER_MAC_SIGNCTX_INIT    141
 # define GOST_F_PKEY_GOST_MAC_CTRL                        128
 # define GOST_F_PKEY_GOST_MAC_CTRL_STR                    129

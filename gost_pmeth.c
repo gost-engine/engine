@@ -954,8 +954,8 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
 
         EVP_PKEY_meth_set_encrypt(*pmeth,
                                   pkey_gost_encrypt_init,
-                                  pkey_GOST_ECcp_encrypt);
-        EVP_PKEY_meth_set_decrypt(*pmeth, NULL, pkey_GOST_ECcp_decrypt);
+                                  pkey_gost_encrypt);
+        EVP_PKEY_meth_set_decrypt(*pmeth, NULL, pkey_gost_decrypt);
         EVP_PKEY_meth_set_derive(*pmeth,
                                  pkey_gost_derive_init, pkey_gost_ec_derive);
         EVP_PKEY_meth_set_paramgen(*pmeth, pkey_gost_paramgen_init,
@@ -971,8 +971,8 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
 
         EVP_PKEY_meth_set_encrypt(*pmeth,
                                   pkey_gost_encrypt_init,
-                                  pkey_GOST_ECcp_encrypt);
-        EVP_PKEY_meth_set_decrypt(*pmeth, NULL, pkey_GOST_ECcp_decrypt);
+                                  pkey_gost_encrypt);
+        EVP_PKEY_meth_set_decrypt(*pmeth, NULL, pkey_gost_decrypt);
         EVP_PKEY_meth_set_derive(*pmeth,
                                  pkey_gost_derive_init, pkey_gost_ec_derive);
         EVP_PKEY_meth_set_paramgen(*pmeth,
@@ -989,8 +989,8 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
 
         EVP_PKEY_meth_set_encrypt(*pmeth,
                                   pkey_gost_encrypt_init,
-                                  pkey_GOST_ECcp_encrypt);
-        EVP_PKEY_meth_set_decrypt(*pmeth, NULL, pkey_GOST_ECcp_decrypt);
+                                  pkey_gost_encrypt);
+        EVP_PKEY_meth_set_decrypt(*pmeth, NULL, pkey_gost_decrypt);
         EVP_PKEY_meth_set_derive(*pmeth,
                                  pkey_gost_derive_init, pkey_gost_ec_derive);
         EVP_PKEY_meth_set_paramgen(*pmeth,
