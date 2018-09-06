@@ -697,7 +697,9 @@ static int pkey_gost_omac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2, si
     case EVP_PKEY_CTRL_MD:
         {
             int nid = EVP_MD_type((const EVP_MD *)p2);
-            if (nid != NID_magma_mac && nid != NID_grasshopper_mac) {
+            if (nid != NID_magma_mac && nid != NID_grasshopper_mac
+                && nid != NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac /* FIXME beldmit */
+                && nid != NID_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac) {
                 GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL,
                         GOST_R_INVALID_DIGEST_TYPE);
                 return 0;
