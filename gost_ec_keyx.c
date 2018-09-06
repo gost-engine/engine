@@ -584,7 +584,17 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     }
 
     eph_key = X509_PUBKEY_get(pst->ephem_key);
+/*
+ * TODO beldmit
+   1.  Checks the next three conditions fulfilling and terminates the
+   connection with fatal error if not.
 
+   o  Q_eph is on the same curve as server public key;
+
+   o  Q_eph is not equal to zero point;
+
+   o  q * Q_eph is not equal to zero point.
+*/
     if (gost_keg(data->shared_ukm, pkey_nid,
                  EC_KEY_get0_public_key(EVP_PKEY_get0(eph_key)),
                  EVP_PKEY_get0(priv), expkeys) <= 0) {
