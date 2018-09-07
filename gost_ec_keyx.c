@@ -553,7 +553,7 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     int ret = 0;
     unsigned char expkeys[64];
     EVP_PKEY *eph_key = NULL;
-    int pkey_nid = EVP_PKEY_base_id(eph_key);
+    int pkey_nid = EVP_PKEY_base_id(priv);
     int mac_nid = NID_undef;
     int iv_len = 0;
 
