@@ -425,6 +425,7 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             if (c->cipher_nid == NID_undef) {
                 switch (EVP_MD_nid(md)) {
                 case NID_grasshopper_mac:
+                case NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac:
                     c->cipher_nid = NID_grasshopper_cbc;
                     break;
                 }
