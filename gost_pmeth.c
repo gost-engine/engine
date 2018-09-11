@@ -521,12 +521,12 @@ static int pkey_gost_omac_init(EVP_PKEY_CTX *ctx, size_t mac_size)
 
 static int pkey_gost_magma_mac_init(EVP_PKEY_CTX *ctx)
 {
-	return pkey_gost_omac_init(ctx, 4);
+	return pkey_gost_omac_init(ctx, 8);
 }
 
 static int pkey_gost_grasshopper_mac_init(EVP_PKEY_CTX *ctx)
 {
-	return pkey_gost_omac_init(ctx, 8);
+	return pkey_gost_omac_init(ctx, 16);
 }
 
 static void pkey_gost_mac_cleanup(EVP_PKEY_CTX *ctx)
