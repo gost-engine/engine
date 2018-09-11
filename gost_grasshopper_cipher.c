@@ -418,14 +418,16 @@ int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
     size_t blocks = inl / GRASSHOPPER_BLOCK_SIZE;
 
     grasshopper_w128_t *iv_buffer = (grasshopper_w128_t *) iv;
+    grasshopper_w128_t tmp;
 
     // full parts
     for (i = 0; i < blocks; i++) {
         currentInputBlock = (grasshopper_w128_t *) current_in;
         currentOutputBlock = (grasshopper_w128_t *) current_out;
         grasshopper_encrypt_block(&c->c.encrypt_round_keys, iv_buffer,
-                                  currentOutputBlock, &c->c.buffer);
-        grasshopper_append128(currentOutputBlock, currentInputBlock);
+                                  &c->partial_buffer, &c->c.buffer);
+        grasshopper_plus128(&tmp, &c->partial_buffer, currentInputBlock);
+        grasshopper_copy128(currentOutputBlock, &tmp);
         ctr128_inc(iv_buffer->b);
         current_in += GRASSHOPPER_BLOCK_SIZE;
         current_out += GRASSHOPPER_BLOCK_SIZE;
@@ -476,15 +478,16 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     }
     size_t blocks = inl / GRASSHOPPER_BLOCK_SIZE;
     size_t i;
+    grasshopper_w128_t tmp;
 
     // full parts
     for (i = 0; i < blocks; i++) {
         apply_acpkm_grasshopper(c, &num);
         grasshopper_encrypt_block(&c->c.encrypt_round_keys,
                                   (grasshopper_w128_t *) iv,
-                                  (grasshopper_w128_t *) out, &c->c.buffer);
-        grasshopper_append128((grasshopper_w128_t *) out,
-                              (grasshopper_w128_t *) in);
+                                  (grasshopper_w128_t *) &c->partial_buffer, &c->c.buffer);
+        grasshopper_plus128(&tmp, &c->partial_buffer, (grasshopper_w128_t *) in);
+        grasshopper_copy128((grasshopper_w128_t *) out, &tmp);
         ctr128_inc(iv);
         in += GRASSHOPPER_BLOCK_SIZE;
         out += GRASSHOPPER_BLOCK_SIZE;
