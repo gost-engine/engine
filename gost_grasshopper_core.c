@@ -114,13 +114,6 @@ void grasshopper_encrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w1
     grasshopper_append128(target, &subkeys->k[9]);
 }
 
-void grasshopper_encrypt_block2(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source,
-                                grasshopper_w128_t* target) {
-    grasshopper_w128_t buffer;
-    grasshopper_encrypt_block(subkeys, source, target, &buffer);
-    grasshopper_zero128(&buffer);
-}
-
 void grasshopper_decrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source,
                                grasshopper_w128_t* target, grasshopper_w128_t* buffer) {
 		int i;
@@ -136,13 +129,6 @@ void grasshopper_decrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w1
     grasshopper_append128(target, &subkeys->k[1]);
     grasshopper_convert128(target, grasshopper_pi_inv);
     grasshopper_append128(target, &subkeys->k[0]);
-}
-
-void grasshopper_decrypt_block2(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source,
-                                grasshopper_w128_t* target) {
-    grasshopper_w128_t buffer;
-    grasshopper_decrypt_block(subkeys, source, target, &buffer);
-    grasshopper_zero128(&buffer);
 }
 
 #if defined(__cplusplus)

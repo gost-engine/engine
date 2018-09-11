@@ -23,9 +23,6 @@ extern void grasshopper_set_decrypt_key(grasshopper_round_keys_t* subkeys, const
 extern void grasshopper_encrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source, grasshopper_w128_t* target, grasshopper_w128_t* buffer);
 extern void grasshopper_decrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source, grasshopper_w128_t* target, grasshopper_w128_t* buffer);
 
-extern void grasshopper_encrypt_block2(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source, grasshopper_w128_t* target);
-extern void grasshopper_decrypt_block2(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source, grasshopper_w128_t* target);
-
 #if defined(__cplusplus)
 }
 #endif
