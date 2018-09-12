@@ -26,6 +26,8 @@
 #define cDRED	"\033[0;31m"
 #define cGREEN	"\033[1;32m"
 #define cDGREEN	"\033[0;32m"
+#define cBLUE	"\033[1;34m"
+#define cDBLUE	"\033[0;34m"
 #define cNORM	"\033[m"
 #define TEST_ASSERT(e) {if ((test = (e))) \
 		 printf(cRED "Test FAILED\n" cNORM); \
@@ -193,7 +195,8 @@ static void hexdump(const void *ptr, size_t len)
 
 static int test_block(const EVP_CIPHER *type, const char *name,
     const unsigned char *pt, const unsigned char *exp, size_t size,
-    const unsigned char *iv, size_t iv_size, int acpkm)
+    const unsigned char *iv, size_t iv_size, int acpkm,
+    int inplace)
 {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     const char *standard = acpkm? "R 23565.1.017-2018" : "GOST R 34.13-2015";
@@ -202,15 +205,19 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     int ret = 0, test;
 
     OPENSSL_assert(ctx);
-    printf("Encryption test from %s [%s] \n", standard, name);
+    printf("Encryption test from %s [%s] %s\n", standard, name,
+	inplace ? "in-place" : "out-of-place");
     /* test with single big chunk */
     EVP_CIPHER_CTX_init(ctx);
     T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 1));
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
-    memset(c, 0, sizeof(c));
+    if (inplace)
+	memcpy(c, pt, size);
+    else
+	memset(c, 0, sizeof(c));
     if (acpkm)
 	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
-    T(EVP_CipherUpdate(ctx, c, &outlen, pt, size));
+    T(EVP_CipherUpdate(ctx, c, &outlen, inplace? c : pt, size));
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(ctx);
     printf("  c[%d] = ", outlen);
@@ -220,20 +227,24 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     ret |= test;
 
     /* test with small chunks of block size */
-    printf("Chunked encryption test from %s [%s] \n", standard, name);
+    printf("Chunked encryption test from %s [%s] %s\n", standard, name,
+	inplace ? "in-place" : "out-of-place");
     int blocks = size / GRASSHOPPER_BLOCK_SIZE;
     int z;
     EVP_CIPHER_CTX_init(ctx);
     T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 1));
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
-    memset(c, 0, sizeof(c));
+    if (inplace)
+	memcpy(c, pt, size);
+    else
+	memset(c, 0, sizeof(c));
     if (acpkm)
 	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
     for (z = 0; z < blocks; z++) {
 	int offset = z * GRASSHOPPER_BLOCK_SIZE;
 	int sz = GRASSHOPPER_BLOCK_SIZE;
 
-	T(EVP_CipherUpdate(ctx, c + offset, &outlen, pt + offset, sz));
+	T(EVP_CipherUpdate(ctx, c + offset, &outlen, (inplace ? c : pt) + offset, sz));
     }
     outlen = z * GRASSHOPPER_BLOCK_SIZE;
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
@@ -245,14 +256,18 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     ret |= test;
 
     /* test with single big chunk */
-    printf("Decryption test from %s [%s] \n", standard, name);
+    printf("Decryption test from %s [%s] %s\n", standard, name,
+	inplace ? "in-place" : "out-of-place");
     EVP_CIPHER_CTX_init(ctx);
     T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 0));
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
-    memset(c, 0, sizeof(c));
+    if (inplace)
+	memcpy(c, exp, size);
+    else
+	memset(c, 0, sizeof(c));
     if (acpkm)
 	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
-    T(EVP_CipherUpdate(ctx, c, &outlen, exp, size));
+    T(EVP_CipherUpdate(ctx, c, &outlen, inplace ? c : exp, size));
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(ctx);
     EVP_CIPHER_CTX_free(ctx);
@@ -354,9 +369,14 @@ int main(int argc, char **argv)
     const struct testcase *t;
 
     for (t = testcases; t->name; t++) {
-	ret |= test_block(t->type(), t->name,
-	    t->plaintext, t->expected, t->size,
-	    t->iv, t->iv_size, t->acpkm);
+	int inplace;
+	const char *standard = t->acpkm? "R 23565.1.017-2018" : "GOST R 34.13-2015";
+
+	printf(cBLUE "# Tests for %s [%s]\n" cNORM, t->name, standard);
+	for (inplace = 0; inplace <= 1; inplace++)
+	    ret |= test_block(t->type(), t->name,
+		t->plaintext, t->expected, t->size,
+		t->iv, t->iv_size, t->acpkm, inplace);
 	if (t->stream)
 	    ret |= test_stream(t->type(), t->name,
 		t->plaintext, t->expected, t->size,
