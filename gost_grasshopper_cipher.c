@@ -365,11 +365,14 @@ int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                       currentOutputBlock, &c->buffer);
             grasshopper_copy128(currentBlock, currentOutputBlock);
         } else {
+            grasshopper_w128_t tmp;
+
+            grasshopper_copy128(&tmp, currentInputBlock);
             grasshopper_decrypt_block(&c->decrypt_round_keys,
                                       currentInputBlock, currentOutputBlock,
                                       &c->buffer);
             grasshopper_append128(currentOutputBlock, currentBlock);
-            grasshopper_copy128(currentBlock, currentInputBlock);
+            grasshopper_copy128(currentBlock, &tmp);
         }
     }
 
