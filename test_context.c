@@ -134,16 +134,16 @@ int main(int argc, char **argv)
 {
     int ret = 0;
 
-    test_contexts(cipher_gost_grasshopper_ecb(), 1, "grasshopper ecb", 0);
-    test_contexts(cipher_gost_grasshopper_ecb(), 0, "grasshopper ecb", 0);
-    test_contexts(cipher_gost_grasshopper_cbc(), 1, "grasshopper cbc", 0);
-    test_contexts(cipher_gost_grasshopper_cbc(), 0, "grasshopper cbc", 0);
-    test_contexts(cipher_gost_grasshopper_ctr(), 1, "grasshopper ctr", 0);
-    test_contexts(cipher_gost_grasshopper_ctr(), 0, "grasshopper ctr", 0);
-    test_contexts(cipher_gost_grasshopper_ofb(), 1, "grasshopper ofb", 0);
-    test_contexts(cipher_gost_grasshopper_ofb(), 0, "grasshopper ofb", 0);
-    test_contexts(cipher_gost_grasshopper_ctracpkm(), 1, "grasshopper ctracpkm", 256 / 8);
-    test_contexts(cipher_gost_grasshopper_ctracpkm(), 0, "grasshopper ctracpkm", 256 / 8);
+    ret |= test_contexts(cipher_gost_grasshopper_ecb(), 1, "grasshopper ecb", 0);
+    ret |= test_contexts(cipher_gost_grasshopper_ecb(), 0, "grasshopper ecb", 0);
+    ret |= test_contexts(cipher_gost_grasshopper_cbc(), 1, "grasshopper cbc", 0);
+    ret |= test_contexts(cipher_gost_grasshopper_cbc(), 0, "grasshopper cbc", 0);
+    ret |= test_contexts(cipher_gost_grasshopper_ctr(), 1, "grasshopper ctr", 0);
+    ret |= test_contexts(cipher_gost_grasshopper_ctr(), 0, "grasshopper ctr", 0);
+    ret |= test_contexts(cipher_gost_grasshopper_ofb(), 1, "grasshopper ofb", 0);
+    ret |= test_contexts(cipher_gost_grasshopper_ofb(), 0, "grasshopper ofb", 0);
+    ret |= test_contexts(cipher_gost_grasshopper_ctracpkm(), 1, "grasshopper ctracpkm", 256 / 8);
+    ret |= test_contexts(cipher_gost_grasshopper_ctracpkm(), 0, "grasshopper ctracpkm", 256 / 8);
 
     if (ret)
 	printf(cDRED "= Some tests FAILED!\n" cNORM);
