@@ -14,6 +14,7 @@ typedef struct omac_ctx {
     size_t dgst_size;
     int cipher_nid;
     int key_set;
+    unsigned char key[32];
 } OMAC_CTX;
 
 #define MAX_GOST_OMAC_SIZE 16
@@ -85,6 +86,7 @@ int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
         c_to->dgst_size = c_from->dgst_size;
         c_to->cipher_nid = c_from->cipher_nid;
         c_to->key_set = c_from->key_set;
+        memcpy(c_to->key, c_from->key, 32);
     } else {
         return 0;
     }
@@ -142,6 +144,7 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
             const EVP_MD *md = EVP_MD_CTX_md(ctx);
             const EVP_CIPHER *cipher = NULL;
+            int ret = 0;
 
             if (c->cipher_nid == NID_undef) {
                 switch (EVP_MD_nid(md)) {
@@ -173,10 +176,15 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 
             if (arg == 0) {
                 struct gost_mac_key *key = (struct gost_mac_key *)ptr;
-                return omac_key(c, cipher, key->key, 32);
-
+                ret = omac_key(c, cipher, key->key, 32);
+                if (ret > 0)
+                    memcpy(c->key, key->key, 32);
+                return ret;
             } else if (arg == 32) {
-                return omac_key(c, cipher, ptr, 32);
+                ret = omac_key(c, cipher, ptr, 32);
+                if (ret > 0)
+                    memcpy(c->key, ptr, 32);
+                return ret;
             }
             GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
             return 0;
@@ -204,7 +212,23 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             }
             return 1;
         }
+#ifdef EVP_MD_CTRL_TLSTREE
+    case EVP_MD_CTRL_TLSTREE:
+        {
+            OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
 
+            if (c->key_set) {
+                unsigned char diversed_key[32];
+                return gost_tlstree(c->cipher_nid, c->key, diversed_key,
+                                    (const unsigned char *)ptr) ?
+                    omac_key(c, EVP_get_cipherbynid(c->cipher_nid),
+                             diversed_key, 32) : 0;
+            }
+            GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_BAD_ORDER);
+            return 0;
+        }
+        return 0;
+#endif
     default:
         return 0;
     }
