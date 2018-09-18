@@ -222,6 +222,55 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
     return 1;
 }
 
+int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
+                 const unsigned char *tlsseq)
+{
+#ifndef L_ENDIAN
+    uint64_t gh_c1 = 0xFFFFFFFF00000000, gh_c2 = 0xFFFFFFFFFFF80000,
+        gh_c3 = 0xFFFFFFFFFFFFFFC0;
+    uint64_t mg_c1 = 0xFFFFFFC000000000, mg_c2 = 0xFFFFFFFFFE000000,
+        mg_c3 = 0xFFFFFFFFFFFFF000;
+#else
+    uint64_t gh_c1 = 0x00000000FFFFFFFF, gh_c2 = 0x0000F8FFFFFFFFFF,
+        gh_c3 = 0xC0FFFFFFFFFFFFFF;
+    uint64_t mg_c1 = 0x00000000C0FFFFFF, mg_c2 = 0x000000FEFFFFFFFF,
+        mg_c3 = 0x00F0FFFFFFFFFFFF;
+#endif
+    uint64_t c1, c2, c3;
+    uint64_t seed1, seed2, seed3;
+    uint64_t seq;
+    unsigned char ko1[32], ko2[32];
+
+    switch (cipher_nid) {
+    case NID_magma_cbc:
+        c1 = mg_c1;
+        c2 = mg_c2;
+        c3 = mg_c3;
+        break;
+    case NID_grasshopper_cbc:
+        c1 = gh_c1;
+        c2 = gh_c2;
+        c3 = gh_c3;
+        break;
+    default:
+        return 0;
+    }
+    memcpy(&seq, tlsseq, 8);
+    seed1 = seq & c1;
+    seed2 = seq & c2;
+    seed3 = seq & c3;
+
+    if (gost_kdftree2012_256(ko1, 32, in, 32, (const unsigned char *)"level1", 6,
+                         (const unsigned char *)&seed1, 8, 1) <= 0
+			  || gost_kdftree2012_256(ko2, 32, ko1, 32, (const unsigned char *)"level2", 6,
+                         (const unsigned char *)&seed2, 8, 1) <= 0
+        || gost_kdftree2012_256(out, 32, ko2, 32, (const unsigned char *)"level3", 6,
+                         (const unsigned char *)&seed3, 8, 1) <= 0)
+			return 0;
+
+    return 1;
+}
+
 #ifdef ENABLE_UNIT_TESTS
 # include <stdio.h>
 # include <string.h>
@@ -294,13 +343,29 @@ int main(void)
         0xF4, 0x3F, 0x9E, 0x6D, 0xC5, 0x15, 0x31, 0xF9
     };
 
+    const unsigned char tlstree_gh_etalon[] = {
+        0x50, 0x76, 0x42, 0xd9, 0x58, 0xc5, 0x20, 0xc6,
+        0xd7, 0xee, 0xf5, 0xca, 0x8a, 0x53, 0x16, 0xd4,
+        0xf3, 0x4b, 0x85, 0x5d, 0x2d, 0xd4, 0xbc, 0xbf,
+        0x4e, 0x5b, 0xf0, 0xff, 0x64, 0x1a, 0x19, 0xff,
+    };
+
     unsigned char buf[32 + 16];
     int ret = 0;
     int outlen = 40;
     unsigned char kdf_result[64];
 
+    unsigned char kroot[32];
+    unsigned char tlsseq[8];
+    unsigned char out[32];
+
     OpenSSL_add_all_algorithms();
     memset(buf, 0, sizeof(buf));
+
+    memset(kroot, 0xFF, 32);
+    memset(tlsseq, 0, 8);
+    tlsseq[7] = 63;
+    memset(out, 0, 32);
 
     ret = gost_kexp15(shared_key, 32,
                       NID_magma_ctr, magma_key,
@@ -335,6 +400,16 @@ int main(void)
     else {
         hexdump(stdout, "KDF TREE", kdf_result, 64);
         if (memcmp(kdf_result, kdf_etalon, 64) != 0) {
+            fprintf(stdout, "ERROR! test failed\n");
+        }
+    }
+
+    ret = gost_tlstree(NID_grasshopper_cbc, kroot, out, tlsseq);
+    if (ret <= 0)
+        ERR_print_errors_fp(stderr);
+    else {
+        hexdump(stdout, "Gost TLSTREE - grasshopper", out, 32);
+        if (memcmp(out, tlstree_gh_etalon, 32) != 0) {
             fprintf(stdout, "ERROR! test failed\n");
         }
     }
