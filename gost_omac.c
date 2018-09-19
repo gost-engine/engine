@@ -40,11 +40,11 @@ static int omac_init(EVP_MD_CTX *ctx, int cipher_nid)
 
     switch (cipher_nid) {
     case NID_magma_cbc:
-        c->dgst_size = 4;
+        c->dgst_size = 8;
         break;
 
     case NID_grasshopper_cbc:
-        c->dgst_size = 8;
+        c->dgst_size = 16;
         break;
     }
 
@@ -228,7 +228,6 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
     case EVP_MD_CTRL_TLSTREE:
         {
             OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
-
             if (c->key_set) {
                 unsigned char diversed_key[32];
                 return gost_tlstree(c->cipher_nid, c->key, diversed_key,
@@ -254,7 +253,7 @@ EVP_MD *magma_omac(void)
         EVP_MD *md;
 
         if ((md = EVP_MD_meth_new(NID_magma_mac, NID_undef)) == NULL
-            || !EVP_MD_meth_set_result_size(md, 4)
+            || !EVP_MD_meth_set_result_size(md, 8)
             || !EVP_MD_meth_set_input_blocksize(md, 8)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(OMAC_CTX))
             || !EVP_MD_meth_set_flags(md, 0)
@@ -286,7 +285,7 @@ EVP_MD *grasshopper_omac(void)
         EVP_MD *md;
 
         if ((md = EVP_MD_meth_new(NID_grasshopper_mac, NID_undef)) == NULL
-            || !EVP_MD_meth_set_result_size(md, 8)
+            || !EVP_MD_meth_set_result_size(md, 16)
             || !EVP_MD_meth_set_input_blocksize(md, 8)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(OMAC_CTX))
             || !EVP_MD_meth_set_flags(md, 0)
