@@ -14,7 +14,19 @@ typedef struct omac_ctx {
     size_t dgst_size;
     int cipher_nid;
     int key_set;
+/* 
+ * Here begins stuff related to TLSTREE processing
+ * We MUST store the original key to derive TLSTREE keys from it
+ * and TLS seq no.
+ * */
     unsigned char key[32];
+/*
+ * TODO
+ * TLSTREE intermediate values should be recalculated only when 
+ * C_i & (seq_no+1) != C_i & (seq_no)
+ * so somewhen we will store C_i & (seq_no) in this structure 
+ * to avoid redundant hash calculations.
+ * */
 } OMAC_CTX;
 
 #define MAX_GOST_OMAC_SIZE 16
