@@ -776,7 +776,7 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
             c = &(ctr_ctx->c);
 
             if (gost_tlstree(NID_grasshopper_cbc, c->master_key.k.b, newkey,
-                             (const unsigned char *)ptr)) {
+                             (const unsigned char *)ptr) > 0) {
                 gost_grasshopper_cipher_key(c, newkey);
                 return 1;
             }
