@@ -18,6 +18,7 @@ extern "C" {
 // because of buffers
 typedef struct {
     uint8_t type;
+    grasshopper_key_t master_key;
     grasshopper_key_t key;
     grasshopper_round_keys_t encrypt_round_keys;
     grasshopper_round_keys_t decrypt_round_keys;

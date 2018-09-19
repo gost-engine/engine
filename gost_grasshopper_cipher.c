@@ -156,8 +156,20 @@ GRASSHOPPER_INLINE void
         grasshopper_copy128(&c->key.k.k[i],
                             (const grasshopper_w128_t *)(k + i * 16));
     }
+
     grasshopper_set_encrypt_key(&c->encrypt_round_keys, &c->key);
     grasshopper_set_decrypt_key(&c->decrypt_round_keys, &c->key);
+}
+
+/* Set master 256-bit key to be used in TLSTREE calculation into context */
+GRASSHOPPER_INLINE void
+    gost_grasshopper_master_key(gost_grasshopper_cipher_ctx * c,
+                                const uint8_t *k) {
+    int i;
+    for (i = 0; i < 2; i++) {
+        grasshopper_copy128(&c->master_key.k.k[i],
+                            (const grasshopper_w128_t *)(k + i * 16));
+    }
 }
 
 /* Cleans up key from context */
@@ -166,6 +178,7 @@ GRASSHOPPER_INLINE void
     int i;
     for (i = 0; i < 2; i++) {
         grasshopper_zero128(&c->key.k.k[i]);
+				grasshopper_zero128(&c->master_key.k.k[i]);
     }
     for (i = 0; i < GRASSHOPPER_ROUND_KEYS_COUNT; i++) {
         grasshopper_zero128(&c->encrypt_round_keys.k[i]);
@@ -204,6 +217,7 @@ int gost_grasshopper_cipher_init(EVP_CIPHER_CTX *ctx,
 
     if (key != NULL) {
         gost_grasshopper_cipher_key(c, key);
+        gost_grasshopper_master_key(c, key);
     }
 
     if (iv != NULL) {
@@ -750,6 +764,30 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
             c->section_size = arg;
             break;
         }
+#ifdef EVP_CTRL_TLS1_2_TLSTREE
+    case EVP_CTRL_TLS1_2_TLSTREE:
+			{
+				unsigned char newkey[32];
+				int mode = EVP_CIPHER_CTX_mode(ctx);
+				gost_grasshopper_cipher_ctx_ctr *ctr_ctx = NULL;
+				gost_grasshopper_cipher_ctx *c = NULL;
+
+				if (mode != EVP_CIPH_CTR_MODE)
+					return -1;
+
+				ctr_ctx =
+				(gost_grasshopper_cipher_ctx_ctr *) EVP_CIPHER_CTX_get_cipher_data(ctx);
+				c = &(ctr_ctx->c);
+
+				if (gost_tlstree(NID_grasshopper_cbc, c->master_key.k.b, newkey,
+								(const unsigned char *)ptr) )
+					{
+						gost_grasshopper_cipher_key(c, newkey);
+						return 1;
+					}
+			}
+    return -1;
+#endif
     default:
         GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL,
                 GOST_R_UNSUPPORTED_CIPHER_CTL_COMMAND);
