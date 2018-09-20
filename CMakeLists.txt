@@ -113,6 +113,11 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_omac_acpkm.c
         )
 
+add_executable(test_curves test_curves.c)
+target_link_libraries(test_curves gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME curves
+	COMMAND test_curves)
+
 add_executable(test_context test_context.c)
 target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME context
