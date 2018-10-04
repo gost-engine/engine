@@ -1,24 +1,25 @@
 #!/usr/bin/perl 
-use Test::More tests => 19;
+use Test2::V0;
+plan(19);
 use Cwd 'abs_path';
 
 # prepare data for 
+my $F;
+open $F,">","testdata.dat";
+print $F "12345670" x 128;
+close $F;
 
-open F,">","testdata.dat";
-print F "12345670" x 128;
-close F;
-
-open F,">","testbig.dat";
-print F ("12345670" x 8 . "\n") x  4096;
-close F;
+open $F,">","testbig.dat";
+print $F ("12345670" x 8 . "\n") x  4096;
+close $F;
 # Set OPENSSL_ENGINES environment variable to just built engine
 if(!defined $ENV{'OPENSSL_ENGINES'}){
         $ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
 }
 
-$key='0123456789abcdef' x 2;
+my $key='0123456789abcdef' x 2;
 
-$engine=$ENV{'ENGINE_NAME'}||"gost";
+my $engine=$ENV{'ENGINE_NAME'}||"gost";
 
 # Reopen STDERR to eliminate extra output
 open STDERR, ">>","tests.err";
@@ -27,6 +28,7 @@ is(`openssl dgst -engine ${engine} -mac gost-mac -macopt key:${key} testdata.dat
 "GOST-MAC-gost-mac(testdata.dat)= 2ee8d13d\n",
 "GOST MAC - default size");
 
+my $i;
 for ($i=1;$i<=8; $i++) {
 	is(`openssl dgst -engine ${engine} -mac gost-mac -macopt key:${key} -sigopt size:$i testdata.dat`,
 "GOST-MAC-gost-mac(testdata.dat)= ".substr("2ee8d13dff7f037d",0,$i*2)."\n",

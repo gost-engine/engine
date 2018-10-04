@@ -1,12 +1,13 @@
 #!/usr/bin/perl
-use Test::More tests => 48;
+use Test2::V0;
+plan(48);
 use Cwd 'abs_path';
 
 #
 # If this variable is set, engine would be loaded via configuration
 # file. Otherwise - via command line
 # 
-$use_config = 1;
+my $use_config = 1;
 
 # prepare data for 
 
@@ -16,12 +17,12 @@ if(!defined $ENV{'OPENSSL_ENGINES'}){
         $ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
 }
 
-$key='0123456789abcdef' x 2;
+my $key='0123456789abcdef' x 2;
 
 #
 # You can redefine engine to use using ENGINE_NAME environment variable
 # 
-$engine=$ENV{'ENGINE_NAME'}||"gost";
+my $engine=$ENV{'ENGINE_NAME'}||"gost";
 
 # Reopen STDERR to eliminate extra output
 open STDERR, ">>","tests.err";
@@ -35,12 +36,14 @@ our $count=0;
 # -key - key (hex-encoded)
 # -iv  - IV (hex-encoded)
 # 
+my $F;
+my $eng_param;
 
-open F,">","test.cnf";
+open $F,">","test.cnf";
 if (defined($use_config) && $use_config) {
 	$eng_param = "";
-	open F,">","test.cnf";
-	print F <<EOCFG;
+	open $F,">","test.cnf";
+	print $F <<EOCFG
 openssl_conf = openssl_def
 [openssl_def]
 engines = engines
@@ -53,7 +56,7 @@ EOCFG
 } else {
 	$eng_param = "-engine $engine"
 }
-close F;
+close $F;
 $ENV{'OPENSSL_CONF'}=abs_path('test.cnf');
 	
 sub crypt_test {
@@ -67,7 +70,7 @@ sub crypt_test {
 	my $ctext = `openssl enc ${eng_param} -e -$p{-alg} -K $p{-key} -iv $p{-iv} -in test$count.clear`;
 	is($?,0,"$p{-name} - encrypt successful");
 	is(unpack("H*",$ctext),$p{-ciphertext},"$p{-name} - ciphertext expected");
-	open my $f, ">", "test$count.enc";
+	open $f, ">", "test$count.enc";
 	print $f $ctext;
 	close $f;
 	my $otext = `openssl enc ${eng_param} -d -$p{-alg} -K $p{-key} -iv $p{-iv} -in test$count.enc`;
@@ -79,8 +82,8 @@ sub crypt_test {
 }
 
 $key = '0123456789ABCDEF' x 4;
-$iv =  '0000000000000000';
-$clear1 = "The quick brown fox jumps over the lazy dog\n";
+my $iv =  '0000000000000000';
+my $clear1 = "The quick brown fox jumps over the lazy dog\n";
 
 crypt_test(-paramset=> "1.2.643.2.2.31.1", -key => $key, -iv => $iv,
 		   -cleartext => $clear1,

@@ -1,12 +1,13 @@
 #!/usr/bin/perl
-use Test::More tests => 15;
+use Test2::V0;
+plan(15);
 use Cwd 'abs_path';
 
 #
 # If this variable is set, engine would be loaded via configuration
 # file. Otherwise - via command line
 # 
-$use_config = 1;
+my $use_config = 1;
 
 # prepare data for 
 
@@ -16,17 +17,19 @@ if(!defined $ENV{'OPENSSL_ENGINES'}){
         $ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
 }
 
-$engine=$ENV{'ENGINE_NAME'}||"gost";
+my $engine=$ENV{'ENGINE_NAME'}||"gost";
 
 # Reopen STDERR to eliminate extra output
 open STDERR, ">>","tests.err";
 
+my $F;
+my $eng_param;
 
-open F,">","test.cnf";
+open $F,">","test.cnf";
 if (defined($use_config) && $use_config) {
 	$eng_param = "";
-	open F,">","test.cnf";
-	print F <<EOCFG;
+	open $F,">","test.cnf";
+	print $F <<EOCFG;
 openssl_conf = openssl_def
 [openssl_def]
 engines = engines
@@ -39,11 +42,11 @@ EOCFG
 } else {
 	$eng_param = "-engine $engine"
 }
-close F;
+close $F;
 $ENV{'OPENSSL_CONF'}=abs_path('test.cnf');
 
 
-@keys=(['gost2001','A',"-----BEGIN PRIVATE KEY-----
+my @keys=(['gost2001','A',"-----BEGIN PRIVATE KEY-----
 MEUCAQAwHAYGKoUDAgITMBIGByqFAwICIwEGByqFAwICHgEEIgIgRhUDJ1WQASIf
 nx+aUM2eagzV9dCt6mQ5wdtenr2ZS/Y=
 -----END PRIVATE KEY-----
@@ -119,20 +122,20 @@ ENjS+gA=
 -----END PUBLIC KEY-----
 ']
 );
-for $keyinfo (@keys) {
+for my $keyinfo (@keys) {
 	my ($alg,$paramset,$seckey,$sectext,$pubtext,$pubkey) = @$keyinfo;
-	open F,">",'tmp.pem';
-	print F $seckey;
-	close F;
+	open $F,">",'tmp.pem';
+	print $F $seckey;
+	close $F;
 	#1.  Прочитать секретный ключ и напечатать публичный и секретный ключи
 	is(`openssl pkey -noout -text -in tmp.pem`,$sectext . $pubtext,
 		"Print key pair $alg:$paramset");
 	#2. Прочитать секретный ключ и вывести публичный (все алгоритмы)
     is(`openssl pkey -pubout -in tmp.pem`,$pubkey,
 		"Compute public key $alg:$paramset");
-	open F,">","tmp.pem";
-	print F $pubkey;
-	close F;
+	open $F,">","tmp.pem";
+	print $F $pubkey;
+	close $F;
 	#3. Прочитать публичный и напечать его в виде текста
 	is(`openssl pkey -pubin -noout -in tmp.pem -text`,$pubtext,
 		"Read and print public key $alg:paramset");
