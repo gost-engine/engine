@@ -38,6 +38,16 @@ set(OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${BIN_DIRECTORY})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 
+# Remove when https://gitlab.kitware.com/cmake/cmake/issues/18525 is addressed
+set(OPENSSL_ENGINES_DIR "" CACHE PATH "OpenSSL Engines Directory")
+if ("${OPENSSL_ENGINES_DIR}" STREQUAL "")
+	include(FindPkgConfig)
+	pkg_get_variable(OPENSSL_ENGINES_DIR libcrypto enginesdir)
+	if ("${OPENSSL_ENGINES_DIR}" STREQUAL "")
+		message( FATAL_ERROR "Unable to discover the OpenSSL engines directory. Provide the path using -DOPENSSL_ENGINES_DIR" )
+	endif()
+endif()
+
 set(GOST_89_SOURCE_FILES
         gost89.c
         gost89.h
@@ -164,14 +174,13 @@ add_custom_target(tags
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # install
-set(OPENSSL_ENGINES_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/engines-${OPENSSL_VERSION_MAJOR}_${OPENSSL_VERSION_MINOR})
 set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
 
 install(TARGETS gost_engine gostsum gost12sum EXPORT GostEngineConfig
-        LIBRARY  DESTINATION ${OPENSSL_ENGINES_INSTALL_DIR}
+        LIBRARY  DESTINATION ${OPENSSL_ENGINES_DIR}
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES gostsum.1 gost12sum.1 DESTINATION ${OPENSSL_MAN_INSTALL_DIR})
 if (MSVC)
- install(FILES $<TARGET_PDB_FILE:gost_engine> DESTINATION ${OPENSSL_ENGINES_INSTALL_DIR} OPTIONAL)
+ install(FILES $<TARGET_PDB_FILE:gost_engine> DESTINATION ${OPENSSL_ENGINES_DIR} OPTIONAL)
  install(FILES $<TARGET_PDB_FILE:gostsum> $<TARGET_PDB_FILE:gost12sum> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
 endif()
