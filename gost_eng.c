@@ -102,6 +102,8 @@ static int gost_engine_finish(ENGINE* e) {
 }
 
 static int gost_engine_destroy(ENGINE* e) {
+    EVP_delete_digest_alias("streebog256");
+    EVP_delete_digest_alias("streebog512");
     digest_gost_destroy();
     digest_gost2012_256_destroy();
     digest_gost2012_512_destroy();
@@ -230,6 +232,11 @@ static int bind_gost(ENGINE* e, const char* id) {
         || !EVP_add_digest(imit_gost_cpa())
         || !EVP_add_digest(imit_gost_cp_12())
             ) {
+        goto end;
+    }
+
+    if(!EVP_add_digest_alias(SN_id_GostR3411_2012_256, "streebog256")
+       ||	!EVP_add_digest_alias(SN_id_GostR3411_2012_512, "streebog512")) {
         goto end;
     }
 
