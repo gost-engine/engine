@@ -124,7 +124,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
 
     if (!BN_hex2bn(&x, params->x)
         || !BN_hex2bn(&y, params->y)
-        || !EC_POINT_set_affine_coordinates_GFp(grp, P, x, y, ctx)
+        || !EC_POINT_set_affine_coordinates(grp, P, x, y, ctx)
         || !BN_hex2bn(&q, params->q)) {
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_INTERNAL_ERROR);
         goto end;
@@ -247,7 +247,7 @@ ECDSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
                 GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_MALLOC_FAILURE);
                 goto err;
             }
-            if (!EC_POINT_get_affine_coordinates_GFp(group, C, X, NULL, ctx)) {
+            if (!EC_POINT_get_affine_coordinates(group, C, X, NULL, ctx)) {
                 GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_EC_LIB);
                 goto err;
             }
@@ -394,7 +394,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
         GOSTerr(GOST_F_GOST_EC_VERIFY, ERR_R_EC_LIB);
         goto err;
     }
-    if (!EC_POINT_get_affine_coordinates_GFp(group, C, X, NULL, ctx)) {
+    if (!EC_POINT_get_affine_coordinates(group, C, X, NULL, ctx)) {
         GOSTerr(GOST_F_GOST_EC_VERIFY, ERR_R_EC_LIB);
         goto err;
     }

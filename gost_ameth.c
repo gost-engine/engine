@@ -21,13 +21,6 @@
 
 #define PK_WRAP_PARAM "LEGACY_PK_WRAP"
 
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-/* some functions have const'ed arguments since openssl-1.1.0 */
-# define OPENSSL110_const const
-#else
-# define OPENSSL110_const
-#endif
-
 /*
  * Pack bignum into byte buffer of given size, filling all leading bytes by
  * zeros
@@ -139,9 +132,9 @@ static int gost_decode_nid_params(EVP_PKEY *pkey, int pkey_nid, int param_nid)
  * NID and parameters
  */
 static int decode_gost_algor_params(EVP_PKEY *pkey,
-                                    OPENSSL110_const X509_ALGOR *palg)
+                                    const X509_ALGOR *palg)
 {
-    OPENSSL110_const ASN1_OBJECT *palg_obj = NULL;
+    const ASN1_OBJECT *palg_obj = NULL;
     int ptype = V_ASN1_UNDEF;
     int pkey_nid = NID_undef, param_nid = NID_undef;
     ASN1_STRING *pval = NULL;
@@ -150,7 +143,7 @@ static int decode_gost_algor_params(EVP_PKEY *pkey,
 
     if (!pkey || !palg)
         return 0;
-    X509_ALGOR_get0(&palg_obj, &ptype, (OPENSSL110_const void **)&pval, palg);
+    X509_ALGOR_get0(&palg_obj, &ptype, (const void **)&pval, palg);
     if (ptype != V_ASN1_SEQUENCE) {
         GOSTerr(GOST_F_DECODE_GOST_ALGOR_PARAMS,
                 GOST_R_BAD_KEY_PARAMETERS_FORMAT);
@@ -339,14 +332,14 @@ static BIGNUM *unmask_priv_key(EVP_PKEY *pk,
 }
 
 static int priv_decode_gost(EVP_PKEY *pk,
-                            OPENSSL110_const PKCS8_PRIV_KEY_INFO *p8inf)
+                            const PKCS8_PRIV_KEY_INFO *p8inf)
 {
     const unsigned char *pkey_buf = NULL, *p = NULL;
     int priv_len = 0;
     BIGNUM *pk_num = NULL;
     int ret = 0;
-    OPENSSL110_const X509_ALGOR *palg = NULL;
-    OPENSSL110_const ASN1_OBJECT *palg_obj = NULL;
+    const X509_ALGOR *palg = NULL;
+    const ASN1_OBJECT *palg_obj = NULL;
     ASN1_INTEGER *priv_key = NULL;
     int expected_key_len = 32;
 
@@ -511,7 +504,7 @@ static int print_gost_ec_pub(BIO *out, const EVP_PKEY *pkey, int indent)
     if (!pubkey || !group)
         goto err;
 
-    if (!EC_POINT_get_affine_coordinates_GFp(group, pubkey, X, Y, ctx)) {
+    if (!EC_POINT_get_affine_coordinates(group, pubkey, X, Y, ctx)) {
         GOSTerr(GOST_F_PRINT_GOST_EC_PUB, ERR_R_EC_LIB);
         goto err;
     }
@@ -690,7 +683,7 @@ static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub)
     X = BN_bin2bn(databuf + len, len, NULL);
     OPENSSL_free(databuf);
     pub_key = EC_POINT_new(group);
-    if (!EC_POINT_set_affine_coordinates_GFp(group, pub_key, X, Y, NULL)) {
+    if (!EC_POINT_set_affine_coordinates(group, pub_key, X, Y, NULL)) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_EC_LIB);
         EC_POINT_free(pub_key);
         BN_free(X);
@@ -744,7 +737,7 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    if (!EC_POINT_get_affine_coordinates_GFp(EC_KEY_get0_group(ec),
+    if (!EC_POINT_get_affine_coordinates(EC_KEY_get0_group(ec),
                                              pub_key, X, Y, NULL)) {
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_INTERNAL_ERROR);
         goto err;
@@ -920,9 +913,7 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                                  pkey_size_gost, pkey_bits_gost);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
         EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);
-#endif
         break;
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2012_512:
@@ -942,9 +933,7 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                                  pkey_size_gost, pkey_bits_gost);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
         EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);
-#endif
         break;
     case NID_id_Gost28147_89_MAC:
         EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);

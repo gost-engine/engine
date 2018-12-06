@@ -129,7 +129,7 @@ static int parameter_test(struct test_curve *tc)
     T(p = BN_new());
     T(a = BN_new());
     T(b = BN_new());
-    EC_GROUP_get_curve_GFp(group, p, a, b, ctx);
+    EC_GROUP_get_curve(group, p, a, b, ctx);
     print_bn("p", p);
     print_bn("a", a);
     print_bn("b", b);
@@ -144,7 +144,7 @@ static int parameter_test(struct test_curve *tc)
     BIGNUM *x, *y;
     T(x = BN_new());
     T(y = BN_new());
-    T(EC_POINT_get_affine_coordinates_GFp(group, generator, x, y, ctx));
+    T(EC_POINT_get_affine_coordinates(group, generator, x, y, ctx));
     print_bn("x", x);
     print_bn("y", y);
     T(!BN_is_zero(y));
