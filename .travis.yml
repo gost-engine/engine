@@ -14,7 +14,7 @@ env:
 
 matrix:
   include:
-    - env: OPENSSL_BRANCH=master
+    - env: OPENSSL_BRANCH=OpenSSL_1_1_1-stable
       os: linux
       compiler: gcc
     - env: OPENSSL_BRANCH=OpenSSL_1_1_0-stable
