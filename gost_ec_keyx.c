@@ -607,7 +607,7 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
                     ASN1_STRING_length(pst->psexp), data->cipher_nid,
                     expkeys + 32, mac_nid, expkeys + 0, data->shared_ukm + 24,
                     iv_len, key) <= 0) {
-        GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT, GOST_R_CANNOT_PACK_EPHEMERAL_KEY);
+        GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT, GOST_R_CANNOT_UNPACK_EPHEMERAL_KEY);
         goto err;
     }
 
