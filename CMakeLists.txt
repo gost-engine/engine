@@ -138,6 +138,12 @@ target_link_libraries(test_grasshopper gost_engine gost_core ${OPENSSL_CRYPTO_LI
 add_test(NAME grasshopper
 	COMMAND test_grasshopper)
 
+add_executable(test_keyexpimp test_keyexpimp.c)
+#target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
+target_link_libraries(test_keyexpimp gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME keyexpimp
+	COMMAND test_keyexpimp)
+
 add_test(NAME engine
 	 COMMAND perl run_tests
 	 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
@@ -163,11 +169,6 @@ set(GOST_12_SUM_SOURCE_FILES
 
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
 target_link_libraries(gost12sum gost_core)
-
-add_executable(unit_expimp gost_keyexpimp.c e_gost_err.c)
-target_compile_definitions(unit_expimp PUBLIC -DENABLE_UNIT_TESTS)
-target_compile_definitions(unit_expimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(unit_expimp PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
 
 set_source_files_properties(tags PROPERTIES GENERATED true)
 add_custom_target(tags
