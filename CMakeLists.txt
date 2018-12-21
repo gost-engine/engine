@@ -144,6 +144,11 @@ target_link_libraries(test_keyexpimp gost_engine gost_core ${OPENSSL_CRYPTO_LIBR
 add_test(NAME keyexpimp
 	COMMAND test_keyexpimp)
 
+add_executable(test_gost89 test_gost89.c)
+target_link_libraries(test_gost89 gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME gost89
+	COMMAND test_gost89)
+
 add_test(NAME engine
 	 COMMAND perl run_tests
 	 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
