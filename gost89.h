@@ -97,5 +97,8 @@ extern gost_subst_block Gost28147_CryptoProParamSetD;
 extern gost_subst_block Gost28147_TC26ParamSetZ;
 extern const byte CryptoProKeyMeshingKey[];
 typedef unsigned int word32;
-
+/* For tests. */
+void kboxinit(gost_ctx * c, const gost_subst_block * b);
+void magma_get_key(gost_ctx * c, byte * k);
+void acpkm_magma_key_meshing(gost_ctx * ctx);
 #endif
