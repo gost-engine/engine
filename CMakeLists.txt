@@ -154,6 +154,9 @@ add_test(NAME engine
 	 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
 set_tests_properties(engine PROPERTIES ENVIRONMENT OPENSSL_ENGINES=${OUTPUT_DIRECTORY})
 
+add_executable(sign benchmark/sign.c)
+target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

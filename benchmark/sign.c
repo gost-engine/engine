@@ -1,10 +1,16 @@
 /**********************************************************************
+ *             Simple benchmarking for gost-engine                    *
+ *                                                                    *
  *             Copyright (c) 2018 Cryptocom LTD                       *
+ *             Copyright (c) 2018 <vt@altlinux.org>.                  *
  *       This file is distributed under the same license as OpenSSL   *
  **********************************************************************/
+
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <sys/time.h>
 #include <getopt.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
@@ -13,7 +19,18 @@
 #include <openssl/pem.h>
 #include <openssl/engine.h>
 
-static EVP_PKEY *create_key(char *algname, char *param)
+const char *tests[] = {
+    "md_gost12_256", "gost2012_256", "A",
+    "md_gost12_256", "gost2012_256", "B",
+    "md_gost12_256", "gost2012_256", "C",
+
+    "md_gost12_512", "gost2012_512", "A",
+    "md_gost12_512", "gost2012_512", "B",
+
+    NULL,
+};
+
+static EVP_PKEY *create_key(const char *algname, const char *param)
 {
 	EVP_PKEY *key1 = EVP_PKEY_new(), *newkey = NULL;
 	EVP_PKEY_CTX *ctx = NULL;
@@ -54,19 +71,14 @@ void usage(char *name)
 
 int main(int argc, char **argv)
 {
-	unsigned char *data;
-	const EVP_MD *mdtype;
-	EVP_MD_CTX md_ctx;
-	int siglen;
-	unsigned char *sigbuf;
-	EVP_PKEY *pkey;
-	unsigned int compter;
-	time_t debut, fin;
-	unsigned int data_len = 1024;
-	unsigned int cycles = 8000;
+	unsigned int data_len = 1;
+	unsigned int cycles = 100;
 	int option;
+	clockid_t clock_type = CLOCK_MONOTONIC;
+	int test, test_count = 0;
+
 	opterr = 0;
-	while((option = getopt(argc, argv, "l:c:")) >= 0)
+	while((option = getopt(argc, argv, "l:c:C")) >= 0)
 	{
 		if(option == ':') option = optopt;
 		if(optarg && (optarg[0] == '-')) { optind--; optarg = NULL; }
@@ -78,35 +90,94 @@ int main(int argc, char **argv)
 			case 'c':
 				cycles = atoi(optarg);
 				break;
+			case 'C':
+				clock_type = CLOCK_PROCESS_CPUTIME_ID;
+				break;
 			default:
 				usage(argv[0]);
 				break;
 		}
 	}
 	if (optind < argc) usage(argv[0]);
-	OPENSSL_config(NULL);
+	if (cycles < 100) { printf("cycles too low\n"); exit(1); }
+
+	OPENSSL_add_all_algorithms_conf();
 	ERR_load_crypto_strings();
-	OpenSSL_add_all_algorithms();
-	mdtype = EVP_get_digestbyname("md_gost12_256");
-	pkey = create_key("gost2012_256", "A");
-	data = (unsigned char *) malloc(data_len);
-	printf("wait"); fflush(stdout);
-	siglen = EVP_PKEY_size(pkey);
-	sigbuf = malloc(siglen);
-	debut = time(NULL);
-	for(compter = 0; compter < cycles; compter++)
-	{
-		EVP_SignInit(&md_ctx, mdtype);
-		EVP_SignUpdate(&md_ctx, data, data_len);
-		EVP_SignFinal(&md_ctx, sigbuf, (unsigned int *) &siglen, pkey);
-		EVP_MD_CTX_cleanup(&md_ctx);
+
+	for (test = 0; tests[test]; test += 3) {
+	    double diff[2]; /* sign, verify */
+	    const char *digest = tests[test];
+	    const char *algo   = tests[test + 1];
+	    const char *param  = tests[test + 2];
+	    const EVP_MD *mdtype;
+	    EVP_MD_CTX *md_ctx;
+	    unsigned int siglen;
+	    unsigned char *sigbuf;
+	    EVP_PKEY *pkey;
+	    unsigned char *data;
+	    int pass;
+
+	    md_ctx = EVP_MD_CTX_new();
+	    mdtype = EVP_get_digestbyname(digest);
+	    if (!mdtype)
+		continue;
+	    pkey = create_key(algo, param);
+	    data = (unsigned char *) malloc(data_len);
+	    if (!pkey)
+		continue;
+
+	    test_count++;
+	    printf("wait...");
+	    fflush(stdout);
+	    siglen = EVP_PKEY_size(pkey);
+	    sigbuf = malloc(siglen * cycles);
+
+	    for (pass = 0; pass < 2; pass++) {
+		struct timespec ts;
+		struct timeval debut, fin, delta;
+		int err;
+		unsigned int i;
+
+		clock_gettime(clock_type, &ts);
+		TIMESPEC_TO_TIMEVAL(&debut, &ts);
+
+		if (pass == 0) { /* sign */
+		    for (i = 0; i < cycles; i++) {
+			EVP_SignInit(md_ctx, mdtype);
+			EVP_SignUpdate(md_ctx, data, data_len);
+			err = EVP_SignFinal(md_ctx, &sigbuf[siglen * i],
+			    (unsigned int *)&siglen, pkey);
+			if (err != 1)
+			    printf("!");
+			EVP_MD_CTX_reset(md_ctx);
+		    }
+		} else { /* verify */
+		    for (i = 0; i < cycles; i++) {
+			EVP_VerifyInit(md_ctx, mdtype);
+			EVP_VerifyUpdate(md_ctx, data, data_len);
+			err = EVP_VerifyFinal(md_ctx, &sigbuf[siglen * i],
+			    siglen, pkey);
+			EVP_MD_CTX_reset(md_ctx);
+			if (err != 1)
+			    printf("!");
+		    }
+		}
+
+		clock_gettime(clock_type, &ts);
+		TIMESPEC_TO_TIMEVAL(&fin, &ts);
+		timersub(&fin, &debut, &delta);
+		diff[pass] = (double)delta.tv_sec + (double)delta.tv_usec / 1000000;
+	    }
+	    printf("\r%s %s: sign: %.1f/s, verify: %.1f/s\n", algo, param,
+		(double)cycles / diff[0], (double)cycles / diff[1]);
+	    EVP_PKEY_free(pkey);
+	    free(sigbuf);
+	    free(data);
 	}
-	fin = time(NULL);
-	printf("\b\b\b\b");
-	if ((fin - debut) < 3) { printf("cycles too low\n"); exit(1); }
-	printf("sign: %d/s\n", compter / (unsigned int)(fin - debut));
-	EVP_PKEY_free(pkey);
-	free(sigbuf);
-	free(data);
+
+	if (!test_count) {
+	    fprintf(stderr, "No tests were run, something is wrong.\n");
+	    exit(1);
+	}
 	exit(0);
 }
