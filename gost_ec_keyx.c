@@ -391,6 +391,12 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     sec_key = EVP_PKEY_CTX_get0_peerkey(pctx);
     if (!sec_key)
     {
+      sec_key = EVP_PKEY_new();
+      if (sec_key == NULL) {
+        GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, ERR_R_MALLOC_FAILURE );
+        goto err;
+      }
+
       if (!EVP_PKEY_assign(sec_key, EVP_PKEY_base_id(pubk), EC_KEY_new())
           || !EVP_PKEY_copy_parameters(sec_key, pubk)
           || !gost_ec_keygen(EVP_PKEY_get0(sec_key))) {
@@ -432,13 +438,12 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         goto err;
     }
 
-    EVP_PKEY_free(sec_key);
-
     if ((*out_len = i2d_PSKeyTransport_gost(pst, out ? &out : NULL)) > 0)
         ret = 1;
  err:
     if (key_is_ephemeral)
       EVP_PKEY_free(sec_key);
+
     PSKeyTransport_gost_free(pst);
     OPENSSL_free(exp_buf);
     return ret;
