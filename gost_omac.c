@@ -132,7 +132,7 @@ static int omac_key(OMAC_CTX * c, const EVP_CIPHER *cipher,
 {
     int ret = 0;
 
-    CMAC_CTX_free(c->cmac_ctx);,
+    CMAC_CTX_free(c->cmac_ctx);
     c->cmac_ctx = CMAC_CTX_new();
     if (c->cmac_ctx == NULL) {
         GOSTerr(GOST_F_OMAC_KEY, ERR_R_MALLOC_FAILURE);
