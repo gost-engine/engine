@@ -18,10 +18,10 @@
 #include "gost_lcl.h"
 
 /* Implementation of CryptoPro VKO 34.10-2001/2012 algorithm */
-static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
-                           const EC_POINT *pub_key, EC_KEY *priv_key,
-                           const unsigned char *ukm, size_t ukm_size,
-                           int vko_dgst_nid)
+static int VKO_compute_key(unsigned char *shared_key,
+                           const EC_POINT *pub_key, const EC_KEY *priv_key,
+                           const unsigned char *ukm, const size_t ukm_size,
+                           const int vko_dgst_nid)
 {
     unsigned char *databuf = NULL;
     BIGNUM *UKM = NULL, *p = NULL, *order = NULL, *X = NULL, *Y = NULL;
@@ -104,23 +104,25 @@ static int VKO_compute_key(unsigned char *shared_key, size_t shared_key_size,
  * keyout expected to be 64 bytes
  * */
 static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
-                    const EC_POINT *pub_key, EC_KEY *priv_key,
+                    const EC_POINT *pub_key, const EC_KEY *priv_key,
                     unsigned char *keyout)
 {
 /* Adjust UKM */
     unsigned char real_ukm[16];
-    size_t keylen;
+    size_t keylen = 0;
 
     memset(real_ukm, 0, 16);
     if (memcmp(ukm_source, real_ukm, 16) == 0)
         real_ukm[15] = 1;
-    else
+    else {
         memcpy(real_ukm, ukm_source, 16);
+        BUF_reverse(real_ukm, NULL, 16);
+    }
 
     switch (pkey_nid) {
     case NID_id_GostR3410_2012_512:
         keylen =
-            VKO_compute_key(keyout, 64, pub_key, priv_key, real_ukm, 16,
+            VKO_compute_key(keyout, pub_key, priv_key, real_ukm, 16,
                             NID_id_GostR3411_2012_512);
         return (keylen) ? keylen : 0;
         break;
@@ -129,8 +131,8 @@ static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
         {
             unsigned char tmpkey[32];
             keylen =
-                VKO_compute_key(tmpkey, 32, pub_key, priv_key, real_ukm, 16,
-                                NID_id_GostR3411_2012_256);
+              VKO_compute_key(tmpkey, pub_key, priv_key, real_ukm, 16,
+                  NID_id_GostR3411_2012_256);
 
             if (keylen == 0)
                 return 0;
@@ -193,7 +195,7 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
                 dgst_nid = NID_id_GostR3411_2012_256;
 
             *keylen =
-                VKO_compute_key(key, 32,
+                VKO_compute_key(key,
                                 EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
                                 (EC_KEY *)EVP_PKEY_get0(my_key),
                                 data->shared_ukm, 8, dgst_nid);
@@ -287,7 +289,7 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         if (dgst_nid == NID_id_GostR3411_2012_512)
             dgst_nid = NID_id_GostR3411_2012_256;
 
-        if (!VKO_compute_key(shared_key, 32,
+        if (!VKO_compute_key(shared_key,
                              EC_KEY_get0_public_key(EVP_PKEY_get0(pubk)),
                              EVP_PKEY_get0(sec_key), ukm, 8, dgst_nid)) {
             GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT,
@@ -361,6 +363,7 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     size_t mac_len = 0;
     int exp_len = 0, iv_len = 0;
     unsigned char *exp_buf = NULL;
+    int key_is_ephemeral = 0;
 
     switch (data->cipher_nid) {
     case NID_magma_ctr:
@@ -385,13 +388,17 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         return -1;
     }
 
-    sec_key = EVP_PKEY_new();
-    if (!EVP_PKEY_assign(sec_key, EVP_PKEY_base_id(pubk), EC_KEY_new())
-        || !EVP_PKEY_copy_parameters(sec_key, pubk)
-        || !gost_ec_keygen(EVP_PKEY_get0(sec_key))) {
+    sec_key = EVP_PKEY_CTX_get0_peerkey(pctx);
+    if (!sec_key)
+    {
+      if (!EVP_PKEY_assign(sec_key, EVP_PKEY_base_id(pubk), EC_KEY_new())
+          || !EVP_PKEY_copy_parameters(sec_key, pubk)
+          || !gost_ec_keygen(EVP_PKEY_get0(sec_key))) {
         GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT,
-                GOST_R_ERROR_COMPUTING_SHARED_KEY);
+            GOST_R_ERROR_COMPUTING_SHARED_KEY);
         goto err;
+      }
+      key_is_ephemeral = 1;
     }
 
     if (gost_keg(data->shared_ukm, pkey_nid,
@@ -430,6 +437,8 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     if ((*out_len = i2d_PSKeyTransport_gost(pst, out ? &out : NULL)) > 0)
         ret = 1;
  err:
+    if (key_is_ephemeral)
+      EVP_PKEY_free(sec_key);
     PSKeyTransport_gost_free(pst);
     OPENSSL_free(exp_buf);
     return ret;
@@ -518,7 +527,7 @@ static int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     if (dgst_nid == NID_id_GostR3411_2012_512)
         dgst_nid = NID_id_GostR3411_2012_256;
 
-    if (!VKO_compute_key(sharedKey, 32,
+    if (!VKO_compute_key(sharedKey,
                          EC_KEY_get0_public_key(EVP_PKEY_get0(peerkey)),
                          EVP_PKEY_get0(priv), wrappedKey, 8, dgst_nid)) {
         GOSTerr(GOST_F_PKEY_GOST_ECCP_DECRYPT,
