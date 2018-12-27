@@ -785,7 +785,7 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
               memcpy(seq, ptr, 8);
               if (EVP_CIPHER_CTX_encrypting(ctx)) {
               /*
-               * OpenSSL increments seq on after mac calculation
+               * OpenSSL increments seq after mac calculation.
                * As we have Mac-Then-Encrypt, we need decrement it here on encryption
                * to derive the key correctly.
                * */
@@ -793,7 +793,8 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
                 {
                   for(j=7; j>=0; j--)
                   {
-                    if (seq[j] != 0) {seq[j]--; break;};
+                    if (seq[j] != 0) {seq[j]--; break;}
+                    else seq[j]  = 0xFF;
                   }
                 }
               }
