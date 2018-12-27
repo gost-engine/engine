@@ -182,8 +182,8 @@ static int parameter_test(struct test_curve *tc)
     const BIGNUM *order;
     T(order = EC_GROUP_get0_order(group));
     T(!BN_is_zero(order));
-    print_bn("m", order);
-    T(!BN_is_zero(order));
+    print_bn("q", order);
+    T(BN_is_odd(order));
     EC_POINT *point;
     T((point = EC_POINT_new(group)));
     T(EC_POINT_mul(group, point, NULL, generator, order, ctx));
@@ -204,10 +204,7 @@ static int parameter_test(struct test_curve *tc)
     /* Cofactor is 1 or 4 */
     const BIGNUM *c;
     T(c = EC_GROUP_get0_cofactor(group));
-    if (BN_is_odd(order))
-	T(BN_is_word(c, 1));
-    else
-	T(BN_is_word(c, 4));
+    T(BN_is_word(c, 1) || BN_is_word(c, 4));
 
     TEST_ASSERT(0);
     return test;
