@@ -183,6 +183,9 @@ add_custom_target(tags
     COMMAND ctags -R . ${OPENSSL_ROOT_DIR}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+add_executable(test_tlstree test_tlstree.c)
+target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
+
 # install
 set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
 
