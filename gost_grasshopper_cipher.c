@@ -763,57 +763,55 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
 #ifdef EVP_CTRL_TLS1_2_TLSTREE
     case EVP_CTRL_TLS1_2_TLSTREE:
         {
-            unsigned char newkey[32];
-            int mode = EVP_CIPHER_CTX_mode(ctx);
-            static const unsigned char zeroseq[8];
-            gost_grasshopper_cipher_ctx_ctr *ctr_ctx = NULL;
-            gost_grasshopper_cipher_ctx *c = NULL;
+          unsigned char newkey[32];
+          int mode = EVP_CIPHER_CTX_mode(ctx);
+          static const unsigned char zeroseq[8];
+          gost_grasshopper_cipher_ctx_ctr *ctr_ctx = NULL;
+          gost_grasshopper_cipher_ctx *c = NULL;
 
-            if (mode != EVP_CIPH_CTR_MODE)
-                return -1;
+          unsigned char adjusted_iv[16];
+          unsigned char seq[8];
+          int j;
+          if (mode != EVP_CIPH_CTR_MODE)
+            return -1;
 
-            ctr_ctx = (gost_grasshopper_cipher_ctx_ctr *)
-                EVP_CIPHER_CTX_get_cipher_data(ctx);
-            c = &(ctr_ctx->c);
+          ctr_ctx = (gost_grasshopper_cipher_ctx_ctr *)
+            EVP_CIPHER_CTX_get_cipher_data(ctx);
+          c = &(ctr_ctx->c);
 
-            if (gost_tlstree(NID_grasshopper_cbc, c->master_key.k.b, newkey,
-                             (const unsigned char *)ptr) > 0) {
-            /* FIXME may be it should be moved to separate control */
-              unsigned char adjusted_iv[16];
-              unsigned char seq[8];
-              int j;
-              memcpy(seq, ptr, 8);
-              if (EVP_CIPHER_CTX_encrypting(ctx)) {
-              /*
-               * OpenSSL increments seq after mac calculation.
-               * As we have Mac-Then-Encrypt, we need decrement it here on encryption
-               * to derive the key correctly.
-               * */
-                if (memcmp(seq, zeroseq, 8) != 0)
-                {
-                  for(j=7; j>=0; j--)
-                  {
-                    if (seq[j] != 0) {seq[j]--; break;}
-                    else seq[j]  = 0xFF;
-                  }
-                }
-              }
-
-              memset(adjusted_iv, 0, 16);
-              memcpy(adjusted_iv, EVP_CIPHER_CTX_original_iv(ctx), 8);
+          memcpy(seq, ptr, 8);
+          if (EVP_CIPHER_CTX_encrypting(ctx)) {
+            /*
+             * OpenSSL increments seq after mac calculation.
+             * As we have Mac-Then-Encrypt, we need decrement it here on encryption
+             * to derive the key correctly.
+             * */
+            if (memcmp(seq, zeroseq, 8) != 0)
+            {
               for(j=7; j>=0; j--)
               {
-                int adj_byte, carry = 0;
-                adj_byte = adjusted_iv[j]+seq[j]+carry;
-                carry = (adj_byte > 255) ? 1 : 0;
-                adjusted_iv[j] = adj_byte & 0xFF;
+                if (seq[j] != 0) {seq[j]--; break;}
+                else seq[j]  = 0xFF;
               }
-              EVP_CIPHER_CTX_set_num(ctx, 0);
-              memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), adjusted_iv, 16);
-
-                gost_grasshopper_cipher_key(c, newkey);
-                return 1;
             }
+          }
+          if (gost_tlstree(NID_grasshopper_cbc, c->master_key.k.b, newkey,
+                (const unsigned char *)seq) > 0) {
+            memset(adjusted_iv, 0, 16);
+            memcpy(adjusted_iv, EVP_CIPHER_CTX_original_iv(ctx), 8);
+            for(j=7; j>=0; j--)
+            {
+              int adj_byte, carry = 0;
+              adj_byte = adjusted_iv[j]+seq[j]+carry;
+              carry = (adj_byte > 255) ? 1 : 0;
+              adjusted_iv[j] = adj_byte & 0xFF;
+            }
+            EVP_CIPHER_CTX_set_num(ctx, 0);
+            memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), adjusted_iv, 16);
+
+            gost_grasshopper_cipher_key(c, newkey);
+            return 1;
+          }
         }
         return -1;
 #endif
