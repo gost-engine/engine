@@ -132,7 +132,7 @@ int main(void)
 	EVP_Cipher(enc, data0_processed+sizeof(data0), mac0, 16);
 
 	hexdump(stderr, "ENC0 result", data0_processed, 31);
-	if (memcmp(enc0_etl, data0_processed, 16) != 0) {
+	if (memcmp(enc0_etl, data0_processed, sizeof(data0_processed)) != 0) {
 		fprintf(stderr, "ENC0 mismatch");
 		exit(1);
 	}

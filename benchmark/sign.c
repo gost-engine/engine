@@ -131,6 +131,10 @@ int main(int argc, char **argv)
 	    fflush(stdout);
 	    siglen = EVP_PKEY_size(pkey);
 	    sigbuf = malloc(siglen * cycles);
+	if (!sigbuf) {
+	    fprintf(stderr, "No tests were run, malloc failure.\n");
+	    exit(1);
+	}
 
 	    for (pass = 0; pass < 2; pass++) {
 		struct timespec ts;

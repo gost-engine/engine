@@ -251,8 +251,7 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     EVP_PKEY *sec_key = EVP_PKEY_CTX_get0_peerkey(pctx);
     if (data->shared_ukm) {
         memcpy(ukm, data->shared_ukm, 8);
-    } else if (out) {
-
+    } else {
         if (RAND_bytes(ukm, 8) <= 0) {
             GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT, GOST_R_RNG_ERROR);
             return 0;
