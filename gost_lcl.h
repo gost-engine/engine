@@ -302,4 +302,6 @@ int pack_sign_cp(ECDSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
 /* Returns pointer into EVP_PKEY structure */
 BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey);
 
+int bind_gost(ENGINE* e, const char* id);
+
 #endif
