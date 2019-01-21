@@ -448,9 +448,9 @@ static int pkey_gost_ec_cp_verify(EVP_PKEY_CTX *ctx, const unsigned char *sig,
         return 0;
 #ifdef DEBUG_SIGN
     fprintf(stderr, "R=");
-    BN_print_fp(stderr, s->r);
+    BN_print_fp(stderr, ECDSA_SIG_get0_r(s));
     fprintf(stderr, "\nS=");
-    BN_print_fp(stderr, s->s);
+    BN_print_fp(stderr, ECDSA_SIG_get0_s(s));
     fprintf(stderr, "\n");
 #endif
     if (pub_key)
