@@ -24,9 +24,9 @@ matrix:
 #      compiler: gcc
 
 before_script:
-  - git clone -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
+  - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
-  - ./config shared --prefix=${PREFIX} --openssldir=${PREFIX} && make all install_sw > build.log 2>&1 || (cat build.log && exit 1)
+  - ./config shared --prefix=${PREFIX} --openssldir=${PREFIX} && make -j$(nproc) all && make install_sw > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
 
 script:
