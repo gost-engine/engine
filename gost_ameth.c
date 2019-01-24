@@ -67,11 +67,18 @@ static ASN1_STRING *encode_gost_algor_params(const EVP_PKEY *key)
     switch (EVP_PKEY_base_id(key)) {
     case NID_id_GostR3410_2012_256:
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
-        gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_256);
+	switch (pkey_param_nid) {
+	    case NID_id_GostR3410_2001_TestParamSet:
+	    case NID_id_GostR3410_2001_CryptoPro_A_ParamSet:
+	    case NID_id_GostR3410_2001_CryptoPro_B_ParamSet:
+	    case NID_id_GostR3410_2001_CryptoPro_C_ParamSet:
+	    case NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet:
+	    case NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet:
+		gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_256);
+	}
         break;
     case NID_id_GostR3410_2012_512:
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
-        gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_512);
         break;
     case NID_id_GostR3410_2001:
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));

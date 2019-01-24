@@ -146,7 +146,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_INTERNAL_ERROR);
         goto end;
     }
-    EC_GROUP_set_curve_name(grp, params->nid);
+    EC_GROUP_set_curve_name(grp, nid);
     if (!EC_KEY_set_group(eckey, grp)) {
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_INTERNAL_ERROR);
         goto end;
