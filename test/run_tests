@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 use TAP::Harness;
 
+if(defined $ENV{'OPENSSL_ROOT_DIR'} && !defined $ENV{'LD_LIBRARY_PATH'}) {
+  $ENV{'LD_LIBRARY_PATH'} = $ENV{'OPENSSL_ROOT_DIR'};
+  $ENV{'PATH'} = "$ENV{'OPENSSL_ROOT_DIR'}/apps:$ENV{'PATH'}";
+}
 my $harness = TAP::Harness->new();
 exit ($harness->runtests(glob("*.t"))->all_passed() ? 0 : 1);
