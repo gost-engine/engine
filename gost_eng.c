@@ -164,7 +164,7 @@ static int gost_engine_destroy(ENGINE* e) {
     return 1;
 }
 
-int bind_gost(ENGINE* e, const char* id) {
+static int bind_gost(ENGINE* e, const char* id) {
     int ret = 0;
     if (id != NULL && strcmp(id, engine_gost_id) != 0)
         return 0;

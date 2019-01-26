@@ -928,6 +928,28 @@ static int test_cert(struct test_cert *tc)
     return err != 1;
 }
 
+/* Generate EC_KEY with proper parameters using temporary PKEYs.
+ * This emulates fill_GOST_EC_params() call.
+ */
+static int EC_KEY_create(int type, int param_nid, EC_KEY *dst)
+{
+    EVP_PKEY *pkey;
+    T(pkey = EVP_PKEY_new());
+    T(EVP_PKEY_set_type(pkey, type));
+    EVP_PKEY_CTX *ctx;
+    T(ctx = EVP_PKEY_CTX_new(pkey, NULL));
+    T(EVP_PKEY_paramgen_init(ctx));
+    T(EVP_PKEY_CTX_ctrl(ctx, type, -1, EVP_PKEY_CTRL_GOST_PARAMSET, param_nid, NULL));
+    EVP_PKEY *pkey2 = NULL;
+    int err;
+    TE((err = EVP_PKEY_paramgen(ctx, &pkey2)) == 1);
+    T(EC_KEY_copy(dst, EVP_PKEY_get0(pkey2)));
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(pkey);
+    EVP_PKEY_free(pkey2);
+    return err;
+}
+
 static int test_param(struct test_param *t)
 {
     int ret = 0, err = 0;
@@ -936,7 +958,6 @@ static int test_param(struct test_param *t)
     const char *sn = OBJ_nid2sn(t->param);
 
     printf(cBLUE "Test %s (cp):\n" cNORM, sn);
-    //T(pkey = EVP_PKEY_new_raw_public_key(NID_id_GostR3410_2001, NULL, t->pub_key, 64));
 
     switch (t->len) {
 	case 256 / 8:
@@ -962,7 +983,7 @@ static int test_param(struct test_param *t)
     /* Manually construct public key */
     EC_KEY *ec;
     T(ec = EC_KEY_new());
-    T(fill_GOST_EC_params(ec, t->param));
+    T(EC_KEY_create(type, t->param, ec));
     const EC_GROUP *group;
     T(group = EC_KEY_get0_group(ec));
     unsigned char *pub_key;
@@ -1025,11 +1046,9 @@ int main(int argc, char **argv)
 {
     int ret = 0;
 
+    setenv("OPENSSL_CONF", "../example.conf", 0);
     OPENSSL_add_all_algorithms_conf();
     ERR_load_crypto_strings();
-    ENGINE *e = ENGINE_new();
-    bind_gost(e, "gost");
-    ENGINE_register_complete(e);
 
     struct test_param **tpp;
     for (tpp = test_params; *tpp; tpp++)
