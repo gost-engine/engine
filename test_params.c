@@ -882,7 +882,7 @@ static void print_test_result(int err)
 
 static int test_cert(struct test_cert *tc)
 {
-    int err = 0;
+    int ret = 0, err;
     X509 *x;
     const unsigned char *p;
 
@@ -917,15 +917,39 @@ static int test_cert(struct test_cert *tc)
     /*
      * Verify
      */
-    printf("  X509_verify API\t");
+    printf("  X509_verify API\t\t");
     fflush(stdout);
     EVP_PKEY *pk;
     TE(pk = X509_get0_pubkey(x));
     /* Similar to: openssl verify -partial_chain -check_ss_sig ... */
+    /* X509_verify uses EVP_DigestVerify internally */
     err = X509_verify(x, pk);
     print_test_result(err);
+    ret |= err != 1;
 
-    return err != 1;
+    /* Verify manually. */
+    const ASN1_BIT_STRING *signature;
+    X509_get0_signature(&signature, NULL, x);
+    unsigned char *tbs = NULL; /* signed part */
+    int tbs_len;
+    T((tbs_len = i2d_re_X509_tbs(x, &tbs)) > 0);
+    int algnid, hash_nid, pknid;
+    T(algnid = X509_get_signature_nid(x));
+    T(OBJ_find_sigid_algs(algnid, &hash_nid, &pknid));
+
+    printf("  EVP_Verify API\t\t");
+    EVP_MD_CTX *md_ctx;
+    T(md_ctx = EVP_MD_CTX_new());
+    const EVP_MD *mdtype;
+    T(mdtype = EVP_get_digestbynid(hash_nid));
+    T(EVP_VerifyInit(md_ctx, mdtype));
+    T(EVP_VerifyUpdate(md_ctx, tbs, tbs_len));
+    err = EVP_VerifyFinal(md_ctx, signature->data, signature->length, pk);
+    print_test_result(err);
+    EVP_MD_CTX_free(md_ctx);
+    ret |= err != 1;
+
+    return ret;
 }
 
 /* Generate EC_KEY with proper parameters using temporary PKEYs.
@@ -1013,11 +1037,12 @@ static int test_param(struct test_param *t)
     T(ctx = EVP_PKEY_CTX_new(pkey, NULL));
     unsigned char *sig;
     T(sig = OPENSSL_malloc(siglen));
-    /* Need to reverse provided signature for unknown reason */
+    /* Need to reverse provided signature for unknown reason,
+     * contrary to how it goes into signature. */
     BUF_reverse(sig, t->signature, siglen);
 
     /* Verify using EVP_PKEY_verify API */
-    printf("  EVP_PKEY_verify API\t");
+    printf("  EVP_PKEY_verify API\t\t");
     T(EVP_PKEY_verify_init(ctx));
     err = EVP_PKEY_verify(ctx, sig, siglen, t->hash, t->len);
     print_test_result(err);
@@ -1025,14 +1050,32 @@ static int test_param(struct test_param *t)
 
     /* Verify using EVP_Verify API */
     if (t->data) {
-	printf("  EVP_Verify API\t");
+	printf("  EVP_Verify API\t\t");
 	EVP_MD_CTX *md_ctx;
 	T(md_ctx = EVP_MD_CTX_new());
 	const EVP_MD *mdtype;
 	T(mdtype = EVP_get_digestbynid(hash_nid));
 	T(EVP_VerifyInit(md_ctx, mdtype));
-	T(EVP_VerifyUpdate(md_ctx, t->data, t->data_len));
+	/* Feed byte-by-byte. */
+	int i;
+	for (i = 0; i < t->data_len; i++)
+	    T(EVP_VerifyUpdate(md_ctx, &t->data[i], 1));
 	err = EVP_VerifyFinal(md_ctx, sig, siglen, pkey);
+	print_test_result(err);
+	EVP_MD_CTX_free(md_ctx);
+	ret |= err != 1;
+    }
+
+    /* Verify using EVP_DigestVerifyInit API */
+    if (t->data) {
+	printf("  EVP_DigestVerifyInit API\t");
+	EVP_MD_CTX *md_ctx;
+	T(md_ctx = EVP_MD_CTX_new());
+	const EVP_MD *mdtype;
+	T(mdtype = EVP_get_digestbynid(hash_nid));
+	T(EVP_DigestVerifyInit(md_ctx, NULL, mdtype, NULL, pkey));
+	/* Verify in one step. */
+	err = EVP_DigestVerify(md_ctx, sig, siglen, t->data, t->data_len);
 	print_test_result(err);
 	EVP_MD_CTX_free(md_ctx);
 	ret |= err != 1;
