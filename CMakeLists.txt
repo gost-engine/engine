@@ -160,9 +160,10 @@ add_test(NAME gost89
 	COMMAND test_gost89)
 
 add_test(NAME engine
-	 COMMAND perl run_tests
-	 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
-set_tests_properties(engine PROPERTIES ENVIRONMENT OPENSSL_ENGINES=${OUTPUT_DIRECTORY})
+	COMMAND perl run_tests
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
+set_tests_properties(engine PROPERTIES ENVIRONMENT
+	"OPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR};OPENSSL_ENGINES=${OUTPUT_DIRECTORY}")
 
 add_executable(sign benchmark/sign.c)
 target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
