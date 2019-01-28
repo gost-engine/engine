@@ -70,8 +70,8 @@ USAGE WITH COMMAND LINE openssl UTILITY
   Use -pkeyopt option to pass paramset to algorithm. The following paramsets
   are supported by 
 	gost2001:     0,A,B,C,XA,XB
-	gost2012_256: 0,A,B,C,XA,XB
-	gost2012_512:   A,B
+	gost2012_256: 0,A,B,C,XA,XB,TCA,TCB,TCC,TCD
+	gost2012_512:   A,B,C
   You can also use numeric representation of OID as to destinate
   paramset.
 

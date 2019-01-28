@@ -23,9 +23,14 @@ const char *tests[] = {
     "md_gost12_256", "gost2012_256", "A",
     "md_gost12_256", "gost2012_256", "B",
     "md_gost12_256", "gost2012_256", "C",
+    "md_gost12_256", "gost2012_256", "TCA",
+    "md_gost12_256", "gost2012_256", "TCB",
+    "md_gost12_256", "gost2012_256", "TCC",
+    "md_gost12_256", "gost2012_256", "TCD",
 
     "md_gost12_512", "gost2012_512", "A",
     "md_gost12_512", "gost2012_512", "B",
+    "md_gost12_512", "gost2012_512", "C",
 
     NULL,
 };

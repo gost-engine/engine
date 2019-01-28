@@ -43,28 +43,19 @@ struct test_curve {
 static struct test_curve test_curves[] = {
 #if 2001
     { NID_id_GostR3410_2001_TestParamSet, },
+#endif
     { NID_id_GostR3410_2001_CryptoPro_A_ParamSet },
     { NID_id_GostR3410_2001_CryptoPro_B_ParamSet },
     { NID_id_GostR3410_2001_CryptoPro_C_ParamSet },
     { NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet },
     { NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet },
-#endif
-    {
-	NID_id_tc26_gost_3410_2012_512_paramSetA,
-	"id-tc26-gost-3410-2012-512-paramSetA",
-    },
-    {
-	NID_id_tc26_gost_3410_2012_512_paramSetB,
-	"id-tc26-gost-3410-2012-512-paramSetB",
-    },
-    {
-	NID_id_tc26_gost_3410_2012_512_paramSetC,
-	"id-tc26-gost-3410-2012-512-paramSetC",
-    },
-    {
-	NID_id_tc26_gost_3410_2012_256_paramSetA,
-	"id-tc26-gost-3410-2012-256-paramSetA",
-    },
+    { NID_id_tc26_gost_3410_2012_512_paramSetA, "id-tc26-gost-3410-2012-512-paramSetA", },
+    { NID_id_tc26_gost_3410_2012_512_paramSetB, "id-tc26-gost-3410-2012-512-paramSetB", },
+    { NID_id_tc26_gost_3410_2012_512_paramSetC, "id-tc26-gost-3410-2012-512-paramSetC", },
+    { NID_id_tc26_gost_3410_2012_256_paramSetA, "id-tc26-gost-3410-2012-256-paramSetA", },
+    { NID_id_tc26_gost_3410_2012_256_paramSetB, "id-tc26-gost-3410-2012-256-paramSetB", },
+    { NID_id_tc26_gost_3410_2012_256_paramSetC, "id-tc26-gost-3410-2012-256-paramSetC", },
+    { NID_id_tc26_gost_3410_2012_256_paramSetD, "id-tc26-gost-3410-2012-256-paramSetD", },
     0,
 };
 
