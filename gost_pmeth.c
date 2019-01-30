@@ -966,6 +966,14 @@ static int pkey_gost_mac_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig,
     return ret;
 }
 
+/* ----------- misc callbacks -------------------------------------*/
+
+/* Callback for both EVP_PKEY_check() and EVP_PKEY_public_check. */
+static int pkey_gost_check(EVP_PKEY *pkey)
+{
+    return EC_KEY_check_key(EVP_PKEY_get0(pkey));
+}
+
 /* ----------------------------------------------------------------*/
 int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
 {
@@ -990,6 +998,8 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
                                  pkey_gost_derive_init, pkey_gost_ec_derive);
         EVP_PKEY_meth_set_paramgen(*pmeth, pkey_gost_paramgen_init,
                                    pkey_gost2001_paramgen);
+	EVP_PKEY_meth_set_check(*pmeth, pkey_gost_check);
+	EVP_PKEY_meth_set_public_check(*pmeth, pkey_gost_check);
         break;
     case NID_id_GostR3410_2012_256:
         EVP_PKEY_meth_set_ctrl(*pmeth,
@@ -1008,6 +1018,8 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
         EVP_PKEY_meth_set_paramgen(*pmeth,
                                    pkey_gost_paramgen_init,
                                    pkey_gost2012_paramgen);
+	EVP_PKEY_meth_set_check(*pmeth, pkey_gost_check);
+	EVP_PKEY_meth_set_public_check(*pmeth, pkey_gost_check);
         break;
     case NID_id_GostR3410_2012_512:
         EVP_PKEY_meth_set_ctrl(*pmeth,
@@ -1026,6 +1038,8 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
         EVP_PKEY_meth_set_paramgen(*pmeth,
                                    pkey_gost_paramgen_init,
                                    pkey_gost2012_paramgen);
+	EVP_PKEY_meth_set_check(*pmeth, pkey_gost_check);
+	EVP_PKEY_meth_set_public_check(*pmeth, pkey_gost_check);
         break;
     case NID_id_Gost28147_89_MAC:
         EVP_PKEY_meth_set_ctrl(*pmeth, pkey_gost_mac_ctrl,
