@@ -1,6 +1,6 @@
 /**********************************************************************
- *                          gostsum12.c                               *
- *             Copyright (c) 2005-2014 Cryptocom LTD                  *
+ *                          gost12sum.c                                 *
+ *             Copyright (c) 2005-2019 Cryptocom LTD                  *
  *         This file is distributed under same license as OpenSSL     *
  *                                                                    *
  *    Implementation of GOST R 34.11-2012 hash function as            *
@@ -10,48 +10,30 @@
  **********************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef _MSC_VER
-# include "getopt.h"
-# ifndef PATH_MAX
-#  define PATH_MAX _MAX_PATH
-# endif
-# include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#else
-# include <unistd.h>
-#endif
+#include <unistd.h>
 #include <limits.h>
 #include <fcntl.h>
-#ifdef _WIN32
-# include <io.h>
-#endif
 #include <string.h>
 #include "gosthash2012.h"
-
 #define BUF_SIZE 262144
+#define MAX_HASH_TXT_BYTES 128
 #define gost_hash_ctx gost2012_hash_ctx
-#define GOST34112012Init init_gost2012_hash_ctx
-#define GOST34112012Update gost2012_hash_block
-#define GOST34112012Final gost2012_finish_hash
-
-#define MAX_HASH_SIZE 128
 
 typedef unsigned char byte;
-
-int hashsize = 256;
-int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode);
-int hash_stream(gost_hash_ctx * ctx, int fd, char *sum);
-int get_line(FILE *f, char *hash, char *filename, int verbose);
+int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode,
+              int hashsize);
+int hash_stream(gost_hash_ctx * ctx, int fd, char *sum, int hashsize);
+int get_line(FILE *f, char *hash, char *filename, int verbose, int *size);
 
 void help()
 {
     fprintf(stderr, "Calculates GOST R 34.11-2012 hash function\n\n");
-    fprintf(stderr, "gostsum12 [-bvl] [-c [file]]| [files]|-x\n"
+    fprintf(stderr, "gost12sum [-vl] [-c [file]]| [files]|-x\n"
             "\t-c check message digests (default is generate)\n"
             "\t-v verbose, print file names when checking\n"
-            "\t-b read files in binary mode\n"
             "\t-l use 512 bit hash (default 256 bit)\n"
-            "\t-x read filenames from stdin rather than from arguments \n"
+            "\t-x read filenames from stdin rather than from arguments (256 bit only)\n"
+            "\t-h print this help\n"
             "The input for -c should be the list of message digests and file names\n"
             "that is printed on stdout by this program when it generates digests.\n");
     exit(3);
@@ -61,21 +43,21 @@ void help()
 # define O_BINARY 0
 #endif
 
-int start_hash12(gost_hash_ctx * ctx)
+int start_hash(gost_hash_ctx * ctx, int hashsize)
 {
-    GOST34112012Init(ctx, hashsize);
+    init_gost2012_hash_ctx(ctx, hashsize);
     return 1;
 }
 
-int hash12_block(gost_hash_ctx * ctx, const byte * block, size_t length)
+int hash_block(gost_hash_ctx * ctx, const byte * block, size_t length)
 {
-    GOST34112012Update(ctx, block, length);
+    gost2012_hash_block(ctx, block, length);
     return 1;
 }
 
-int finish_hash12(gost_hash_ctx * ctx, byte * hashval)
+int finish_hash(gost_hash_ctx * ctx, byte * hashval)
 {
-    GOST34112012Final(ctx, hashval);
+    gost2012_finish_hash(ctx, hashval);
     return 1;
 }
 
@@ -84,21 +66,23 @@ int main(int argc, char **argv)
     int c, i;
     int verbose = 0;
     int errors = 0;
-    int open_mode = O_RDONLY;
+    int open_mode = O_RDONLY | O_BINARY;
     FILE *check_file = NULL;
     int filenames_from_stdin = 0;
+    int hashsize = 32;
     gost_hash_ctx ctx;
 
-    while ((c = getopt(argc, argv, "bxlvc::")) != -1) {
+    while ((c = getopt(argc, argv, "hxlvc::")) != -1) {
         switch (c) {
-        case 'b':
-            open_mode = open_mode | O_BINARY;
+        case 'h':
+            help();
+            exit(0);
             break;
         case 'v':
             verbose = 1;
             break;
         case 'l':
-            hashsize = 512;
+            hashsize = 64;
             break;
         case 'x':
             filenames_from_stdin = 1;
@@ -115,14 +99,16 @@ int main(int argc, char **argv)
             }
             break;
         default:
-            fprintf(stderr, "invalid option %c", optopt);
+            fprintf(stderr, "invalid option %c\n", optopt);
             help();
         }
     }
+
     if (check_file) {
-        char inhash[MAX_HASH_SIZE + 1], calcsum[MAX_HASH_SIZE + 1],
+        char inhash[MAX_HASH_TXT_BYTES + 1], calcsum[MAX_HASH_TXT_BYTES + 1],
             filename[PATH_MAX];
-        int failcount = 0, count = 0;;
+        int failcount = 0, count = 0;
+        int expected_hash_size = 0;
         if (check_file == stdin && optind < argc) {
             check_file = fopen(argv[optind], "r");
             if (!check_file) {
@@ -130,13 +116,26 @@ int main(int argc, char **argv)
                 exit(2);
             }
         }
-        while (get_line(check_file, inhash, filename, verbose)) {
-            count++;
-            if (!hash_file(&ctx, filename, calcsum, open_mode)) {
+        while (get_line
+               (check_file, inhash, filename, verbose, &expected_hash_size)) {
+            int error = 0;
+            if (expected_hash_size == 0) {
+                fprintf(stderr, "%s: invalid hash length\n", filename);
                 errors++;
+                count++;
                 continue;
             }
-            if (!strncmp(calcsum, inhash, hashsize / 4 + 1)) {
+
+            if (!hash_file
+                (&ctx, filename, calcsum, open_mode, expected_hash_size)) {
+                errors++;
+                error = 1;
+            }
+            count++;
+            if (error)
+                continue;
+
+            if (!strncmp(calcsum, inhash, expected_hash_size * 2 + 1)) {
                 if (verbose) {
                     fprintf(stderr, "%s\tOK\n", filename);
                 }
@@ -144,9 +143,8 @@ int main(int argc, char **argv)
                 if (verbose) {
                     fprintf(stderr, "%s\tFAILED\n", filename);
                 } else {
-                    fprintf(stderr,
-                            "%s: GOST hash sum check failed for '%s'\n",
-                            argv[0], filename);
+                    fprintf(stderr, "%s: GOST hash sum check failed\n",
+                            filename);
                 }
                 failcount++;
             }
@@ -159,12 +157,12 @@ int main(int argc, char **argv)
         }
         if (failcount) {
             fprintf(stderr,
-                    "%s: WARNING %d of %d file(s) failed GOST hash sum check\n",
+                    "%s: WARNING %d of %d processed file(s) failed GOST hash sum check\n",
                     argv[0], failcount, count - errors);
         }
         exit((failcount || errors) ? 1 : 0);
     } else if (filenames_from_stdin) {
-        char sum[65];
+        char sum[MAX_HASH_TXT_BYTES + 1];
         char filename[PATH_MAX + 1], *end;
         while (!feof(stdin)) {
             if (!fgets(filename, PATH_MAX, stdin))
@@ -173,20 +171,16 @@ int main(int argc, char **argv)
             end--;
             for (; *end == '\n' || *end == '\r'; end--)
                 *end = 0;
-            if (!hash_file(&ctx, filename, sum, open_mode)) {
+            if (!hash_file(&ctx, filename, sum, open_mode, hashsize)) {
                 errors++;
             } else {
                 printf("%s %s\n", sum, filename);
             }
         }
+
     } else if (optind == argc) {
-        char sum[65];
-#ifdef _WIN32
-        if (open_mode & O_BINARY) {
-            _setmode(fileno(stdin), O_BINARY);
-        }
-#endif
-        if (!hash_stream(&ctx, fileno(stdin), sum)) {
+        char sum[MAX_HASH_TXT_BYTES + 1];
+        if (!hash_stream(&ctx, fileno(stdin), sum, hashsize)) {
             perror("stdin");
             exit(1);
         }
@@ -194,8 +188,8 @@ int main(int argc, char **argv)
         exit(0);
     } else {
         for (i = optind; i < argc; i++) {
-            char sum[65];
-            if (!hash_file(&ctx, argv[i], sum, open_mode)) {
+            char sum[MAX_HASH_TXT_BYTES + 1];
+            if (!hash_file(&ctx, argv[i], sum, open_mode, hashsize)) {
                 errors++;
             } else {
                 printf("%s %s\n", sum, argv[i]);
@@ -205,14 +199,15 @@ int main(int argc, char **argv)
     exit(errors ? 1 : 0);
 }
 
-int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode)
+int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode,
+              int hashsize)
 {
     int fd;
     if ((fd = open(filename, mode)) < 0) {
         perror(filename);
         return 0;
     }
-    if (!hash_stream(ctx, fd, sum)) {
+    if (!hash_stream(ctx, fd, sum, hashsize)) {
         perror(filename);
         return 0;
     }
@@ -220,56 +215,72 @@ int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode)
     return 1;
 }
 
-int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
+int hash_stream(gost_hash_ctx * ctx, int fd, char *sum, int hashsize)
 {
     unsigned char buffer[BUF_SIZE];
     ssize_t bytes;
-    size_t i;
-
-    start_hash12(ctx);
+    int i;
+    start_hash(ctx, hashsize * 8);
     while ((bytes = read(fd, buffer, BUF_SIZE)) > 0) {
-        hash12_block(ctx, buffer, bytes);
+        hash_block(ctx, buffer, bytes);
     }
     if (bytes < 0) {
         return 0;
     }
-    finish_hash12(ctx, buffer);
-    for (i = 0; i < (hashsize / 8); i++) {
+    finish_hash(ctx, buffer);
+    for (i = 0; i < hashsize; i++) {
         sprintf(sum + 2 * i, "%02x", buffer[i]);
     }
     return 1;
 }
 
-int get_line(FILE *f, char *hash, char *filename, int verbose)
+int get_line(FILE *f, char *hash, char *filename, int verbose, int *size)
 {
     int i, len;
-    int hashstrlen = hashsize / 4;
+    char *ptr = filename;
+    char *spacepos = NULL;
+
     while (!feof(f)) {
         if (!fgets(filename, PATH_MAX, f))
             return 0;
-        len = strlen(filename);
-        if (len < hashstrlen + 2) {
+        ptr = filename;
+        while (*ptr == ' ')
+            ptr++;
+
+        len = strlen(ptr);
+        while (ptr[--len] == '\n' || ptr[len] == '\r')
+            ptr[len] = 0;
+
+        if (len == 0)
             goto nextline;
-        }
-        if (filename[hashstrlen] != ' ') {
+
+        spacepos = strchr(ptr, ' ');
+        if (spacepos == NULL || strlen(spacepos + 1) == 0)
             goto nextline;
-        }
-        for (i = 0; i < hashstrlen; i++) {
-            if (filename[i] < '0' || (filename[i] > '9' && filename[i] < 'A')
-                || (filename[i] > 'F' && filename[i] < 'a')
-                || filename[i] > 'f') {
+
+        *size = spacepos - ptr;
+
+        for (i = 0; i < *size; i++) {
+            if (ptr[i] < '0' || (ptr[i] > '9' && ptr[i] < 'A') ||
+                (ptr[i] > 'F' && ptr[i] < 'a') || ptr[i] > 'f') {
                 goto nextline;
             }
         }
-        memcpy(hash, filename, hashstrlen);
-        hash[hashstrlen] = 0;
-        while (filename[--len] == '\n' || filename[len] == '\r')
-            filename[len] = 0;
-        memmove(filename, filename + hashstrlen + 1, len - hashstrlen + 1);
+
+        if (*size > 128 || ((*size != 64) && (*size != 128))) {
+            *size = 0;
+            memset(hash, 0, MAX_HASH_TXT_BYTES + 1);
+        } else {
+            memcpy(hash, ptr, *size);
+            hash[*size] = 0;
+        }
+        memmove(filename, spacepos + 1, strlen(spacepos));
+
+        *size /= 2;
         return 1;
  nextline:
         if (verbose)
-            printf("%s\n", filename);
+            printf("Skipping line %s\n", filename);
     }
     return 0;
 }
