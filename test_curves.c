@@ -168,6 +168,15 @@ static int parameter_test(struct test_curve *tc)
     BN_mod_add(xxx, xxx, ax, p, ctx);
     BN_mod_add(xxx, xxx, b, p, ctx);
     T(BN_cmp(yy, xxx) == 0);
+    BN_free(yy);
+    BN_free(r);
+    BN_free(xxx);
+    BN_free(ax);
+    BN_free(p);
+    BN_free(a);
+    BN_free(b);
+    BN_free(x);
+    BN_free(y);
 
     /* Check order */
     const BIGNUM *order;
@@ -180,6 +189,7 @@ static int parameter_test(struct test_curve *tc)
     T(EC_POINT_mul(group, point, NULL, generator, order, ctx));
     /* generator * order is the point at infinity? */
     T(EC_POINT_is_at_infinity(group, point) == 1);
+    EC_POINT_free(point);
 
     /* Check if order is cyclic */
     BIGNUM *k1 = BN_new();
@@ -191,12 +201,19 @@ static int parameter_test(struct test_curve *tc)
     BN_add(k2, k2, order);
     T(EC_POINT_mul(group, p1, NULL, generator, k1, ctx));
     T(EC_POINT_mul(group, p2, NULL, generator, k2, ctx));
+    T(EC_POINT_cmp(group, p1, p2, ctx) == 0);
+    BN_free(k1);
+    BN_free(k2);
+    EC_POINT_free(p1);
+    EC_POINT_free(p2);
 
     /* Cofactor is 1 or 4 */
     const BIGNUM *c;
     T(c = EC_GROUP_get0_cofactor(group));
     T(BN_is_word(c, 1) || BN_is_word(c, 4));
 
+    BN_CTX_free(ctx);
+    EC_KEY_free(ec);
     TEST_ASSERT(0);
     return test;
 }

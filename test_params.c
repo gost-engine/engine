@@ -949,6 +949,8 @@ static int test_cert(struct test_cert *tc)
     EVP_MD_CTX_free(md_ctx);
     ret |= err != 1;
 
+    X509_free(x);
+    OPENSSL_free(tbs);
     return ret;
 }
 
@@ -1045,6 +1047,7 @@ static int test_param(struct test_param *t)
     printf("  EVP_PKEY_verify API\t\t");
     T(EVP_PKEY_verify_init(ctx));
     err = EVP_PKEY_verify(ctx, sig, siglen, t->hash, t->len);
+    EVP_PKEY_CTX_free(ctx);
     print_test_result(err);
     ret |= err != 1;
 
@@ -1082,6 +1085,7 @@ static int test_param(struct test_param *t)
     }
 
     OPENSSL_free(sig);
+    EVP_PKEY_free(pkey);
     return ret;
 }
 

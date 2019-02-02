@@ -226,6 +226,8 @@ static int test_sign(struct test_sign *t)
     EVP_PKEY_CTX_free(ctx);
     OPENSSL_free(sig);
     OPENSSL_free(hash);
+    EVP_PKEY_free(priv_key);
+    EVP_PKEY_free(key2);
 
     return ret;
 }
