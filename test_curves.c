@@ -191,6 +191,7 @@ static int parameter_test(struct test_curve *tc)
     BN_add(k2, k2, order);
     T(EC_POINT_mul(group, p1, NULL, generator, k1, ctx));
     T(EC_POINT_mul(group, p2, NULL, generator, k2, ctx));
+    T(EC_POINT_cmp(group, p1, p2, ctx) == 0);
 
     /* Cofactor is 1 or 4 */
     const BIGNUM *c;
