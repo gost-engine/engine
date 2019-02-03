@@ -19,6 +19,11 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
  add_compile_options(/MP /WX /W4 /wd4100 /wd4267 /wd4206 /wd4706 /wd4244 /wd4115)
 endif()
 
+if (ASAN)
+  message(STATUS "address sanitizer enabled")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g3 -fno-omit-frame-pointer")
+endif()
+
 set(CMAKE_C_STANDARD 90)
 
 include (TestBigEndian)
@@ -159,11 +164,13 @@ target_link_libraries(test_gost89 gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY
 add_test(NAME gost89
 	COMMAND test_gost89)
 
+if(NOT ASAN)
 add_test(NAME engine
 	COMMAND perl run_tests
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
 set_tests_properties(engine PROPERTIES ENVIRONMENT
 	"OPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR};OPENSSL_ENGINES=${OUTPUT_DIRECTORY}")
+endif()
 
 add_executable(sign benchmark/sign.c)
 target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
