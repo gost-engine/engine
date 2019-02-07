@@ -25,6 +25,7 @@ if (ASAN)
 endif()
 
 set(CMAKE_C_STANDARD 90)
+list(APPEND CMAKE_REQUIRED_LIBRARIES rt)
 
 include (TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
