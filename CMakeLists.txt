@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(gost-engine LANGUAGES C)
 
 include(GNUInstallDirs)
+include(CheckLibraryExists)
+include(CheckFunctionExists)
 
 enable_testing()
 
@@ -25,7 +27,11 @@ if (ASAN)
 endif()
 
 set(CMAKE_C_STANDARD 90)
-list(APPEND CMAKE_REQUIRED_LIBRARIES rt)
+CHECK_FUNCTION_EXISTS(clock_gettime HAVE_CLOCK_GETTIME_C)
+CHECK_LIBRARY_EXISTS(rt clock_gettime "" HAVE_CLOCK_GETTIME_RT)
+if(HAVE_CLOCK_GETTIME_RT AND NOT HAVE_CLOCK_GETTIME_C)
+  set(CLOCK_GETTIME_LIB rt)
+endif()
 
 include (TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
@@ -174,7 +180,7 @@ set_tests_properties(engine PROPERTIES ENVIRONMENT
 endif()
 
 add_executable(sign benchmark/sign.c)
-target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
