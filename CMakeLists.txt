@@ -11,7 +11,7 @@ find_package(OpenSSL 1.1.1 REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
- add_compile_options(-Qunused-arguments)
+ add_compile_options(-O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb -Qunused-arguments)
 elseif(CMAKE_C_COMPILER_ID MATCHES "GNU")
  add_compile_options(-O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb)
 elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
