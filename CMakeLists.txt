@@ -182,6 +182,18 @@ endif()
 add_executable(sign benchmark/sign.c)
 target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
 
+# All that may need to load just built engine will have path to it defined.
+set(BINARY_TESTS_TARGETS
+        test_curves
+        test_params
+        test_sign
+        test_context
+        test_grasshopper
+        test_keyexpimp
+        test_gost89
+        )
+set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
+
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

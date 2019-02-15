@@ -222,10 +222,21 @@ int main(int argc, char **argv)
 {
     int ret = 0;
 
+    setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
+    OPENSSL_add_all_algorithms_conf();
+    ERR_load_crypto_strings();
+    ENGINE *eng;
+    T(eng = ENGINE_by_id("gost"));
+    T(ENGINE_init(eng));
+    T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
+
     struct test_curve *tc;
     for (tc = test_curves; tc->nid; tc++) {
 	ret |= parameter_test(tc);
     }
+
+    ENGINE_finish(eng);
+    ENGINE_free(eng);
 
     if (ret)
 	printf(cDRED "= Some tests FAILED!\n" cNORM);
