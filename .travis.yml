@@ -5,6 +5,11 @@ os: linux
 
 language: c
 
+addons:
+  apt:
+    packages:
+    - cpanminus
+
 env:
   global:
     - PREFIX=${HOME}/opt
@@ -29,6 +34,7 @@ matrix:
 #      compiler: gcc
 
 before_script:
+  - sudo cpanm --notest Test2::V0 > build.log 2>&1 || (cat build.log && exit 1)
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
   - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} && make -j$(nproc) all && make install_sw > build.log 2>&1 || (cat build.log && exit 1)

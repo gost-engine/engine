@@ -1,5 +1,6 @@
 #!/usr/bin/perl 
-use Test::More tests => 16;
+use Test2::V0;
+plan(16);
 use Cwd 'abs_path';
 
 # Set OPENSSL_ENGINES environment variable to just built engine
@@ -7,15 +8,16 @@ if(!defined $ENV{'OPENSSL_ENGINES'}){
         $ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
 }
 # Set engine name from environment to allow testing of different engines
-$engine=$ENV{'ENGINE_NAME'}||"gost";
+my $engine=$ENV{'ENGINE_NAME'}||"gost";
 # Reopen STDERR to eliminate extra output
 open STDERR, ">>","tests.err";
 
 # prepare data for 
+my $F;
 
-open F,">","testm1.dat";
-print F "012345678901234567890123456789012345678901234567890123456789012";
-close F;
+open $F,">","testm1.dat";
+print $F "012345678901234567890123456789012345678901234567890123456789012";
+close $F;
 is(`openssl dgst -engine ${engine} -md_gost12_256 testm1.dat`,
 "md_gost12_256(testm1.dat)= 9d151eefd8590b89daa6ba6cb74af9275dd051026bb149a452fd84e5e57b5500\n",
 "GOST R 34.11-2012 256bit example 1 from standard");
@@ -26,9 +28,9 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 testm1.dat`,
 
 unlink("testm1.dat");
 
-open F,">","testm2.dat";
-print F pack("H*","d1e520e2e5f2f0e82c20d1f2f0e8e1eee6e820e2edf3f6e82c20e2e5fef2fa20f120eceef0ff20f1f2f0e5ebe0ece820ede020f5f0e0e1f0fbff20efebfaeafb20c8e3eef0e5e2fb");
-close F;
+open $F,">","testm2.dat";
+print $F pack("H*","d1e520e2e5f2f0e82c20d1f2f0e8e1eee6e820e2edf3f6e82c20e2e5fef2fa20f120eceef0ff20f1f2f0e5ebe0ece820ede020f5f0e0e1f0fbff20efebfaeafb20c8e3eef0e5e2fb");
+close $F;
 is(`openssl dgst -engine ${engine} -md_gost12_256 testm2.dat`,
 "md_gost12_256(testm2.dat)= 9dd2fe4e90409e5da87f53976d7405b0c0cac628fc669a741d50063c557e8f50\n",
 "GOST R 34.11-2012 256bit example 2 from standard");
@@ -40,10 +42,10 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 testm2.dat`,
 unlink("testm2.dat");
 
 
-open F,">","testdata.dat";
-binmode F;
-print F "12345670" x 128;
-close F;
+open $F,">","testdata.dat";
+binmode $F;
+print $F "12345670" x 128;
+close $F;
 is(`openssl dgst -engine ${engine} -md_gost94 testdata.dat`,
 "md_gost94(testdata.dat)= f7fc6d16a6a5c12ac4f7d320e0fd0d8354908699125e09727a4ef929122b1cae\n",
 "GOST R 34.11-94 1K ascii");
@@ -58,10 +60,10 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 testdata.dat`,
 
 unlink("testdata.dat");
 
-open F,">","testdata2.dat";
-binmode F;
-print F "\x00\x01\x02\x15\x84\x67\x45\x31" x 128;
-close F;
+open $F,">","testdata2.dat";
+binmode $F;
+print $F "\x00\x01\x02\x15\x84\x67\x45\x31" x 128;
+close $F;
 
 is(`openssl dgst -engine ${engine} -md_gost94 testdata2.dat`,
 "md_gost94(testdata2.dat)= 69f529aa82d9344ab0fa550cdf4a70ecfd92a38b5520b1906329763e09105196\n",
@@ -77,10 +79,10 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 testdata2.dat`,
 
 unlink("testdata2.dat");
 
-open F, ">","testdata3.dat";
-binmode F;
-print F substr("12345670" x 128,0,539);
-close F;
+open $F, ">","testdata3.dat";
+binmode $F;
+print $F substr("12345670" x 128,0,539);
+close $F;
 
 is(`openssl dgst -engine ${engine} -md_gost94 testdata3.dat`,
 "md_gost94(testdata3.dat)= bd5f1e4b539c7b00f0866afdbc8ed452503a18436061747a343f43efe888aac9\n",
@@ -95,10 +97,10 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 testdata3.dat`,
 "GOST R 34.11-2012 512bit 539 bytes");
 
 unlink "testdata3.dat";
-open F , ">","bigdata.dat";
-binmode F;
-print F  ("121345678" x 7 . "1234567\n") x 4096,"12345\n";
-close F;
+open $F , ">","bigdata.dat";
+binmode $F;
+print $F  ("121345678" x 7 . "1234567\n") x 4096,"12345\n";
+close $F;
 
 is(`openssl dgst -engine ${engine} -md_gost94 bigdata.dat`,
 "md_gost94(bigdata.dat)= e5d3ac4ea3f67896c51ff919cedb9405ad771e39f0f2eab103624f9a758e506f\n",

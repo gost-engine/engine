@@ -1,24 +1,25 @@
 #!/usr/bin/perl
-use Test::More tests => 7;
+use Test2::V0;
+plan(7);
 use Cwd 'abs_path';
 
 # prepare data for 
 
-open F,">","testdata.dat";
-print F "12345670" x 128;
-close F;
+open (my $F,">","testdata.dat");
+print $F "12345670" x 128;
+close $F;
 
 # Set OPENSSL_ENGINES environment variable to just built engine
 if(!defined $ENV{'OPENSSL_ENGINES'}){
 	$ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
 }
 
-$key='0123456789abcdef' x 2;
+my $key='0123456789abcdef' x 2;
 
 #
 # You can redefine engine to use using ENGINE_NAME environment variable
 # 
-$engine=$ENV{'ENGINE_NAME'}||"gost";
+my $engine=$ENV{'ENGINE_NAME'}||"gost";
 
 # Reopen STDERR to eliminate extra output
 open STDERR, ">>","tests.err";
@@ -32,6 +33,8 @@ if (exists $ENV{'OPENSSL_CONF'}) {
 # ${ENGINE_NAME}.info into this directory if you use this test suite
 # to test other engine implementing GOST cryptography.
 #
+my $engine_info;
+
 if ( -f $engine . ".info") {
 	diag("Reading $engine.info");
 	open F, "<", $engine . ".info";
@@ -54,8 +57,8 @@ is(`openssl dgst -engine $engine -md_gost94 testdata.dat`,
 "compute digest without config");
 
 
-open F,">","test.cnf";
-print F <<EOCFG;
+open $F,">","test.cnf";
+print $F <<EOCFG;
 openssl_conf = openssl_def
 [openssl_def]
 engines = engines
@@ -65,7 +68,7 @@ ${engine}=gost_conf
 default_algorithms = ALL
 
 EOCFG
-close F;
+close $F;
 $ENV{'OPENSSL_CONF'}=abs_path('test.cnf');
 
 is(`openssl engine -c $engine`,
