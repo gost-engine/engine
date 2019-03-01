@@ -48,9 +48,8 @@ typedef union uint512_u {
 #include "gosthash2012_precalc.h"
 
 /* GOST R 34.11-2012 hash context */
-ALIGN(16)
 typedef struct gost2012_hash_ctx {
-    ALIGN(16) unsigned char buffer[64];
+    unsigned char buffer[64];
     union uint512_u hash;
     union uint512_u h;
     union uint512_u N;
