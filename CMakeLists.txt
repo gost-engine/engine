@@ -150,6 +150,11 @@ target_link_libraries(test_sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME sign/verify
 	COMMAND test_sign)
 
+add_executable(test_tls test_tls.c)
+target_link_libraries(test_tls gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+add_test(NAME TLS
+	COMMAND test_tls)
+
 add_executable(test_context test_context.c)
 target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME context
@@ -191,6 +196,7 @@ set(BINARY_TESTS_TARGETS
         test_grasshopper
         test_keyexpimp
         test_gost89
+	test_tls
         )
 set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
 
