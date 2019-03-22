@@ -564,7 +564,7 @@ static void pkey_gost_mac_cleanup(EVP_PKEY_CTX *ctx)
         OPENSSL_free(data);
 }
 
-static int pkey_gost_mac_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src)
+static int pkey_gost_mac_copy(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src)
 {
     struct gost_mac_pmeth_data *dst_data, *src_data;
     if (!pkey_gost_mac_init(dst)) {
