@@ -53,7 +53,7 @@ static int pkey_gost_init(EVP_PKEY_CTX *ctx)
 }
 
 /* Copies contents of gost_pmeth_data structure */
-static int pkey_gost_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src)
+static int pkey_gost_copy(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src)
 {
     struct gost_pmeth_data *dst_data, *src_data;
     if (!pkey_gost_init(dst)) {
