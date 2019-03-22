@@ -773,8 +773,8 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     }
 
     ret = i2d_ASN1_OCTET_STRING(octet, &buf);
-    ASN1_BIT_STRING_free(octet);
  err:
+    ASN1_BIT_STRING_free(octet);
     if (X)
         BN_free(X);
     if (Y)
