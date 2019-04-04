@@ -24,7 +24,7 @@ static int VKO_compute_key(unsigned char *shared_key,
                            const int vko_dgst_nid)
 {
     unsigned char *databuf = NULL;
-    BIGNUM *UKM = NULL, *p = NULL, *order = NULL, *X = NULL, *Y = NULL;
+    BIGNUM *UKM = NULL, *p = NULL, *order = NULL, *X = NULL, *Y = NULL, *cofactor = NULL;
     const BIGNUM *key = EC_KEY_get0_private_key(priv_key);
     EC_POINT *pnt = EC_POINT_new(EC_KEY_get0_group(priv_key));
     BN_CTX *ctx = BN_CTX_new();
@@ -48,9 +48,12 @@ static int VKO_compute_key(unsigned char *shared_key,
     UKM = hashsum2bn(ukm, ukm_size);
     p = BN_CTX_get(ctx);
     order = BN_CTX_get(ctx);
+		cofactor = BN_CTX_get(ctx);
     X = BN_CTX_get(ctx);
     Y = BN_CTX_get(ctx);
     EC_GROUP_get_order(EC_KEY_get0_group(priv_key), order, ctx);
+		EC_GROUP_get_cofactor(EC_KEY_get0_group(priv_key), cofactor, ctx);
+    BN_mod_mul(UKM, UKM, cofactor, order, ctx);
     BN_mod_mul(p, key, UKM, order, ctx);
     if (!EC_POINT_mul(EC_KEY_get0_group(priv_key), pnt, NULL, pub_key, p, ctx)) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_ERROR_POINT_MUL);
