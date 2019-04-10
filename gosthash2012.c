@@ -157,10 +157,13 @@ static void g(union uint512_u *h, const union uint512_u *N,
 
 static INLINE void stage2(gost2012_hash_ctx * CTX, const unsigned char *data)
 {
-    g(&(CTX->h), &(CTX->N), data);
+    union uint512_u m;
+
+    memcpy(&m, data, sizeof(m));
+    g(&(CTX->h), &(CTX->N), (const unsigned char *)&m);
 
     add512(&(CTX->N), &buffer512, &(CTX->N));
-    add512(&(CTX->Sigma), (const union uint512_u *)data, &(CTX->Sigma));
+    add512(&(CTX->Sigma), &m, &(CTX->Sigma));
 }
 
 static INLINE void stage3(gost2012_hash_ctx * CTX)
