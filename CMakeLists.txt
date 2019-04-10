@@ -135,6 +135,11 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_omac_acpkm.c
         )
 
+add_executable(test_digest test_digest.c)
+target_link_libraries(test_digest gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME digest
+	COMMAND test_digest)
+
 add_executable(test_curves test_curves.c)
 target_link_libraries(test_curves gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME curves
@@ -189,6 +194,7 @@ target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLO
 
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
+        test_digest
         test_curves
         test_params
         test_sign
