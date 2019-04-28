@@ -69,7 +69,7 @@ struct certkey {
  * Simple TLS Server code is based on
  * https://wiki.openssl.org/index.php/Simple_TLS_Server
  */
-static int s_server(EVP_PKEY *pkey, X509 *cert, int pipewr)
+static int s_server(EVP_PKEY *pkey, X509 *cert, int client)
 {
     SSL_CTX *ctx;
     T(ctx = SSL_CTX_new(TLS_server_method()));
@@ -77,34 +77,9 @@ static int s_server(EVP_PKEY *pkey, X509 *cert, int pipewr)
     T(SSL_CTX_use_PrivateKey(ctx, pkey));
     T(SSL_CTX_check_private_key(ctx));
 
-    struct sockaddr_in addr = { .sin_family = AF_INET };
-    socklen_t len;
-    int sock;
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0)
-	err(1, "socket");
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
-	err(1, "setsockopt");
-    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-	err(1, "bind");
-    len = sizeof(addr);
-    if (getsockname(sock, (struct sockaddr *)&addr, &len) < 0)
-	err(1, "getsockname");
-    int port = ntohs(addr.sin_port);
-    if (listen(sock, 1) < 0)
-	err(1, "listen");
-    /* Signal to client that server is ready. */
-    if (write(pipewr, &port, sizeof(port)) != sizeof(port))
-	err(1, "write pipe");
-    len = sizeof(addr);
-    alarm(1);
-    int client = accept(sock, (struct sockaddr *)&addr, &len);
-    if (client < 0)
-	err(1, "accept");
-    alarm(0);
     SSL *ssl;
-    ssl = SSL_new(ctx);
-    SSL_set_fd(ssl, client);
+    T(ssl = SSL_new(ctx));
+    T(SSL_set_fd(ssl, client));
     T(SSL_accept(ssl) == 1);
 
     /* Receive data from client */
@@ -127,7 +102,6 @@ static int s_server(EVP_PKEY *pkey, X509 *cert, int pipewr)
     SSL_free(ssl);
     close(client);
 
-    close(sock);
     SSL_CTX_free(ctx);
     return 0;
 }
@@ -136,7 +110,7 @@ static int s_server(EVP_PKEY *pkey, X509 *cert, int pipewr)
  * Simple TLC Client code is based on man BIO_f_ssl and
  * https://wiki.openssl.org/index.php/SSL/TLS_Client
  */
-static int s_client(int piperd)
+static int s_client(int server)
 {
     SSL_CTX *ctx;
     T(ctx = SSL_CTX_new(TLS_client_method()));
@@ -150,17 +124,8 @@ static int s_client(int piperd)
     /* Does not work with reneg. */
     BIO_set_ssl_renegotiate_bytes(sbio, 100 * 1024);
 #endif
-    int port;
-    alarm(1);
-    /* Wait for server to be ready. */
-    if (read(piperd, &port, sizeof(port)) != sizeof(port))
-	err(1, "read pipe");
-    char tport[8];
-    snprintf(tport, sizeof(tport), "%d", port);
-    T(BIO_set_conn_port(sbio, tport));
-    T(BIO_do_connect(sbio) == 1);
+    T(SSL_set_fd(ssl, server));
     T(BIO_do_handshake(sbio) == 1);
-    alarm(0);
 
     printf("Protocol: %s\n", SSL_get_version(ssl));
     printf("Cipher:   %s\n", SSL_get_cipher_name(ssl));
@@ -300,9 +265,9 @@ int test(const char *algname, const char *paramset)
     struct certkey ck;
     ck = certgen(algname, paramset);
 
-    int pipefd[2];
-    if (pipe(pipefd))
-	err(1, "pipe");
+    int sockfd[2];
+    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, sockfd) == -1)
+	err(1, "socketpair");
 
     pid_t pid = fork();
     if (pid < 0)
@@ -311,13 +276,13 @@ int test(const char *algname, const char *paramset)
     if (pid > 0) {
 	int status;
 
-	ret = s_client(pipefd[0]);
+	ret = s_client(sockfd[0]);
 	wait(&status);
 	ret |= WIFEXITED(status) && WEXITSTATUS(status);
 	X509_free(ck.cert);
 	EVP_PKEY_free(ck.pkey);
     } else if (pid == 0) {
-	ret = s_server(ck.pkey, ck.cert, pipefd[1]);
+	ret = s_server(ck.pkey, ck.cert, sockfd[1]);
 	X509_free(ck.cert);
 	EVP_PKEY_free(ck.pkey);
 	exit(ret);
