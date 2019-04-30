@@ -9,3 +9,4 @@ Mailing list: http://www.wagner.pp.ru/list-archives/openssl-gost/
 
 Some useful links: https://www.altlinux.org/OSS-GOST-Crypto
 
+DO NOT TRY BUILD MASTER BRANCH AGAINST openssl 1.1.1! Use 1_1_0 branch instead!
