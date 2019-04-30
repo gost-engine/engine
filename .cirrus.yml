@@ -1,0 +1,21 @@
+FreeBSD_task:
+  freebsd_instance:
+    image: freebsd-12-0-release-amd64
+  env:
+    ASSUME_ALWAYS_YES: TRUE # required for unattended "pkg" invocation
+    PREFIX: ${HOME}/opt
+    LD_LIBRARY_PATH: ${PREFIX}/lib
+    PATH: ${PREFIX}/bin:${PATH}
+    OPENSSL_BRANCH: master
+  script:
+    - pkg install git cmake p5-App-cpanminus gdb
+    - sudo cpanm --notest Test2::V0
+    - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
+    - cd openssl
+    - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} && make all install_sw > build.log 2>&1 || (cat build.log && exit 1)
+    - cd ..
+    - mkdir build
+    - cd build
+    - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ..
+    - make
+    - make test CTEST_OUTPUT_ON_FAILURE=1
