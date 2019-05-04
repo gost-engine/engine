@@ -26,6 +26,9 @@ endif()
 
 set(BIN_DIRECTORY bin)
 
+# Same soversion as OpenSSL
+set(GOST_SOVERSION "${OPENSSL_VERSION_MAJOR}.${OPENSSL_VERSION_MINOR}")
+
 set(OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${BIN_DIRECTORY})
 
 #set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
@@ -110,8 +113,9 @@ add_test(NAME grasshopper
 add_library(gost STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
+add_library(gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
+set_target_properties(gost_engine PROPERTIES VERSION ${GOST_SOVERSION} SOVERSION ${GOST_SOVERSION})
 
 target_link_libraries(gost_engine ${OPENSSL_CRYPTO_LIBRARY} gost)
 
