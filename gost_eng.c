@@ -50,7 +50,11 @@ static int gost_cipher_nids[] = {
         NID_magma_cbc,
         NID_magma_ctr,
         NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
+#ifdef NID_kuznyechik_mgm
 				NID_kuznyechik_mgm,
+#else
+				NID_undef
+#endif
         0
 };
 
