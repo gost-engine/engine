@@ -53,7 +53,7 @@ static int gost_cipher_nids[] = {
 #ifdef NID_kuznyechik_mgm
 				NID_kuznyechik_mgm,
 #else
-				NID_undef
+				NID_undef,
 #endif
         0
 };
