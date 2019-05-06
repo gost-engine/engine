@@ -37,6 +37,24 @@ typedef struct {
 				   if 0 never mesh and work like plain ctr. */
 } gost_grasshopper_cipher_ctx_ctr;
 
+typedef enum {
+	mgm_associated_data = 0,
+	mgm_main_data,
+} mgm_state;
+
+typedef struct {
+    gost_grasshopper_cipher_ctx c;
+    grasshopper_w128_t partial_buffer;
+	
+		mgm_state mgm_state; /* associated_data/plain text */
+		grasshopper_w128_t mgm_iv[16]; /* nonce */
+		grasshopper_w128_t mgm_partial_buffer; /* Rest of associated data */
+		size_t ad_length;
+		size_t taglen; /* MAC length*/
+		unsigned char tag[16]; /* MAC - intermediate state */
+		unsigned char final_tag[16]; /* MAC - final state*/
+} gost_grasshopper_cipher_ctx_mgm;
+
 typedef int (* grasshopper_init_cipher_func)(EVP_CIPHER_CTX* ctx, const unsigned char* key, const unsigned char* iv,
                                              int enc);
 
@@ -61,6 +79,8 @@ int gost_grasshopper_cipher_init_ctr(EVP_CIPHER_CTX* ctx, const unsigned char* k
 
 int gost_grasshopper_cipher_init_ctracpkm(EVP_CIPHER_CTX* ctx, const unsigned char* key, const unsigned char* iv, int enc);
 
+int gost_grasshopper_cipher_init_mgm(EVP_CIPHER_CTX* ctx, const unsigned char* key, const unsigned char* iv, int enc);
+
 int gost_grasshopper_cipher_init(EVP_CIPHER_CTX* ctx, const unsigned char* key,
                                  const unsigned char* iv, int enc);
 
@@ -83,6 +103,8 @@ int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* out,
                                    const unsigned char* in, size_t inl);
 int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX* ctx, unsigned char* out,
                                    const unsigned char* in, size_t inl);
+int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX* ctx, unsigned char* out,
+                                   const unsigned char* in, size_t inl);
 
 int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX* ctx);
 
@@ -94,7 +116,7 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX* ctx, int type, int arg, void* pt
 
 EVP_CIPHER* cipher_gost_grasshopper_create(int cipher_type, int block_size);
 
-const int cipher_gost_grasshopper_setup(EVP_CIPHER* cipher, uint8_t mode, int iv_size, bool padding);
+const int cipher_gost_grasshopper_setup(EVP_CIPHER* cipher, uint8_t mode, int iv_size, bool padding, int extra_flags);
 
 const EVP_CIPHER* cipher_gost_grasshopper(uint8_t mode, uint8_t num);
 
@@ -104,6 +126,7 @@ extern const EVP_CIPHER* cipher_gost_grasshopper_ofb();
 extern const EVP_CIPHER* cipher_gost_grasshopper_cfb();
 extern const EVP_CIPHER* cipher_gost_grasshopper_ctr();
 extern const EVP_CIPHER* cipher_gost_grasshopper_ctracpkm();
+extern const EVP_CIPHER* cipher_gost_grasshopper_mgm();
 
 void cipher_gost_grasshopper_destroy(void);
 
