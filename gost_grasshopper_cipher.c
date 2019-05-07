@@ -784,6 +784,7 @@ int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
 			/* Process last block */
 			c->ad_length = n;
 			n = 0;
+			rest_len = 0;
 			EVP_CIPHER_CTX_set_num(ctx, 0);
 			c->mgm_state = mgm_main_data;
 
