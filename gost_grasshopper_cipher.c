@@ -25,7 +25,7 @@ enum GRASSHOPPER_CIPHER_TYPE {
     GRASSHOPPER_CIPHER_CFB,
     GRASSHOPPER_CIPHER_CTR,
     GRASSHOPPER_CIPHER_CTRACPKM,
-		GRASSHOPPER_CIPHER_MGM,
+    GRASSHOPPER_CIPHER_MGM,
 };
 
 static EVP_CIPHER *gost_grasshopper_ciphers[7] = {
@@ -35,7 +35,7 @@ static EVP_CIPHER *gost_grasshopper_ciphers[7] = {
     [GRASSHOPPER_CIPHER_CFB] = NULL,
     [GRASSHOPPER_CIPHER_CTR] = NULL,
     [GRASSHOPPER_CIPHER_CTRACPKM] = NULL,
-		[GRASSHOPPER_CIPHER_MGM] = NULL,
+    [GRASSHOPPER_CIPHER_MGM] = NULL,
 };
 
 static GRASSHOPPER_INLINE void
@@ -258,16 +258,18 @@ int gost_grasshopper_cipher_init(EVP_CIPHER_CTX *ctx,
 
     if (iv != NULL) {
         if (c->type == GRASSHOPPER_CIPHER_MGM) {
-					gost_grasshopper_cipher_ctx_mgm *m = (gost_grasshopper_cipher_ctx_mgm *)c;
+            gost_grasshopper_cipher_ctx_mgm *m =
+                (gost_grasshopper_cipher_ctx_mgm *) c;
 
-					/* 1st bit should be 0*/
-					if (iv[0] > 127) {
-						GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_INIT, GOST_R_INVALID_IV_LENGTH);
-						return 0;
-					}
-					memcpy(m->mgm_iv, iv, 16);
-					*(unsigned char *)(m->mgm_iv) += 128;
-				}
+            /* 1st bit should be 0 */
+            if (iv[0] > 127) {
+                GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_INIT,
+                        GOST_R_INVALID_IV_LENGTH);
+                return 0;
+            }
+            memcpy(m->mgm_iv, iv, 16);
+            *(unsigned char *)(m->mgm_iv) += 128;
+        }
         memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx), iv,
                EVP_CIPHER_CTX_iv_length(ctx));
     }
@@ -356,7 +358,7 @@ GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_mgm(EVP_CIPHER_CTX *ctx, con
     gost_grasshopper_cipher_ctx_mgm *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
 
     c->c.type = GRASSHOPPER_CIPHER_MGM;
-		c->taglen = 16;
+    c->taglen = 16;
     EVP_CIPHER_CTX_set_num(ctx, 0);
 
     grasshopper_zero128(&c->partial_buffer);
@@ -593,63 +595,76 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     \f$ f(x) = x^{128} + x^7 + x^2 + x + 1 \in \mathbb F_2[x]\f$. Для умножения используется
     простейшая реализация, основанная на приведении по модулю после каждого шага алгоритма.        */
 /* ----------------------------------------------------------------------------------------------- */
-static void gf128_mul_uint64(uint64_t *z, uint64_t *x, uint64_t *y)
+static void gf128_mul_uint64(uint64_t *result, uint64_t *arg1, uint64_t *arg2)
 {
- int i = 0, n = 0;
- uint64_t t, s0, s1;
+    int i = 0, n = 0;
+    uint64_t t, s0, s1;
+    uint64_t x[2], y[2], z[2];
 
-	BUF_reverse((unsigned char *)x, NULL, 16);
-	BUF_reverse((unsigned char *)y, NULL, 16);
+    BUF_reverse((unsigned char *)x, (unsigned char *)arg1, 16);
+    BUF_reverse((unsigned char *)y, (unsigned char *)arg2, 16);
 
 #ifdef L_ENDIAN
-  s0 = x[0];
-	s1 = x[1];
+    s0 = x[0];
+    s1 = x[1];
 #else
-  s0 = bswap_64(x[0]); 
-	s1 = bswap_64(x[1]);
+    s0 = bswap_64(x[0]);
+    s1 = bswap_64(x[1]);
 #endif
 
-	memset(z, 0, sizeof(uint64_t)*2);
+    memset(z, 0, sizeof(uint64_t) * 2);
 
- /* lower half */
+    /* lower half */
 #ifdef L_ENDIAN
-  t = y[0];
+    t = y[0];
 #else
-  t = bswap_64(y[0]);
+    t = bswap_64(y[0]);
 #endif
 
- for( i = 0; i < 64; i++ ) {
-   if( t&0x1 ) { z[0] ^= s0; z[1] ^= s1; }
-   t >>= 1;
-   n = s1 >> 63;
-   s1 <<= 1; s1 ^= ( s0 >> 63 ); s0 <<= 1;
-   if(n) s0 ^= 0x87;
- }
+    for (i = 0; i < 64; i++) {
+        if (t & 0x1) {
+            z[0] ^= s0;
+            z[1] ^= s1;
+        }
+        t >>= 1;
+        n = s1 >> 63;
+        s1 <<= 1;
+        s1 ^= (s0 >> 63);
+        s0 <<= 1;
+        if (n)
+            s0 ^= 0x87;
+    }
 
- /* upper half */
+    /* upper half */
 #ifdef L_ENDIAN
-  t = y[1];
+    t = y[1];
 #else
-  t = bswap_64(y[1]);
+    t = bswap_64(y[1]);
 #endif
 
- for( i = 0; i < 63; i++ ) {
-   if( t&0x1 ) { z[0] ^= s0; z[1] ^= s1; }
-   t >>= 1;
-   n = s1 >> 63;
-   s1 <<= 1; s1 ^= ( s0 >> 63 ); s0 <<= 1;
-   if( n ) s0 ^= 0x87;
- }
+    for (i = 0; i < 63; i++) {
+        if (t & 0x1) {
+            z[0] ^= s0;
+            z[1] ^= s1;
+        }
+        t >>= 1;
+        n = s1 >> 63;
+        s1 <<= 1;
+        s1 ^= (s0 >> 63);
+        s0 <<= 1;
+        if (n)
+            s0 ^= 0x87;
+    }
 
- if( t&0x1 ) {
-   z[0] ^= s0;
-   z[1] ^= s1;
- }
+    if (t & 0x1) {
+        z[0] ^= s0;
+        z[1] ^= s1;
+    }
 #ifndef L_ENDIAN
-   z[0] = bswap_64(z[0]);
-   z[1] = bswap_64(z[1]);
+    z[0] = bswap_64(z[0]);
+    z[1] = bswap_64(z[1]);
 #endif
-	BUF_reverse((unsigned char *)z, NULL, 16);
+    BUF_reverse((unsigned char *)result, (unsigned char *)z, 16);
 }
 
 static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
@@ -680,137 +695,150 @@ int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
     size_t i;
 
     size_t blocks = inl / GRASSHOPPER_BLOCK_SIZE;
-		int rest_len = n % GRASSHOPPER_BLOCK_SIZE;
-		grasshopper_w128_t h;
+    int rest_len = n % GRASSHOPPER_BLOCK_SIZE;
+    grasshopper_w128_t h;
 
     grasshopper_w128_t *iv_buffer = (grasshopper_w128_t *) iv;
     grasshopper_w128_t tmp;
 
 /* ======== Here we deal with associated data =========== */
-		if (out == NULL && c->mgm_state == mgm_associated_data) {
-			if (n == 0) {
-        grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
-                                  &c->partial_buffer, &c->c.buffer);
-				memcpy(c->mgm_iv, &c->partial_buffer, GRASSHOPPER_BLOCK_SIZE);
-				hexdump(stderr, "Tag", c->tag, 16);
-			}
+    if (out == NULL && c->mgm_state == mgm_associated_data) {
+        if (n == 0) {
+            grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
+                                      &c->partial_buffer, &c->c.buffer);
+            memcpy(c->mgm_iv, &c->partial_buffer, GRASSHOPPER_BLOCK_SIZE);
+            hexdump(stderr, "Tag", c->tag, 16);
+        }
 
-			if (rest_len != 0) {
-				/* Finalize partial_data */
-				if (inl + rest_len < GRASSHOPPER_BLOCK_SIZE) {
-					memcpy(c->mgm_partial_buffer.b+rest_len, current_in, inl);
-					n += inl;
-					EVP_CIPHER_CTX_set_num(ctx, n);
-					return 1;
-				} else {
-					memcpy(c->mgm_partial_buffer.b+rest_len, current_in, GRASSHOPPER_BLOCK_SIZE - rest_len);
+        if (rest_len != 0) {
+            /* Finalize partial_data */
+            if (inl + rest_len < GRASSHOPPER_BLOCK_SIZE) {
+                memcpy(c->mgm_partial_buffer.b + rest_len, current_in, inl);
+                n += inl;
+                EVP_CIPHER_CTX_set_num(ctx, n);
+                return 1;
+            } else {
+                memcpy(c->mgm_partial_buffer.b + rest_len, current_in,
+                       GRASSHOPPER_BLOCK_SIZE - rest_len);
 
-					grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
-							&h, &c->c.buffer);
-					inc_counter(c->mgm_iv->b, 8);
+                grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
+                                          &h, &c->c.buffer);
+                inc_counter(c->mgm_iv->b, 8);
 
-				hexdump(stderr, "Hnext", h.b, 16);
-				hexdump(stderr, "Adata", c->mgm_partial_buffer.b, 16);
-					/* Galois multiply Hi * Ai */
-					gf128_mul_uint64(tmp.q, h.q, c->mgm_partial_buffer.q);
+                hexdump(stderr, "Hnext", h.b, 16);
+                hexdump(stderr, "Adata", c->mgm_partial_buffer.b, 16);
+                /* Galois multiply Hi * Ai */
+                gf128_mul_uint64(tmp.q, h.q, c->mgm_partial_buffer.q);
 
-					/* XOR to c->tag */
-					grasshopper_plus128(&h, (grasshopper_w128_t *)c->tag, &tmp);
-					grasshopper_copy128((grasshopper_w128_t *)c->tag, &h);
-				hexdump(stderr, "Tag", c->tag, 16);
-										
-					current_in += GRASSHOPPER_BLOCK_SIZE - rest_len;
-					inl -= (GRASSHOPPER_BLOCK_SIZE - rest_len);
-					n += GRASSHOPPER_BLOCK_SIZE - rest_len;
-				}
-			}
+                /* XOR to c->tag */
+                grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
+                grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
+                hexdump(stderr, "Tag", c->tag, 16);
 
-			while (inl >= GRASSHOPPER_BLOCK_SIZE) {
-        currentInputBlock = (grasshopper_w128_t *) current_in;
+                current_in += GRASSHOPPER_BLOCK_SIZE - rest_len;
+                inl -= (GRASSHOPPER_BLOCK_SIZE - rest_len);
+                n += GRASSHOPPER_BLOCK_SIZE - rest_len;
+            }
+        }
+
+        while (inl >= GRASSHOPPER_BLOCK_SIZE) {
+            currentInputBlock = (grasshopper_w128_t *) current_in;
+
+            grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
+                                      &h, &c->c.buffer);
+            inc_counter(c->mgm_iv->b, 8);
+
+            hexdump(stderr, "Hnext", h.b, 16);
+            hexdump(stderr, "Adata", currentInputBlock->b, 16);
+            /* Galois multiply */
+            gf128_mul_uint64(tmp.q, h.q, currentInputBlock->q);
+
+            /* XOR to c->tag */
+            grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
+            grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
+            hexdump(stderr, "Tag", c->tag, 16);
+
+            current_in += GRASSHOPPER_BLOCK_SIZE;
+            inl -= GRASSHOPPER_BLOCK_SIZE;
+            n += GRASSHOPPER_BLOCK_SIZE;
+        }
+
+        if (inl > 0) {
+            memcpy(c->mgm_partial_buffer.b, current_in, inl);
+            n += inl;
+        }
+
+        EVP_CIPHER_CTX_set_num(ctx, n);
+        return 1;
+    }
+
+    if (out == NULL && in != NULL && inl != 0 && c->mgm_state == mgm_main_data) {
+        GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_DO_MGM, GOST_R_BAD_ORDER);
+        return 0;
+    }
+
+    if (out != NULL && c->mgm_state == mgm_associated_data) {
+        memset(c->mgm_partial_buffer.b + rest_len, 0,
+               GRASSHOPPER_BLOCK_SIZE - rest_len);
 
         grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
                                   &h, &c->c.buffer);
-				inc_counter(c->mgm_iv->b, 8);
+        inc_counter(c->mgm_iv->b, 8);
 
-				hexdump(stderr, "Hnext", h.b, 16);
-				hexdump(stderr, "Adata", currentInputBlock->b, 16);
-				/* Galois multiply */
-				gf128_mul_uint64(tmp.q, h.q, currentInputBlock->q);
+        hexdump(stderr, "Hnext", h.b, 16);
+        hexdump(stderr, "Padded Adata", c->mgm_partial_buffer.b, 16);
+        /* Galois multiply Hi * Ai */
+        gf128_mul_uint64(tmp.q, h.q, c->mgm_partial_buffer.q);
 
-				/* XOR to c->tag */
-				grasshopper_plus128(&h, (grasshopper_w128_t *)c->tag, &tmp);
-				grasshopper_copy128((grasshopper_w128_t *)c->tag, &h);
-				hexdump(stderr, "Tag", c->tag, 16);
+        /* XOR to c->tag */
+        grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
+        grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
+        hexdump(stderr, "Tag", c->tag, 16);
 
-				current_in += GRASSHOPPER_BLOCK_SIZE;
-				inl -= GRASSHOPPER_BLOCK_SIZE;
-				n += GRASSHOPPER_BLOCK_SIZE;
-			}
+        /* We finish processing associated data */
+        /* Pad rest of mgm_partial_buffer */
+        /* Process last block */
+        c->ad_length = n;
+        n = 0;
+        rest_len = 0;
+        EVP_CIPHER_CTX_set_num(ctx, 0);
+        c->mgm_state = mgm_main_data;
 
-			if (inl > 0)
-			{
-				memcpy(c->mgm_partial_buffer.b, current_in, inl);
-				n += inl;
-			}
-
-			EVP_CIPHER_CTX_set_num(ctx, n);
-			return 1;
-		}
-
-		if (out == NULL && in != NULL && inl !=0 && c->mgm_state == mgm_main_data) {
-			GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_DO_MGM, GOST_R_BAD_ORDER);
-			return 0;
-		}
-
-		if (out != NULL && c->mgm_state == mgm_associated_data) {
-			memset(c->mgm_partial_buffer.b+rest_len, 0, GRASSHOPPER_BLOCK_SIZE - rest_len);
-
-			grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
-					&h, &c->c.buffer);
-			inc_counter(c->mgm_iv->b, 8);
-
-			hexdump(stderr, "Hnext", h.b, 16);
-			hexdump(stderr, "Padded Adata", c->mgm_partial_buffer.b, 16);
-			/* Galois multiply Hi * Ai */
-			gf128_mul_uint64(tmp.q, h.q, c->mgm_partial_buffer.q);
-
-			/* XOR to c->tag */
-			grasshopper_plus128(&h, (grasshopper_w128_t *)c->tag, &tmp);
-			grasshopper_copy128((grasshopper_w128_t *)c->tag, &h);
-				hexdump(stderr, "Tag", c->tag, 16);
-										
-			/* We finish processing associated data */
-			/* Pad rest of mgm_partial_buffer */
-			/* Process last block */
-			c->ad_length = n;
-			n = 0;
-			rest_len = 0;
-			EVP_CIPHER_CTX_set_num(ctx, 0);
-			c->mgm_state = mgm_main_data;
-
-			fprintf(stderr, "============= Deal with main data\n");
-		}
+        fprintf(stderr, "============= Deal with main data\n");
+    }
 
 /* ======== Here we deal with main data =========== */
     if (n == 0) {
-			/* actual IV derived from nonce */
-      grasshopper_encrypt_block(&c->c.encrypt_round_keys, iv_buffer,
+        /* actual IV derived from nonce */
+        grasshopper_encrypt_block(&c->c.encrypt_round_keys, iv_buffer,
                                   &c->partial_buffer, &c->c.buffer);
-			memcpy(iv, c->partial_buffer.b, GRASSHOPPER_BLOCK_SIZE);
-			//hexdump(stderr, "Y1", iv, 16);
-		}
+        memcpy(iv, c->partial_buffer.b, GRASSHOPPER_BLOCK_SIZE);
+        //hexdump(stderr, "Y1", iv, 16);
+    }
 
     while (rest_len && inl) {
         *(current_out++) = *(current_in++) ^ c->partial_buffer.b[rest_len];
+        c->partial_buffer.b[rest_len] = *(current_out - 1);
+
         --inl;
         n++;
-				rest_len++;
-				if (rest_len == GRASSHOPPER_BLOCK_SIZE)
-				{
-					rest_len = 0;
-				}
+        rest_len++;
+        if (rest_len == GRASSHOPPER_BLOCK_SIZE) {
+            rest_len = 0;
+            grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
+                                      &h, &c->c.buffer);
+            inc_counter(c->mgm_iv->b, 8);
+            hexdump(stderr, "Hnext", h.b, 16);
+            hexdump(stderr, "Ciphertext", c->partial_buffer.b, 16);
+            /* Galois multiply Hi * Ai */
+            gf128_mul_uint64(tmp.q, h.q, c->partial_buffer.q);
+
+            /* XOR to c->tag */
+            grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
+            grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
+            hexdump(stderr, "Tag", c->tag, 16);
+        }
     }
-    EVP_CIPHER_CTX_set_num(ctx, n);
 
     // full parts
     for (i = 0; i < blocks; i++) {
@@ -820,26 +848,28 @@ int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                   &c->partial_buffer, &c->c.buffer);
         grasshopper_plus128(&tmp, &c->partial_buffer, currentInputBlock);
         grasshopper_copy128(currentOutputBlock, &tmp);
-			//hexdump(stderr, "Ciphertext", currentOutputBlock->b, 16);
+        //hexdump(stderr, "Ciphertext", currentOutputBlock->b, 16);
 
-				grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
-							&h, &c->c.buffer);
-				inc_counter(c->mgm_iv->b, 8);
-			hexdump(stderr, "Hnext", h.b, 16);
-			hexdump(stderr, "Ciphertext", currentOutputBlock->b, 16);
-				/* Galois multiply Hi * Ai */
-				gf128_mul_uint64(tmp.q, h.q, currentOutputBlock->q);
+        grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
+                                  &h, &c->c.buffer);
+        inc_counter(c->mgm_iv->b, 8);
+        hexdump(stderr, "Hnext", h.b, 16);
+        hexdump(stderr, "Ciphertext", currentOutputBlock->b, 16);
+        /* Galois multiply Hi * Ai */
+        gf128_mul_uint64(tmp.q, h.q, currentOutputBlock->q);
 
-				/* XOR to c->tag */
-				grasshopper_plus128(&h, (grasshopper_w128_t *)c->tag, &tmp);
-				grasshopper_copy128((grasshopper_w128_t *)c->tag, &h);
-				hexdump(stderr, "Tag", c->tag, 16);
+        /* XOR to c->tag */
+        grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
+        grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
+        hexdump(stderr, "Tag", c->tag, 16);
 
         ctr128_inc(iv_buffer->b);
         current_in += GRASSHOPPER_BLOCK_SIZE;
         current_out += GRASSHOPPER_BLOCK_SIZE;
-				n += GRASSHOPPER_BLOCK_SIZE;
+        n += GRASSHOPPER_BLOCK_SIZE;
     }
+
+    EVP_CIPHER_CTX_set_num(ctx, n);
 
     // last part
     lasted = inl - blocks * GRASSHOPPER_BLOCK_SIZE;
@@ -851,63 +881,64 @@ int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
         for (i = 0; i < lasted; i++) {
             currentOutputBlock->b[i] =
                 c->partial_buffer.b[i] ^ currentInputBlock->b[i];
+            c->partial_buffer.b[i] = currentOutputBlock->b[i];
         }
-				grasshopper_copy128(&c->partial_buffer, currentOutputBlock);
-        EVP_CIPHER_CTX_set_num(ctx, n+i);
+        EVP_CIPHER_CTX_set_num(ctx, n + i);
         ctr128_inc(iv_buffer->b);
     }
 
-		/* Final step */
-		if (in == NULL && inl == 0)
-		{
-			unsigned char len_buf[16];
-			uint64_t a_len = 0, p_len = 0;
+    /* Final step */
+    if (in == NULL && inl == 0) {
+        unsigned char len_buf[16];
+        uint64_t a_len = 0, p_len = 0;
 
-			if (rest_len != 0)
-			{
-				memset(c->partial_buffer.b+rest_len, 0, GRASSHOPPER_BLOCK_SIZE - rest_len);
-				grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
-							&h, &c->c.buffer);
-				inc_counter(c->mgm_iv->b, 8);
-			hexdump(stderr, "Hnext", h.b, 16);
-			hexdump(stderr, "Padded ciphertext", c->partial_buffer.b, 16);
-				/* Galois multiply Hi * Ai */
-				gf128_mul_uint64(tmp.q, h.q, c->partial_buffer.q);
+        if (rest_len != 0) {
+            memset(c->partial_buffer.b + rest_len, 0,
+                   GRASSHOPPER_BLOCK_SIZE - rest_len);
+            grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv, &h,
+                                      &c->c.buffer);
+            inc_counter(c->mgm_iv->b, 8);
+            hexdump(stderr, "Hnext", h.b, 16);
+            hexdump(stderr, "Padded ciphertext", c->partial_buffer.b, 16);
+            /* Galois multiply Hi * Ai */
+            gf128_mul_uint64(tmp.q, h.q, c->partial_buffer.q);
 
-				/* XOR to c->tag */
-				grasshopper_plus128(&h, (grasshopper_w128_t *)c->tag, &tmp);
-				grasshopper_copy128((grasshopper_w128_t *)c->tag, &h);
-				hexdump(stderr, "Tag", c->tag, 16);
-			}
+            /* XOR to c->tag */
+            grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
+            grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
+            hexdump(stderr, "Tag", c->tag, 16);
+        }
 
-			a_len = c->ad_length << 3;
-			p_len = (c->mgm_state == mgm_associated_data) ? 0 : n << 3;
+        a_len = c->ad_length << 3;
+        p_len = (c->mgm_state == mgm_associated_data) ? 0 : n << 3;
 
 #ifdef L_ENDIAN
-			a_len = bswap_64(a_len);
-			p_len = bswap_64(p_len);
+        a_len = bswap_64(a_len);
+        p_len = bswap_64(p_len);
 #endif
-			memset(len_buf, 0, 16);
+        memset(len_buf, 0, 16);
 
-			memcpy(len_buf, &a_len, sizeof(a_len));
-			memcpy(len_buf+sizeof(a_len), &p_len, sizeof(p_len));
-			grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
-							&h, &c->c.buffer);
+        memcpy(len_buf, &a_len, sizeof(a_len));
+        memcpy(len_buf + sizeof(a_len), &p_len, sizeof(p_len));
+        grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
+                                  &h, &c->c.buffer);
 
-			hexdump(stderr, "Hlast", h.b, 16);
-			hexdump(stderr, "Lenbuf", len_buf, 16);
-			/* Galois multiply Hi * Ai */
-			gf128_mul_uint64(tmp.q, h.q, (uint64_t *)len_buf);
+        hexdump(stderr, "Hlast", h.b, 16);
+        hexdump(stderr, "Lenbuf", len_buf, 16);
+        /* Galois multiply Hi * Ai */
+        gf128_mul_uint64(tmp.q, h.q, (uint64_t *)len_buf);
 
-			/* XOR to c->tag */
-			grasshopper_plus128(&h, (grasshopper_w128_t *)c->tag, &tmp);
-			grasshopper_copy128((grasshopper_w128_t *)c->tag, &h);
-				hexdump(stderr, "Tag", c->tag, 16);
+        /* XOR to c->tag */
+        grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
+        grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
+        hexdump(stderr, "Tag", c->tag, 16);
 
-			/* Final tag calculation */
-      grasshopper_encrypt_block(&c->c.encrypt_round_keys, (grasshopper_w128_t *)c->tag,
-                                  (grasshopper_w128_t *)c->final_tag, &c->c.buffer);
-		}
+        /* Final tag calculation */
+        grasshopper_encrypt_block(&c->c.encrypt_round_keys,
+                                  (grasshopper_w128_t *) c->tag,
+                                  (grasshopper_w128_t *) c->final_tag,
+                                  &c->c.buffer);
+    }
 
     return 1;
 }
@@ -1194,42 +1225,37 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
               carry = (adj_byte > 255) ? 1 : 0;
               adjusted_iv[j] = adj_byte & 0xFF;
             }
-            EVP_CIPHER_CTX_set_num(ctx, 0);
-            memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), adjusted_iv, 16);
-
-            gost_grasshopper_cipher_key(c, newkey);
-            return 1;
-          }
         }
         return -1;
 #endif
-		case EVP_CTRL_AEAD_GET_TAG:
-		case EVP_CTRL_AEAD_SET_TAG:
-		{
-          gost_grasshopper_cipher_ctx_mgm *mgm_ctx = NULL;
-          gost_grasshopper_cipher_ctx *c = NULL;
-					int taglen = arg;
-					unsigned char* tag = ptr;
-					
-          mgm_ctx = (gost_grasshopper_cipher_ctx_mgm *)
-            EVP_CIPHER_CTX_get_cipher_data(ctx);
-					c = (gost_grasshopper_cipher_ctx *)mgm_ctx;
+    case EVP_CTRL_AEAD_GET_TAG:
+    case EVP_CTRL_AEAD_SET_TAG:
+        {
+            gost_grasshopper_cipher_ctx_mgm *mgm_ctx = NULL;
+            gost_grasshopper_cipher_ctx *c = NULL;
+            int taglen = arg;
+            unsigned char *tag = ptr;
 
-					if (c->type != GRASSHOPPER_CIPHER_MGM)
-						return -1;
-					
-					if (taglen > 16) {
-						GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, GOST_R_INVALID_TAG_LENGTH);
-						return -1;
-					}
+            mgm_ctx = (gost_grasshopper_cipher_ctx_mgm *)
+                EVP_CIPHER_CTX_get_cipher_data(ctx);
+            c = (gost_grasshopper_cipher_ctx *) mgm_ctx;
 
-					if (type == EVP_CTRL_AEAD_GET_TAG)
-						memcpy(tag, mgm_ctx->final_tag, taglen);
-					else
-						memcpy(mgm_ctx->final_tag, tag, taglen);
+            if (c->type != GRASSHOPPER_CIPHER_MGM)
+                return -1;
 
-					return 1;
-		}
+            if (taglen > 16) {
+                GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL,
+                        GOST_R_INVALID_TAG_LENGTH);
+                return -1;
+            }
+
+            if (type == EVP_CTRL_AEAD_GET_TAG)
+                memcpy(tag, mgm_ctx->final_tag, taglen);
+            else
+                memcpy(mgm_ctx->final_tag, tag, taglen);
+
+            return 1;
+        }
     default:
         GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL,
                 GOST_R_UNSUPPORTED_CIPHER_CTL_COMMAND);
@@ -1247,7 +1273,8 @@ GRASSHOPPER_INLINE EVP_CIPHER *cipher_gost_grasshopper_create(int
 }
 
 const int cipher_gost_grasshopper_setup(EVP_CIPHER *cipher, uint8_t mode,
-                                        int iv_size, bool padding, int extra_flags)
+                                        int iv_size, bool padding,
+                                        int extra_flags)
 {
     return EVP_CIPHER_meth_set_iv_length(cipher, iv_size)
         && EVP_CIPHER_meth_set_flags(cipher,
@@ -1259,7 +1286,8 @@ const int cipher_gost_grasshopper_setup(EVP_CIPHER *cipher, uint8_t mode,
                                                             EVP_CIPH_CUSTOM_IV
                                                             : 0) |
                                                      EVP_CIPH_RAND_KEY |
-                                                     EVP_CIPH_ALWAYS_CALL_INIT | extra_flags)
+                                                     EVP_CIPH_ALWAYS_CALL_INIT |
+                                                     extra_flags)
         )
         && EVP_CIPHER_meth_set_cleanup(cipher, gost_grasshopper_cipher_cleanup)
         && EVP_CIPHER_meth_set_set_asn1_params(cipher,
@@ -1288,15 +1316,16 @@ const GRASSHOPPER_INLINE EVP_CIPHER *cipher_gost_grasshopper(uint8_t mode,
         int iv_size = params->iv_size;
         bool padding = params->padding;
 
-				int extra_flags = (num == GRASSHOPPER_CIPHER_MGM) ? 
-					EVP_CIPH_FLAG_CUSTOM_CIPHER | EVP_CIPH_FLAG_AEAD_CIPHER : 0;
+        int extra_flags = (num == GRASSHOPPER_CIPHER_MGM) ?
+            EVP_CIPH_FLAG_CUSTOM_CIPHER | EVP_CIPH_FLAG_AEAD_CIPHER : 0;
 
         *cipher = cipher_gost_grasshopper_create(nid, block_size);
         if (*cipher == NULL) {
             return NULL;
         }
 
-        if (!cipher_gost_grasshopper_setup(*cipher, mode, iv_size, padding, extra_flags)
+        if (!cipher_gost_grasshopper_setup
+            (*cipher, mode, iv_size, padding, extra_flags)
             || !EVP_CIPHER_meth_set_init(*cipher, init_cipher)
             || !EVP_CIPHER_meth_set_impl_ctx_size(*cipher, ctx_size)) {
             EVP_CIPHER_meth_free(*cipher);
@@ -1341,7 +1370,7 @@ const GRASSHOPPER_INLINE EVP_CIPHER *cipher_gost_grasshopper_ctracpkm()
 const GRASSHOPPER_INLINE EVP_CIPHER *cipher_gost_grasshopper_mgm()
 {
 #ifndef NID_kuznyechik_mgm
-		return NULL;
+    return NULL;
 #else
     return cipher_gost_grasshopper(EVP_CIPH_CTR_MODE, GRASSHOPPER_CIPHER_MGM);
 #endif
