@@ -700,6 +700,7 @@ int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
 
     grasshopper_w128_t *iv_buffer = (grasshopper_w128_t *) iv;
     grasshopper_w128_t tmp;
+    int encrypting = EVP_CIPHER_CTX_encrypting(ctx);
 
 /* ======== Here we deal with associated data =========== */
     if (out == NULL && c->mgm_state == mgm_associated_data) {
@@ -818,7 +819,11 @@ int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
 
     while (rest_len && inl) {
         *(current_out++) = *(current_in++) ^ c->partial_buffer.b[rest_len];
-        c->partial_buffer.b[rest_len] = *(current_out - 1);
+
+        if (encrypting)
+            c->partial_buffer.b[rest_len] = *(current_out - 1);
+        else
+            c->partial_buffer.b[rest_len] = *(current_in - 1);
 
         --inl;
         n++;
@@ -842,26 +847,43 @@ int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
 
     // full parts
     for (i = 0; i < blocks; i++) {
+        grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
+                                  &h, &c->c.buffer);
+        inc_counter(c->mgm_iv->b, 8);
+
         currentInputBlock = (grasshopper_w128_t *) current_in;
         currentOutputBlock = (grasshopper_w128_t *) current_out;
         grasshopper_encrypt_block(&c->c.encrypt_round_keys, iv_buffer,
                                   &c->partial_buffer, &c->c.buffer);
         grasshopper_plus128(&tmp, &c->partial_buffer, currentInputBlock);
-        grasshopper_copy128(currentOutputBlock, &tmp);
-        //hexdump(stderr, "Ciphertext", currentOutputBlock->b, 16);
 
-        grasshopper_encrypt_block(&c->c.encrypt_round_keys, c->mgm_iv,
-                                  &h, &c->c.buffer);
-        inc_counter(c->mgm_iv->b, 8);
-        hexdump(stderr, "Hnext", h.b, 16);
-        hexdump(stderr, "Ciphertext", currentOutputBlock->b, 16);
-        /* Galois multiply Hi * Ai */
-        gf128_mul_uint64(tmp.q, h.q, currentOutputBlock->q);
+        if (encrypting) {
+            grasshopper_copy128(currentOutputBlock, &tmp);
 
-        /* XOR to c->tag */
-        grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
-        grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
-        hexdump(stderr, "Tag", c->tag, 16);
+            hexdump(stderr, "Hnext", h.b, 16);
+            hexdump(stderr, "Ciphertext", currentOutputBlock->b, 16);
+            /* Galois multiply Hi * Ai */
+            gf128_mul_uint64(tmp.q, h.q, currentOutputBlock->q);
+
+            /* XOR to c->tag */
+            grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
+            grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
+            hexdump(stderr, "Tag", c->tag, 16);
+        } else {
+            grasshopper_w128_t tmpin;
+            grasshopper_copy128(&tmpin, currentInputBlock);
+            grasshopper_copy128(currentOutputBlock, &tmp);
+
+            hexdump(stderr, "Hnext", h.b, 16);
+            hexdump(stderr, "Ciphertext", tmpin.b, 16);
+            /* Galois multiply Hi * Ai */
+            gf128_mul_uint64(tmp.q, h.q, tmpin.q);
+
+            /* XOR to c->tag */
+            grasshopper_plus128(&h, (grasshopper_w128_t *) c->tag, &tmp);
+            grasshopper_copy128((grasshopper_w128_t *) c->tag, &h);
+            hexdump(stderr, "Tag", c->tag, 16);
+        }
 
         ctr128_inc(iv_buffer->b);
         current_in += GRASSHOPPER_BLOCK_SIZE;
@@ -879,9 +901,16 @@ int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
         grasshopper_encrypt_block(&c->c.encrypt_round_keys, iv_buffer,
                                   &c->partial_buffer, &c->c.buffer);
         for (i = 0; i < lasted; i++) {
-            currentOutputBlock->b[i] =
-                c->partial_buffer.b[i] ^ currentInputBlock->b[i];
-            c->partial_buffer.b[i] = currentOutputBlock->b[i];
+            if (encrypting) {
+                currentOutputBlock->b[i] =
+                    c->partial_buffer.b[i] ^ currentInputBlock->b[i];
+                c->partial_buffer.b[i] = currentOutputBlock->b[i];
+            } else {
+                unsigned char in = currentInputBlock->b[i];
+                currentOutputBlock->b[i] =
+                    c->partial_buffer.b[i] ^ currentInputBlock->b[i];
+                c->partial_buffer.b[i] = in;
+            }
         }
         EVP_CIPHER_CTX_set_num(ctx, n + i);
         ctr128_inc(iv_buffer->b);
@@ -934,10 +963,23 @@ int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
         hexdump(stderr, "Tag", c->tag, 16);
 
         /* Final tag calculation */
-        grasshopper_encrypt_block(&c->c.encrypt_round_keys,
-                                  (grasshopper_w128_t *) c->tag,
-                                  (grasshopper_w128_t *) c->final_tag,
-                                  &c->c.buffer);
+        if (encrypting) {
+            grasshopper_encrypt_block(&c->c.encrypt_round_keys,
+                                      (grasshopper_w128_t *) c->tag,
+                                      (grasshopper_w128_t *) c->final_tag,
+                                      &c->c.buffer);
+            return 1;
+        } else {
+            grasshopper_w128_t decrypt_tag;
+            grasshopper_encrypt_block(&c->c.encrypt_round_keys,
+                                      (grasshopper_w128_t *) c->tag,
+                                      &decrypt_tag, &c->c.buffer);
+            if (memcmp(decrypt_tag.b, c->final_tag, 16)) {
+                hexdump(stderr, "Bad final tag", decrypt_tag.b, 16);
+                return 0;
+            } else
+                return 1;
+        }
     }
 
     return 1;
