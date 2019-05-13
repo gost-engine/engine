@@ -771,7 +771,7 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
 
           unsigned char adjusted_iv[16];
           unsigned char seq[8];
-          int j;
+          int j, carry;
           if (mode != EVP_CIPH_CTR_MODE)
             return -1;
 
@@ -799,10 +799,9 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
                 (const unsigned char *)seq) > 0) {
             memset(adjusted_iv, 0, 16);
             memcpy(adjusted_iv, EVP_CIPHER_CTX_original_iv(ctx), 8);
-            for(j=7; j>=0; j--)
+            for(j=7,carry=0; j>=0; j--)
             {
-              int adj_byte, carry = 0;
-              adj_byte = adjusted_iv[j]+seq[j]+carry;
+              int adj_byte = adjusted_iv[j]+seq[j]+carry;
               carry = (adj_byte > 255) ? 1 : 0;
               adjusted_iv[j] = adj_byte & 0xFF;
             }
