@@ -6,8 +6,6 @@
 #include "gost_lcl.h"
 #include "e_gost_err.h"
 
-/* FIXME no-deprecated*/
-int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr);
 /*
  * Function expects that out is a preallocated buffer of length
  * defined as sum of shared_len and mac length defined by mac_nid
@@ -46,8 +44,8 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
     }
 
     if (EVP_DigestInit_ex(mac, EVP_get_digestbynid(mac_nid), NULL) <= 0
-        || omac_imit_ctrl(mac, EVP_MD_CTRL_SET_KEY, 32, mac_key) <= 0
-        || omac_imit_ctrl(mac, EVP_MD_CTRL_MAC_LEN, mac_len, NULL) <= 0
+        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_SET_KEY, 32, mac_key) <= 0
+        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_MAC_LEN, mac_len, NULL) <= 0
         || EVP_DigestUpdate(mac, iv, ivlen) <= 0
         || EVP_DigestUpdate(mac, shared_key, shared_len) <= 0
         /* As we set MAC length directly, we should not allow overwriting it */
@@ -139,8 +137,8 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
     }
 
     if (EVP_DigestInit_ex(mac, EVP_get_digestbynid(mac_nid), NULL) <= 0
-        || omac_imit_ctrl(mac, EVP_MD_CTRL_SET_KEY, 32, mac_key) <= 0
-        || omac_imit_ctrl(mac, EVP_MD_CTRL_MAC_LEN, mac_len, NULL) <= 0
+        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_SET_KEY, 32, mac_key) <= 0
+        || EVP_MD_CTX_ctrl(mac, EVP_MD_CTRL_MAC_LEN, mac_len, NULL) <= 0
         || EVP_DigestUpdate(mac, iv, ivlen) <= 0
         || EVP_DigestUpdate(mac, out, shared_len) <= 0
         /* As we set MAC length directly, we should not allow overwriting it */
