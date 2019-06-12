@@ -1,5 +1,5 @@
-#!/usr/bin/perl 
-use Test::More tests => 16;
+#!/usr/bin/perl
+use Test::More tests => 19;
 use Cwd 'abs_path';
 
 # Set OPENSSL_ENGINES environment variable to just built engine
@@ -11,7 +11,7 @@ $engine=$ENV{'ENGINE_NAME'}||"gost";
 # Reopen STDERR to eliminate extra output
 open STDERR, ">>","tests.err";
 
-# prepare data for 
+# prepare data for
 
 open F,">","testm1.dat";
 print F "012345678901234567890123456789012345678901234567890123456789012";
@@ -113,3 +113,20 @@ is(`openssl dgst -engine ${engine} -md_gost12_512 bigdata.dat`,
 "GOST R 34.11-2012 512bit 128K");
 
 unlink "bigdata.dat";
+
+open F , ">","zerodata.dat";
+close F;
+
+is(`openssl dgst -engine ${engine} -md_gost94 zerodata.dat`,
+"md_gost94(zerodata.dat)= 981e5f3ca30c841487830f84fb433e13ac1101569b9c13584ac483234cd656c0\n",
+"GOST R 34.11-94 empty data");
+
+is(`openssl dgst -engine ${engine} -md_gost12_256 zerodata.dat`,
+"md_gost12_256(zerodata.dat)= 3f539a213e97c802cc229d474c6aa32a825a360b2a933a949fd925208d9ce1bb\n",
+"GOST R 34.11-2012 256bit empty data");
+
+is(`openssl dgst -engine ${engine} -md_gost12_512 zerodata.dat`,
+"md_gost12_512(zerodata.dat)= 8e945da209aa869f0455928529bcae4679e9873ab707b55315f56ceb98bef0a7362f715528356ee83cda5f2aac4c6ad2ba3a715c1bcd81cb8e9f90bf4c1c1a8a\n",
+"GOST R 34.11-2012 512bit empty data");
+
+unlink "zerodata.dat";
