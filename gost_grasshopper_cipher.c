@@ -624,6 +624,19 @@ const GRASSHOPPER_INLINE EVP_CIPHER* cipher_gost_grasshopper_ctr() {
     return cipher_gost_grasshopper(EVP_CIPH_CTR_MODE, GRASSHOPPER_CIPHER_CTR);
 }
 
+void cipher_gost_grasshopper_destroy(void)
+{
+    EVP_CIPHER_meth_free(gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_ECB]);
+    gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_ECB] = NULL;
+    EVP_CIPHER_meth_free(gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_CBC]);
+    gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_CBC] = NULL;
+    EVP_CIPHER_meth_free(gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_OFB]);
+    gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_OFB] = NULL;
+    EVP_CIPHER_meth_free(gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_CFB]);
+    gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_CFB] = NULL;
+    EVP_CIPHER_meth_free(gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_CTR]);
+    gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_CTR] = NULL;
+}
 #if defined(__cplusplus)
 }
 #endif
