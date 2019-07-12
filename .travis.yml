@@ -29,6 +29,7 @@ matrix:
 
 
 before_script:
+  - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
   - sudo cpanm --notest Test2::V0 > build.log 2>&1 || (cat build.log && exit 1)
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
