@@ -368,6 +368,14 @@ int main(int argc, char **argv)
     int ret = 0;
     const struct testcase *t;
 
+    setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
+    OPENSSL_add_all_algorithms_conf();
+    ERR_load_crypto_strings();
+    ENGINE *eng;
+    T(eng = ENGINE_by_id("gost"));
+    T(ENGINE_init(eng));
+    T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
+
     for (t = testcases; t->name; t++) {
 	int inplace;
 	const char *standard = t->acpkm? "R 23565.1.017-2018" : "GOST R 34.13-2015";
@@ -383,9 +391,7 @@ int main(int argc, char **argv)
 		t->iv, t->iv_size, t->acpkm);
     }
 
-    /* preload cbc cipher for omac set key */
-    EVP_add_cipher(cipher_gost_grasshopper_cbc());
-
+    printf(cBLUE "# Tests for omac\n" cNORM);
     ret |= test_mac("OMAC", "GOST R 34.13-2015", grasshopper_omac(), 0, 0,
         P, sizeof(P), MAC_omac, sizeof(MAC_omac));
     ret |= test_mac("OMAC-ACPKM", "R 1323565.1.017-2018 A.4.1",
@@ -396,6 +402,9 @@ int main(int argc, char **argv)
         grasshopper_omac_acpkm(), 32, 768 / 8,
         P_omac_acpkm2, sizeof(P_omac_acpkm2),
         MAC_omac_acpkm2, sizeof(MAC_omac_acpkm2));
+
+    ENGINE_finish(eng);
+    ENGINE_free(eng);
 
     if (ret)
 	printf(cDRED "= Some tests FAILED!\n" cNORM);
