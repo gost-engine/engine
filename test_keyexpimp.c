@@ -9,6 +9,11 @@
 #include "e_gost_err.h"
 #include "gost_grasshopper_cipher.h"
 
+#define T(e) if (!(e)) {\
+	ERR_print_errors_fp(stderr);\
+	OpenSSLDie(__FILE__, __LINE__, #e);\
+    }
+
 static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
 {
     int n = 0;
@@ -92,13 +97,15 @@ int main(void)
     unsigned char tlsseq[8];
     unsigned char out[32];
 
-    OpenSSL_add_all_algorithms();
+    setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
+    OPENSSL_add_all_algorithms_conf();
+    ERR_load_crypto_strings();
+    ENGINE *eng;
+    T(eng = ENGINE_by_id("gost"));
+    T(ENGINE_init(eng));
+    T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
+
     memset(buf, 0, sizeof(buf));
-    /* Make test work without config. */
-    EVP_add_cipher(cipher_magma_ctr());
-    EVP_add_cipher(cipher_magma_cbc());
-    EVP_add_digest(digest_gost2012_256());
-    EVP_add_digest(magma_omac());
 
     memset(kroot, 0xFF, 32);
     memset(tlsseq, 0, 8);
@@ -159,6 +166,9 @@ int main(void)
 	    err = 8;
         }
     }
+
+    ENGINE_finish(eng);
+    ENGINE_free(eng);
 
     return err;
 }
