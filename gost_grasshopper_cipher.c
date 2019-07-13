@@ -599,32 +599,29 @@ static void gf128_mul_uint64(uint64_t *result, uint64_t *arg1, uint64_t *arg2)
 {
     int i = 0, n = 0;
     uint64_t t, s0, s1;
-    uint64_t x[2], y[2], z[2];
-
-    BUF_reverse((unsigned char *)x, (unsigned char *)arg1, 16);
-    BUF_reverse((unsigned char *)y, (unsigned char *)arg2, 16);
+    uint64_t z[2];
 
 #ifdef L_ENDIAN
-    s0 = x[0];
-    s1 = x[1];
+    s0 = bswap_64(arg1[1]);
+    s1 = bswap_64(arg1[0]);
 #else
-    s0 = bswap_64(x[0]);
-    s1 = bswap_64(x[1]);
+    s0 = arg1[1];
+    s1 = arg1[0];
 #endif
 
     memset(z, 0, sizeof(uint64_t) * 2);
 
     /* lower half */
 #ifdef L_ENDIAN
-    t = y[0];
+    t = bswap_64(arg2[1]);
 #else
-    t = bswap_64(y[0]);
+    t = arg2[1];
 #endif
 
     for (i = 0; i < 64; i++) {
         if (t & 0x1) {
-            z[0] ^= s0;
-            z[1] ^= s1;
+            z[1] ^= s0;
+            z[0] ^= s1;
         }
         t >>= 1;
         n = s1 >> 63;
@@ -637,15 +634,15 @@ static void gf128_mul_uint64(uint64_t *result, uint64_t *arg1, uint64_t *arg2)
 
     /* upper half */
 #ifdef L_ENDIAN
-    t = y[1];
+    t = bswap_64(arg2[0]);
 #else
-    t = bswap_64(y[1]);
+    t = arg2[0];
 #endif
 
     for (i = 0; i < 63; i++) {
         if (t & 0x1) {
-            z[0] ^= s0;
-            z[1] ^= s1;
+            z[1] ^= s0;
+            z[0] ^= s1;
         }
         t >>= 1;
         n = s1 >> 63;
@@ -657,14 +654,16 @@ static void gf128_mul_uint64(uint64_t *result, uint64_t *arg1, uint64_t *arg2)
     }
 
     if (t & 0x1) {
-        z[0] ^= s0;
-        z[1] ^= s1;
+        z[1] ^= s0;
+        z[0] ^= s1;
     }
-#ifndef L_ENDIAN
-    z[0] = bswap_64(z[0]);
-    z[1] = bswap_64(z[1]);
+#ifdef L_ENDIAN
+    result[0] = bswap_64(z[0]);
+    result[1] = bswap_64(z[1]);
+#else
+    result[0] = z[0];
+    result[1] = z[1];
 #endif
-    BUF_reverse((unsigned char *)result, (unsigned char *)z, 16);
 }
 
 static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
