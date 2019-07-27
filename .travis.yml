@@ -21,6 +21,9 @@ matrix:
   include:
     - os: linux
       compiler: gcc
+    - env: LABEL="linux-ppc64le"
+      os: linux-ppc64le
+      compiler: gcc
     - env: ASAN=-DASAN=1
       os: linux
       compiler: gcc
