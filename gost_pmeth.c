@@ -12,11 +12,18 @@
 #include <openssl/ec.h>
 #include <openssl/err.h>
 #include <openssl/x509v3.h>     /* For string_to_hex */
+#include <openssl/opensslv.h>   /* For OPENSSL_VERSION_MAJOR */
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "gost_lcl.h"
 #include "e_gost_err.h"
+
+#define ossl3_const
+#ifdef OPENSSL_VERSION_MAJOR
+#undef ossl3_const
+#define ossl3_const const
+#endif
 
 /* -----init, cleanup, copy - uniform for all algs  --------------*/
 /* Allocates new gost_pmeth_data structure and assigns it as data */
@@ -53,7 +60,7 @@ static int pkey_gost_init(EVP_PKEY_CTX *ctx)
 }
 
 /* Copies contents of gost_pmeth_data structure */
-static int pkey_gost_copy(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src)
+static int pkey_gost_copy(EVP_PKEY_CTX *dst, ossl3_const EVP_PKEY_CTX *src)
 {
     struct gost_pmeth_data *dst_data, *src_data;
     if (!pkey_gost_init(dst)) {
@@ -564,7 +571,7 @@ static void pkey_gost_mac_cleanup(EVP_PKEY_CTX *ctx)
         OPENSSL_free(data);
 }
 
-static int pkey_gost_mac_copy(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src)
+static int pkey_gost_mac_copy(EVP_PKEY_CTX *dst, ossl3_const EVP_PKEY_CTX *src)
 {
     struct gost_mac_pmeth_data *dst_data, *src_data;
     if (!pkey_gost_mac_init(dst)) {
