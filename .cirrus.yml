@@ -8,7 +8,7 @@ FreeBSD_task:
     PATH: ${PREFIX}/bin:${PATH}
     OPENSSL_BRANCH: master
   script:
-    - pkg install git cmake p5-App-cpanminus gdb
+    - pkg install git cmake p5-App-cpanminus gdb pkgconf
     - sudo cpanm --notest Test2::V0
     - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
     - cd openssl
