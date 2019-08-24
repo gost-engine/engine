@@ -1,9 +1,37 @@
 #!/usr/bin/perl
 use TAP::Harness;
 
-if(defined $ENV{'OPENSSL_ROOT_DIR'} && !defined $ENV{'LD_LIBRARY_PATH'}) {
-  $ENV{'LD_LIBRARY_PATH'} = $ENV{'OPENSSL_ROOT_DIR'};
-  $ENV{'PATH'} = "$ENV{'OPENSSL_ROOT_DIR'}/apps:$ENV{'PATH'}";
+if(defined $ENV{'OPENSSL_ROOT_DIR'}) {
+    my $openssl_libdir;
+    my $openssl_bindir;
+
+    if (-d "$ENV{'OPENSSL_ROOT_DIR'}/apps") {
+        # The OpenSSL root dir is an OpenSSL build tree
+        $openssl_bindir = "$ENV{'OPENSSL_ROOT_DIR'}/apps";
+        $openssl_libdir = "$ENV{'OPENSSL_ROOT_DIR'}";
+    } else {
+        # The OpenSSL root dir is an OpenSSL installation tree
+        # Since we're not exactly sure what the library path is (because
+        # multilib), we ask pkg-config
+        local $ENV{PKG_CONFIG_PATH} = "$ENV{'OPENSSL_ROOT_DIR'}/lib/pkgconfig";
+        my $pkgans = `pkg-config --libs-only-L openssl`;
+
+        # If pkg-config failed for any reason, abort.  The tests will most
+        # likely fail anyway because the binary path won't have a matching
+        # library path.
+        die "pkg-config failure: $! (exit code ", $? >> 8, ", signal ", $? & 0xff, ")"
+            if ($? != 0);
+
+        $pkgans =~ s|\R$||;      # Better chomp
+        $pkgans =~ s|^-L||;      # Remove flag from answer
+
+        $openssl_libdir = $pkgans;
+        $openssl_bindir = "$ENV{'OPENSSL_ROOT_DIR'}/bin";
+    }
+    $ENV{'LD_LIBRARY_PATH'} =
+        join(':', $openssl_libdir, split(/:/, $ENV{'LD_LIBRARY_PATH'}));
+    $ENV{'PATH'} =
+        join(':', $openssl_bindir, split(/:/, $ENV{'PATH'}));
 }
 my $harness = TAP::Harness->new();
 exit ($harness->runtests(glob("*.t"))->all_passed() ? 0 : 1);
