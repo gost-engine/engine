@@ -28,8 +28,19 @@ if(defined $ENV{'OPENSSL_ROOT_DIR'}) {
         $openssl_libdir = $pkgans;
         $openssl_bindir = "$ENV{'OPENSSL_ROOT_DIR'}/bin";
     }
+
+    # Variants of library paths
+    # Linux, ELF HP-UX
     $ENV{'LD_LIBRARY_PATH'} =
         join(':', $openssl_libdir, split(/:/, $ENV{'LD_LIBRARY_PATH'}));
+    # MacOS X
+    $ENV{'DYLD_LIBRARY_PATH'} =
+        join(':', $openssl_libdir, split(/:/, $ENV{'DYLD_LIBRARY_PATH'}));
+    # AIX, OS/2
+    $ENV{'LIBPATH'} =
+        join(':', $openssl_libdir, split(/:/, $ENV{'LIBPATH'}));
+
+    # Binary path, works on all Unix-like platforms
     $ENV{'PATH'} =
         join(':', $openssl_bindir, split(/:/, $ENV{'PATH'}));
 }
