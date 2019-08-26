@@ -1,7 +1,12 @@
 sudo: required
 dist: xenial
 
-os: linux
+os:
+  - linux
+  - osx
+
+compiler:
+  - gcc
 
 language: c
 
@@ -19,8 +24,6 @@ env:
 
 matrix:
   include:
-    - os: linux
-      compiler: gcc
     - env: LABEL="linux-ppc64le" CMAKE_VERSION=3.15.1
       os: linux-ppc64le
       compiler: gcc
@@ -32,6 +35,9 @@ matrix:
       compiler: gcc
     - os: osx
       compiler: clang
+  exclude:
+    - os: osx
+      compiler: gcc
 
 
 before_script:
