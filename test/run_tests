@@ -44,5 +44,7 @@ if(defined $ENV{'OPENSSL_ROOT_DIR'}) {
     $ENV{'PATH'} =
         join(':', $openssl_bindir, split(/:/, $ENV{'PATH'}));
 }
-my $harness = TAP::Harness->new();
+my $harness = TAP::Harness->new({
+    verbosity => (($ENV{CTEST_INTERACTIVE_DEBUG_MODE} // 0) != 0)
+});
 exit ($harness->runtests(glob("*.t"))->all_passed() ? 0 : 1);
