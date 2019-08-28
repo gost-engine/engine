@@ -189,7 +189,7 @@ add_test(NAME engine
 	COMMAND perl run_tests
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
 set_tests_properties(engine PROPERTIES ENVIRONMENT
-	"OPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR};OPENSSL_ENGINES=${OUTPUT_DIRECTORY}")
+	"OPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR};OPENSSL_ENGINES=${OUTPUT_DIRECTORY};OPENSSL_CONF=${CMAKE_SOURCE_DIR}/test/empty.cnf")
 endif()
 
 add_executable(sign benchmark/sign.c)
