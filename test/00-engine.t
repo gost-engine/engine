@@ -9,11 +9,6 @@ open (my $F,">","testdata.dat");
 print $F "12345670" x 128;
 close $F;
 
-# Set OPENSSL_ENGINES environment variable to just built engine
-if(!defined $ENV{'OPENSSL_ENGINES'}){
-	$ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
-}
-
 my $key='0123456789abcdef' x 2;
 
 #

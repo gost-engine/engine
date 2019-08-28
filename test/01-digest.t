@@ -1,12 +1,7 @@
 #!/usr/bin/perl 
 use Test2::V0;
 plan(16);
-use Cwd 'abs_path';
 
-# Set OPENSSL_ENGINES environment variable to just built engine
-if(!defined $ENV{'OPENSSL_ENGINES'}){
-        $ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
-}
 # Set engine name from environment to allow testing of different engines
 my $engine=$ENV{'ENGINE_NAME'}||"gost";
 # Reopen STDERR to eliminate extra output

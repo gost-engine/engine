@@ -12,11 +12,6 @@ my $use_config = 1;
 # prepare data for 
 
 
-# Set OPENSSL_ENGINES environment variable to just built engine
-if(!defined $ENV{'OPENSSL_ENGINES'}){
-        $ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
-}
-
 my $engine=$ENV{'ENGINE_NAME'}||"gost";
 
 # Reopen STDERR to eliminate extra output
