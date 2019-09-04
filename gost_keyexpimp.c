@@ -1,4 +1,8 @@
+#ifdef _WIN32
+#include <winsock.h>
+#else
 #include <arpa/inet.h>
+#endif
 #include <string.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>

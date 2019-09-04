@@ -26,12 +26,7 @@ enum GRASSHOPPER_CIPHER_TYPE {
 };
 
 static EVP_CIPHER *gost_grasshopper_ciphers[6] = {
-    [GRASSHOPPER_CIPHER_ECB] = NULL,
-    [GRASSHOPPER_CIPHER_CBC] = NULL,
-    [GRASSHOPPER_CIPHER_OFB] = NULL,
-    [GRASSHOPPER_CIPHER_CFB] = NULL,
-    [GRASSHOPPER_CIPHER_CTR] = NULL,
-    [GRASSHOPPER_CIPHER_CTRACPKM] = NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
 };
 
 static GRASSHOPPER_INLINE void
@@ -51,7 +46,7 @@ struct GRASSHOPPER_CIPHER_PARAMS {
 };
 
 static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[6] = {
-    [GRASSHOPPER_CIPHER_ECB] = {
+ {
                                 NID_grasshopper_ecb,
                                 gost_grasshopper_cipher_init_ecb,
                                 gost_grasshopper_cipher_do_ecb,
@@ -61,7 +56,7 @@ static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[6] = {
                                 0,
                                 true}
     ,
-    [GRASSHOPPER_CIPHER_CBC] = {
+    {
                                 NID_grasshopper_cbc,
                                 gost_grasshopper_cipher_init_cbc,
                                 gost_grasshopper_cipher_do_cbc,
@@ -71,7 +66,7 @@ static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[6] = {
                                 16,
                                 true}
     ,
-    [GRASSHOPPER_CIPHER_OFB] = {
+    {
                                 NID_grasshopper_ofb,
                                 gost_grasshopper_cipher_init_ofb,
                                 gost_grasshopper_cipher_do_ofb,
@@ -81,7 +76,7 @@ static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[6] = {
                                 16,
                                 false}
     ,
-    [GRASSHOPPER_CIPHER_CFB] = {
+    {
                                 NID_grasshopper_cfb,
                                 gost_grasshopper_cipher_init_cfb,
                                 gost_grasshopper_cipher_do_cfb,
@@ -91,7 +86,7 @@ static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[6] = {
                                 16,
                                 false}
     ,
-    [GRASSHOPPER_CIPHER_CTR] = {
+    {
                                 NID_grasshopper_ctr,
                                 gost_grasshopper_cipher_init_ctr,
                                 gost_grasshopper_cipher_do_ctr,
@@ -104,7 +99,7 @@ static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[6] = {
                                 16,
                                 false}
     ,
-    [GRASSHOPPER_CIPHER_CTRACPKM] = {
+    {
                                      NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
                                      gost_grasshopper_cipher_init_ctracpkm,
                                      gost_grasshopper_cipher_do_ctracpkm,
@@ -418,6 +413,9 @@ int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
     unsigned int n = EVP_CIPHER_CTX_num(ctx);
     size_t lasted;
     size_t i;
+    size_t blocks;
+    grasshopper_w128_t *iv_buffer;
+    grasshopper_w128_t tmp;
 
     while (n && inl) {
         *(current_out++) = *(current_in++) ^ c->partial_buffer.b[n];
@@ -425,10 +423,9 @@ int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
         n = (n + 1) % GRASSHOPPER_BLOCK_SIZE;
     }
     EVP_CIPHER_CTX_set_num(ctx, n);
-    size_t blocks = inl / GRASSHOPPER_BLOCK_SIZE;
+    blocks = inl / GRASSHOPPER_BLOCK_SIZE;
 
-    grasshopper_w128_t *iv_buffer = (grasshopper_w128_t *) iv;
-    grasshopper_w128_t tmp;
+    iv_buffer = (grasshopper_w128_t *) iv;
 
     // full parts
     for (i = 0; i < blocks; i++) {
@@ -480,15 +477,15 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     unsigned int num = EVP_CIPHER_CTX_num(ctx);
+    size_t blocks, i, lasted;
+    grasshopper_w128_t tmp;
 
     while ((num & GRASSHOPPER_BLOCK_MASK) && inl) {
         *out++ = *in++ ^ c->partial_buffer.b[num & GRASSHOPPER_BLOCK_MASK];
         --inl;
         num++;
     }
-    size_t blocks = inl / GRASSHOPPER_BLOCK_SIZE;
-    size_t i;
-    grasshopper_w128_t tmp;
+    blocks = inl / GRASSHOPPER_BLOCK_SIZE;
 
     // full parts
     for (i = 0; i < blocks; i++) {
@@ -507,7 +504,7 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     }
 
     // last part
-    size_t lasted = inl - blocks * GRASSHOPPER_BLOCK_SIZE;
+    lasted = inl - blocks * GRASSHOPPER_BLOCK_SIZE;
     if (lasted > 0) {
         apply_acpkm_grasshopper(c, &num);
         grasshopper_encrypt_block(&c->c.encrypt_round_keys,
@@ -688,13 +685,14 @@ int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
 
 int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX *ctx)
 {
+    struct GRASSHOPPER_CIPHER_PARAMS *params;
     gost_grasshopper_cipher_ctx *c =
         (gost_grasshopper_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
 
     if (!c)
         return 1;
 
-    struct GRASSHOPPER_CIPHER_PARAMS *params = &gost_cipher_params[c->type];
+    params = &gost_cipher_params[c->type];
 
     gost_grasshopper_cipher_destroy(c);
     if (params->destroy_cipher != NULL) {
@@ -863,14 +861,18 @@ const GRASSHOPPER_INLINE EVP_CIPHER *cipher_gost_grasshopper(uint8_t mode,
     cipher = &gost_grasshopper_ciphers[num];
 
     if (*cipher == NULL) {
+        grasshopper_init_cipher_func init_cipher;
+        int nid, block_size, ctx_size, iv_size;
+        bool padding;
+
         params = &gost_cipher_params[num];
 
-        int nid = params->nid;
-        grasshopper_init_cipher_func init_cipher = params->init_cipher;
-        int block_size = params->block_size;
-        int ctx_size = params->ctx_size;
-        int iv_size = params->iv_size;
-        bool padding = params->padding;
+        nid = params->nid;
+        init_cipher = params->init_cipher;
+        block_size = params->block_size;
+        ctx_size = params->ctx_size;
+        iv_size = params->iv_size;
+        padding = params->padding;
 
         *cipher = cipher_gost_grasshopper_create(nid, block_size);
         if (*cipher == NULL) {

@@ -720,10 +720,11 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     BIGNUM *X = NULL, *Y = NULL, *order = NULL;
     const EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pk);
     int ptype = V_ASN1_UNDEF;
+    ASN1_STRING *params;
 
     algobj = OBJ_nid2obj(EVP_PKEY_base_id(pk));
 
-    ASN1_STRING *params = encode_gost_algor_params(pk);
+    params = encode_gost_algor_params(pk);
     pval = params;
     ptype = V_ASN1_SEQUENCE;
 

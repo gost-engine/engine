@@ -150,13 +150,14 @@ static int CMAC_ACPKM_Init(CMAC_ACPKM_CTX *ctx, const void *key, size_t keylen,
     /* Non-NULL key means initialisation is complete */
     if (key) {
         unsigned char acpkm_iv[EVP_MAX_BLOCK_LENGTH];
+        int block_size, key_len;
 
         /* Initialize CTR for ACPKM-Master */
         if (!EVP_CIPHER_CTX_cipher(ctx->actx))
             return 0;
         /* block size of ACPKM cipher could be 1, but,
          * cbc cipher is same with correct block_size */
-        const int block_size = EVP_CIPHER_CTX_block_size(ctx->cctx);
+        block_size = EVP_CIPHER_CTX_block_size(ctx->cctx);
         /* Wide IV = 1^{n/2} || 0,
          * where a^r denotes the string that consists of r 'a' bits */
         memset(acpkm_iv, 0xff, block_size / 2);
@@ -164,7 +165,7 @@ static int CMAC_ACPKM_Init(CMAC_ACPKM_CTX *ctx, const void *key, size_t keylen,
         if (!EVP_EncryptInit_ex(ctx->actx, NULL, NULL, key, acpkm_iv))
             return 0;
         /* EVP_CIPHER key_len may be different from EVP_CIPHER_CTX key_len */
-        int key_len = EVP_CIPHER_key_length(EVP_CIPHER_CTX_cipher(ctx->actx));
+        key_len = EVP_CIPHER_key_length(EVP_CIPHER_CTX_cipher(ctx->actx));
 
         /* Generate first key material (K^1 || K^1_1) */
         if (!EVP_Cipher(ctx->actx, ctx->km, zero_iv, key_len + block_size))
@@ -254,7 +255,8 @@ static int CMAC_ACPKM_Update(CMAC_ACPKM_CTX *ctx, const void *in, size_t dlen)
 static int CMAC_ACPKM_Final(CMAC_ACPKM_CTX *ctx, unsigned char *out,
                             size_t *poutlen)
 {
-    int i, bl, lb;
+    int i, bl, lb, key_len;
+    unsigned char *k1, k2[EVP_MAX_BLOCK_LENGTH];
     if (ctx->nlast_block == -1)
         return 0;
     bl = EVP_CIPHER_CTX_block_size(ctx->cctx);
@@ -265,10 +267,9 @@ static int CMAC_ACPKM_Final(CMAC_ACPKM_CTX *ctx, unsigned char *out,
 
     if (!CMAC_ACPKM_Mesh(ctx))
         return 0;
-    int key_len = EVP_CIPHER_key_length(EVP_CIPHER_CTX_cipher(ctx->actx));
+    key_len = EVP_CIPHER_key_length(EVP_CIPHER_CTX_cipher(ctx->actx));
     /* Keys k1 and k2 */
-    unsigned char *k1 = ctx->km + key_len;
-    unsigned char k2[EVP_MAX_BLOCK_LENGTH];
+    k1 = ctx->km + key_len;
     make_kn(k2, ctx->km + key_len, bl);
 
     /* Is last block complete? */
