@@ -967,7 +967,7 @@ static int pkey_gost_mac_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig,
     }
 
     EVP_MD_meth_get_ctrl(EVP_MD_CTX_md(mctx))
-        (mctx, EVP_MD_CTRL_MAC_LEN, data->mac_size, NULL);
+        (mctx, EVP_MD_CTRL_XOF_LEN, data->mac_size, NULL);
     ret = EVP_DigestFinal_ex(mctx, sig, &tmpsiglen);
     *siglen = data->mac_size;
     return ret;

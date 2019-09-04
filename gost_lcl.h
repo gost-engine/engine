@@ -245,7 +245,6 @@ void inc_counter(unsigned char *buffer, size_t buf_len);
 
 # define EVP_MD_CTRL_KEY_LEN (EVP_MD_CTRL_ALG_CTRL+3)
 # define EVP_MD_CTRL_SET_KEY (EVP_MD_CTRL_ALG_CTRL+4)
-# define EVP_MD_CTRL_MAC_LEN (EVP_MD_CTRL_ALG_CTRL+5)
 /* EVP_PKEY_METHOD key encryption callbacks */
 /* From gost_ec_keyx.c */
 int pkey_gost_encrypt(EVP_PKEY_CTX *ctx, unsigned char *out,

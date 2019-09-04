@@ -465,7 +465,6 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             }
             return 1;
         }
-    case EVP_MD_CTRL_MAC_LEN:
     case EVP_MD_CTRL_XOF_LEN:   /* Supported in OpenSSL */
         {
             OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);

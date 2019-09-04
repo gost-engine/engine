@@ -46,11 +46,11 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
 
     if (EVP_DigestInit_ex(mac, EVP_get_digestbynid(mac_nid), NULL) <= 0
         || omac_imit_ctrl(mac, EVP_MD_CTRL_SET_KEY, 32, mac_key) <= 0
-        || omac_imit_ctrl(mac, EVP_MD_CTRL_MAC_LEN, mac_len, NULL) <= 0
+        || omac_imit_ctrl(mac, EVP_MD_CTRL_XOF_LEN, mac_len, NULL) <= 0
         || EVP_DigestUpdate(mac, iv, ivlen) <= 0
         || EVP_DigestUpdate(mac, shared_key, shared_len) <= 0
         /* As we set MAC length directly, we should not allow overwriting it */
-        || EVP_DigestFinal_ex(mac, mac_buf, NULL) <= 0) {
+        || EVP_DigestFinalXOF(mac, mac_buf, mac_len) <= 0) {
         GOSTerr(GOST_F_GOST_KEXP15, ERR_R_INTERNAL_ERROR);
         goto err;
     }
@@ -139,11 +139,11 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
 
     if (EVP_DigestInit_ex(mac, EVP_get_digestbynid(mac_nid), NULL) <= 0
         || omac_imit_ctrl(mac, EVP_MD_CTRL_SET_KEY, 32, mac_key) <= 0
-        || omac_imit_ctrl(mac, EVP_MD_CTRL_MAC_LEN, mac_len, NULL) <= 0
+        || omac_imit_ctrl(mac, EVP_MD_CTRL_XOF_LEN, mac_len, NULL) <= 0
         || EVP_DigestUpdate(mac, iv, ivlen) <= 0
         || EVP_DigestUpdate(mac, out, shared_len) <= 0
         /* As we set MAC length directly, we should not allow overwriting it */
-        || EVP_DigestFinal_ex(mac, mac_buf, NULL) <= 0) {
+        || EVP_DigestFinalXOF(mac, mac_buf, mac_len) <= 0) {
         GOSTerr(GOST_F_GOST_KIMP15, ERR_R_INTERNAL_ERROR);
         goto err;
     }

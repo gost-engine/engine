@@ -302,7 +302,7 @@ EVP_MD *imit_gost_cpa(void)
             || !EVP_MD_meth_set_input_blocksize(md, 8)
             || !EVP_MD_meth_set_app_datasize(md,
                                              sizeof(struct ossl_gost_imit_ctx))
-            || !EVP_MD_meth_set_flags(md, 0)
+            || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_XOF)
             || !EVP_MD_meth_set_init(md, gost_imit_init_cpa)
             || !EVP_MD_meth_set_update(md, gost_imit_update)
             || !EVP_MD_meth_set_final(md, gost_imit_final)
@@ -333,7 +333,7 @@ EVP_MD *imit_gost_cp_12(void)
             || !EVP_MD_meth_set_input_blocksize(md, 8)
             || !EVP_MD_meth_set_app_datasize(md,
                                              sizeof(struct ossl_gost_imit_ctx))
-            || !EVP_MD_meth_set_flags(md, 0)
+            || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_XOF)
             || !EVP_MD_meth_set_init(md, gost_imit_init_cp_12)
             || !EVP_MD_meth_set_update(md, gost_imit_update)
             || !EVP_MD_meth_set_final(md, gost_imit_final)
@@ -1180,7 +1180,7 @@ int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
             return 0;
         }
-    case EVP_MD_CTRL_MAC_LEN:
+    case EVP_MD_CTRL_XOF_LEN:
         {
             struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
             if (arg < 1 || arg > 8) {
