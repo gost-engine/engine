@@ -466,6 +466,7 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             return 1;
         }
     case EVP_MD_CTRL_MAC_LEN:
+    case EVP_MD_CTRL_XOF_LEN:   /* Supported in OpenSSL */
         {
             OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
             switch (c->cipher_nid) {
@@ -507,7 +508,7 @@ EVP_MD *grasshopper_omac_acpkm(void)
             || !EVP_MD_meth_set_result_size(md, MAX_GOST_OMAC_ACPKM_SIZE)
             || !EVP_MD_meth_set_input_blocksize(md, GRASSHOPPER_BLOCK_SIZE)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(OMAC_ACPKM_CTX))
-            || !EVP_MD_meth_set_flags(md, 0)
+            || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_XOF)
             || !EVP_MD_meth_set_init(md, grasshopper_omac_acpkm_init)
             || !EVP_MD_meth_set_update(md, omac_acpkm_imit_update)
             || !EVP_MD_meth_set_final(md, omac_acpkm_imit_final)

@@ -203,6 +203,7 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             return 0;
         }
     case EVP_MD_CTRL_MAC_LEN:
+    case EVP_MD_CTRL_XOF_LEN:   /* Supported in OpenSSL */
         {
             OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
             switch (c->cipher_nid) {
@@ -257,7 +258,7 @@ EVP_MD *magma_omac(void)
             || !EVP_MD_meth_set_result_size(md, 8)
             || !EVP_MD_meth_set_input_blocksize(md, 8)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(OMAC_CTX))
-            || !EVP_MD_meth_set_flags(md, 0)
+            || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_XOF)
             || !EVP_MD_meth_set_init(md, magma_imit_init)
             || !EVP_MD_meth_set_update(md, omac_imit_update)
             || !EVP_MD_meth_set_final(md, omac_imit_final)
@@ -289,7 +290,7 @@ EVP_MD *grasshopper_omac(void)
             || !EVP_MD_meth_set_result_size(md, 16)
             || !EVP_MD_meth_set_input_blocksize(md, 8)
             || !EVP_MD_meth_set_app_datasize(md, sizeof(OMAC_CTX))
-            || !EVP_MD_meth_set_flags(md, 0)
+            || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_XOF)
             || !EVP_MD_meth_set_init(md, grasshopper_imit_init)
             || !EVP_MD_meth_set_update(md, omac_imit_update)
             || !EVP_MD_meth_set_final(md, omac_imit_final)
