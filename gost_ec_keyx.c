@@ -18,10 +18,10 @@
 #include "gost_lcl.h"
 
 /* Implementation of CryptoPro VKO 34.10-2001/2012 algorithm */
-static int VKO_compute_key(unsigned char *shared_key,
-                           const EC_POINT *pub_key, const EC_KEY *priv_key,
-                           const unsigned char *ukm, const size_t ukm_size,
-                           const int vko_dgst_nid)
+int VKO_compute_key(unsigned char *shared_key,
+                    const EC_POINT *pub_key, const EC_KEY *priv_key,
+                    const unsigned char *ukm, const size_t ukm_size,
+                    const int vko_dgst_nid)
 {
     unsigned char *databuf = NULL;
     BIGNUM *UKM = NULL, *p = NULL, *order = NULL, *X = NULL, *Y = NULL, *cofactor = NULL;

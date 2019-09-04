@@ -265,6 +265,12 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
                    ECDSA_SIG *sig, EC_KEY *ec);
 int gost_ec_compute_public(EC_KEY *ec);
 
+/* VKO */
+int VKO_compute_key(unsigned char *shared_key,
+                    const EC_POINT *pub_key, const EC_KEY *priv_key,
+                    const unsigned char *ukm, const size_t ukm_size,
+                    const int vko_dgst_nid);
+
 /* KDF TREE */
 int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
                          const unsigned char *key, size_t keylen,
