@@ -76,7 +76,7 @@ const char *get_gost_engine_param(int param)
 int gost_set_default_param(int param, const char *value)
 {
     const char *tmp;
-    if (param < 0 || param > GOST_PARAM_MAX)
+    if (param < 0 || param >= GOST_PARAM_MAX)
         return 0;
     tmp = getenv(gost_envnames[param]);
 
