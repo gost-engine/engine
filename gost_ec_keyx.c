@@ -59,8 +59,11 @@ int VKO_compute_key(unsigned char *shared_key,
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_ERROR_POINT_MUL);
         goto err;
     }
-    EC_POINT_get_affine_coordinates(EC_KEY_get0_group(priv_key),
-                                        pnt, X, Y, ctx);
+    if (!EC_POINT_get_affine_coordinates(EC_KEY_get0_group(priv_key),
+                                        pnt, X, Y, ctx)) {
+	GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_EC_LIB);
+	goto err;
+    }
 
     half_len = BN_num_bytes(order);
     buf_len = 2 * half_len;
