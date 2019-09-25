@@ -299,8 +299,8 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
 	int i;
 
 	EVP_CIPHER_CTX_init(ctx);
-	EVP_CipherInit_ex(ctx, type, NULL, K, iv, 1);
-	EVP_CIPHER_CTX_set_padding(ctx, 0);
+	T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 1));
+	T(EVP_CIPHER_CTX_set_padding(ctx, 0));
 	memset(c, 0xff, sizeof(c));
 	if (acpkm)
 	    T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
@@ -309,11 +309,11 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
 		sz = size - i;
 	    else
 		sz = z;
-	    EVP_CipherUpdate(ctx, c + i, &outlen, pt + i, sz);
+	    T(EVP_CipherUpdate(ctx, c + i, &outlen, pt + i, sz));
 	    OPENSSL_assert(outlen == sz);
 	}
 	outlen = i - z + sz;
-	EVP_CipherFinal_ex(ctx, c + outlen, &tmplen);
+	T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
 	EVP_CIPHER_CTX_cleanup(ctx);
 
 	test = outlen != size || memcmp(c, exp, size);
