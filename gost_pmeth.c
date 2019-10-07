@@ -351,6 +351,7 @@ static int pkey_gost2012_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
     case NID_id_tc26_gost_3410_2012_512_paramSetA:
     case NID_id_tc26_gost_3410_2012_512_paramSetB:
     case NID_id_tc26_gost_3410_2012_512_paramSetC:
+    case NID_id_tc26_gost_3410_2012_512_paramSetTest:
         result =
             (EVP_PKEY_assign(pkey, NID_id_GostR3410_2012_512, ec)) ? 1 : 0;
         break;
