@@ -348,7 +348,7 @@ static int priv_decode_gost(EVP_PKEY *pk,
     const X509_ALGOR *palg = NULL;
     const ASN1_OBJECT *palg_obj = NULL;
     ASN1_INTEGER *priv_key = NULL;
-    int expected_key_len = 32;
+    int expected_key_len;
 
     if (!PKCS8_pkey_get0(&palg_obj, &pkey_buf, &priv_len, &palg, p8inf))
         return 0;
@@ -719,14 +719,13 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     const EC_POINT *pub_key;
     BIGNUM *X = NULL, *Y = NULL, *order = NULL;
     const EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pk);
-    int ptype = V_ASN1_UNDEF;
+    int ptype = V_ASN1_SEQUENCE;
     ASN1_STRING *params;
 
     algobj = OBJ_nid2obj(EVP_PKEY_base_id(pk));
 
     params = encode_gost_algor_params(pk);
     pval = params;
-    ptype = V_ASN1_SEQUENCE;
 
     order = BN_new();
     if (!order) {

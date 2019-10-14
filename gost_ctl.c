@@ -59,7 +59,7 @@ int gost_control_func(ENGINE *e, int cmd, long i, void *p, void (*f) (void))
 const char *get_gost_engine_param(int param)
 {
     char *tmp;
-    if (param < 0 || param > GOST_PARAM_MAX)
+    if (param < 0 || param >= GOST_PARAM_MAX)
         return NULL;
     if (gost_params[param] != NULL) {
         return gost_params[param];
@@ -76,7 +76,7 @@ const char *get_gost_engine_param(int param)
 int gost_set_default_param(int param, const char *value)
 {
     const char *tmp;
-    if (param < 0 || param > GOST_PARAM_MAX)
+    if (param < 0 || param >= GOST_PARAM_MAX)
         return 0;
     tmp = getenv(gost_envnames[param]);
 

@@ -209,6 +209,7 @@ int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode,
     }
     if (!hash_stream(ctx, fd, sum, hashsize)) {
         perror(filename);
+        close(fd);
         return 0;
     }
     close(fd);
