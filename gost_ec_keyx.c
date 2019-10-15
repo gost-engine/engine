@@ -286,10 +286,6 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
             }
         }
     }
-    if (!get_gost_engine_param(GOST_PARAM_CRYPT_PARAMS)
-        && param == gost_cipher_list) {
-        param = gost_cipher_list;
-    }
     if (out) {
         int dgst_nid = NID_undef;
         EVP_PKEY_get_default_digest_nid(pubk, &dgst_nid);
