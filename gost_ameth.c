@@ -424,15 +424,11 @@ static int priv_decode_gost(EVP_PKEY *pk,
 static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
 {
     ASN1_OBJECT *algobj = OBJ_nid2obj(EVP_PKEY_base_id(pk));
-    ASN1_STRING *params = encode_gost_algor_params(pk);
+    ASN1_STRING *params = NULL;
     unsigned char *buf = NULL;
     int key_len = pkey_bits_gost(pk), i = 0;
     /* unmasked private key */
     const char *pk_format = get_gost_engine_param(GOST_PARAM_PK_FORMAT);
-
-    if (!params) {
-        return 0;
-    }
 
     key_len = (key_len < 0) ? 0 : key_len / 8;
     if (key_len == 0 || !(buf = OPENSSL_malloc(key_len))) {
@@ -440,6 +436,12 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
     }
 
     if (!store_bignum(gost_get0_priv_key(pk), buf, key_len)) {
+        OPENSSL_free(buf);
+        return 0;
+    }
+
+    params = encode_gost_algor_params(pk);
+    if (!params) {
         OPENSSL_free(buf);
         return 0;
     }
@@ -455,9 +457,13 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
         ASN1_STRING *octet = NULL;
         int priv_len = 0;
         unsigned char *priv_buf = NULL;
-
-        octet = ASN1_STRING_new();
-        ASN1_OCTET_STRING_set(octet, buf, key_len);
+        octet = ASN1_STRING_new();        
+        if (!octet || !ASN1_OCTET_STRING_set(octet, buf, key_len)) {
+            ASN1_STRING_free(octet);
+            ASN1_STRING_free(params);
+            OPENSSL_free(buf);
+            return 0;
+        }
         priv_len = i2d_ASN1_OCTET_STRING(octet, &priv_buf);
         ASN1_STRING_free(octet);
         OPENSSL_free(buf);
