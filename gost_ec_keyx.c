@@ -263,6 +263,8 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
             return 0;
         }
     }
+    if (!param)
+        goto err;
     /* Check for private key in the peer_key of context */
     if (sec_key) {
         key_is_ephemeral = 0;
@@ -283,10 +285,6 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
                 goto err;
             }
         }
-    }
-    if (!get_gost_engine_param(GOST_PARAM_CRYPT_PARAMS)
-        && param == gost_cipher_list) {
-        param = gost_cipher_list;
     }
     if (out) {
         int dgst_nid = NID_undef;
