@@ -713,6 +713,7 @@ int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
     os = ASN1_OCTET_STRING_new();
 
     if (!os || !ASN1_OCTET_STRING_set(os, buf, len)) {
+        ASN1_OCTET_STRING_free(os);
         OPENSSL_free(buf);
         GOSTerr(GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS,
                 ERR_R_MALLOC_FAILURE);

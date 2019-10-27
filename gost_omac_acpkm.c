@@ -68,6 +68,7 @@ static CMAC_ACPKM_CTX *CMAC_ACPKM_CTX_new(void)
     }
     ctx->actx = EVP_CIPHER_CTX_new();
     if (ctx->actx == NULL) {
+        EVP_CIPHER_CTX_free(ctx->cctx);
         OPENSSL_free(ctx);
         return NULL;
     }
