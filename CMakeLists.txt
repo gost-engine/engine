@@ -36,9 +36,7 @@ endif()
 include (TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 if(IS_BIG_ENDIAN)
- message(STATUS "BIG_ENDIAN")
 else()
- message(STATUS "LITTLE_ENDIAN")
  add_definitions(-DL_ENDIAN)
 endif()
 
@@ -138,6 +136,9 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_omac_acpkm.c
         )
 
+set(GOST_PROVIDER_SOURCE_FILES
+        gost_prov.c)
+
 add_executable(test_digest test_digest.c)
 target_link_libraries(test_digest gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME digest
@@ -216,6 +217,11 @@ add_library(gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
 set_target_properties(gost_engine PROPERTIES VERSION ${GOST_SOVERSION} SOVERSION ${GOST_SOVERSION})
 target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+
+add_library(gost_provider SHARED ${GOST_PROVIDER_SOURCE_FILES})
+set_target_properties(gost_provider PROPERTIES PREFIX "" OUTPUT_NAME "gost_prov")
+set_target_properties(gost_provider PROPERTIES VERSION ${GOST_SOVERSION} SOVERSION ${GOST_SOVERSION})
+target_link_libraries(gost_provider gost_core ${OPENSSL_CRYPTO_LIBRARY})
 
 set(GOST_SUM_SOURCE_FILES
         gostsum.c
