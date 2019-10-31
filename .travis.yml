@@ -1,5 +1,5 @@
 sudo: required
-dist: xenial
+dist: bionic
 
 os: linux
 
@@ -32,6 +32,9 @@ matrix:
       compiler: gcc
     - env: RUN_COVERITY=1 COVERITY_SCAN_PROJECT_NAME="gost-engine" COVERITY_SCAN_BRANCH_PATTERN="*" COVERITY_SCAN_NOTIFICATION_EMAIL="beldmit@gmail.com" COVERITY_SCAN_BUILD_COMMAND="make"
       os: linux
+      compiler: gcc
+    - os: linux
+      arch: arm64
       compiler: gcc
     - os: osx
       compiler: clang
