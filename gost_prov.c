@@ -5,8 +5,7 @@
 #include <openssl/core_names.h>
 #include <openssl/params.h>
 
-#define GOST_PROV_VERSION_STR "3.0.0"
-#define GOST_PROV_FULL_VERSION_STR "3.0.0"
+#include "gost_prov.h"
 
 /* Functions provided by the core */
 static OSSL_core_gettable_params_fn *c_gettable_params = NULL;
@@ -30,7 +29,7 @@ static int gost_get_params(const OSSL_PROVIDER *prov, OSSL_PARAM params[])
     OSSL_PARAM *p;
 
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_NAME);
-    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, "GOST Provider"))
+    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, GOST_PROV_NAME))
         return 0;
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_VERSION);
     if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, GOST_PROV_VERSION_STR))
@@ -43,8 +42,7 @@ static int gost_get_params(const OSSL_PROVIDER *prov, OSSL_PARAM params[])
 }
 
 static const OSSL_ALGORITHM gost_digests[] = {
-    { "md_gost94", "gost.legacy=yes", NULL }, /* FIXME */
-		{ "md_gost2012_256:streebog256", "gost.gost=yes", NULL },
+		{ "md_gost2012_256:streebog256", "gost.gost=yes", streebog256_funcs },
 		{ "md_gost2012_512:streebog512", "gost.gost=yes", NULL },
 
     { NULL, NULL, NULL }

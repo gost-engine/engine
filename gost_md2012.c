@@ -1,168 +1,115 @@
-/**********************************************************************
- *                          gost_md2012.c                             *
- *             Copyright (c) 2013 Cryptocom LTD.                      *
- *         This file is distributed under the same license as OpenSSL *
- *                                                                    *
- *          GOST R 34.11-2012 interface to OpenSSL engine.            *
- *                                                                    *
- * Author: Alexey Degtyarev <alexey@renatasystems.org>                *
- *                                                                    *
- **********************************************************************/
+#include <openssl/core.h>
+#include <openssl/core_numbers.h>
+#include <openssl/params.h>
 
-#include <openssl/evp.h>
+#include "gost_prov.h"
 #include "gosthash2012.h"
-
-static int gost_digest_init512(EVP_MD_CTX *ctx);
-static int gost_digest_init256(EVP_MD_CTX *ctx);
-static int gost_digest_update(EVP_MD_CTX *ctx, const void *data,
-                              size_t count);
-static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md);
-static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from);
-static int gost_digest_cleanup(EVP_MD_CTX *ctx);
-static int gost_digest_ctrl_256(EVP_MD_CTX *ctx, int type, int arg,
-                                void *ptr);
-static int gost_digest_ctrl_512(EVP_MD_CTX *ctx, int type, int arg,
-                                void *ptr);
 
 const char micalg_256[] = "gostr3411-2012-256";
 const char micalg_512[] = "gostr3411-2012-512";
 
-static EVP_MD *_hidden_GostR3411_2012_256_md = NULL;
-static EVP_MD *_hidden_GostR3411_2012_512_md = NULL;
+/* Context management */
+static void *STREEBOG256_newctx(void *provctx);
+static void STREEBOG_freectx(void *dctx);
+static void *STREEBOG_dupctx(void *dctx);
 
-EVP_MD *digest_gost2012_256(void)
+/* Digest generation */
+static int STREEBOG256_digest_init(void *dctx);
+static int STREEBOG_digest_update(void *dctx, const unsigned char *in, size_t inl);
+static int STREEBOG_digest_final(void *dctx, unsigned char *out, size_t *outl,
+                    size_t outsz);
+
+/* Digest parameter descriptors */
+static const OSSL_PARAM *STREEBOG_gettable_params(void);
+static int STREEBOG256_digest_get_params(OSSL_PARAM params[]);
+
+OSSL_DISPATCH streebog256_funcs[] = {
+	{ OSSL_FUNC_DIGEST_NEWCTX, (funcptr_t)STREEBOG256_newctx },
+	{ OSSL_FUNC_DIGEST_FREECTX, (funcptr_t)STREEBOG_freectx },
+	{ OSSL_FUNC_DIGEST_DUPCTX, (funcptr_t)STREEBOG_dupctx },
+
+	{ OSSL_FUNC_DIGEST_INIT, (funcptr_t)STREEBOG256_digest_init },
+	{ OSSL_FUNC_DIGEST_UPDATE, (funcptr_t)STREEBOG_digest_update },
+	{ OSSL_FUNC_DIGEST_FINAL, (funcptr_t)STREEBOG_digest_final },
+
+	{ OSSL_FUNC_DIGEST_GETTABLE_PARAMS, (funcptr_t)STREEBOG_gettable_params },
+	{ OSSL_FUNC_DIGEST_GET_PARAMS, (funcptr_t)STREEBOG256_digest_get_params },
+
+	{ 0, NULL },
+};
+
+static void *STREEBOG256_newctx(void *provctx)
 {
-    if (_hidden_GostR3411_2012_256_md == NULL) {
-        EVP_MD *md;
-
-        if ((md =
-             EVP_MD_meth_new(NID_id_GostR3411_2012_256, NID_undef)) == NULL
-            || !EVP_MD_meth_set_result_size(md, 32)
-            || !EVP_MD_meth_set_input_blocksize(md, 64)
-            || !EVP_MD_meth_set_app_datasize(md, sizeof(gost2012_hash_ctx))
-            || !EVP_MD_meth_set_init(md, gost_digest_init256)
-            || !EVP_MD_meth_set_update(md, gost_digest_update)
-            || !EVP_MD_meth_set_final(md, gost_digest_final)
-            || !EVP_MD_meth_set_copy(md, gost_digest_copy)
-            || !EVP_MD_meth_set_ctrl(md, gost_digest_ctrl_256)
-            || !EVP_MD_meth_set_cleanup(md, gost_digest_cleanup)) {
-            EVP_MD_meth_free(md);
-            md = NULL;
-        }
-        _hidden_GostR3411_2012_256_md = md;
-    }
-    return _hidden_GostR3411_2012_256_md;
+	gost2012_hash_ctx *pctx = OPENSSL_zalloc(sizeof(gost2012_hash_ctx));
+	return pctx;
 }
 
-void digest_gost2012_256_destroy(void)
+static void STREEBOG_freectx(void *dctx)
 {
-    EVP_MD_meth_free(_hidden_GostR3411_2012_256_md);
-    _hidden_GostR3411_2012_256_md = NULL;
+	OPENSSL_free(dctx);
 }
 
-EVP_MD *digest_gost2012_512(void)
+static void *STREEBOG_dupctx(void *dctx) 
 {
-    if (_hidden_GostR3411_2012_512_md == NULL) {
-        EVP_MD *md;
-
-        if ((md =
-             EVP_MD_meth_new(NID_id_GostR3411_2012_512, NID_undef)) == NULL
-            || !EVP_MD_meth_set_result_size(md, 64)
-            || !EVP_MD_meth_set_input_blocksize(md, 64)
-            || !EVP_MD_meth_set_app_datasize(md, sizeof(gost2012_hash_ctx))
-            || !EVP_MD_meth_set_init(md, gost_digest_init512)
-            || !EVP_MD_meth_set_update(md, gost_digest_update)
-            || !EVP_MD_meth_set_final(md, gost_digest_final)
-            || !EVP_MD_meth_set_copy(md, gost_digest_copy)
-            || !EVP_MD_meth_set_ctrl(md, gost_digest_ctrl_512)
-            || !EVP_MD_meth_set_cleanup(md, gost_digest_cleanup)) {
-            EVP_MD_meth_free(md);
-            md = NULL;
-        }
-        _hidden_GostR3411_2012_512_md = md;
-    }
-    return _hidden_GostR3411_2012_512_md;
+	gost2012_hash_ctx *pctx = OPENSSL_zalloc(sizeof(gost2012_hash_ctx));
+	if (pctx == NULL)
+		return NULL;
+	
+	if (pctx)
+		memcpy(pctx, dctx, sizeof(gost2012_hash_ctx));
+	
+	return pctx;
 }
 
-void digest_gost2012_512_destroy(void)
+static int STREEBOG256_digest_init(void *dctx)
 {
-    EVP_MD_meth_free(_hidden_GostR3411_2012_512_md);
-    _hidden_GostR3411_2012_512_md = NULL;
+	init_gost2012_hash_ctx((gost2012_hash_ctx *)dctx, 256);
+	return 1;
 }
 
-static int gost_digest_init512(EVP_MD_CTX *ctx)
+static int STREEBOG_digest_update(void *dctx, const unsigned char *in, size_t inl)
 {
-    init_gost2012_hash_ctx((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx),
-                           512);
+    gost2012_hash_block((gost2012_hash_ctx *)dctx, in, inl);
     return 1;
 }
 
-static int gost_digest_init256(EVP_MD_CTX *ctx)
+static int STREEBOG_digest_final(void *dctx, unsigned char *out, size_t *outl,
+                    size_t outsz)
 {
-    init_gost2012_hash_ctx((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx),
-                           256);
-    return 1;
+	gost2012_hash_ctx *pctx = (gost2012_hash_ctx *)dctx;
+
+	if (pctx->digest_size/8 > outsz)
+		return 0;
+
+	gost2012_finish_hash(pctx, out);
+	*outl = pctx->digest_size/8;
+	return 1;
 }
 
-static int gost_digest_update(EVP_MD_CTX *ctx, const void *data, size_t count)
+static const OSSL_PARAM *STREEBOG_gettable_params(void)
 {
-    gost2012_hash_block((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), data,
-                        count);
-    return 1;
+    static const OSSL_PARAM table[] = {
+        OSSL_PARAM_size_t("blocksize", NULL),
+        OSSL_PARAM_size_t("size", NULL),
+  /*      OSSL_PARAM_utf8_ptr("micalg", NULL, strlen(micalg_256)+1), */
+        OSSL_PARAM_END
+    };
+
+    return table;
 }
 
-static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md)
+static int STREEBOG256_digest_get_params(OSSL_PARAM params[])
 {
-    gost2012_finish_hash((gost2012_hash_ctx *) EVP_MD_CTX_md_data(ctx), md);
-    return 1;
-}
+    OSSL_PARAM *p;
 
-static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
-{
-    if (EVP_MD_CTX_md_data(to) && EVP_MD_CTX_md_data(from))
-        memcpy(EVP_MD_CTX_md_data(to), EVP_MD_CTX_md_data(from),
-               sizeof(gost2012_hash_ctx));
-
-    return 1;
-}
-
-static int gost_digest_cleanup(EVP_MD_CTX *ctx)
-{
-    if (EVP_MD_CTX_md_data(ctx))
-        memset(EVP_MD_CTX_md_data(ctx), 0x00, sizeof(gost2012_hash_ctx));
-
-    return 1;
-}
-
-static int gost_digest_ctrl_256(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
-{
-    switch (type) {
-    case EVP_MD_CTRL_MICALG:
-        {
-            *((char **)ptr) = OPENSSL_malloc(strlen(micalg_256) + 1);
-            if (*((char **)ptr) != NULL) {
-                strcpy(*((char **)ptr), micalg_256);
-                return 1;
-            }
+    if ((p = OSSL_PARAM_locate(params, "blocksize")) != NULL)
+        if (!OSSL_PARAM_set_size_t(p, 64))
             return 0;
-        }
-    default:
-        return 0;
-    }
-}
-
-static int gost_digest_ctrl_512(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
-{
-    switch (type) {
-    case EVP_MD_CTRL_MICALG:
-        {
-            *((char **)ptr) = OPENSSL_malloc(strlen(micalg_512) + 1);
-            if (*((char **)ptr) != NULL) {
-                strcpy(*((char **)ptr), micalg_512);
-                return 1;
-            }
-        }
-    default:
-        return 0;
-    }
+    if ((p = OSSL_PARAM_locate(params, "size")) != NULL)
+        if (!OSSL_PARAM_set_size_t(p, 32))
+            return 0;
+/*    if ((p = OSSL_PARAM_locate(params, "micalg")) != NULL)
+        if (!OSSL_PARAM_set_utf8_ptr(p, micalg_256))
+            return 0; */
+    return 1;
 }
