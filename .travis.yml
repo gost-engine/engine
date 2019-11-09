@@ -30,8 +30,16 @@ matrix:
     - env: ASAN=-DASAN=1
       os: linux
       compiler: gcc
-    - env: RUN_COVERITY=1 COVERITY_SCAN_PROJECT_NAME="gost-engine" COVERITY_SCAN_BRANCH_PATTERN="*" COVERITY_SCAN_NOTIFICATION_EMAIL="beldmit@gmail.com" COVERITY_SCAN_BUILD_COMMAND="make"
+    - env: COVERITY_SCAN_PROJECT_NAME="gost-engine" COVERITY_SCAN_BRANCH_PATTERN="*" COVERITY_SCAN_NOTIFICATION_EMAIL="beldmit@gmail.com" COVERITY_SCAN_BUILD_COMMAND="make"
+      if: type == cron
       os: linux
+      compiler: gcc
+      script:
+        - mkdir build
+        - cd build
+        - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ..
+        - curl -s "https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh" | bash || true
+    - os: linux
       compiler: gcc
     - os: linux
       arch: arm64
@@ -53,5 +61,5 @@ script:
   - mkdir build
   - cd build
   - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ${ASAN} ..
-  - if [ ! -z ${COVERITY_SCAN_TOKEN+x} -a "${RUN_COVERITY}" = "1" ]; then curl -s "https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh" | bash || true; else make; fi
+  - make
   - make test CTEST_OUTPUT_ON_FAILURE=1
