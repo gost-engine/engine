@@ -117,7 +117,10 @@ namespace eval test {
 				if [info exists $file] {puts [test_log] "Deleting $file"
 				   file delete $file}
 			}	
-		}	
+		} {
+			# signal to a caller that we had failures
+			exit 1
+		}
 	}
    #
    # Вовзращает идентификатор канала, куда пишется лог тестов.
@@ -282,7 +285,7 @@ proc rus {string} {
 		puts -nonewline [rus [format "Тест%5d: %-60s:" $no [string range $testname 0 59]]]
 		flush stdout
 		set curtest $testname
-		log [rus "Тест $no: $testname start"]
+		log [rus "\n\nТест $no: $testname start"]
 	}
 	#
 	# Вызывается при пропуске теста
