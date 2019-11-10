@@ -236,6 +236,10 @@ add_custom_target(tags
     COMMAND ctags -R . ${OPENSSL_ROOT_DIR}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+add_custom_target(tcl_tests
+    COMMAND ENGINE_DIR=${OUTPUT_DIRECTORY} sh ./runtest.sh
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
+
 add_executable(test_tlstree test_tlstree.c)
 target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
 
