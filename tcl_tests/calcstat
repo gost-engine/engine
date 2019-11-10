@@ -4,7 +4,7 @@ if {$tcl_platform(platform) == "unix"} {
 }
 lappend auto_path [file dirname [info script]] 
 proc rus {string} {
-	return [encoding convertfrom cp1251 [encoding convertto $string]]
+	return $string
 }
 proc compare_order {el1 el2} {
 	global order
@@ -13,7 +13,7 @@ proc compare_order {el1 el2} {
 set statsfile stats
 if {$argc} {set statsfile [lindex $argv 0]}
 set f [open $statsfile]
-fconfigure $f -encoding cp1251
+fconfigure $f -encoding utf-8
 set ordno 0
 while {[gets $f line] >=0} {
 	set script [lindex $line 0]
@@ -34,7 +34,7 @@ proc output {line} {
 
 if {$argc > 1} {
 	set out [open [lindex $argv 1] w]
-	fconfigure $out -encoding cp1251
+	fconfigure $out -encoding utf-8
 }	
 
 output [format "%-12s %-41s%5s %4s %4s %4s %4s"  File "Test name" Total ok fail skip ign]  

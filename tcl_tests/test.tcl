@@ -1,4 +1,3 @@
-# -*- coding: cp1251 -*-
 # Установка номера тестового ПРА
 
 namespace eval vizir {
@@ -109,7 +108,7 @@ namespace eval test {
 		} 
 		set test_id [file rootname [file tail [info script]]]$suffix
 		set stat [open "stats" a]
-		fconfigure $stat -encoding cp1251
+		fconfigure $stat -encoding utf-8
 		puts $stat [list $test_id [rus $t_name] $no $ok $failed $p_skip $c_skip] 
 		close $stat
 		if {!$failed} {	
@@ -263,21 +262,8 @@ proc listcompare {list1 list2 time} {
 	}	
 	return 1
 }
-# Перекодирует строку из кодировки скрипта (assumed 1251)
-# в текущую системную
-
-if {[encoding system] == "utf-8" } {
-
 proc rus {string} {
-	return [encoding convertfrom cp1251 $string]
-}
-
-} else {
-
-proc rus {string} "
-	return \[encoding convertfrom cp1251 \[encoding convertto [encoding system] \$string\]\]
-"
-
+	return $string
 }
    #
    # Пишет строку в лог

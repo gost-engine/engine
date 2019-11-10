@@ -1,5 +1,4 @@
 #!/bin/sh
-# -*- coding: cp1251 -*-
 
 # Состав набора тестов
 # 1. Этот скрипт
@@ -65,6 +64,7 @@ if [ -z "$TCLSH" ]; then
 else
 	echo "Using $TCLSH as tclsh"
 fi
+TCLSH="$TCLSH -encoding utf-8"
 
 APP_SUFFIX=`basename $OPENSSL_APP .exe|sed s/openssl//`
 [ -n "$OPENSSL_APP" ]&& export OPENSSL_APP

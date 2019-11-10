@@ -1,5 +1,4 @@
 #!/usr/bin/tclsh
-# -*- coding: cp1251 -*-
 if {[info exists env(PKG_PATH)]} {
 	lappend auto_path $env(PKG_PATH)
 } else {	
