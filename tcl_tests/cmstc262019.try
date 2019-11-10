@@ -1,0 +1,34 @@
+#!/usr/bin/tclsh
+
+lappend auto_path [file dirname [info script]]
+package require ossltest
+file delete -force $::test::dir/tc26_cms
+file copy -force tc26_cms $::test::dir
+cd $::test::dir
+
+start_tests "CMS tests, TC26 examples"
+
+#BUILD_AT=obj_mid.l64/ ./openssl_wrap.sh cms -verify -in ../standalone-test/tc26_cms/signed_a111.pem -inform PEM -noverify
+#BUILD_AT=obj_mid.l64/ ./openssl_wrap.sh cms -verify -in ../standalone-test/tc26_cms/signed_a121.pem -inform PEM -noverify
+
+test "Signed data, 512 bits, signed attributes" {
+	grep "Verification successful" [openssl "cms -verify -in tc26_cms/signed_a111.pem -inform PEM -noverify"]
+} 0 "Verification successful
+"
+
+test "Signed data, 256 bits, no signed attributes" {
+	grep "Verification successful" [openssl "cms -verify -in tc26_cms/signed_a121.pem -inform PEM -noverify"]
+} 0 "Verification successful
+"
+
+test "Digested data, 256 bits" {
+	grep "Verification successful" [openssl "cms -digest_verify -in tc26_cms/hashed_a311.pem -inform PEM -out hashed_a311.out"]
+} 0 "Verification successful
+"
+
+test "Digested data, 512 bits" {
+	grep "Verification successful" [openssl "cms -digest_verify -in tc26_cms/hashed_a321.pem -inform PEM -out hashed_a321.out"]
+} 0 "Verification successful
+"
+
+end_tests
