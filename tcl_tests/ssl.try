@@ -1,5 +1,5 @@
 #!/usr/bin/tclsh
-# -*- coding: cp1251 -*-
+
 lappend auto_path [file dirname [info script]]
 package require ossltest
 if {$argc==2} {

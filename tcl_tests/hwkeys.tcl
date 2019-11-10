@@ -1,4 +1,3 @@
-# -*- coding: cp1251 -*-
 package require testlib
 
 start_tests "Работа с аппаратными носителями"
