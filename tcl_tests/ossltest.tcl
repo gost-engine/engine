@@ -563,7 +563,7 @@ proc pubkey_long_name {alg} {
 		gost2001:C {return "id-GostR3410-2001-CryptoPro-C-ParamSet"}
 		gost2001:XA {return "id-GostR3410-2001-CryptoPro-XchA-ParamSet"}
 		gost2001:XB {return "id-GostR3410-2001-CryptoPro-XchB-ParamSet"}
-		#gost2012_256:0 {return param_pubkey01_cptest}
+		gost2012_256:0 {return "id-GostR3410-2001-TestParamSet"}
 		gost2012_256:A {return "id-GostR3410-2001-CryptoPro-A-ParamSet"}
 		gost2012_256:B {return "id-GostR3410-2001-CryptoPro-B-ParamSet"}
 		gost2012_256:C {return "id-GostR3410-2001-CryptoPro-C-ParamSet"}
