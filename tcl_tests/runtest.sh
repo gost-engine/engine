@@ -105,6 +105,12 @@ OPENSSL_DEBUG_MEMORY=on
 export OPENSSL_DEBUG_MEMORY
 
 fail=0
+if [ "$*" ]; then
+  for t do
+    $TCLSH $t.try || fail=1
+  done
+  exit $fail
+fi
 for t in $BASE_TESTS; do
 	$TCLSH $t.try || fail=1
 done
