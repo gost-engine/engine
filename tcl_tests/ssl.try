@@ -44,8 +44,8 @@ if {[info exists env(ALG_LIST)]} {
 array set suites {
 rsa:1024 {ECDHE-RSA-AES256-SHA}
 gost2001:XA {GOST2001-GOST89-GOST89 GOST2001-NULL-GOST94@SECLEVEL=0 GOST2012-GOST8912-GOST8912 GOST2012-NULL-GOST12@SECLEVEL=0}
-gost2012_256:XA {GOST2012-GOST8912-GOST8912 GOST2012-NULL-GOST12@SECLEVEL=0 GOST2012-MAGMA-MAGMAOMAC GOST2012-KUZNYECHIK-KUZNYECHIKOMAC}
-gost2012_512:A {GOST2012-GOST8912-GOST8912 GOST2012-NULL-GOST12@SECLEVEL=0 GOST2012-MAGMA-MAGMAOMAC GOST2012-KUZNYECHIK-KUZNYECHIKOMAC}
+gost2012_256:XA {GOST2012-GOST8912-GOST8912 GOST2012-NULL-GOST12@SECLEVEL=0}
+gost2012_512:A {GOST2012-GOST8912-GOST8912 GOST2012-NULL-GOST12@SECLEVEL=0}
 }
 
 #
@@ -288,7 +288,7 @@ foreach proto $proto_list {
 		} else {
 			set expected_proto "TLSv1.0"
 		}
-
+if {0} {
 		test "Умолчательный хендшейк с ключами $alg $proto" {
 			set list [client_server [list -connect localhost:4433\
 				-CAfile $::test::ca/cacert.pem -verify_return_error -verify 1\
@@ -315,7 +315,7 @@ foreach proto $proto_list {
 				"GET /\n"]
 			list [lindex $list 2] [grep "^New," [lindex $list 0]]
 		} 0 [list 0 [string repeat "New, $expected_proto, Cipher is $etalon\n" 2]]
-
+}; # if {0}
 	}
 }
 
