@@ -98,7 +98,7 @@ test -skip {![file exists request3.der]} -createsfiles response3.der "Форми
 } 0 1
 
 test -skip {![file exists response3.der] } "Проверяем ответ на запрос 3" {
-	grep "Response .erif" [openssl "ocsp -[hash_short_name [alg_hash $alg]] $client_args -respin response3.der"]
+	grep "Response .erif" [openssl "ocsp $client_args -respin response3.der"]
 } 0 "Response verify OK\n"
 
 
@@ -139,7 +139,7 @@ test -skip {![file exists request5.der]} -createsfiles response5.der "Форми
 } 0 1
 
 test -skip {![file exists response5.der] } "Проверяем ответ на запрос 5" {
-	grep "Response .erif" [openssl "ocsp -[hash_short_name [alg_hash $alg]] $client_args -respin response5.der"]
+	grep "Response .erif" [openssl "ocsp $client_args -respin response5.der"]
 } 0 "Response verify OK\n"
 
 test -skip {![file exists response5.der]} "Проверяем статус сертификатoв" {
