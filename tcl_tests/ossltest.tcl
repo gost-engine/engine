@@ -543,7 +543,16 @@ proc param_pubkey {alg} {
 }
 
 
-proc param_hash_long_name {hash_alg} {
+proc param_hash_long_name {hash_alg {pk_alg {}}} {
+    # R 1323565.1.023-2018 (5.2.1.2) not recommends or forbids encoding
+    # hash oid into TC26 (2012) parameters in AlgorithmIdentifier, so
+    # this is removed.
+    # Note:
+    # Commit d47b346 reverts this behavior for 512-bit 0,A,B parameters
+    switch -glob $pk_alg {
+	gost2012_256:TC* {return}
+	gost2012_512:C {return}
+    }
     switch -glob $hash_alg {
         *hash_94 {return "id-GostR3411-94-CryptoProParamSet"}
         hash_12_256 {return "GOST R 34.11-2012 with 256 bit hash"}
@@ -569,17 +578,21 @@ proc pubkey_long_name {alg} {
 		gost2012_256:C {return "id-GostR3410-2001-CryptoPro-C-ParamSet"}
 		gost2012_256:XA {return "id-GostR3410-2001-CryptoPro-XchA-ParamSet"}
 		gost2012_256:XB {return "id-GostR3410-2001-CryptoPro-XchB-ParamSet"}
+		gost2012_256:TCA {return "GOST R 34.10-2012 (256 bit) ParamSet A"}
+		gost2012_256:TCB {return "GOST R 34.10-2012 (256 bit) ParamSet B"}
+		gost2012_256:TCC {return "GOST R 34.10-2012 (256 bit) ParamSet C"}
+		gost2012_256:TCD {return "GOST R 34.10-2012 (256 bit) ParamSet D"}
 		#gost2012_512:0 {return param_pubkey12_512_0}
 		gost2012_512:A {return 	"GOST R 34.10-2012 (512 bit) ParamSet A"}
 		gost2012_512:B {return 	"GOST R 34.10-2012 (512 bit) ParamSet B"}
+		gost2012_512:C {return  "GOST R 34.10-2012 (512 bit) ParamSet C"}
 	}
 }
-
-
 
 proc mkObjList {args} {
 	set out ""
 	foreach name $args {
+		if {$name eq {}} continue
 		append out " OBJECT            :$name\n"
 	}
 	return $out
