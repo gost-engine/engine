@@ -66,7 +66,7 @@ test -skip {![file exists broken_op_$alg_fn.msg]} "Verifying broken $alg opaque 
 } 1 "Verification failure"
 
 test -skip {![file exists sign_det_$alg_fn.pem]} "Verifying detached $alg signature via cms" {
-	grep Veri [openssl "cms -verify -content sign.dat -inform PEM -in sign_det_$alg_fn.pem -out verified.txt -noverify"]
+	grep Veri [openssl "cms -verify -binary -content sign.dat -inform PEM -in sign_det_$alg_fn.pem -out verified.txt -noverify"]
 } 0 "Verification successful
 "
 
