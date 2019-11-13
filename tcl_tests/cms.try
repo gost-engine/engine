@@ -158,7 +158,7 @@ test -skip {![file exists cms_sign_$alg_fn.pem]} "Checking oids in cms struct" {
 } 0 [mkObjList [hash_long_name $alg] [smime_hash_with_sign_long_name $ca_sign_alg] [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg]] [smime_hash_with_sign_long_name  $ca_sign_alg] [hash_long_name $alg] "GOST R 34.11-2012 with 256 bit hash" "GOST R 34.11-2012 with 512 bit hash" "GOST R 34.11-94" "GOST 28147-89" [alg_long_name $alg]]
 
 test -skip {![file exists cms_sign_det_$alg_fn.pem]} "Verifying detached $alg cms_signature" {
-	grep Veri [openssl "cms -verify -content cms_sign.dat -inform PEM -in cms_sign_det_$alg_fn.pem -out cms_verified.txt -noverify"]
+	grep Veri [openssl "cms -verify -binary -content cms_sign.dat -inform PEM -in cms_sign_det_$alg_fn.pem -out cms_verified.txt -noverify"]
 } 0 "Verification successful
 "
 
