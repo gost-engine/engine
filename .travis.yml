@@ -15,7 +15,7 @@ env:
   global:
     - PREFIX=${HOME}/opt
     - PATH=${PREFIX}/bin:${PATH}
-    - OPENSSL_BRANCH=OpenSSL_1_1_0-stable
+    - OPENSSL_BRANCH=OpenSSL_1_1_1-stable
 
 matrix:
   include:
