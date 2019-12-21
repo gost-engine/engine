@@ -123,6 +123,36 @@ static const struct hash_testvec testvecs[] = {
 			"\x3f\x0c\xb9\xdd\xdc\x2b\x64\x60"
 			"\x14\x3b\x03\xda\xba\xc9\xfb\x28",
 	},
+	{ /* M5 */
+		.nid = NID_id_GostR3411_2012_256,
+		.name = "M5",
+		.plaintext =
+			"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+			"\x00\x00\x00\x00\x00\x00\x00\x00"
+			"\x00\x00\x00\x00\x00\x00\x00\x00"
+			"\x3e\x00\x03\x00\xfe\xff\x09\x00"
+			"\x06\x00\x00\x00\x00\x00\x00\x00"
+			"\x00\x00\x00\x00\x01\x00\x00\x00"
+			"\x01\x00\x00\x00\x00\x00\x00\x00"
+			"\x00\x10\x00\x00\x24\x00\x00\x00"
+			"\x01\x00\x00\x00\xfe\xff\xff\xff"
+			"\x00\x00\x00\x00\x00\x00\x00\x00"
+			"\xff\xff\xff\xff\xff\xff\xff\xff"
+			"\xff\xff\xff\xff\xff\xff\xff\xff"
+			"\xff\xff\xff\xff\xff\xff\xff\xff"
+			"\xff\xff\xff\xff\xff\xff\xff\xff"
+			"\xff\xff\xff\xff\xff\xff\xff\xff"
+			"\xff\xff\xff\xff\xff\xff\xff\xff"
+			"\xff\xff\xff\xff\xff\xff\xff\xff"
+			"\xff\xff\xff\xff\xff\xff\xff\xff",
+		.psize = 144,
+		.digest =
+			"\xc7\x66\x08\x55\x40\xca\xaa\x89"
+			"\x53\xbf\xcf\x7a\x1b\xa2\x20\x61"
+			"\x9c\xee\x50\xd6\x5d\xc2\x42\xf8"
+			"\x2f\x23\xba\x4b\x18\x0b\x18\xe0",
+	},
+
 	{ 0 }
 };
 
@@ -152,6 +182,31 @@ static int do_digest(int hash_nid, const char *plaintext, unsigned int psize,
 	if (memcmp(md, etalon, mdlen) != 0) {
 		printf(cRED "digest mismatch\n" cNORM);
 		return 1;
+	}
+	
+	/* small chunk test 63+64+rest*/
+	if( psize>128 ){
+		
+		T(ctx = EVP_MD_CTX_new());
+		T(EVP_DigestInit(ctx, mdtype));
+		T(EVP_DigestUpdate(ctx, plaintext, 63));
+		T(EVP_DigestUpdate(ctx, plaintext + 63, 64));
+		T(EVP_DigestUpdate(ctx, plaintext + 63 + 64, psize - 63 - 64));
+		
+		T(EVP_DigestFinal(ctx, md, &len));
+		EVP_MD_CTX_free(ctx);
+		
+		if (len != mdlen) {
+			printf(cRED "digest output len mismatch %u != %u (expected)\n" cNORM,
+				len, mdlen);
+			return 1;
+		}
+		
+		if (memcmp(md, etalon, mdlen) != 0) {
+			printf(cRED "digest mismatch\n" cNORM);
+			return 1;
+		}
+		
 	}
 
 	return 0;

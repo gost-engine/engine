@@ -33,11 +33,24 @@
 # include "gosthash2012_ref.h"
 #endif
 
+#if defined(_WIN32) || defined(_WINDOWS)
+# define INLINE __inline
+#else
+# define INLINE inline
+#endif
+
 #ifdef _MSC_VER
 # define ALIGN(x) __declspec(align(x))
 #else
 # define ALIGN(x) __attribute__ ((__aligned__(x)))
 #endif
+
+# if defined(__GNUC__) || defined(__clang__)
+#  define RESTRICT __restrict__
+# else
+#  define RESTRICT
+# endif
+
 
 ALIGN(16)
 typedef union uint512_u {
@@ -50,7 +63,7 @@ typedef union uint512_u {
 /* GOST R 34.11-2012 hash context */
 typedef struct gost2012_hash_ctx {
     unsigned char buffer[64];
-    union uint512_u hash;
+    //union uint512_u hash;
     union uint512_u h;
     union uint512_u N;
     union uint512_u Sigma;
