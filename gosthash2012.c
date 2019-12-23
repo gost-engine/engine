@@ -9,7 +9,7 @@
  */
 
 #include "gosthash2012.h"
-
+#include <assert.h>
 
 
 #define BSWAP64(x) \
@@ -37,40 +37,36 @@ void init_gost2012_hash_ctx(gost2012_hash_ctx * CTX,
 
 static INLINE void pad(gost2012_hash_ctx * CTX)
 {
-    /* this is unreachable condition. It can be removed without a negative impact */ 
+    
+    assert( CTX->bufsize < 64 );
+    /* this is unreachable condition. It can be removed without any consequences  
     if (CTX->bufsize >= sizeof(CTX->buffer) )
         return;
+    */
+    
 
     memset(&(CTX->buffer[CTX->bufsize]), 0x00, sizeof(CTX->buffer) - CTX->bufsize  );
     CTX->buffer[CTX->bufsize] = 0x01;
 }
 
-static INLINE void add512(union uint512_u * RESTRICT x,
-                          const union uint512_u * RESTRICT y)
+static INLINE void add512(union uint512_u * RESTRICT x, const union uint512_u * RESTRICT y)
 {
 #ifndef __GOST3411_BIG_ENDIAN__
-    unsigned int CF=0;
+    unsigned long CF=0;
     unsigned long long tmp;
     unsigned int i;
 
     for (i = 0; i < 8; i++)
     {
-        /* Detecting integer overflow condition for three numbers
-         * in a portable way is tricky a little. */
-
-        /* Step 1: numbers cause overflow */
         tmp = x->QWORD[i] + y->QWORD[i] + CF;
 	
-		if (tmp == x->QWORD[i]){
-			 //CF not changed
-		}else if (tmp < x->QWORD[i])
-            CF = 1; //overflow
-        else
-            CF = 0; //no overflow
-		x->QWORD[i] = tmp;
+        if (tmp != x->QWORD[i])
+            CF = (tmp < x->QWORD[i]);
         
+        x->QWORD[i] = tmp;        
     }
 #else
+
     const unsigned char *yp;
     unsigned char *xp;
     unsigned int i;
@@ -88,8 +84,8 @@ static INLINE void add512(union uint512_u * RESTRICT x,
 #endif
 }
 
-static void g(union uint512_u *h, const union uint512_u *N,
-              const union uint512_u *m)
+static void g(union uint512_u * RESTRICT h, const union uint512_u * RESTRICT N,
+              const union uint512_u * RESTRICT m)
 {
 #ifdef __GOST3411_HAS_SSE2__
     __m128i xmm0, xmm2, xmm4, xmm6; /* XMMR0-quadruple */
@@ -137,12 +133,12 @@ static void g(union uint512_u *h, const union uint512_u *N,
 #endif
 }
 
-static INLINE void stage2(gost2012_hash_ctx * CTX, const union uint512_u *data)
+static INLINE void stage2(gost2012_hash_ctx * CTX)
 {
-    g(&(CTX->h), &(CTX->N), data);
+    g(&(CTX->h), &(CTX->N), (const union uint512_u *)&(CTX->buffer[0]) );
 
     add512(&(CTX->N), &buffer512);
-    add512(&(CTX->Sigma), data);
+    add512(&(CTX->Sigma), (const union uint512_u *)&(CTX->buffer[0]) );
 }
 
 static INLINE void stage3(gost2012_hash_ctx * CTX)
@@ -164,9 +160,7 @@ static INLINE void stage3(gost2012_hash_ctx * CTX)
        
     add512(&(CTX->N), buf);
     g(&(CTX->h), &buffer0, (const union uint512_u *)&(CTX->N));
-
     g(&(CTX->h), &buffer0, (const union uint512_u *)&(CTX->Sigma));
-    //memcpy(&(CTX->hash), &(CTX->h), sizeof(uint512_u));
 }
 
 /*
@@ -174,11 +168,20 @@ static INLINE void stage3(gost2012_hash_ctx * CTX)
  *
  */
 void gost2012_hash_block(gost2012_hash_ctx * CTX,
-                         const unsigned char *data, size_t len)
+                         const unsigned char * data, size_t len)
 {
     register size_t chunksize;
     register size_t bufsize = CTX->bufsize;
     
+    if(bufsize==0){
+        while(len>=64){
+        	memcpy(&CTX->buffer[bufsize], data, 64);
+		len   -= 64;
+		data  += 64; 
+		stage2(CTX);	
+	}
+    }	
+        
     while (len) {
         chunksize = 64 - bufsize;
         if (chunksize > len)
@@ -191,7 +194,7 @@ void gost2012_hash_block(gost2012_hash_ctx * CTX,
         data    += chunksize;
 
         if (bufsize == 64) {
-            stage2(CTX, (const union uint512_u *)&(CTX->buffer[0]));
+            stage2(CTX);
             bufsize = 0;
         }
     }
