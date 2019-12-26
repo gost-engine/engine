@@ -1071,15 +1071,14 @@ static int gost_imit_init_cp_12(EVP_MD_CTX *ctx)
 static void mac_block_mesh(struct ossl_gost_imit_ctx *c,
                            const unsigned char *data)
 {
-    unsigned char buffer[8];
     /*
-     * We are using local buffer for iv because CryptoPro doesn't interpret
+     * We are using NULL for iv because CryptoPro doesn't interpret
      * internal state of MAC algorithm as iv during keymeshing (but does
      * initialize internal state from iv in key transport
      */
     assert(c->count % 8 == 0 && c->count <= 1024);
     if (c->key_meshing && c->count == 1024) {
-        cryptopro_key_meshing(&(c->cctx), buffer);
+        cryptopro_key_meshing(&(c->cctx), NULL);
     }
     mac_block(&(c->cctx), c->buffer, data);
     c->count = c->count % 1024 + 8;
