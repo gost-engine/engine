@@ -621,15 +621,18 @@ int gost_mac_iv(gost_ctx * ctx, int mac_len, const unsigned char *iv,
 /* Implements key meshing algorithm by modifing ctx and IV in place */
 void cryptopro_key_meshing(gost_ctx * ctx, unsigned char *iv)
 {
-    unsigned char newkey[32], newiv[8];
+    unsigned char newkey[32];
     /* Set static keymeshing key */
     /* "Decrypt" key with keymeshing key */
     gost_dec(ctx, CryptoProKeyMeshingKey, newkey, 4);
     /* set new key */
     gost_key(ctx, newkey);
     /* Encrypt iv with new key */
-    gostcrypt(ctx, iv, newiv);
-    memcpy(iv, newiv, 8);
+    if (iv != NULL ) {
+        unsigned char newiv[8];
+        gostcrypt(ctx, iv, newiv);
+        memcpy(iv, newiv, 8);
+    }
 }
 
 void acpkm_magma_key_meshing(gost_ctx * ctx)
