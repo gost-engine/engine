@@ -11,7 +11,7 @@
 #define _GOST_COMPAT_H
 
 # include <openssl/opensslv.h>
-# if (OPENSSL_VERSION_NUMBER <= 0x10002100L)
+# if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 
 # include <string.h>
 
@@ -342,7 +342,7 @@ static inline int (*EVP_MD_meth_get_ctrl(const EVP_MD *md))(EVP_MD_CTX *ctx, int
     return md->md_ctrl;
 }
 
-# endif /* (OPENSSL_VERSION_NUMBER <= 0x10002100L) */
+# endif /* (OPENSSL_VERSION_NUMBER < 0x10100000L) */
 
 # ifndef NID_id_tc26_cipher_gostr3412_2015_kuznyechik
 #  define NID_id_tc26_cipher_gostr3412_2015_kuznyechik                  1176
