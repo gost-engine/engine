@@ -67,6 +67,14 @@ else
 fi
 TCLSH="$TCLSH -encoding utf-8"
 
+echo "PWD: $PWD"
+: ${OPENSSL_CONF:=$PWD/openssl-gost.cnf}
+echo "OPENSSL_CONF: $OPENSSL_CONF"
+export OPENSSL_CONF
+echo "ENGINE_DIR: $ENGINE_DIR"
+: ${OPENSSL_ENGINES:=$ENGINE_DIR}
+echo "OPENSSL_ENGINES: $OPENSSL_ENGINES"
+export OPENSSL_ENGINES
 APP_SUFFIX=`basename $OPENSSL_APP .exe|sed s/openssl//`
 [ -n "$OPENSSL_APP" ]&& export OPENSSL_APP
 ENGINE_NAME=`$TCLSH getengine.tcl`
@@ -116,7 +124,6 @@ for t in $BASE_TESTS; do
 done
 
 if false; then # ignore some tests for a time
-: ${OPENSSL_CONF:=$PWD/openssl-gost.cnf}
 ALG_LIST="rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A" $TCLSH ssl.try -clientconf $OPENSSL_CONF || fail=1
 ALG_LIST="rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A" $TCLSH ssl.try -serverconf $OPENSSL_CONF || fail=1
 	
