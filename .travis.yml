@@ -50,7 +50,7 @@ before_script:
   - sudo cpanm --notest Test2::V0 > build.log 2>&1 || (cat build.log && exit 1)
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
-  - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} && make -j$(nproc) all && make install_sw > build.log 2>&1 || (cat build.log && exit 1)
+  - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} && travis_wait make -s -j$(nproc) all && make -s install_sw
   - cd ..
 
 script:
