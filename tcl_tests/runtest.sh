@@ -120,7 +120,21 @@ if [ "$*" ]; then
   exit $fail
 fi
 for t in $BASE_TESTS; do
-	$TCLSH $t.try || fail=1
+	if [ "$CI" ]; then
+		if $TCLSH $t.try > $TESTDIR/$t.out 2>&1; then
+			head -1 $TESTDIR/$t.out
+		else
+			fail=1
+			cat $TESTDIR/$t.out
+			echo "=== Output failures of $TESTDIR/$t.log ==="
+			awk "/ ends failed/" RS= ORS='\n\n' $TESTDIR/$t.log |
+				sed 's/^/\t/'
+			echo "=== End of $TESTDIR/$t.log ==="
+			exit 1
+		fi
+	else
+		$TCLSH $t.try || fail=1
+	fi
 done
 
 if false; then # ignore some tests for a time
