@@ -5,7 +5,7 @@ FreeBSD_task:
     PREFIX: ${HOME}/opt
     LD_LIBRARY_PATH: ${PREFIX}/lib
     PATH: ${PREFIX}/bin:${PATH}
-    OPENSSL_BRANCH: OpenSSL_1_1_1-stable
+    OPENSSL_BRANCH: master
   install_script:
     - pkg install -y git cmake p5-App-cpanminus gdb pkgconf
     - sudo cpanm --notest Test2::V0
