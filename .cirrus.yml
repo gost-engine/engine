@@ -3,7 +3,6 @@ FreeBSD_task:
     image_family: freebsd-12-1
   env:
     PREFIX: ${HOME}/opt
-    LD_LIBRARY_PATH: ${PREFIX}/lib
     PATH: ${PREFIX}/bin:${PATH}
     OPENSSL_BRANCH: master
   install_script:
@@ -12,7 +11,7 @@ FreeBSD_task:
   script:
     - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
     - cd openssl
-    - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} && make all install_sw > build.log 2>&1 || (cat build.log && exit 1)
+    - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib && make all install_sw > build.log 2>&1 || (cat build.log && exit 1)
     - cd ..
     - mkdir build
     - cd build
