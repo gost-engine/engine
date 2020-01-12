@@ -47,16 +47,13 @@ before_script:
   - sudo cpanm --notest Test2::V0 > build.log 2>&1 || (cat build.log && exit 1)
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
-  - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} && travis_wait make -s -j$(nproc) all && make -s install_sw
+  - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib && travis_wait make -s -j$(nproc) all && make -s install_sw
   - cd ..
 
 script:
-  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then export LD_LIBRARY_PATH="${PREFIX}/lib:${LD_LIBRARY_PATH:-}"; fi
-  - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then export DYLD_LIBRARY_PATH="${PREFIX}/lib:${DYLD_LIBRARY_PATH:-}"; fi
   - mkdir build
   - cd build
   - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ${ASAN} ..
   - make
   - make test CTEST_OUTPUT_ON_FAILURE=1
   - if [ -z "$ASAN" ]; then make tcl_tests; fi
-
