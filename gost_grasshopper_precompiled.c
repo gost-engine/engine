@@ -7,6 +7,11 @@
 #include "gost_grasshopper_defines.h"
 #include "gost_grasshopper_math.h"
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push 
+#pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
 const grasshopper_w128_t grasshopper_pil_enc128[GRASSHOPPER_MAX_BIT_PARTS][256] = {
 {
 {
@@ -36973,3 +36978,6 @@ const grasshopper_w128_t grasshopper_l_dec128[GRASSHOPPER_MAX_BIT_PARTS][256] = 
 },
 },
 };
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif

@@ -11,19 +11,7 @@
 #include "gost89.h"
 #include <stdio.h>
 #include <string.h>
-
-static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
-{
-    int n = 0;
-
-    fprintf(f, "%s", title);
-    for (; n < l; ++n) {
-        if ((n % 16) == 0)
-            fprintf(f, "\n%04x", n);
-        fprintf(f, " %02x", s[n]);
-    }
-    fprintf(f, "\n");
-}
+#include "test.h"
 
 int main(void)
 {
@@ -58,7 +46,7 @@ int main(void)
 
     if (memcmp(meshed_key, buf, 32)) {
         fprintf(stderr, "Magma meshing failed");
-	ret = 1;
+        ret = 1;
     }
 
     acpkm_magma_key_meshing(&ctx);

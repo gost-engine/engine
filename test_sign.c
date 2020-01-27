@@ -9,6 +9,8 @@
 
 #include "e_gost_err.h"
 #include "gost_lcl.h"
+#include "test.h"
+#include "ansi_terminal.h"
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
@@ -19,33 +21,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define T(e) ({ if (!(e)) { \
-		ERR_print_errors_fp(stderr); \
-		OpenSSLDie(__FILE__, __LINE__, #e); \
-	    } \
-        })
-#define TE(e) ({ if (!(e)) { \
-		ERR_print_errors_fp(stderr); \
-		fprintf(stderr, "Error at %s:%d %s\n", __FILE__, __LINE__, #e); \
-		return -1; \
-	    } \
-        })
-
-#define cRED	"\033[1;31m"
-#define cDRED	"\033[0;31m"
-#define cGREEN	"\033[1;32m"
-#define cDGREEN	"\033[0;32m"
-#define cBLUE	"\033[1;34m"
-#define cDBLUE	"\033[0;34m"
-#define cNORM	"\033[m"
-#define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "  Test FAILED\n" cNORM); \
-	     else \
-		 printf(cGREEN "  Test passed\n" cNORM);}
 
 struct test_sign {
     const char *name;
-    unsigned int nid;
+    int nid;
     size_t bits;
     const char *paramset;
 };
@@ -62,38 +41,26 @@ static struct test_sign test_signs[] = {
     D(NID_id_tc26_gost_3410_2012_512_paramSetA,   512, "A"),
     D(NID_id_tc26_gost_3410_2012_512_paramSetB,   512, "B"),
     D(NID_id_tc26_gost_3410_2012_512_paramSetC,   512, "C"),
-    0
+    {0}
 };
 #undef D
-
-static void hexdump(const void *ptr, size_t len)
-{
-    const unsigned char *p = ptr;
-    size_t i, j;
-
-    for (i = 0; i < len; i += j) {
-	for (j = 0; j < 16 && i + j < len; j++)
-	    printf("%s %02x", j? "" : "\n", p[i + j]);
-    }
-    printf("\n");
-}
 
 static void print_test_tf(int err, int val, const char *t, const char *f)
 {
     if (err == 1)
-	printf(cGREEN "%s\n" cNORM, t);
+        printf(cGREEN "%s\n" cNORM, t);
     else
-	printf(cRED "%s [%d]\n" cNORM, f, val);
+        printf(cRED "%s [%d]\n" cNORM, f, val);
 }
 
 static void print_test_result(int err)
 {
     if (err == 1)
-	printf(cGREEN "success\n" cNORM);
+        printf(cGREEN "success\n" cNORM);
     else if (err == 0)
-	printf(cRED "failure\n" cNORM);
+        printf(cRED "failure\n" cNORM);
     else
-	ERR_print_errors_fp(stderr);
+        ERR_print_errors_fp(stderr);
 }
 
 static int test_sign(struct test_sign *t)
@@ -107,13 +74,13 @@ static int test_sign(struct test_sign *t)
     int type = 0;
     const char *algname = NULL;
     switch (t->bits) {
-	case 256:
-	    type = NID_id_GostR3410_2012_256;
-	    algname = "gost2012_256";
-	    break;
-	case 512:
-	    type = NID_id_GostR3410_2012_512;
-	    algname = "gost2012_512";
+        case 256:
+            type = NID_id_GostR3410_2012_256;
+            algname = "gost2012_256";
+            break;
+        case 512:
+            type = NID_id_GostR3410_2012_512;
+            algname = "gost2012_512";
     }
 
     /* Keygen. */
@@ -131,7 +98,7 @@ static int test_sign(struct test_sign *t)
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(pkey);
     if (err != 1)
-	return -1;
+        return -1;
 
     /* Create another key using string interface. */
     EVP_PKEY *key1;
@@ -235,7 +202,7 @@ static int test_sign(struct test_sign *t)
 int main(int argc, char **argv)
 {
     int ret = 0;
-
+    setupConsole();
     setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();
     ERR_load_crypto_strings();
@@ -246,14 +213,15 @@ int main(int argc, char **argv)
 
     struct test_sign *sp;
     for (sp = test_signs; sp->name; sp++)
-	ret |= test_sign(sp);
+        ret |= test_sign(sp);
 
     ENGINE_finish(eng);
     ENGINE_free(eng);
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!\n" cNORM);
+        printf(cDRED "= Some tests FAILED!\n" cNORM);
     else
-	printf(cDGREEN "= All tests passed!\n" cNORM);
+        printf(cDGREEN "= All tests passed!\n" cNORM);
+    restoreConsole();
     return ret;
 }

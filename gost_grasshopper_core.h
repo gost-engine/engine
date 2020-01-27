@@ -12,9 +12,6 @@ extern "C" {
 
 #include "gost_grasshopper_defines.h"
 
-static void grasshopper_l(grasshopper_w128_t* w);
-static void grasshopper_l_inv(grasshopper_w128_t* w);
-
 // key setup
 extern void grasshopper_set_encrypt_key(grasshopper_round_keys_t* subkeys, const grasshopper_key_t* key);
 extern void grasshopper_set_decrypt_key(grasshopper_round_keys_t* subkeys, const grasshopper_key_t* key);

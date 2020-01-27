@@ -1,4 +1,4 @@
-#include <arpa/inet.h>
+
 #include <string.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,24 +8,9 @@
 #include "gost_lcl.h"
 #include "e_gost_err.h"
 #include "gost_grasshopper_cipher.h"
+#include "test.h"
+#include "ansi_terminal.h"
 
-#define T(e) if (!(e)) {\
-	ERR_print_errors_fp(stderr);\
-	OpenSSLDie(__FILE__, __LINE__, #e);\
-    }
-
-static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
-{
-    int n = 0;
-
-    fprintf(f, "%s", title);
-    for (; n < l; ++n) {
-        if ((n % 16) == 0)
-            fprintf(f, "\n%04x", n);
-        fprintf(f, " %02x", s[n]);
-    }
-    fprintf(f, "\n");
-}
 
 int main(void)
 {
@@ -118,12 +103,12 @@ int main(void)
 
     if (ret <= 0) {
         ERR_print_errors_fp(stderr);
-	err = 1;
+        err = 1;
     } else {
         hexdump(stdout, "Magma key export", buf, 40);
         if (memcmp(buf, magma_export, 40) != 0) {
             fprintf(stdout, "ERROR! test failed\n");
-	    err = 2;
+            err = 2;
         }
     }
 
@@ -133,12 +118,12 @@ int main(void)
 
     if (ret <= 0) {
         ERR_print_errors_fp(stderr);
-	err = 3;
+        err = 3;
     } else {
         hexdump(stdout, "Magma key import", buf, 32);
         if (memcmp(buf, shared_key, 32) != 0) {
             fprintf(stdout, "ERROR! test failed\n");
-	    err = 4;
+            err = 4;
         }
     }
 
@@ -146,24 +131,24 @@ int main(void)
                                kdf_seed, 8, 1);
     if (ret <= 0) {
         ERR_print_errors_fp(stderr);
-	err = 5;
+        err = 5;
     } else {
         hexdump(stdout, "KDF TREE", kdf_result, 64);
         if (memcmp(kdf_result, kdf_etalon, 64) != 0) {
             fprintf(stdout, "ERROR! test failed\n");
-	    err = 6;
+            err = 6;
         }
     }
 
     ret = gost_tlstree(NID_grasshopper_cbc, kroot, out, tlsseq);
     if (ret <= 0) {
         ERR_print_errors_fp(stderr);
-	err = 7;
+        err = 7;
     } else {
         hexdump(stdout, "Gost TLSTREE - grasshopper", out, 32);
         if (memcmp(out, tlstree_gh_etalon, 32) != 0) {
             fprintf(stdout, "ERROR! test failed\n");
-	    err = 8;
+            err = 8;
         }
     }
 

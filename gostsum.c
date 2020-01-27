@@ -27,10 +27,14 @@ typedef SSIZE_T ssize_t;
 #include <string.h>
 #include "gosthash.h"
 #define BUF_SIZE 262144
-int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode);
-int hash_stream(gost_hash_ctx * ctx, int fd, char *sum);
-int get_line(FILE *f, char *hash, char *filename);
-void help()
+
+const char *R_MODE  = "r";
+const char *RB_MODE = "rb";
+
+static int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, const char *mode);
+static int hash_stream(gost_hash_ctx * ctx, FILE *f, char *sum);
+static int get_line(FILE *f, char *hash, char *filename);
+static void help()
 {
     fprintf(stderr, "gostsum [-bvt] [-c [file]]| [files]\n"
             "\t-c check message digests (default is generate)\n"
@@ -51,7 +55,7 @@ int main(int argc, char **argv)
     int c, i;
     int verbose = 0;
     int errors = 0;
-    int open_mode = O_RDONLY;
+    const char *open_mode = R_MODE;
     gost_subst_block *b = &GostR3411_94_CryptoProParamSet;
     FILE *check_file = NULL;
     gost_hash_ctx ctx;
@@ -65,7 +69,7 @@ int main(int argc, char **argv)
             b = &GostR3411_94_TestParamSet;
             break;
         case 'b':
-            open_mode |= O_BINARY;
+            open_mode = RB_MODE;
             break;
         case 'c':
             if (optarg) {
@@ -132,11 +136,11 @@ int main(int argc, char **argv)
     if (optind == argc) {
         char sum[65];
 #ifdef _WIN32
-        if (open_mode & O_BINARY) {
+        if (open_mode == RB_MODE) {
             _setmode(fileno(stdin), O_BINARY);
         }
 #endif
-        if (!hash_stream(&ctx, fileno(stdin), sum)) {
+        if (!hash_stream(&ctx, stdin, sum)) {
             perror("stdin");
             exit(1);
         }
@@ -154,32 +158,32 @@ int main(int argc, char **argv)
     exit(errors ? 1 : 0);
 }
 
-int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode)
+static int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, const char *mode)
 {
-    int fd;
-    if ((fd = open(filename, mode)) < 0) {
+    FILE *f;
+    if ((f = fopen(filename, mode)) == NULL) {
         perror(filename);
         return 0;
     }
-    if (!hash_stream(ctx, fd, sum)) {
+    if (!hash_stream(ctx, f, sum)) {
         perror(filename);
-        close(fd);
+        fclose(f);
         return 0;
     }
-    close(fd);
+    fclose(f);
     return 1;
 }
 
-int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
+static int hash_stream(gost_hash_ctx * ctx, FILE *f, char *sum)
 {
     unsigned char buffer[BUF_SIZE];
-    ssize_t bytes;
+    size_t bytes;
     int i;
     start_hash(ctx);
-    while ((bytes = read(fd, buffer, BUF_SIZE)) > 0) {
-        hash_block(ctx, buffer, bytes);
+    while ((bytes = fread(buffer, sizeof(unsigned char), BUF_SIZE,  f)) > 0) {
+        hash_block(ctx, buffer, bytes * sizeof(unsigned char));
     }
-    if (bytes < 0) {
+    if (ferror(f)) {
         return 0;
     }
     finish_hash(ctx, buffer);
@@ -189,7 +193,7 @@ int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
     return 1;
 }
 
-int get_line(FILE *f, char *hash, char *filename)
+static int get_line(FILE *f, char *hash, char *filename)
 {
     int i;
     if (fread(hash, 1, 64, f) < 64)
