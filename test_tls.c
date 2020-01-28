@@ -10,6 +10,8 @@
 
 #include "e_gost_err.h"
 #include "gost_lcl.h"
+#include "test.h"
+#include "ansi_terminal.h"
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
@@ -22,40 +24,14 @@
 #include <openssl/bn.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <err.h>
 
 /* For X509_NAME_add_entry_by_txt */
 #pragma GCC diagnostic ignored "-Wpointer-sign"
-
-#define T(e) ({ if (!(e)) { \
-		ERR_print_errors_fp(stderr); \
-		OpenSSLDie(__FILE__, __LINE__, #e); \
-	    } \
-        })
-#define TE(e) ({ if (!(e)) { \
-		ERR_print_errors_fp(stderr); \
-		fprintf(stderr, "Error at %s:%d %s\n", __FILE__, __LINE__, #e); \
-		return -1; \
-	    } \
-        })
-
-#define cRED	"\033[1;31m"
-#define cDRED	"\033[0;31m"
-#define cGREEN	"\033[1;32m"
-#define cDGREEN	"\033[0;32m"
-#define cBLUE	"\033[1;34m"
-#define cDBLUE	"\033[0;34m"
-#define cNORM	"\033[m"
-#define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "  Test FAILED\n" cNORM); \
-	     else \
-		 printf(cGREEN "  Test passed\n" cNORM);}
 
 struct certkey {
     EVP_PKEY *pkey;
@@ -86,17 +62,16 @@ static int s_server(EVP_PKEY *pkey, X509 *cert, int client)
     char buf[1024];
     int i;
     for (i = 0; i < KTRANSFER; i++) {
-	int k;
+        int k;
 
-	T(SSL_read(ssl, buf, sizeof(buf)) == sizeof(buf));
-	for (k = 0; k < sizeof(buf); k++)
-	    if (buf[k] != 'c')
-		err(1, "corruption from client");
+        T(SSL_read(ssl, buf, sizeof(buf)) == sizeof(buf));
+        for (k = 0; k < sizeof(buf); k++)
+            if (buf[k] != 'c') err(1, "corruption from client");
     }
     /* Send data to client. */
     memset(buf, 's', sizeof(buf));
     for (i = 0; i < KTRANSFER; i++) {
-	T(SSL_write(ssl, buf, sizeof(buf)) == sizeof(buf));
+        T(SSL_write(ssl, buf, sizeof(buf)) == sizeof(buf));
     }
     SSL_shutdown(ssl);
     SSL_free(ssl);
@@ -140,37 +115,36 @@ static int s_client(int server)
     int verify = SSL_get_verify_result(ssl);
     printf("Verify:   %s\n", X509_verify_cert_error_string(verify));
     if (verify != X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
-	err(1, "invalid SSL_get_verify_result");
+        err(1, "invalid SSL_get_verify_result");
 
     /* Send data to server. */
     char buf[1024];
     int i;
     memset(buf, 'c', sizeof(buf));
     for (i = 0; i < KTRANSFER; i++) {
-	T(BIO_write(sbio, buf, sizeof(buf)) == sizeof(buf));
+        T(BIO_write(sbio, buf, sizeof(buf)) == sizeof(buf));
     }
     (void)BIO_shutdown_wr(sbio);
 
     /* Receive data from server. */
     for (i = 0; i < KTRANSFER; i++) {
-	int k;
-	int n = BIO_read(sbio, buf, sizeof(buf));
+        int k;
+        int n = BIO_read(sbio, buf, sizeof(buf));
 
-	if (n != sizeof(buf)) {
-	    printf("i:%d BIO_read:%d SSL_get_error:%d\n", i, n,
-		SSL_get_error(ssl, n));
-	    ERR_print_errors_fp(stderr);
-	    err(1, "BIO_read");
-	}
+        if (n != sizeof(buf)) {
+            printf("i:%d BIO_read:%d SSL_get_error:%d\n", i, n,
+            SSL_get_error(ssl, n));
+            ERR_print_errors_fp(stderr);
+            err(1, "BIO_read");
+        }
 
-	for (k = 0; k < sizeof(buf); k++)
-	    if (buf[k] != 's')
-		err(1, "corruption from server");
+        for (k = 0; k < sizeof(buf); k++)
+            if (buf[k] != 's') err(1, "corruption from server");
     }
 
     i = BIO_get_num_renegotiates(sbio);
     if (i)
-	printf("Renegs:   %d\n", i);
+        printf("Renegs:   %d\n", i);
     BIO_free_all(sbio);
     SSL_CTX_free(ctx);
 
@@ -188,7 +162,7 @@ static struct certkey certgen(const char *algname, const char *paramset)
     T(ctx = EVP_PKEY_CTX_new(tkey, NULL));
     T(EVP_PKEY_keygen_init(ctx));
     if (paramset)
-	T(EVP_PKEY_CTX_ctrl_str(ctx, "paramset", paramset));
+        T(EVP_PKEY_CTX_ctrl_str(ctx, "paramset", paramset));
     EVP_PKEY *pkey = NULL;
     T((EVP_PKEY_keygen(ctx, &pkey)) == 1);
     EVP_PKEY_CTX_free(ctx);
@@ -259,7 +233,7 @@ int test(const char *algname, const char *paramset)
 
     printf(cBLUE "Test %s", algname);
     if (paramset)
-	printf(cBLUE ":%s", paramset);
+        printf(cBLUE ":%s", paramset);
     printf(cNORM "\n");
 
     struct certkey ck;
@@ -267,25 +241,25 @@ int test(const char *algname, const char *paramset)
 
     int sockfd[2];
     if (socketpair(AF_LOCAL, SOCK_STREAM, 0, sockfd) == -1)
-	err(1, "socketpair");
+        err(1, "socketpair");
 
     pid_t pid = fork();
     if (pid < 0)
-	err(1, "fork");
+        err(1, "fork");
 
     if (pid > 0) {
-	int status;
+        int status;
 
-	ret = s_client(sockfd[0]);
-	wait(&status);
-	ret |= WIFEXITED(status) && WEXITSTATUS(status);
-	X509_free(ck.cert);
-	EVP_PKEY_free(ck.pkey);
+        ret = s_client(sockfd[0]);
+        wait(&status);
+        ret |= WIFEXITED(status) && WEXITSTATUS(status);
+        X509_free(ck.cert);
+        EVP_PKEY_free(ck.pkey);
     } else if (pid == 0) {
-	ret = s_server(ck.pkey, ck.cert, sockfd[1]);
-	X509_free(ck.cert);
-	EVP_PKEY_free(ck.pkey);
-	exit(ret);
+        ret = s_server(ck.pkey, ck.cert, sockfd[1]);
+        X509_free(ck.cert);
+        EVP_PKEY_free(ck.pkey);
+        exit(ret);
     }
 
     return ret;
@@ -316,8 +290,8 @@ int main(int argc, char **argv)
     ENGINE_free(eng);
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!\n" cNORM);
+        printf(cDRED "= Some tests FAILED!\n" cNORM);
     else
-	printf(cDGREEN "= All tests passed!\n" cNORM);
+        printf(cDGREEN "= All tests passed!\n" cNORM);
     return ret;
 }

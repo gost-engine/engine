@@ -152,7 +152,7 @@ gost_grasshopper_cipher_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 }
 
 /* Set master 256-bit key to be used in TLSTREE calculation into context */
-GRASSHOPPER_INLINE void
+static GRASSHOPPER_INLINE void
 gost_grasshopper_master_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 {
     int i;

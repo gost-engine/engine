@@ -10,7 +10,6 @@
  **********************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <limits.h>
 #include <fcntl.h>
 #include <string.h>
@@ -19,13 +18,30 @@
 #define MAX_HASH_TXT_BYTES 128
 #define gost_hash_ctx gost2012_hash_ctx
 
-typedef unsigned char byte;
-int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode,
-              int hashsize);
-int hash_stream(gost_hash_ctx * ctx, int fd, char *sum, int hashsize);
-int get_line(FILE *f, char *hash, char *filename, int verbose, int *size);
+#ifdef _MSC_VER
+#include "getopt.h"
+# ifndef PATH_MAX
+#  define PATH_MAX _MAX_PATH
+# endif
+#include <BaseTsd.h>
+#else
+#include <unistd.h>
+#endif
+#include <limits.h>
+#include <fcntl.h>
+#ifdef _WIN32
+# include <io.h>
+#endif
 
-void help()
+const char *RB_MODE="rb";
+
+typedef unsigned char byte;
+static int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, const char *mode,
+              int hashsize);
+static int hash_stream(gost_hash_ctx * ctx, FILE *f, char *sum, int hashsize);
+static int get_line(FILE *f, char *hash, char *filename, int verbose, int *size);
+
+static void help()
 {
     fprintf(stderr, "Calculates GOST R 34.11-2012 hash function\n\n");
     fprintf(stderr, "gost12sum [-vl] [-c [file]]| [files]|-x\n"
@@ -39,23 +55,19 @@ void help()
     exit(3);
 }
 
-#ifndef O_BINARY
-# define O_BINARY 0
-#endif
-
-int start_hash(gost_hash_ctx * ctx, int hashsize)
+static int start_hash(gost_hash_ctx * ctx, int hashsize)
 {
     init_gost2012_hash_ctx(ctx, hashsize);
     return 1;
 }
 
-int hash_block(gost_hash_ctx * ctx, const byte * block, size_t length)
+static int hash_block(gost_hash_ctx * ctx, const byte * block, size_t length)
 {
     gost2012_hash_block(ctx, block, length);
     return 1;
 }
 
-int finish_hash(gost_hash_ctx * ctx, byte * hashval)
+static int finish_hash(gost_hash_ctx * ctx, byte * hashval)
 {
     gost2012_finish_hash(ctx, hashval);
     return 1;
@@ -66,7 +78,7 @@ int main(int argc, char **argv)
     int c, i;
     int verbose = 0;
     int errors = 0;
-    int open_mode = O_RDONLY | O_BINARY;
+    const char *open_mode = RB_MODE;
     FILE *check_file = NULL;
     int filenames_from_stdin = 0;
     int hashsize = 32;
@@ -76,7 +88,6 @@ int main(int argc, char **argv)
         switch (c) {
         case 'h':
             help();
-            exit(0);
             break;
         case 'v':
             verbose = 1;
@@ -180,7 +191,7 @@ int main(int argc, char **argv)
 
     } else if (optind == argc) {
         char sum[MAX_HASH_TXT_BYTES + 1];
-        if (!hash_stream(&ctx, fileno(stdin), sum, hashsize)) {
+        if (!hash_stream(&ctx, stdin, sum, hashsize)) {
             perror("stdin");
             exit(1);
         }
@@ -199,33 +210,33 @@ int main(int argc, char **argv)
     exit(errors ? 1 : 0);
 }
 
-int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode,
+static int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, const char *mode,
               int hashsize)
 {
-    int fd;
-    if ((fd = open(filename, mode)) < 0) {
+    FILE *f;
+    if ((f = fopen(filename, mode)) == NULL) {
         perror(filename);
         return 0;
     }
-    if (!hash_stream(ctx, fd, sum, hashsize)) {
+    if (!hash_stream(ctx, f, sum, hashsize)) {
         perror(filename);
-        close(fd);
+        fclose(f);
         return 0;
     }
-    close(fd);
+    fclose(f);
     return 1;
 }
 
-int hash_stream(gost_hash_ctx * ctx, int fd, char *sum, int hashsize)
+static int hash_stream(gost_hash_ctx * ctx, FILE *f, char *sum, int hashsize)
 {
     unsigned char buffer[BUF_SIZE];
-    ssize_t bytes;
+    size_t bytes;
     int i;
     start_hash(ctx, hashsize * 8);
-    while ((bytes = read(fd, buffer, BUF_SIZE)) > 0) {
-        hash_block(ctx, buffer, bytes);
+    while ((bytes = fread(buffer, sizeof(unsigned char), BUF_SIZE, f)) > 0) {
+        hash_block(ctx, buffer, bytes * sizeof(unsigned char));
     }
-    if (bytes < 0) {
+    if (ferror(f)) {
         return 0;
     }
     finish_hash(ctx, buffer);
@@ -235,7 +246,7 @@ int hash_stream(gost_hash_ctx * ctx, int fd, char *sum, int hashsize)
     return 1;
 }
 
-int get_line(FILE *f, char *hash, char *filename, int verbose, int *size)
+static int get_line(FILE *f, char *hash, char *filename, int verbose, int *size)
 {
     int i, len;
     char *ptr = filename;
@@ -259,7 +270,7 @@ int get_line(FILE *f, char *hash, char *filename, int verbose, int *size)
         if (spacepos == NULL || strlen(spacepos + 1) == 0)
             goto nextline;
 
-        *size = spacepos - ptr;
+        *size = (int)(spacepos - ptr);
 
         for (i = 0; i < *size; i++) {
             if (ptr[i] < '0' || (ptr[i] > '9' && ptr[i] < 'A') ||

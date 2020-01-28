@@ -7,6 +7,8 @@
 
 #include "e_gost_err.h"
 #include "gost_lcl.h"
+#include "test.h"
+#include "ansi_terminal.h"
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
@@ -15,24 +17,6 @@
 #include <openssl/ec.h>
 #include <openssl/bn.h>
 #include <string.h>
-
-#define T(e) ({ if (!(e)) { \
-		ERR_print_errors_fp(stderr); \
-		OpenSSLDie(__FILE__, __LINE__, #e); \
-	    } \
-        })
-
-#define cRED	"\033[1;31m"
-#define cDRED	"\033[0;31m"
-#define cGREEN	"\033[1;32m"
-#define cDGREEN	"\033[0;32m"
-#define cBLUE	"\033[1;34m"
-#define cDBLUE	"\033[0;34m"
-#define cNORM	"\033[m"
-#define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "  Test FAILED\n" cNORM); \
-	     else \
-		 printf(cGREEN "  Test passed\n" cNORM);}
 
 struct test_curve {
     int nid;
@@ -56,18 +40,9 @@ static struct test_curve test_curves[] = {
     { NID_id_tc26_gost_3410_2012_256_paramSetB, "id-tc26-gost-3410-2012-256-paramSetB", },
     { NID_id_tc26_gost_3410_2012_256_paramSetC, "id-tc26-gost-3410-2012-256-paramSetC", },
     { NID_id_tc26_gost_3410_2012_256_paramSetD, "id-tc26-gost-3410-2012-256-paramSetD", },
-    0,
+    {0},
 };
 
-static struct test_curve *get_test_curve(int nid)
-{
-    int i;
-
-    for (i = 0; test_curves[i].nid; i++)
-	if (test_curves[i].nid == nid)
-	    return &test_curves[i];
-    return NULL;
-}
 
 static void print_bn(const char *name, const BIGNUM *n)
 {
@@ -80,18 +55,18 @@ static void print_bn(const char *name, const BIGNUM *n)
 static int parameter_test(struct test_curve *tc)
 {
     const int nid = tc->nid;
-    int test;
+    int test=0;
 
     printf(cBLUE "Test curve NID %d" cNORM, nid);
     if (tc->name)
-	printf(cBLUE ": %s" cNORM, tc->name);
+        printf(cBLUE ": %s" cNORM, tc->name);
     else if (OBJ_nid2sn(nid))
-	printf(cBLUE ": %s" cNORM, OBJ_nid2sn(nid));
+        printf(cBLUE ": %s" cNORM, OBJ_nid2sn(nid));
     printf("\n");
 
     if (!OBJ_nid2obj(nid)) {
-	printf(cRED "NID %d not found\n" cNORM, nid);
-	return 1;
+        printf(cRED "NID %d not found\n" cNORM, nid);
+        return 1;
     }
 
     /* nid resolves in both directions */
@@ -99,16 +74,16 @@ static int parameter_test(struct test_curve *tc)
     T(sn = OBJ_nid2sn(nid));
     T(ln = OBJ_nid2ln(nid));
     if (tc->name)
-	T(!strcmp(tc->name, OBJ_nid2sn(nid)));
+        T(!strcmp(tc->name, OBJ_nid2sn(nid)));
     T(nid == OBJ_sn2nid(sn));
     T(nid == OBJ_ln2nid(ln));
 
     EC_KEY *ec;
     T(ec = EC_KEY_new());
     if (!fill_GOST_EC_params(ec, nid)) {
-	printf(cRED "fill_GOST_EC_params FAIL\n" cNORM);
-	ERR_print_errors_fp(stderr);
-	return 1;
+        printf(cRED "fill_GOST_EC_params FAIL\n" cNORM);
+        ERR_print_errors_fp(stderr);
+        return 1;
     }
 
     const EC_GROUP *group;
@@ -214,14 +189,14 @@ static int parameter_test(struct test_curve *tc)
 
     BN_CTX_free(ctx);
     EC_KEY_free(ec);
-    TEST_ASSERT(0);
     return test;
 }
 
 int main(int argc, char **argv)
 {
     int ret = 0;
-
+    
+    setupConsole();
     setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();
     ERR_load_crypto_strings();
@@ -232,15 +207,17 @@ int main(int argc, char **argv)
 
     struct test_curve *tc;
     for (tc = test_curves; tc->nid; tc++) {
-	ret |= parameter_test(tc);
+        ret |= parameter_test(tc);
     }
 
     ENGINE_finish(eng);
     ENGINE_free(eng);
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!\n" cNORM);
+        printf(cDRED "= Some tests FAILED!\n" cNORM);
     else
-	printf(cDGREEN "= All tests passed!\n" cNORM);
+        printf(cDGREEN "= All tests passed!\n" cNORM);
+    
+    restoreConsole();
     return ret;
 }
