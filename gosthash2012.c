@@ -190,33 +190,35 @@ static INLINE void stage3(gost2012_hash_ctx * CTX)
 void gost2012_hash_block(gost2012_hash_ctx * CTX,
                          const unsigned char *data, size_t len)
 {
-    size_t chunksize;
+    register size_t chunksize;
+    register size_t bufsize = CTX->bufsize;
 
-    while (len > 63 && CTX->bufsize == 0) {
-        memcpy(CTX->buffer.B, data, 64);
-        stage2(CTX, &(CTX->buffer));
-
-        data += 64;
-        len -= 64;
+    if (bufsize == 0) {
+        while (len >= 64) {
+            memcpy(&CTX->buffer.B[0], data, 64);
+            stage2(CTX, &(CTX->buffer));
+            data += 64;
+            len -= 64;
+        }
     }
 
     while (len) {
-        chunksize = 64 - CTX->bufsize;
+        chunksize = 64 - bufsize;
         if (chunksize > len)
             chunksize = len;
 
-        memcpy(&CTX->buffer.B[CTX->bufsize], data, chunksize);
+        memcpy(&CTX->buffer.B[bufsize], data, chunksize);
 
-        CTX->bufsize += chunksize;
+        bufsize += chunksize;
         len -= chunksize;
         data += chunksize;
 
-        if (CTX->bufsize == 64) {
-            stage2(CTX, &(CTX->buffer));
-
-            CTX->bufsize = 0;
+        if (bufsize == 64) {
+            stage2(CTX, &(CTX->buffer) );
+            bufsize = 0;
         }
     }
+    CTX->bufsize = bufsize;
 }
 
 /*
