@@ -33,6 +33,12 @@
 # include "gosthash2012_ref.h"
 #endif
 
+# if defined(__GNUC__) || defined(__clang__)
+#  define RESTRICT __restrict__
+# else
+#  define RESTRICT
+# endif
+
 #ifdef _MSC_VER
 # define ALIGN(x) __declspec(align(x))
 #else
