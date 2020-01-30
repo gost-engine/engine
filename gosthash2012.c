@@ -35,10 +35,15 @@ void init_gost2012_hash_ctx(gost2012_hash_ctx * CTX,
     memset(CTX, 0, sizeof(gost2012_hash_ctx));
 
     CTX->digest_size = digest_size;
+    /*
+     * IV for 512-bit hash should be 0^512
+     * IV for 256-bit hash should be (00000001)^64
+     *
+     * It's already zeroed when CTX is cleared above, so we only
+     * need to set it to 0x01-s for 256-bit hash.
+     */
     if (digest_size == 256)
         memset(&CTX->h, 0x01, sizeof(uint512_u));
-    else
-        memset(&CTX->h, 0x00, sizeof(uint512_u));
 }
 
 static INLINE void pad(gost2012_hash_ctx * CTX)
