@@ -48,13 +48,9 @@ void init_gost2012_hash_ctx(gost2012_hash_ctx * CTX,
 
 static INLINE void pad(gost2012_hash_ctx * CTX)
 {
-    unsigned char buf[64];
+    memset(&(CTX->buffer[CTX->bufsize]), 0, sizeof(CTX->buffer) - CTX->bufsize);
+    CTX->buffer[CTX->bufsize] = 1;
 
-    memset(&buf, 0x00, sizeof buf);
-    memcpy(&buf, CTX->buffer, CTX->bufsize);
-
-    buf[CTX->bufsize] = 0x01;
-    memcpy(CTX->buffer, &buf, sizeof buf);
 }
 
 static INLINE void add512(const union uint512_u *x,
