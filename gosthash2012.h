@@ -50,7 +50,6 @@ typedef union uint512_u {
 /* GOST R 34.11-2012 hash context */
 typedef struct gost2012_hash_ctx {
     unsigned char buffer[64];
-    union uint512_u hash;
     union uint512_u h;
     union uint512_u N;
     union uint512_u Sigma;
