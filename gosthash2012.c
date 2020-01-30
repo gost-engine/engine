@@ -192,7 +192,6 @@ static INLINE void stage3(gost2012_hash_ctx * CTX)
     g(&(CTX->h), &buffer0, (const unsigned char *)&(CTX->N));
 
     g(&(CTX->h), &buffer0, (const unsigned char *)&(CTX->Sigma));
-    memcpy(&(CTX->hash), &(CTX->h), sizeof(uint512_u));
 }
 
 /*
@@ -242,7 +241,7 @@ void gost2012_finish_hash(gost2012_hash_ctx * CTX, unsigned char *digest)
     CTX->bufsize = 0;
 
     if (CTX->digest_size == 256)
-        memcpy(digest, &(CTX->hash.QWORD[4]), 32);
+        memcpy(digest, &(CTX->h.QWORD[4]), 32);
     else
-        memcpy(digest, &(CTX->hash.QWORD[0]), 64);
+        memcpy(digest, &(CTX->h.QWORD[0]), 64);
 }
