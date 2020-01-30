@@ -158,28 +158,19 @@ static INLINE void stage2(gost2012_hash_ctx * CTX, const union uint512_u *data)
 
 static INLINE void stage3(gost2012_hash_ctx * CTX)
 {
-    ALIGN(16) union uint512_u buf;
-
-    memset(&buf, 0x00, sizeof buf);
-    memcpy(&buf, &(CTX->buffer), CTX->bufsize);
-    memcpy(&(CTX->buffer), &buf, sizeof(uint512_u));
-
-    memset(&buf, 0x00, sizeof buf);
-#ifndef __GOST3411_BIG_ENDIAN__
-    buf.QWORD[0] = CTX->bufsize << 3;
-#else
-    buf.QWORD[0] = BSWAP64(CTX->bufsize << 3);
-#endif
-
     pad(CTX);
-
     g(&(CTX->h), &(CTX->N), &(CTX->buffer));
-
-    add512(&(CTX->N), &buf);
     add512(&(CTX->Sigma), &CTX->buffer);
 
-    g(&(CTX->h), &buffer0, &(CTX->N));
+    memset(&(CTX->buffer.B[0]), 0, sizeof(uint512_u));
+#ifndef __GOST3411_BIG_ENDIAN__
+    CTX->buffer.QWORD[0] = CTX->bufsize << 3;
+#else
+    CTX->buffer.QWORD[0] = BSWAP64(CTX->bufsize << 3);
+#endif
+    add512(&(CTX->N), &(CTX->buffer));
 
+    g(&(CTX->h), &buffer0, &(CTX->N));
     g(&(CTX->h), &buffer0, &(CTX->Sigma));
 }
 
