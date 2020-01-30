@@ -48,8 +48,8 @@ void init_gost2012_hash_ctx(gost2012_hash_ctx * CTX,
 
 static INLINE void pad(gost2012_hash_ctx * CTX)
 {
-    memset(&(CTX->buffer[CTX->bufsize]), 0, sizeof(CTX->buffer) - CTX->bufsize);
-    CTX->buffer[CTX->bufsize] = 1;
+    memset(&(CTX->buffer.B[CTX->bufsize]), 0, sizeof(CTX->buffer) - CTX->bufsize);
+    CTX->buffer.B[CTX->bufsize] = 1;
 
 }
 
@@ -99,8 +99,8 @@ static INLINE void add512(union uint512_u * RESTRICT x,
 #endif
 }
 
-static void g(union uint512_u *h, const union uint512_u *N,
-              const unsigned char *m)
+static void g(union uint512_u *h, const union uint512_u * RESTRICT N,
+              const union uint512_u * RESTRICT m)
 {
 #ifdef __GOST3411_HAS_SSE2__
     __m128i xmm0, xmm2, xmm4, xmm6; /* XMMR0-quadruple */
@@ -144,16 +144,16 @@ static void g(union uint512_u *h, const union uint512_u *N,
     /* E() done */
 
     X((&data), h, (&data));
-    X((&data), ((const union uint512_u *)&m[0]), h);
+    X((&data), m, h);
 #endif
 }
 
-static INLINE void stage2(gost2012_hash_ctx * CTX, const unsigned char *data)
+static INLINE void stage2(gost2012_hash_ctx * CTX, const union uint512_u *data)
 {
     g(&(CTX->h), &(CTX->N), data);
 
     add512(&(CTX->N), &buffer512);
-    add512(&(CTX->Sigma), (const union uint512_u *)data);
+    add512(&(CTX->Sigma), data);
 }
 
 static INLINE void stage3(gost2012_hash_ctx * CTX)
@@ -173,14 +173,14 @@ static INLINE void stage3(gost2012_hash_ctx * CTX)
 
     pad(CTX);
 
-    g(&(CTX->h), &(CTX->N), (const unsigned char *)&(CTX->buffer));
+    g(&(CTX->h), &(CTX->N), &(CTX->buffer));
 
     add512(&(CTX->N), &buf);
-    add512(&(CTX->Sigma), (const union uint512_u *)&CTX->buffer[0]);
+    add512(&(CTX->Sigma), &CTX->buffer);
 
-    g(&(CTX->h), &buffer0, (const unsigned char *)&(CTX->N));
+    g(&(CTX->h), &buffer0, &(CTX->N));
 
-    g(&(CTX->h), &buffer0, (const unsigned char *)&(CTX->Sigma));
+    g(&(CTX->h), &buffer0, &(CTX->Sigma));
 }
 
 /*
@@ -193,8 +193,8 @@ void gost2012_hash_block(gost2012_hash_ctx * CTX,
     size_t chunksize;
 
     while (len > 63 && CTX->bufsize == 0) {
-        memcpy(&CTX->buffer[0], data, 64);
-        stage2(CTX, &CTX->buffer[0]);
+        memcpy(CTX->buffer.B, data, 64);
+        stage2(CTX, &(CTX->buffer));
 
         data += 64;
         len -= 64;
@@ -205,14 +205,14 @@ void gost2012_hash_block(gost2012_hash_ctx * CTX,
         if (chunksize > len)
             chunksize = len;
 
-        memcpy(&CTX->buffer[CTX->bufsize], data, chunksize);
+        memcpy(&CTX->buffer.B[CTX->bufsize], data, chunksize);
 
         CTX->bufsize += chunksize;
         len -= chunksize;
         data += chunksize;
 
         if (CTX->bufsize == 64) {
-            stage2(CTX, CTX->buffer);
+            stage2(CTX, &(CTX->buffer));
 
             CTX->bufsize = 0;
         }

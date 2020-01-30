@@ -48,6 +48,7 @@
 ALIGN(16)
 typedef union uint512_u {
     unsigned long long QWORD[8];
+    unsigned char B[64];
 } uint512_u;
 
 #include "gosthash2012_const.h"
@@ -55,7 +56,7 @@ typedef union uint512_u {
 
 /* GOST R 34.11-2012 hash context */
 typedef struct gost2012_hash_ctx {
-    unsigned char buffer[64];
+    union uint512_u buffer;
     union uint512_u h;
     union uint512_u N;
     union uint512_u Sigma;
