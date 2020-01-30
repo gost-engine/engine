@@ -45,9 +45,6 @@ static INLINE void pad(gost2012_hash_ctx * CTX)
 {
     unsigned char buf[64];
 
-    if (CTX->bufsize > 63)
-        return;
-
     memset(&buf, 0x00, sizeof buf);
     memcpy(&buf, CTX->buffer, CTX->bufsize);
 
