@@ -53,8 +53,8 @@ static INLINE void pad(gost2012_hash_ctx * CTX)
 
 }
 
-static INLINE void add512(const union uint512_u *x,
-                          const union uint512_u *y, union uint512_u *r)
+static INLINE void add512(union uint512_u * RESTRICT x,
+                          const union uint512_u * RESTRICT y)
 {
 #ifndef __GOST3411_BIG_ENDIAN__
     unsigned int CF;
@@ -80,22 +80,21 @@ static INLINE void add512(const union uint512_u *x,
 	 */
 	if (sum != left)
 	    CF = (sum < left);
-	r->QWORD[i] = sum;
+	x->QWORD[i] = sum;
     }
 #else
-    const unsigned char *xp, *yp;
-    unsigned char *rp;
+    const unsigned char *yp;
+    unsigned char *xp;
     unsigned int i;
     int buf;
 
-    xp = (const unsigned char *)&x[0];
+    xp = (unsigned char *)&x[0];
     yp = (const unsigned char *)&y[0];
-    rp = (unsigned char *)&r[0];
 
     buf = 0;
     for (i = 0; i < 64; i++) {
         buf = xp[i] + yp[i] + (buf >> 8);
-        rp[i] = (unsigned char)buf & 0xFF;
+        xp[i] = (unsigned char)buf & 0xFF;
     }
 #endif
 }
@@ -156,8 +155,8 @@ static INLINE void stage2(gost2012_hash_ctx * CTX, const unsigned char *data)
     memcpy(&m, data, sizeof(m));
     g(&(CTX->h), &(CTX->N), (const unsigned char *)&m);
 
-    add512(&(CTX->N), &buffer512, &(CTX->N));
-    add512(&(CTX->Sigma), &m, &(CTX->Sigma));
+    add512(&(CTX->N), &buffer512);
+    add512(&(CTX->Sigma), &m);
 }
 
 static INLINE void stage3(gost2012_hash_ctx * CTX)
@@ -179,9 +178,8 @@ static INLINE void stage3(gost2012_hash_ctx * CTX)
 
     g(&(CTX->h), &(CTX->N), (const unsigned char *)&(CTX->buffer));
 
-    add512(&(CTX->N), &buf, &(CTX->N));
-    add512(&(CTX->Sigma), (const union uint512_u *)&CTX->buffer[0],
-           &(CTX->Sigma));
+    add512(&(CTX->N), &buf);
+    add512(&(CTX->Sigma), (const union uint512_u *)&CTX->buffer[0]);
 
     g(&(CTX->h), &buffer0, (const unsigned char *)&(CTX->N));
 
