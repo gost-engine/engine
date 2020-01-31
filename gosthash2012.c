@@ -118,7 +118,7 @@ static void g(union uint512_u *h, const union uint512_u * RESTRICT N,
     LOAD(N, xmm0, xmm2, xmm4, xmm6);
     XLPS128M(h, xmm0, xmm2, xmm4, xmm6);
 
-    LOAD(m, xmm1, xmm3, xmm5, xmm7);
+    ULOAD(m, xmm1, xmm3, xmm5, xmm7);
     XLPS128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
 
     for (i = 0; i < 11; i++)
@@ -128,12 +128,10 @@ static void g(union uint512_u *h, const union uint512_u * RESTRICT N,
     X128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
 
     X128M(h, xmm0, xmm2, xmm4, xmm6);
-    X128M(m, xmm0, xmm2, xmm4, xmm6);
+    ULOAD(m, xmm1, xmm3, xmm5, xmm7);
+    X128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
 
-    UNLOAD(h, xmm0, xmm2, xmm4, xmm6);
-
-    /* Restore the Floating-point status on the CPU */
-    _mm_empty();
+    STORE(h, xmm0, xmm2, xmm4, xmm6);
 #else
     union uint512_u Ki, data;
     unsigned int i;

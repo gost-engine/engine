@@ -12,6 +12,17 @@
 
 #ifdef __SSE2__
 # define __GOST3411_HAS_SSE2__
+# if !defined(__x86_64__)
+/*
+ * x86-64 bit Linux and Windows ABIs provide malloc function that returns
+ * 16-byte alignment memory buffers required by SSE load/store instructions.
+ * Other platforms require special trick for proper gost2012_hash_ctx structure
+ * allocation. It will be easier to switch to unaligned loadu/storeu memory
+ * access instructions in this case.
+ */
+#  define UNALIGNED_SIMD_ACCESS
+#  pragma message "Use unaligned SIMD memory access"
+# endif
 #endif
 
 #ifdef __GOST3411_HAS_SSE2__
