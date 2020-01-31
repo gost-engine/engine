@@ -15,6 +15,9 @@ matrix:
     - name: linux/gcc/x86_64/openssl-master
       os: linux
       compiler: gcc
+    - name: linux/clang/x86_64/openssl-master
+      os: linux
+      compiler: clang
     - name: linux/gcc/x86_64/openssl-1.1.1
       os: linux
       compiler: gcc
