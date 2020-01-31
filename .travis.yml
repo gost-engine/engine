@@ -59,7 +59,9 @@ before_script:
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
   - git describe --always --long
-  - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib && travis_wait make -s -j$(nproc) all && make -s install_sw
+  - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib
+  - travis_wait make -s -j$(nproc) build_sw
+  - make -s install_sw
   - cd ..
 
 script:
