@@ -10,12 +10,8 @@
 
 #include <string.h>
 
-#ifdef OPENSSL_IA32_SSE2
-# ifdef __MMX__
-#  ifdef __SSE2__
-#   define __GOST3411_HAS_SSE2__
-#  endif
-# endif
+#ifdef __SSE2__
+# define __GOST3411_HAS_SSE2__
 #endif
 
 #ifdef __GOST3411_HAS_SSE2__
@@ -27,6 +23,7 @@
 #ifndef L_ENDIAN
 # define __GOST3411_BIG_ENDIAN__
 #endif
+
 #if defined __GOST3411_HAS_SSE2__
 # include "gosthash2012_sse2.h"
 #else
