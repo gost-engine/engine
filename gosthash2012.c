@@ -9,6 +9,10 @@
  */
 
 #include "gosthash2012.h"
+#ifdef __x86_64__
+# include <immintrin.h>
+# include <x86intrin.h>
+#endif
 
 #if defined(_WIN32) || defined(_WINDOWS)
 # define INLINE __inline
@@ -57,10 +61,13 @@ static INLINE void add512(union uint512_u * RESTRICT x,
                           const union uint512_u * RESTRICT y)
 {
 #ifndef __GOST3411_BIG_ENDIAN__
-    unsigned int CF;
+    unsigned int CF = 0;
     unsigned int i;
 
-    CF = 0;
+# ifdef __x86_64__
+    for (i = 0; i < 8; i++)
+	CF = _addcarry_u64(CF, x->QWORD[i] , y->QWORD[i], &(x->QWORD[i]));
+# else
     for (i = 0; i < 8; i++) {
 	const unsigned long long left = x->QWORD[i];
 	unsigned long long sum;
@@ -82,7 +89,8 @@ static INLINE void add512(union uint512_u * RESTRICT x,
 	    CF = (sum < left);
 	x->QWORD[i] = sum;
     }
-#else
+# endif /* !__x86_64__ */
+#else /* __GOST3411_BIG_ENDIAN__ */
     const unsigned char *yp;
     unsigned char *xp;
     unsigned int i;
@@ -96,7 +104,7 @@ static INLINE void add512(union uint512_u * RESTRICT x,
         buf = xp[i] + yp[i] + (buf >> 8);
         xp[i] = (unsigned char)buf & 0xFF;
     }
-#endif
+#endif /* __GOST3411_BIG_ENDIAN__ */
 }
 
 static void g(union uint512_u *h, const union uint512_u * RESTRICT N,
