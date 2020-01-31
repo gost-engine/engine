@@ -45,6 +45,10 @@ matrix:
       os: linux
       arch: arm64
       compiler: gcc
+    - name: linux/gcc/s390x/openssl-master
+      os: linux
+      arch: s390x
+      compiler: gcc
     - name: osx/clang/x86_64/openssl-master
       os: osx
       compiler: clang
