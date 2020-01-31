@@ -51,6 +51,7 @@ before_script:
   - sudo cpanm --notest Test2::V0 > build.log 2>&1 || (cat build.log && exit 1)
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
+  - git describe --always --long
   - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib && travis_wait make -s -j$(nproc) all && make -s install_sw
   - cd ..
 
