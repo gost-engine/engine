@@ -18,6 +18,10 @@ matrix:
     - name: linux/clang/x86_64/openssl-master
       os: linux
       compiler: clang
+    - name: linux/gcc/i386/openssl-master
+      os: linux
+      compiler: gcc
+      env: CFLAGS=-m32 LDFLAGS=-m32 SETARCH="setarch i386" APT_INSTALL=gcc-multilib
     - name: linux/gcc/x86_64/openssl-1.1.1
       os: linux
       compiler: gcc
@@ -56,11 +60,12 @@ matrix:
 before_script:
   - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
   - sudo cpanm --notest Test2::V0 > build.log 2>&1 || (cat build.log && exit 1)
+  - if [ "$APT_INSTALL" ]; then sudo apt-get install -y $APT_INSTALL; fi
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
   - git describe --always --long
-  - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib
-  - travis_wait make -s -j$(nproc) build_sw
+  - $SETARCH ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib
+  - travis_wait $SETARCH make -s -j$(nproc) build_sw
   - make -s install_sw
   - cd ..
 
