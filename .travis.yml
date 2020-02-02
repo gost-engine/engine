@@ -8,54 +8,42 @@ env:
   global:
     - PREFIX=${HOME}/opt
     - PATH=${PREFIX}/bin:${PATH}
-    - OPENSSL_BRANCH=master
+    - OPENSSL_BRANCH=OpenSSL_1_1_1-stable
 
 matrix:
   include:
-    - name: linux/gcc/x86_64/openssl-master
-      os: linux
-      compiler: gcc
-    - name: linux/clang/x86_64/openssl-master
-      os: linux
+    - name: gcc | openssl-stable
+    - name: clang | openssl-stable
       compiler: clang
-    - name: linux/gcc/i386/openssl-master
-      os: linux
-      compiler: gcc
-      env: CFLAGS=-m32 LDFLAGS=-m32 SETARCH="setarch i386" APT_INSTALL=gcc-multilib
-    - name: linux/gcc/x86_64/openssl-1.1.1
-      os: linux
-      compiler: gcc
-      env: OPENSSL_BRANCH=OpenSSL_1_1_1-stable
-      if: type != cron
-    - name: linux/gcc/ppc64le/openssl-master
-      os: linux
-      arch: ppc64le
-      compiler: gcc
-    - name: linux/gcc+ASan/x86_64/openssl-master
+    - name: gcc | openssl-master
+      env: OPENSSL_BRANCH=master
+    # Dynamic and static analysers
+    - name: gcc+ASan | openssl-stable
       env: ASAN=-DASAN=1
-      os: linux
-      compiler: gcc
-    - name: linux/gcc+Coverity/x86_64 (cron)
+    - name: gcc+Coverity | openssl-stable (cron)
       env: COVERITY_SCAN_PROJECT_NAME="gost-engine" COVERITY_SCAN_BRANCH_PATTERN="*" COVERITY_SCAN_NOTIFICATION_EMAIL="beldmit@gmail.com" COVERITY_SCAN_BUILD_COMMAND="make"
       if: type == cron
-      os: linux
-      compiler: gcc
       script:
         - mkdir build
         - cd build
         - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ..
         - curl -s "https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh" | bash || true
-    - name: linux/gcc/arm64/openssl-master
-      os: linux
+    # Other arches
+    - name: gcc | openssl-stable
+      env: CFLAGS=-m32 LDFLAGS=-m32 SETARCH="setarch i386" APT_INSTALL=gcc-multilib
+    - name: gcc | openssl-stable
+      arch: ppc64le
+    - name: gcc | openssl-stable
       arch: arm64
-      compiler: gcc
-    - name: linux/gcc/s390x/openssl-master
-      os: linux
+    - name: gcc | openssl-stable
       arch: s390x
-      compiler: gcc
-    - name: osx/clang/x86_64/openssl-master
+    # Non-linux
+    - name: clang | openssl-stable
       os: osx
       compiler: clang
+  allow_failures:
+      env: OPENSSL_BRANCH=master
+      if: type == pull_request
 
 before_script:
   - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
