@@ -25,11 +25,10 @@
     z->QWORD[7] = x->QWORD[7] ^ y->QWORD[7]; \
 }
 
-#ifndef __GOST3411_BIG_ENDIAN__
 # define __XLPS_FOR for (_i = 0; _i <= 7; _i++)
+#ifndef __GOST3411_BIG_ENDIAN__
 # define _datai _i
 #else
-# define __XLPS_FOR for (_i = 7; _i >= 0; _i--)
 # define _datai 7 - _i
 #endif
 
@@ -48,14 +47,22 @@
     \
     \
     __XLPS_FOR {\
-        data->QWORD[_datai]  = Ax[0][(r0 >> (_i << 3)) & 0xFF]; \
-        data->QWORD[_datai] ^= Ax[1][(r1 >> (_i << 3)) & 0xFF]; \
-        data->QWORD[_datai] ^= Ax[2][(r2 >> (_i << 3)) & 0xFF]; \
-        data->QWORD[_datai] ^= Ax[3][(r3 >> (_i << 3)) & 0xFF]; \
-        data->QWORD[_datai] ^= Ax[4][(r4 >> (_i << 3)) & 0xFF]; \
-        data->QWORD[_datai] ^= Ax[5][(r5 >> (_i << 3)) & 0xFF]; \
-        data->QWORD[_datai] ^= Ax[6][(r6 >> (_i << 3)) & 0xFF]; \
-        data->QWORD[_datai] ^= Ax[7][(r7 >> (_i << 3)) & 0xFF]; \
+        data->QWORD[_datai]  = Ax[0][r0 & 0xFF]; \
+        data->QWORD[_datai] ^= Ax[1][r1 & 0xFF]; \
+        data->QWORD[_datai] ^= Ax[2][r2 & 0xFF]; \
+        data->QWORD[_datai] ^= Ax[3][r3 & 0xFF]; \
+        data->QWORD[_datai] ^= Ax[4][r4 & 0xFF]; \
+        data->QWORD[_datai] ^= Ax[5][r5 & 0xFF]; \
+        data->QWORD[_datai] ^= Ax[6][r6 & 0xFF]; \
+        data->QWORD[_datai] ^= Ax[7][r7 & 0xFF]; \
+        r0 >>= 8; \
+        r1 >>= 8; \
+        r2 >>= 8; \
+        r3 >>= 8; \
+        r4 >>= 8; \
+        r5 >>= 8; \
+        r6 >>= 8; \
+        r7 >>= 8; \
     }\
 }
 
