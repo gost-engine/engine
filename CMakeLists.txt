@@ -4,6 +4,7 @@ project(gost-engine LANGUAGES C)
 include(GNUInstallDirs)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
+include(CheckCSourceRuns)
 
 enable_testing()
 
@@ -45,6 +46,23 @@ if(IS_BIG_ENDIAN)
 else()
  message(STATUS "LITTLE_ENDIAN")
  add_definitions(-DL_ENDIAN)
+endif()
+
+check_c_source_runs("
+  #ifdef _MSC_VER
+  # include <intrin.h>
+  #else
+  # include <x86intrin.h>
+  #endif
+  int main(void) {
+  unsigned long long x = -1, y = 1, r;
+    unsigned char cf;
+    cf = _addcarry_u64(1, (unsigned long)x, y, &r);
+    return !(cf == 1 && r == 1);
+  }
+  " ADDCARRY_U64)
+if (ADDCARRY_U64)
+  add_definitions(-DHAVE_ADDCARRY_U64)
 endif()
 
 set(BIN_DIRECTORY bin)
