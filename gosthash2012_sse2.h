@@ -136,31 +136,6 @@
     xmm4 = _mm_set_epi64(mm1, mm0); \
 }
 
-#define __EXTRACT64(row, xmm0, xmm1, xmm2, xmm3, xmm4) { \
-    __m128i tmm4; \
-    register unsigned long long r0, r1; \
-    r0  = Ax[0][_mm_extract_epi8(xmm0, row + 0)]; \
-    r0 ^= Ax[1][_mm_extract_epi8(xmm0, row + 8)]; \
-    r0 ^= Ax[2][_mm_extract_epi8(xmm1, row + 0)]; \
-    r0 ^= Ax[3][_mm_extract_epi8(xmm1, row + 8)]; \
-    r0 ^= Ax[4][_mm_extract_epi8(xmm2, row + 0)]; \
-    r0 ^= Ax[5][_mm_extract_epi8(xmm2, row + 8)]; \
-    r0 ^= Ax[6][_mm_extract_epi8(xmm3, row + 0)]; \
-    r0 ^= Ax[7][_mm_extract_epi8(xmm3, row + 8)]; \
-    \
-    r1  = Ax[0][_mm_extract_epi8(xmm0, row + 1)]; \
-    r1 ^= Ax[1][_mm_extract_epi8(xmm0, row + 9)]; \
-    r1 ^= Ax[2][_mm_extract_epi8(xmm1, row + 1)]; \
-    r1 ^= Ax[3][_mm_extract_epi8(xmm1, row + 9)]; \
-    r1 ^= Ax[4][_mm_extract_epi8(xmm2, row + 1)]; \
-    r1 ^= Ax[5][_mm_extract_epi8(xmm2, row + 9)]; \
-    r1 ^= Ax[6][_mm_extract_epi8(xmm3, row + 1)]; \
-    r1 ^= Ax[7][_mm_extract_epi8(xmm3, row + 9)]; \
-    xmm4 = _mm_cvtsi64_si128((long long) r0); \
-    tmm4 = _mm_cvtsi64_si128((long long) r1); \
-    xmm4 = _mm_unpacklo_epi64(xmm4, tmm4); \
-}
-
 #define EXTRACT64(row, xmm0, xmm1, xmm2, xmm3, xmm4) { \
     __m128i tmm4; \
     register unsigned short ax; \
