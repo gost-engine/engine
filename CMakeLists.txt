@@ -55,9 +55,9 @@ check_c_source_runs("
   # include <x86intrin.h>
   #endif
   int main(void) {
-  unsigned long long x = -1, y = 1, r;
+    unsigned long long x = -1, y = 1, r;
     unsigned char cf;
-    cf = _addcarry_u64(1, (unsigned long)x, y, &r);
+    cf = _addcarry_u64(1, x, y, &r);
     return !(cf == 1 && r == 1);
   }
   " ADDCARRY_U64)
