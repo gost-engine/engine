@@ -135,6 +135,11 @@ static void g(union uint512_u *h, const union uint512_u * RESTRICT N,
     X128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
 
     STORE(h, xmm0, xmm2, xmm4, xmm6);
+# ifndef __x86_64__
+    /* Restore the Floating-point status on the CPU */
+    /* This is only required on MMX, but EXTRACT32 is using MMX */
+    _mm_empty();
+# endif
 #else
     union uint512_u Ki, data;
     unsigned int i;
