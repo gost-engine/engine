@@ -12,7 +12,7 @@
 
 #ifdef __SSE2__
 # define __GOST3411_HAS_SSE2__
-# if !defined(__x86_64__)
+# if !defined(__x86_64__) && !defined(__e2k__)
 /*
  * x86-64 bit Linux and Windows ABIs provide malloc function that returns
  * 16-byte alignment memory buffers required by SSE load/store instructions.
