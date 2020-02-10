@@ -29,10 +29,13 @@
 #define cBLUE	"\033[1;34m"
 #define cDBLUE	"\033[0;34m"
 #define cNORM	"\033[m"
-#define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "  Test FAILED\n" cNORM); \
-	     else \
-		 printf(cGREEN "  Test passed\n" cNORM);}
+#define TEST_ASSERT(e) { \
+	test = e; \
+	if (test) \
+		printf(cRED "  Test FAILED\n" cNORM); \
+	else \
+		printf(cGREEN "  Test passed\n" cNORM); \
+}
 
 struct test_curve {
     int nid;
