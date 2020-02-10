@@ -25,6 +25,7 @@ endif()
 if (ASAN)
   message(STATUS "address sanitizer enabled")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g3 -fno-omit-frame-pointer")
+  set(SKIP_PERL_TESTS 1)
 endif()
 
 # DEPRECATEDIN_3_0 CMAC
@@ -207,12 +208,18 @@ target_link_libraries(test_gost89 gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY
 add_test(NAME gost89
 	COMMAND test_gost89)
 
-if(NOT ASAN)
-add_test(NAME engine
-	COMMAND perl run_tests
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
-set_tests_properties(engine PROPERTIES ENVIRONMENT
-	"OPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR};OPENSSL_ENGINES=${OUTPUT_DIRECTORY};OPENSSL_CONF=${CMAKE_SOURCE_DIR}/test/empty.cnf")
+if(NOT SKIP_PERL_TESTS)
+    execute_process(COMMAND perl -MTest2::V0 -e ""
+	ERROR_QUIET RESULT_VARIABLE HAVE_TEST2_V0)
+    if(NOT HAVE_TEST2_V0)
+	add_test(NAME engine
+	    COMMAND perl run_tests
+	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
+	set_tests_properties(engine PROPERTIES ENVIRONMENT
+	    "OPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR};OPENSSL_ENGINES=${OUTPUT_DIRECTORY};OPENSSL_CONF=${CMAKE_SOURCE_DIR}/test/empty.cnf")
+    else()
+      message(STATUS "No Test2::V0 perl module (engine tests skipped)")
+    endif()
 endif()
 
 add_executable(sign benchmark/sign.c)
