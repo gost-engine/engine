@@ -9,7 +9,7 @@
  */
 
 #include "gosthash2012.h"
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__e2k__)
 # ifdef _MSC_VER
 #  include <intrin.h>
 # else
