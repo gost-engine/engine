@@ -8,6 +8,7 @@
  *                              this code                             *
  **********************************************************************/
 #include <string.h>
+#include <openssl/crypto.h>
 #include "gost89.h"
 /*-
    Substitution blocks from RFC 4357
@@ -503,9 +504,7 @@ void gost_init(gost_ctx * c, const gost_subst_block * b)
 /* Cleans up key from context */
 void gost_destroy(gost_ctx * c)
 {
-    int i;
-    for (i = 0; i < 8; i++)
-        c->k[i] = 0;
+    OPENSSL_cleanse(c->k, sizeof(c->k));
 }
 
 /*
@@ -627,11 +626,13 @@ void cryptopro_key_meshing(gost_ctx * ctx, unsigned char *iv)
     gost_dec(ctx, CryptoProKeyMeshingKey, newkey, 4);
     /* set new key */
     gost_key(ctx, newkey);
+    OPENSSL_cleanse(newkey, sizeof(newkey));
     /* Encrypt iv with new key */
     if (iv != NULL ) {
         unsigned char newiv[8];
         gostcrypt(ctx, iv, newiv);
         memcpy(iv, newiv, 8);
+        OPENSSL_cleanse(newiv, sizeof(newiv));
     }
 }
 
@@ -639,16 +640,19 @@ void acpkm_magma_key_meshing(gost_ctx * ctx)
 {
     unsigned char newkey[32];
     int i, j;
-    unsigned char buf[8], keybuf[8];
 
     for (i = 0; i < 4; i++) {
+        unsigned char buf[8], keybuf[8];
         for (j = 0; j < 8; j++) {
             buf[j] = ACPKM_D_const[8 * i + 7 - j];
         }
         gostcrypt(ctx, buf, keybuf);
         memcpy(newkey + 8 * i, keybuf + 4, 4);
         memcpy(newkey + 8 * i + 4, keybuf, 4);
+        OPENSSL_cleanse(keybuf, sizeof(keybuf));
+        OPENSSL_cleanse(buf, sizeof(buf));
     }
     /* set new key */
     gost_key(ctx, newkey);
+    OPENSSL_cleanse(newkey, sizeof(newkey));
 }
