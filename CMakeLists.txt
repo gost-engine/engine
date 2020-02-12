@@ -245,7 +245,7 @@ set(GOST_SUM_SOURCE_FILES
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
-target_link_libraries(gostsum gost_core)
+target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARY})
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
