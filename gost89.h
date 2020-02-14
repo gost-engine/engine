@@ -33,7 +33,8 @@ typedef struct {
 
 /* Cipher context includes key and preprocessed  substitution block */
 typedef struct {
-    u4 k[8];
+    u4 key[8];
+    u4 mask[8];
     /* Constant s-boxes -- set up in gost_init(). */
     u4 k87[256], k65[256], k43[256], k21[256];
 } gost_ctx;
