@@ -338,9 +338,11 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     }
     if ((*out_len = i2d_GOST_KEY_TRANSPORT(gkt, out ? &out : NULL)) > 0)
         ret = 1;
+    OPENSSL_cleanse(shared_key, sizeof(shared_key));
     GOST_KEY_TRANSPORT_free(gkt);
     return ret;
  err:
+    OPENSSL_cleanse(shared_key, sizeof(shared_key));
     if (key_is_ephemeral)
         EVP_PKEY_free(sec_key);
     GOST_KEY_TRANSPORT_free(gkt);
@@ -444,6 +446,7 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     if ((*out_len = i2d_PSKeyTransport_gost(pst, out ? &out : NULL)) > 0)
         ret = 1;
  err:
+    OPENSSL_cleanse(expkeys, sizeof(expkeys));
     if (key_is_ephemeral)
       EVP_PKEY_free(sec_key);
 
@@ -550,6 +553,7 @@ static int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
 
     ret = 1;
  err:
+    OPENSSL_cleanse(sharedKey, sizeof(sharedKey));
     EVP_PKEY_free(eph_key);
     GOST_KEY_TRANSPORT_free(gkt);
     return ret;
@@ -630,6 +634,7 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
 
     ret = 1;
  err:
+    OPENSSL_cleanse(expkeys, sizeof(expkeys));
     EVP_PKEY_free(eph_key);
     PSKeyTransport_gost_free(pst);
     return ret;
