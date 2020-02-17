@@ -292,9 +292,6 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
                 const unsigned char *iv, const size_t ivlen,
                 unsigned char *shared_key);
 /*============== miscellaneous functions============================= */
-/* from gost_sign.c */
-/* Convert GOST R 34.11 hash sum to bignum according to standard */
-BIGNUM *hashsum2bn(const unsigned char *dgst, int len);
 /*
  * Store bignum in byte array of given length, prepending by zeros if
  * nesseccary
