@@ -29,7 +29,7 @@ static int gost_ciphers(ENGINE* e, const EVP_CIPHER** cipher,
                         const int** nids, int nid);
 
 static int gost_digests(ENGINE* e, const EVP_MD** digest,
-                        const int** nids, int ind);
+                        const int** nids, int nid);
 
 static int gost_pkey_meths(ENGINE* e, EVP_PKEY_METHOD** pmeth,
                            const int** nids, int nid);

@@ -44,9 +44,9 @@ typedef struct {
  * Other modes may be added easily enough.
  */
 /* Encrypt several full blocks in ECB mode */
-void gost_enc(gost_ctx * ctx, const byte * clear, byte * cipher, int blocks);
+void gost_enc(gost_ctx * c, const byte * clear, byte * cipher, int blocks);
 /* Decrypt several full blocks in ECB mode */
-void gost_dec(gost_ctx * ctx, const byte * cipher, byte * clear, int blocks);
+void gost_dec(gost_ctx * c, const byte * cipher, byte * clear, int blocks);
 /* Encrypts several full blocks in CFB mode using 8byte IV */
 void gost_enc_cfb(gost_ctx * ctx, const byte * iv, const byte * clear,
                   byte * cipher, int blocks);
@@ -59,28 +59,28 @@ void gostcrypt(gost_ctx * c, const byte * in, byte * out);
 /* Decrypt one  block */
 void gostdecrypt(gost_ctx * c, const byte * in, byte * out);
 /* Set key into context */
-void gost_key(gost_ctx * ctx, const byte * key);
+void gost_key(gost_ctx * c, const byte * k);
 /* Set key into context */
-void magma_key(gost_ctx * ctx, const byte * key);
+void magma_key(gost_ctx * c, const byte * k);
 /* Get key from context */
-void gost_get_key(gost_ctx * ctx, byte * key);
+void gost_get_key(gost_ctx * c, byte * k);
 /* Set S-blocks into context */
-void gost_init(gost_ctx * ctx, const gost_subst_block * subst_block);
+void gost_init(gost_ctx * c, const gost_subst_block * b);
 /* Clean up context */
-void gost_destroy(gost_ctx * ctx);
+void gost_destroy(gost_ctx * c);
 /* Intermediate function used for calculate hash */
 void gost_enc_with_key(gost_ctx *, byte * key, byte * inblock,
                        byte * outblock);
 /* Compute MAC of given length in bits from data */
-int gost_mac(gost_ctx * ctx, int hmac_len, const unsigned char *data,
-             unsigned int data_len, unsigned char *hmac);
+int gost_mac(gost_ctx * ctx, int mac_len, const unsigned char *data,
+             unsigned int data_len, unsigned char *mac);
 /*
  * Compute MAC of given length in bits from data, using non-zero 8-byte IV
  * (non-standard, for use in CryptoPro key transport only
  */
-int gost_mac_iv(gost_ctx * ctx, int hmac_len, const unsigned char *iv,
+int gost_mac_iv(gost_ctx * c, int mac_len, const unsigned char *iv,
                 const unsigned char *data, unsigned int data_len,
-                unsigned char *hmac);
+                unsigned char *mac);
 /* Perform one step of MAC calculation like gostcrypt */
 void mac_block(gost_ctx * c, byte * buffer, const byte * block);
 /* Extracts MAC value from mac state buffer */
