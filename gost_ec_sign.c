@@ -23,21 +23,6 @@ void dump_dsa_sig(const char *message, ECDSA_SIG *sig);
 # define dump_dsa_sig(a,b)
 #endif
 
-/* Convert little-endian byte array into bignum */
-BIGNUM *hashsum2bn(const unsigned char *dgst, int len)
-{
-    unsigned char buf[64];
-    int i;
-
-    if (len > sizeof(buf))
-        return NULL;
-
-    for (i = 0; i < len; i++) {
-        buf[len - i - 1] = dgst[i];
-    }
-    return BN_bin2bn(buf, len, NULL);
-}
-
 static R3410_ec_params *gost_nid2params(int nid)
 {
     R3410_ec_params *params;
@@ -183,14 +168,14 @@ ECDSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
 
     OPENSSL_assert(dgst != NULL && eckey != NULL);
 
-    if (!(ctx = BN_CTX_new())) {
+    if (!(ctx = BN_CTX_secure_new())) {
         GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
 
     BN_CTX_start(ctx);
     OPENSSL_assert(dlen == 32 || dlen == 64);
-    md = hashsum2bn(dgst, dlen);
+    md = BN_lebin2bn(dgst, dlen, NULL);
     newsig = ECDSA_SIG_new();
     if (!newsig || !md) {
         GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_MALLOC_FAILURE);
@@ -367,7 +352,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
     }
 
     OPENSSL_assert(dgst_len == 32 || dgst_len == 64);
-    md = hashsum2bn(dgst, dgst_len);
+    md = BN_lebin2bn(dgst, dgst_len, NULL);
     if (!md || !BN_mod(e, md, order, ctx)) {
         GOSTerr(GOST_F_GOST_EC_VERIFY, ERR_R_INTERNAL_ERROR);
         goto err;
@@ -454,7 +439,7 @@ int gost_ec_compute_public(EC_KEY *ec)
         return 0;
     }
 
-    ctx = BN_CTX_new();
+    ctx = BN_CTX_secure_new();
     if (!ctx) {
         GOSTerr(GOST_F_GOST_EC_COMPUTE_PUBLIC, ERR_R_MALLOC_FAILURE);
         return 0;
@@ -508,7 +493,7 @@ int gost_ec_keygen(EC_KEY *ec)
     }
 
     order = BN_new();
-    d = BN_new();
+    d = BN_secure_new();
     if (!order || !d) {
         GOSTerr(GOST_F_GOST_EC_KEYGEN, ERR_R_MALLOC_FAILURE);
         goto end;

@@ -310,7 +310,7 @@ static BIGNUM *unmask_priv_key(EVP_PKEY *pk,
     const EC_KEY *key_ptr = (pk) ? EVP_PKEY_get0(pk) : NULL;
     const EC_GROUP *group = (key_ptr) ? EC_KEY_get0_group(key_ptr) : NULL;
 
-    pknum_masked = hashsum2bn(buf, len);
+    pknum_masked = BN_lebin2bn(buf, len, BN_secure_new());
     if (!pknum_masked)
         return NULL;
 
@@ -328,8 +328,8 @@ static BIGNUM *unmask_priv_key(EVP_PKEY *pk,
         }
 
         for (; p != buf; p -= len) {
-            BIGNUM *mask = hashsum2bn(p, len);
-            BN_CTX *ctx = BN_CTX_new();
+            BIGNUM *mask = BN_lebin2bn(p, len, BN_secure_new());
+            BN_CTX *ctx = BN_CTX_secure_new();
 
             BN_mod_mul(pknum_masked, pknum_masked, mask, q, ctx);
 
@@ -381,7 +381,7 @@ static int priv_decode_gost(EVP_PKEY *pk,
             GOSTerr(GOST_F_PRIV_DECODE_GOST, EVP_R_DECODE_ERROR);
             return 0;
         }
-        pk_num = hashsum2bn(s->data, s->length);
+        pk_num = BN_lebin2bn(s->data, s->length, BN_secure_new());
         ASN1_STRING_free(s);
     } else if (V_ASN1_INTEGER == *p) {
         priv_key = d2i_ASN1_INTEGER(NULL, &p, priv_len);
@@ -389,7 +389,7 @@ static int priv_decode_gost(EVP_PKEY *pk,
             GOSTerr(GOST_F_PRIV_DECODE_GOST, EVP_R_DECODE_ERROR);
             return 0;
         }
-        pk_num = ASN1_INTEGER_to_BN(priv_key, NULL);
+        pk_num = ASN1_INTEGER_to_BN(priv_key, BN_secure_new());
         ASN1_INTEGER_free(priv_key);
     } else if ((V_ASN1_SEQUENCE | V_ASN1_CONSTRUCTED) == *p) {
         MASKED_GOST_KEY *mgk = NULL;
@@ -437,18 +437,18 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
     const char *pk_format = get_gost_engine_param(GOST_PARAM_PK_FORMAT);
 
     key_len = (key_len < 0) ? 0 : key_len / 8;
-    if (key_len == 0 || !(buf = OPENSSL_malloc(key_len))) {
+    if (key_len == 0 || !(buf = OPENSSL_secure_malloc(key_len))) {
         return 0;
     }
 
     if (!store_bignum(gost_get0_priv_key(pk), buf, key_len)) {
-        OPENSSL_free(buf);
+        OPENSSL_secure_free(buf);
         return 0;
     }
 
     params = encode_gost_algor_params(pk);
     if (!params) {
-        OPENSSL_free(buf);
+        OPENSSL_secure_free(buf);
         return 0;
     }
 
@@ -467,12 +467,12 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
         if (!octet || !ASN1_OCTET_STRING_set(octet, buf, key_len)) {
             ASN1_STRING_free(octet);
             ASN1_STRING_free(params);
-            OPENSSL_free(buf);
+            OPENSSL_secure_free(buf);
             return 0;
         }
         priv_len = i2d_ASN1_OCTET_STRING(octet, &priv_buf);
         ASN1_STRING_free(octet);
-        OPENSSL_free(buf);
+        OPENSSL_secure_free(buf);
 
         return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
                                priv_buf, priv_len);

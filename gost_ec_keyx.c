@@ -27,7 +27,7 @@ int VKO_compute_key(unsigned char *shared_key,
     BIGNUM *UKM = NULL, *p = NULL, *order = NULL, *X = NULL, *Y = NULL, *cofactor = NULL;
     const BIGNUM *key = EC_KEY_get0_private_key(priv_key);
     EC_POINT *pnt = EC_POINT_new(EC_KEY_get0_group(priv_key));
-    BN_CTX *ctx = BN_CTX_new();
+    BN_CTX *ctx = BN_CTX_secure_new();
     EVP_MD_CTX *mdctx = NULL;
     const EVP_MD *md = NULL;
     int buf_len, half_len;
@@ -45,7 +45,7 @@ int VKO_compute_key(unsigned char *shared_key,
         goto err;
     }
 
-    UKM = hashsum2bn(ukm, ukm_size);
+    UKM = BN_lebin2bn(ukm, ukm_size, NULL);
     p = BN_CTX_get(ctx);
     order = BN_CTX_get(ctx);
 		cofactor = BN_CTX_get(ctx);
