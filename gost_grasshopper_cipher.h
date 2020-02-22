@@ -27,11 +27,6 @@ typedef struct {
 
 typedef struct {
     gost_grasshopper_cipher_ctx c;
-    grasshopper_w128_t buffer1;
-} gost_grasshopper_cipher_ctx_ofb;
-
-typedef struct {
-    gost_grasshopper_cipher_ctx c;
     grasshopper_w128_t partial_buffer;
     unsigned int section_size;  /* After how much bytes mesh the key,
 				   if 0 never mesh and work like plain ctr. */

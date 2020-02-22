@@ -30,8 +30,6 @@ static EVP_CIPHER *gost_grasshopper_ciphers[6] = {
 };
 
 static GRASSHOPPER_INLINE void
-gost_grasshopper_cipher_destroy_ofb(gost_grasshopper_cipher_ctx * c);
-static GRASSHOPPER_INLINE void
 gost_grasshopper_cipher_destroy_ctr(gost_grasshopper_cipher_ctx * c);
 
 struct GRASSHOPPER_CIPHER_PARAMS {
@@ -70,9 +68,9 @@ static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[6] = {
                                 NID_grasshopper_ofb,
                                 gost_grasshopper_cipher_init_ofb,
                                 gost_grasshopper_cipher_do_ofb,
-                                gost_grasshopper_cipher_destroy_ofb,
+                                NULL,
                                 1,
-                                sizeof(gost_grasshopper_cipher_ctx_ofb),
+                                sizeof(gost_grasshopper_cipher_ctx),
                                 16,
                                 false}
     ,
@@ -181,15 +179,6 @@ gost_grasshopper_cipher_destroy(gost_grasshopper_cipher_ctx * c)
 }
 
 static GRASSHOPPER_INLINE void
-gost_grasshopper_cipher_destroy_ofb(gost_grasshopper_cipher_ctx * c)
-{
-    gost_grasshopper_cipher_ctx_ofb *ctx =
-        (gost_grasshopper_cipher_ctx_ofb *) c;
-
-    grasshopper_zero128(&ctx->buffer1);
-}
-
-static GRASSHOPPER_INLINE void
 gost_grasshopper_cipher_destroy_ctr(gost_grasshopper_cipher_ctx * c)
 {
     gost_grasshopper_cipher_ctx_ctr *ctx =
@@ -248,12 +237,8 @@ GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ofb(EVP_CIPHER_CTX *ctx, con
                                                         *key, const unsigned char
                                                         *iv, int enc)
 {
-    gost_grasshopper_cipher_ctx_ofb *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
-
-    c->c.type = GRASSHOPPER_CIPHER_OFB;
-
-    grasshopper_zero128(&c->buffer1);
-
+    gost_grasshopper_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
+    c->type = GRASSHOPPER_CIPHER_OFB;
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
 
@@ -523,20 +508,21 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
 /*
  * Fixed 128-bit IV implementation make shift regiser redundant.
  */
-static void gost_grasshopper_cnt_next(gost_grasshopper_cipher_ctx_ofb * ctx,
+static void gost_grasshopper_cnt_next(gost_grasshopper_cipher_ctx * ctx,
                                       grasshopper_w128_t * iv,
                                       grasshopper_w128_t * buf)
 {
-    memcpy(&ctx->buffer1, iv, 16);
-    grasshopper_encrypt_block(&ctx->c.encrypt_round_keys, &ctx->buffer1,
-                              buf, &ctx->c.buffer);
+    grasshopper_w128_t tmp;
+    memcpy(&tmp, iv, 16);
+    grasshopper_encrypt_block(&ctx->encrypt_round_keys, &tmp,
+                              buf, &ctx->buffer);
     memcpy(iv, buf, 16);
 }
 
 int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                    const unsigned char *in, size_t inl)
 {
-    gost_grasshopper_cipher_ctx_ofb *c = (gost_grasshopper_cipher_ctx_ofb *)
+    gost_grasshopper_cipher_ctx *c = (gost_grasshopper_cipher_ctx *)
         EVP_CIPHER_CTX_get_cipher_data(ctx);
     const unsigned char *in_ptr = in;
     unsigned char *out_ptr = out;
