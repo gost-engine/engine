@@ -331,8 +331,6 @@ int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
     bool encrypting = (bool) EVP_CIPHER_CTX_encrypting(ctx);
     const unsigned char *current_in = in;
     unsigned char *current_out = out;
-    grasshopper_w128_t *currentInputBlock;
-    grasshopper_w128_t *currentOutputBlock;
     size_t blocks = inl / GRASSHOPPER_BLOCK_SIZE;
     size_t i;
     grasshopper_w128_t *currentBlock;
@@ -342,8 +340,8 @@ int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
     for (i = 0; i < blocks;
          i++, current_in += GRASSHOPPER_BLOCK_SIZE, current_out +=
          GRASSHOPPER_BLOCK_SIZE) {
-        currentInputBlock = (grasshopper_w128_t *) current_in;
-        currentOutputBlock = (grasshopper_w128_t *) current_out;
+        grasshopper_w128_t *currentInputBlock = (grasshopper_w128_t *) current_in;
+        grasshopper_w128_t *currentOutputBlock = (grasshopper_w128_t *) current_out;
         if (encrypting) {
             grasshopper_append128(currentBlock, currentInputBlock);
             grasshopper_encrypt_block(&c->encrypt_round_keys, currentBlock,
@@ -366,10 +364,10 @@ int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
 
 void inc_counter(unsigned char *counter, size_t counter_bytes)
 {
-    unsigned char c;
     unsigned int n = counter_bytes;
 
     do {
+        unsigned char c;
         --n;
         c = counter[n];
         ++c;
@@ -715,10 +713,8 @@ GRASSHOPPER_INLINE int gost_grasshopper_get_asn1_parameters(EVP_CIPHER_CTX
                                                             *ctx, ASN1_TYPE
                                                             *params)
 {
-    int ret = -1;
-
     if (ASN1_TYPE_get(params) != V_ASN1_SEQUENCE) {
-        return ret;
+        return -1;
     }
 
     return 1;

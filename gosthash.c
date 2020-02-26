@@ -65,9 +65,8 @@ static int add_blocks(int n, byte * left, const byte * right)
 {
     int i;
     int carry = 0;
-    int sum;
     for (i = 0; i < n; i++) {
-        sum = (int)left[i] + (int)right[i] + carry;
+        int sum = (int)left[i] + (int)right[i] + carry;
         left[i] = sum & 0xff;
         carry = sum >> 8;
     }

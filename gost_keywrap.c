@@ -23,16 +23,17 @@
 void keyDiversifyCryptoPro(gost_ctx * ctx, const unsigned char *inputKey,
                            const unsigned char *ukm, unsigned char *outputKey)
 {
-
-    u4 k, s1, s2;
-    int i, j, mask;
-    unsigned char S[8];
+    int i;
     memcpy(outputKey, inputKey, 32);
     for (i = 0; i < 8; i++) {
+        u4 s1 = 0;
+        u4 s2 = 0;
+        int j, mask;
+        unsigned char S[8];
         /* Make array of integers from key */
         /* Compute IV S */
-        s1 = 0, s2 = 0;
         for (j = 0, mask = 1; j < 8; j++, mask <<= 1) {
+            u4 k;
             k = ((u4) outputKey[4 * j]) | (outputKey[4 * j + 1] << 8) |
                 (outputKey[4 * j + 2] << 16) | (outputKey[4 * j + 3] << 24);
             if (mask & ukm[i]) {
