@@ -195,7 +195,6 @@ static INLINE void stage3(gost2012_hash_ctx * CTX)
 void gost2012_hash_block(gost2012_hash_ctx * CTX,
                          const unsigned char *data, size_t len)
 {
-    register size_t chunksize;
     register size_t bufsize = CTX->bufsize;
 
     if (bufsize == 0) {
@@ -208,7 +207,7 @@ void gost2012_hash_block(gost2012_hash_ctx * CTX,
     }
 
     while (len) {
-        chunksize = 64 - bufsize;
+        register size_t chunksize = 64 - bufsize;
         if (chunksize > len)
             chunksize = len;
 

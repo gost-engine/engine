@@ -180,9 +180,9 @@ static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
 static int pkey_gost_ec_ctrl_str_256(EVP_PKEY_CTX *ctx,
                                      const char *type, const char *value)
 {
-    int param_nid = 0;
-
     if (strcmp(type, param_ctrl_string) == 0) {
+        int param_nid = 0;
+
         if (!value) {
             return 0;
         }
@@ -215,9 +215,9 @@ static int pkey_gost_ec_ctrl_str_256(EVP_PKEY_CTX *ctx,
             default:
                 return 0;
             }
-	} else if ((strlen(value) == 3)
-	    && (toupper((unsigned char)value[0]) == 'T')
-	    && (toupper((unsigned char)value[1]) == 'C')) {
+    } else if ((strlen(value) == 3)
+        && (toupper((unsigned char)value[0]) == 'T')
+        && (toupper((unsigned char)value[1]) == 'C')) {
             switch (toupper((unsigned char)value[2])) {
             case 'A':
                 param_nid = NID_id_tc26_gost_3410_2012_256_paramSetA;
@@ -631,8 +631,8 @@ static int pkey_gost_mac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
     case EVP_PKEY_CTRL_DIGESTINIT:
         {
             EVP_MD_CTX *mctx = p2;
-            struct gost_mac_key *key;
             if (!data->key_set) {
+                struct gost_mac_key *key;
                 EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
                 if (!pkey) {
                     GOSTerr(GOST_F_PKEY_GOST_MAC_CTRL,
@@ -764,8 +764,8 @@ static int pkey_gost_omac_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2, si
     case EVP_PKEY_CTRL_DIGESTINIT:
         {
             EVP_MD_CTX *mctx = p2;
-            struct gost_mac_key *key;
             if (!data->key_set) {
+                struct gost_mac_key *key;
                 EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
                 if (!pkey) {
                     GOSTerr(GOST_F_PKEY_GOST_OMAC_CTRL,

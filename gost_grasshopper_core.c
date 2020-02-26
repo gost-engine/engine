@@ -13,12 +13,12 @@ extern "C" {
 #include "gost_grasshopper_defines.h"
 
 static GRASSHOPPER_INLINE void grasshopper_l(grasshopper_w128_t* w) {
-    uint8_t x;
-		unsigned int j;
-		int i;
+    unsigned int j;
+    int i;
 
     // 16 rounds
     for (j = 0; j < sizeof(grasshopper_lvec) / sizeof(grasshopper_lvec[0]); j++) {
+        uint8_t x;
 
         // An LFSR with 16 elements from GF(2^8)
         x = w->b[15];    // since lvec[15] = 1
@@ -32,14 +32,12 @@ static GRASSHOPPER_INLINE void grasshopper_l(grasshopper_w128_t* w) {
 }
 
 static GRASSHOPPER_INLINE void grasshopper_l_inv(grasshopper_w128_t* w) {
-    uint8_t x;
-		unsigned int j;
-		int i;
+    unsigned int j;
+    int i;
 
     // 16 rounds
     for (j = 0; j < sizeof(grasshopper_lvec) / sizeof(grasshopper_lvec[0]); j++) {
-
-        x = w->b[0];
+        uint8_t x = w->b[0];
         for (i = 0; i < 15; i++) {
             w->b[i] = w->b[i + 1];
             x ^= grasshopper_galois_mul(w->b[i], grasshopper_lvec[i]);
@@ -52,7 +50,7 @@ static GRASSHOPPER_INLINE void grasshopper_l_inv(grasshopper_w128_t* w) {
 
 void grasshopper_set_encrypt_key(grasshopper_round_keys_t* subkeys, const grasshopper_key_t* key) {
     grasshopper_w128_t c, x, y, z;
-		int i;
+    int i;
 
     for (i = 0; i < 16; i++) {
         // this will be have to changed for little-endian systems
