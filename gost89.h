@@ -78,7 +78,7 @@ int gost_mac(gost_ctx * ctx, int mac_len, const unsigned char *data,
  * Compute MAC of given length in bits from data, using non-zero 8-byte IV
  * (non-standard, for use in CryptoPro key transport only
  */
-int gost_mac_iv(gost_ctx * c, int mac_len, const unsigned char *iv,
+int gost_mac_iv(gost_ctx * ctx, int mac_len, const unsigned char *iv,
                 const unsigned char *data, unsigned int data_len,
                 unsigned char *mac);
 /* Perform one step of MAC calculation like gostcrypt */

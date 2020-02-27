@@ -157,7 +157,7 @@ static int test_sign(struct test_sign *t)
     const EC_GROUP *group = EC_KEY_get0_group(ec);
     int curve_name = EC_GROUP_get_curve_name(group);
     err = curve_name == t->nid;
-    printf("\tcurve_name (%d):\t", t->nid);
+    printf("\tcurve_name (%u):\t", t->nid);
     print_test_tf(err, curve_name, "match", "mismatch");
     ret |= !err;
 

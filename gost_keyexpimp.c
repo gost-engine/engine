@@ -176,7 +176,7 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
     int iters, i = 0;
     unsigned char zero = 0;
     unsigned char *ptr = keyout;
-    HMAC_CTX *ctx = NULL;
+    HMAC_CTX *ctx;
     unsigned char *len_ptr = NULL;
     uint32_t len_repr = htonl(keyout_len * 8);
     size_t len_repr_len = 4;

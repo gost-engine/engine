@@ -152,7 +152,6 @@ static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
 
             OPENSSL_cleanse(tmpkey, 32);
             return (keylen) ? keylen : 0;
-            break;
         }
     default:
         return 0;
