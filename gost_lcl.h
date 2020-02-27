@@ -241,7 +241,7 @@ const EVP_CIPHER *cipher_magma_cbc();
 const EVP_CIPHER *cipher_magma_ctr();
 void cipher_gost_destroy();
 
-void inc_counter(unsigned char *buffer, size_t buf_len);
+void inc_counter(unsigned char *counter, size_t counter_bytes);
 
 # define EVP_MD_CTRL_KEY_LEN (EVP_MD_CTRL_ALG_CTRL+3)
 # define EVP_MD_CTRL_SET_KEY (EVP_MD_CTRL_ALG_CTRL+4)
@@ -278,8 +278,8 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
                          const unsigned char *seed, size_t seed_len,
                          const size_t representation);
 
-int gost_tlstree(int cipher_nid, const unsigned char* inkey,
-                unsigned char *outkey, const unsigned char *tlsseq);
+int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
+                 const unsigned char *tlsseq);
 /* KExp/KImp */
 int gost_kexp15(const unsigned char *shared_key, const int shared_len,
                 int cipher_nid, const unsigned char *cipher_key,

@@ -692,9 +692,7 @@ int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 {
     int len = 0;
     unsigned char *buf = NULL;
-    ASN1_OCTET_STRING *os = NULL;
-
-    os = ASN1_OCTET_STRING_new();
+    ASN1_OCTET_STRING *os = ASN1_OCTET_STRING_new();
 
     if (!os || !ASN1_OCTET_STRING_set(os, buf, len)) {
         ASN1_OCTET_STRING_free(os);

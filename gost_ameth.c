@@ -392,8 +392,7 @@ static int priv_decode_gost(EVP_PKEY *pk,
         pk_num = ASN1_INTEGER_to_BN(priv_key, BN_secure_new());
         ASN1_INTEGER_free(priv_key);
     } else if ((V_ASN1_SEQUENCE | V_ASN1_CONSTRUCTED) == *p) {
-        MASKED_GOST_KEY *mgk = NULL;
-        mgk = d2i_MASKED_GOST_KEY(NULL, &p, priv_len);
+        MASKED_GOST_KEY *mgk = d2i_MASKED_GOST_KEY(NULL, &p, priv_len);
 
         if (!mgk) {
             GOSTerr(GOST_F_PRIV_DECODE_GOST, EVP_R_DECODE_ERROR);
@@ -460,10 +459,9 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
     }
 
     if (pk_format != NULL && strcmp(pk_format, PK_WRAP_PARAM) == 0) {
-        ASN1_STRING *octet = NULL;
+        ASN1_STRING *octet = ASN1_STRING_new();
         int priv_len = 0;
         unsigned char *priv_buf = NULL;
-        octet = ASN1_STRING_new();        
         if (!octet || !ASN1_OCTET_STRING_set(octet, buf, key_len)) {
             ASN1_STRING_free(octet);
             ASN1_STRING_free(params);
@@ -723,13 +721,13 @@ static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub)
 
 static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
 {
-    ASN1_OBJECT *algobj = NULL;
+    ASN1_OBJECT *algobj;
     ASN1_OCTET_STRING *octet = NULL;
-    void *pval = NULL;
+    void *pval;
     unsigned char *buf = NULL, *databuf = NULL;
     int data_len, ret = -1;
     const EC_POINT *pub_key;
-    BIGNUM *X = NULL, *Y = NULL, *order = NULL;
+    BIGNUM *X = NULL, *Y = NULL, *order;
     const EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pk);
     int ptype = V_ASN1_SEQUENCE;
     ASN1_STRING *params;
