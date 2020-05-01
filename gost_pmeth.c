@@ -193,6 +193,7 @@ static int pkey_gost_ec_ctrl_str_common(EVP_PKEY_CTX *ctx,
       return 0;
     }
     memcpy(ukm_buf, tmp, len);
+    OPENSSL_free(tmp);
 
     return pkey_gost_ctrl(ctx, EVP_PKEY_CTRL_SET_IV, len, ukm_buf);
   }
