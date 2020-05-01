@@ -55,6 +55,7 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
 /* Gost-specific pmeth control-function parameters */
 /* For GOST R34.10 parameters */
 # define param_ctrl_string "paramset"
+# define ukm_ctrl_string "ukmhex"
 # define EVP_PKEY_CTRL_GOST_PARAMSET (EVP_PKEY_ALG_CTRL+1)
 /* For GOST 28147 MAC */
 # define key_ctrl_string "key"

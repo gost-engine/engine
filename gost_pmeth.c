@@ -177,6 +177,28 @@ static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
     return -2;
 }
 
+static int pkey_gost_ec_ctrl_str_common(EVP_PKEY_CTX *ctx,
+                                     const char *type, const char *value)
+{
+	if (0 == strcmp(type, ukm_ctrl_string)) {
+		unsigned char ukm_buf[32], *tmp = NULL;
+		long len = 0;
+		tmp = OPENSSL_hexstr2buf(value, &len);
+		if (tmp == NULL)
+			return 0;
+
+		if (len > 32) {
+			OPENSSL_free(tmp);
+    	GOSTerr(GOST_F_PKEY_GOST_EC_CTRL_STR_COMMON, GOST_R_CTRL_CALL_FAILED);
+			return 0;
+		}
+		memcpy(ukm_buf, tmp, len);
+
+		return pkey_gost_ctrl(ctx, EVP_PKEY_CTRL_SET_IV, len, ukm_buf);
+	}
+  return -2;
+}
+
 static int pkey_gost_ec_ctrl_str_256(EVP_PKEY_CTX *ctx,
                                      const char *type, const char *value)
 {
@@ -254,7 +276,8 @@ static int pkey_gost_ec_ctrl_str_256(EVP_PKEY_CTX *ctx,
         return pkey_gost_ctrl(ctx, EVP_PKEY_CTRL_GOST_PARAMSET,
                               param_nid, NULL);
     }
-    return -2;
+
+		return pkey_gost_ec_ctrl_str_common(ctx, type, value);
 }
 
 static int pkey_gost_ec_ctrl_str_512(EVP_PKEY_CTX *ctx,
@@ -263,7 +286,7 @@ static int pkey_gost_ec_ctrl_str_512(EVP_PKEY_CTX *ctx,
     int param_nid = NID_undef;
 
     if (strcmp(type, param_ctrl_string))
-        return -2;
+			return pkey_gost_ec_ctrl_str_common(ctx, type, value);
 
     if (!value)
         return 0;
