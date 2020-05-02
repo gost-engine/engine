@@ -240,7 +240,10 @@ const EVP_CIPHER *cipher_gost_cpacnt();
 const EVP_CIPHER *cipher_gost_cpcnt_12();
 const EVP_CIPHER *cipher_magma_cbc();
 const EVP_CIPHER *cipher_magma_ctr();
+const EVP_CIPHER *cipher_magma_wrap();
+const EVP_CIPHER *cipher_kuznyechik_wrap();
 void cipher_gost_destroy();
+void wrap_ciphers_destroy();
 
 void inc_counter(unsigned char *counter, size_t counter_bytes);
 

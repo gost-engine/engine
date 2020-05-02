@@ -275,3 +275,192 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
 
     return 1;
 }
+
+#define GOST_WRAP_FLAGS  EVP_CIPH_CTRL_INIT | EVP_CIPH_WRAP_MODE | EVP_CIPH_CUSTOM_IV | EVP_CIPH_FLAG_CUSTOM_CIPHER | EVP_CIPH_FLAG_DEFAULT_ASN1
+
+#define MAGMA_MAC_WRAP_LEN 8
+#define KUZNYECHIK_MAC_WRAP_LEN 16
+#define MAX_MAC_WRAP_LEN KUZNYECHIK_MAC_WRAP_LEN
+#define GOSTKEYLEN 32
+#define MAGMA_WRAPPED_KEY_LEN GOSTKEYLEN + MAGMA_MAC_WRAP_LEN
+#define KUZNYECHIK_WRAPPED_KEY_LEN GOSTKEYLEN + KUZNYECHIK_MAC_WRAP_LEN
+#define MAX_WRAPPED_KEY_LEN KUZNYECHIK_WRAPPED_KEY_LEN
+
+typedef struct {
+	unsigned char iv[8];   /* Max IV size is half of base cipher block length */
+	unsigned char key[GOSTKEYLEN*2]; /* Combined cipher and mac keys */
+	unsigned char wrapped[MAX_WRAPPED_KEY_LEN]; /* Max size */
+	size_t wrap_count;
+} GOST_WRAP_CTX;
+
+static int magma_wrap_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+	const unsigned char *iv, int enc)
+{
+	GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
+	memset(cctx->wrapped, 0, MAX_WRAPPED_KEY_LEN);
+	cctx->wrap_count = 0;
+
+	if (iv) {
+		memset(cctx->iv, 0, 8);
+		memcpy(cctx->iv, iv, 4);
+	}
+
+	if (key) {
+		memcpy(cctx->key, key, GOSTKEYLEN*2);
+	}
+	return 1;
+}
+
+static int magma_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
+	const unsigned char *in, size_t inl)
+{
+	GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
+	int enc = EVP_CIPHER_CTX_encrypting(ctx) ? 1 : 0;
+
+	if (out == NULL)
+		return GOSTKEYLEN;
+
+	if (inl <= MAGMA_WRAPPED_KEY_LEN) {
+		if (cctx->wrap_count + inl > MAGMA_WRAPPED_KEY_LEN)
+			return -1;
+
+		if (cctx->wrap_count + inl <= MAGMA_WRAPPED_KEY_LEN)
+		{
+			memcpy(cctx->wrapped+cctx->wrap_count, in, inl);
+			cctx->wrap_count += inl;
+		}
+	}
+
+	if (cctx->wrap_count < MAGMA_WRAPPED_KEY_LEN)
+		return 0;
+
+	if (enc) {
+#if 0
+		return gost_kexp15(cctx->key, 32, NID_magma_ctr, in, NID_magma_mac,
+			cctx->key, /* FIXME mac_key, */ cctx->iv, 4, out, &outl);
+#endif
+		return -1;
+	} else {
+		return gost_kimp15(cctx->wrapped, cctx->wrap_count, NID_magma_ctr,
+		cctx->key+GOSTKEYLEN, NID_magma_mac, cctx->key, cctx->iv, 4, out) > 0 ? GOSTKEYLEN : 0;
+	}
+	return 1;
+}
+
+static int kuznyechik_wrap_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+	const unsigned char *iv, int enc)
+{
+	GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
+	memset(cctx->wrapped, 0, KUZNYECHIK_WRAPPED_KEY_LEN);
+	cctx->wrap_count = 0;
+
+	if (iv) {
+		memset(cctx->iv, 0, 8);
+		memcpy(cctx->iv, iv, 8);
+	}
+
+	if (key) {
+		memcpy(cctx->key, key, GOSTKEYLEN*2);
+	}
+	return 1;
+}
+
+static int kuznyechik_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
+	const unsigned char *in, size_t inl)
+{
+	GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
+	int enc = EVP_CIPHER_CTX_encrypting(ctx) ? 1 : 0;
+
+	if (out == NULL)
+		return GOSTKEYLEN;
+
+	if (inl <= KUZNYECHIK_WRAPPED_KEY_LEN) {
+		if (cctx->wrap_count + inl > KUZNYECHIK_WRAPPED_KEY_LEN)
+			return -1;
+
+		if (cctx->wrap_count + inl <= KUZNYECHIK_WRAPPED_KEY_LEN)
+		{
+			memcpy(cctx->wrapped+cctx->wrap_count, in, inl);
+			cctx->wrap_count += inl;
+		}
+	}
+
+	if (cctx->wrap_count < KUZNYECHIK_WRAPPED_KEY_LEN)
+		return 0;
+
+	if (enc) {
+#if 0
+		return gost_kexp15(cctx->key, 32, NID_magma_ctr, in, NID_magma_mac,
+			cctx->key, /* FIXME mac_key, */ cctx->iv, 4, out, &outl);
+#endif
+		return -1;
+	} else {
+		return gost_kimp15(cctx->wrapped, cctx->wrap_count, NID_kuznyechik_ctr,
+		cctx->key+GOSTKEYLEN, NID_kuznyechik_mac, cctx->key, cctx->iv, 8, out) > 0 ? GOSTKEYLEN : 0;
+	}
+}
+
+int wrap_ctrl (EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+{
+	switch(type)
+	{
+		case EVP_CTRL_INIT:
+			EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+			return 1;
+		default:
+			return -2;
+	}
+}
+
+static EVP_CIPHER *hidden_magma_wrap_cipher, *hidden_kuznyechik_wrap_cipher;
+
+const EVP_CIPHER *cipher_magma_wrap(void)
+{
+	if (hidden_magma_wrap_cipher == NULL
+			&& ((hidden_magma_wrap_cipher =
+					EVP_CIPHER_meth_new(NID_magma_kexp15, 8 /* block_size */ ,
+						GOSTKEYLEN*2 /* key_size */ )) == NULL
+				|| !EVP_CIPHER_meth_set_iv_length(hidden_magma_wrap_cipher, 4)
+				|| !EVP_CIPHER_meth_set_flags(hidden_magma_wrap_cipher, GOST_WRAP_FLAGS)
+				|| !EVP_CIPHER_meth_set_init(hidden_magma_wrap_cipher, magma_wrap_init)
+				|| !EVP_CIPHER_meth_set_ctrl(hidden_magma_wrap_cipher, wrap_ctrl)
+				|| !EVP_CIPHER_meth_set_do_cipher(hidden_magma_wrap_cipher, magma_wrap_do)
+				|| !EVP_CIPHER_meth_set_impl_ctx_size(hidden_magma_wrap_cipher, sizeof(GOST_WRAP_CTX))
+				|| !EVP_add_cipher(hidden_magma_wrap_cipher)
+				)) {
+		EVP_CIPHER_meth_free(hidden_magma_wrap_cipher);
+		hidden_magma_wrap_cipher = NULL;
+	}
+
+	return hidden_magma_wrap_cipher;
+}
+
+const EVP_CIPHER *cipher_kuznyechik_wrap(void)
+{
+	if (hidden_kuznyechik_wrap_cipher == NULL
+			&& ((hidden_kuznyechik_wrap_cipher =
+					EVP_CIPHER_meth_new(NID_kuznyechik_kexp15, 16 /* FIXME block_size */ ,
+						GOSTKEYLEN*2 /* key_size */ )) == NULL
+				|| !EVP_CIPHER_meth_set_iv_length(hidden_kuznyechik_wrap_cipher, 8)
+				|| !EVP_CIPHER_meth_set_flags(hidden_kuznyechik_wrap_cipher, GOST_WRAP_FLAGS)
+				|| !EVP_CIPHER_meth_set_init(hidden_kuznyechik_wrap_cipher, kuznyechik_wrap_init)
+				|| !EVP_CIPHER_meth_set_ctrl(hidden_kuznyechik_wrap_cipher, wrap_ctrl)
+				|| !EVP_CIPHER_meth_set_do_cipher(hidden_kuznyechik_wrap_cipher, kuznyechik_wrap_do)
+				|| !EVP_CIPHER_meth_set_impl_ctx_size(hidden_kuznyechik_wrap_cipher, sizeof(GOST_WRAP_CTX))
+				|| !EVP_add_cipher(hidden_kuznyechik_wrap_cipher)
+				)) {
+		EVP_CIPHER_meth_free(hidden_kuznyechik_wrap_cipher);
+		hidden_kuznyechik_wrap_cipher = NULL;
+	}
+
+	return hidden_kuznyechik_wrap_cipher;
+}
+
+void wrap_ciphers_destroy(void)
+{
+	EVP_CIPHER_meth_free(hidden_magma_wrap_cipher);
+	hidden_magma_wrap_cipher = NULL;
+
+	EVP_CIPHER_meth_free(hidden_kuznyechik_wrap_cipher);
+	hidden_kuznyechik_wrap_cipher = NULL;
+}
