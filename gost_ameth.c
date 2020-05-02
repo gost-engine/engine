@@ -221,6 +221,153 @@ BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey)
 }
 
 /*
+ * GOST CMS processing functions
+ */
+/* FIXME reaarange declarations */
+static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub);
+
+static int gost_cms_set_kari_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
+{
+	int ret = 0;
+	X509_ALGOR *alg;
+	ASN1_OCTET_STRING *ukm;
+
+	/* Deal with originator */
+	X509_ALGOR *pubalg = NULL;
+	ASN1_BIT_STRING *pubkey = NULL;
+
+	EVP_PKEY *peer_key = NULL;
+	X509_PUBKEY *tmp   = NULL;
+
+	int nid;
+	unsigned char shared_key[64];
+	size_t shared_key_size = 64;
+	const EVP_CIPHER *cipher = NULL;
+
+	if (CMS_RecipientInfo_kari_get0_alg(ri, &alg, &ukm) == 0)
+		goto err;
+
+	if (CMS_RecipientInfo_kari_get0_orig_id(ri, &pubalg, &pubkey, NULL, NULL, NULL) == 0)
+		  goto err;
+
+	nid = OBJ_obj2nid(alg->algorithm);
+	if (alg->parameter->type != V_ASN1_SEQUENCE)
+		  goto err;
+
+	switch (nid) {
+		case NID_kuznyechik_kexp15:
+		case NID_magma_kexp15:
+			cipher = EVP_get_cipherbynid(nid);
+			break;
+	}
+
+	if (cipher == NULL) {
+			GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_CIPHER_NOT_FOUND);
+		  goto err;
+  }
+
+	if (EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_CTRL_SET_IV,
+		ASN1_STRING_length(ukm), (void *)ASN1_STRING_get0_data(ukm)) <= 0)
+			goto err;
+
+	if (pubkey != NULL && pubalg != NULL) {
+		const ASN1_OBJECT *paobj = NULL;
+		int ptype = 0;
+		const void *param = NULL;
+
+		peer_key = EVP_PKEY_new();
+		tmp = X509_PUBKEY_new();
+
+		if ((peer_key == NULL) || (tmp == NULL)) {
+			GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, ERR_R_MALLOC_FAILURE);
+			goto err;
+		}
+
+		X509_ALGOR_get0(&paobj, &ptype, &param, pubalg);
+
+		if (X509_PUBKEY_set0_param(tmp, (ASN1_OBJECT *)paobj,
+			ptype, (void *)param,
+			(unsigned char *)ASN1_STRING_get0_data(pubkey),
+			ASN1_STRING_length(pubkey) ) == 0) {
+				GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_PUBLIC_KEY_UNDEFINED);
+				goto err;
+		}
+
+		if (pub_decode_gost_ec(peer_key, tmp) <= 0) {
+				GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_ERROR_DECODING_PUBLIC_KEY);
+				goto err;
+		}
+
+		if (EVP_PKEY_derive_set_peer(pctx, peer_key) <= 0) {
+				GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_ERROR_SETTING_PEER_KEY);
+				goto err;
+		}
+	}
+
+	if (EVP_PKEY_derive(pctx, shared_key, &shared_key_size) <= 0) {
+		GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_ERROR_COMPUTING_SHARED_KEY);
+		goto err;
+	}
+
+	EVP_CIPHER_CTX_set_flags(CMS_RecipientInfo_kari_get0_ctx(ri), EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+	if (EVP_DecryptInit_ex(CMS_RecipientInfo_kari_get0_ctx(ri), cipher, NULL,
+		shared_key, ukm->data+24) == 0)
+			goto err;
+
+	ret = 1;
+err:
+	EVP_PKEY_free(peer_key);
+	if (ret == 0) {
+		X509_PUBKEY_free(tmp);
+	}
+
+	return ret;
+}
+
+static int gost_cms_set_ktri_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
+{
+	X509_ALGOR *alg;
+	struct gost_pmeth_data *gctx = EVP_PKEY_CTX_get_data(pctx);
+
+	CMS_RecipientInfo_ktri_get0_algs(ri, NULL, NULL, &alg);
+
+	switch (OBJ_obj2nid(alg->algorithm)) {
+		case NID_kuznyechik_kexp15:
+			gctx->cipher_nid = NID_kuznyechik_ctr;
+			break;
+
+		case NID_magma_kexp15:
+			gctx->cipher_nid = NID_magma_ctr;
+			break;
+
+		case NID_id_GostR3410_2012_256:
+		case NID_id_GostR3410_2012_512:
+			gctx->cipher_nid = NID_id_Gost28147_89;
+			break;
+
+		default:
+			GOSTerr(GOST_F_GOST_CMS_SET_KTRI_SHARED_INFO, GOST_R_UNSUPPORTED_RECIPIENT_INFO);
+			return 0;
+	}
+
+	return 1;
+}
+
+static int gost_cms_set_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
+{
+	switch(CMS_RecipientInfo_type(ri)) {
+		case CMS_RECIPINFO_AGREE:
+			return gost_cms_set_kari_shared_info(pctx, ri);
+		break;
+		case CMS_RECIPINFO_TRANS:
+			return gost_cms_set_ktri_shared_info(pctx, ri);
+		break;
+	}
+
+	GOSTerr(GOST_F_GOST_CMS_SET_SHARED_INFO, GOST_R_UNSUPPORTED_RECIPIENT_INFO);
+	return 0;
+}
+/*
  * Control function
  */
 static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
@@ -263,7 +410,7 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
         return 1;
 #endif
     case ASN1_PKEY_CTRL_PKCS7_ENCRYPT:
-        if (arg1 == 0) {
+        if (arg1 == 0) { /* Encryption */
             ASN1_STRING *params = encode_gost_algor_params(pkey);
             if (!params) {
                 return -1;
@@ -271,7 +418,7 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
             PKCS7_RECIP_INFO_get0_alg((PKCS7_RECIP_INFO *)arg2, &alg1);
             X509_ALGOR_set0(alg1, OBJ_nid2obj(EVP_PKEY_id(pkey)),
                             V_ASN1_SEQUENCE, params);
-        }
+				}
         return 1;
 #ifndef OPENSSL_NO_CMS
     case ASN1_PKEY_CTRL_CMS_ENVELOPE:
@@ -284,8 +431,26 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
                                              NULL, &alg1);
             X509_ALGOR_set0(alg1, OBJ_nid2obj(EVP_PKEY_id(pkey)),
                             V_ASN1_SEQUENCE, params);
+        } else {
+          EVP_PKEY_CTX *pctx;
+          CMS_RecipientInfo *ri = arg2;
+          pctx = CMS_RecipientInfo_get0_pkey_ctx(ri);
+          if (!pctx)
+              return 0;
+          return gost_cms_set_shared_info(pctx, ri);
         }
         return 1;
+#ifdef ASN1_PKEY_CTRL_CMS_RI_TYPE
+  case ASN1_PKEY_CTRL_CMS_RI_TYPE:
+        *(int *)arg2 = CMS_RECIPINFO_TRANS;
+        return 1;
+	case ASN1_PKEY_CTRL_CMS_IS_RI_TYPE_SUPPORTED:
+			if (arg1 == CMS_RECIPINFO_AGREE || arg1 == CMS_RECIPINFO_TRANS)
+				return 1;
+			else
+				return 0;
+			break;
+#endif
 #endif
     case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
         *(int *)arg2 = md_nid;
