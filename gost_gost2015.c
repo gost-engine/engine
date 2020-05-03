@@ -10,29 +10,29 @@ int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx, size_t mac_si
 				const unsigned char *in,
 				size_t inl))
 {
-	unsigned char calculated_mac[KUZNYECHIK_MAC_MAX_SIZE];
-	memset(calculated_mac, 0, KUZNYECHIK_MAC_MAX_SIZE);
+  unsigned char calculated_mac[KUZNYECHIK_MAC_MAX_SIZE];
+  memset(calculated_mac, 0, KUZNYECHIK_MAC_MAX_SIZE);
 
-	if (EVP_CIPHER_CTX_encrypting(ctx)) {
-		EVP_DigestSignFinal(omac_ctx, calculated_mac, &mac_size);
+  if (EVP_CIPHER_CTX_encrypting(ctx)) {
+    EVP_DigestSignFinal(omac_ctx, calculated_mac, &mac_size);
 
-		if (do_cipher(ctx, encrypted_mac, calculated_mac, mac_size) <= 0) {
-			  return -1;
-		}
-	} else {
-		unsigned char expected_mac[KUZNYECHIK_MAC_MAX_SIZE];
+    if (do_cipher(ctx, encrypted_mac, calculated_mac, mac_size) <= 0) {
+        return -1;
+    }
+  } else {
+    unsigned char expected_mac[KUZNYECHIK_MAC_MAX_SIZE];
 
-		memset(expected_mac, 0, KUZNYECHIK_MAC_MAX_SIZE);
-		EVP_DigestSignFinal(omac_ctx, calculated_mac, &mac_size);
+    memset(expected_mac, 0, KUZNYECHIK_MAC_MAX_SIZE);
+    EVP_DigestSignFinal(omac_ctx, calculated_mac, &mac_size);
 
-		if (do_cipher(ctx, expected_mac, encrypted_mac, mac_size) <= 0) {
-			  return -1;
-		}
+    if (do_cipher(ctx, expected_mac, encrypted_mac, mac_size) <= 0) {
+        return -1;
+    }
 
-		if (CRYPTO_memcmp(expected_mac, calculated_mac, mac_size) != 0)
-			return -1;
-	}
-	return 0;
+    if (CRYPTO_memcmp(expected_mac, calculated_mac, mac_size) != 0)
+      return -1;
+  }
+  return 0;
 }
 
 /*
@@ -41,7 +41,7 @@ int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx, size_t mac_si
 #define MAX_GOST2015_UKM_SIZE 16
 #define KDF_SEED_SIZE 8
 int gost2015_get_asn1_params(const ASN1_TYPE *params, size_t ukm_size,
-	unsigned char *iv, size_t ukm_offset, unsigned char *kdf_seed)
+  unsigned char *iv, size_t ukm_offset, unsigned char *kdf_seed)
 {
   int iv_len = 16;
   GOST2015_CIPHER_PARAMS *gcp = NULL;
@@ -79,44 +79,44 @@ int gost2015_get_asn1_params(const ASN1_TYPE *params, size_t ukm_size,
 }
 
 int gost2015_set_asn1_params(ASN1_TYPE *params,
-	const unsigned char *iv, size_t iv_size, const unsigned char *kdf_seed)
+  const unsigned char *iv, size_t iv_size, const unsigned char *kdf_seed)
 {
-	GOST2015_CIPHER_PARAMS *gcp = GOST2015_CIPHER_PARAMS_new();
-	int ret = 0, len = 0;
+  GOST2015_CIPHER_PARAMS *gcp = GOST2015_CIPHER_PARAMS_new();
+  int ret = 0, len = 0;
 
-	ASN1_OCTET_STRING *os = NULL;
-	unsigned char ukm_buf[MAX_GOST2015_UKM_SIZE];
-	unsigned char *buf = NULL;
+  ASN1_OCTET_STRING *os = NULL;
+  unsigned char ukm_buf[MAX_GOST2015_UKM_SIZE];
+  unsigned char *buf = NULL;
 
-	if (gcp == NULL) {
-	    GOSTerr(GOST_F_GOST2015_SET_ASN1_PARAMS, ERR_R_MALLOC_FAILURE);
-			return 0;
-	}
+  if (gcp == NULL) {
+      GOSTerr(GOST_F_GOST2015_SET_ASN1_PARAMS, ERR_R_MALLOC_FAILURE);
+      return 0;
+  }
 
-	memcpy(ukm_buf, iv, iv_size);
-	memcpy(ukm_buf+iv_size, kdf_seed, KDF_SEED_SIZE);
+  memcpy(ukm_buf, iv, iv_size);
+  memcpy(ukm_buf+iv_size, kdf_seed, KDF_SEED_SIZE);
 
-	if (ASN1_STRING_set(gcp->ukm, ukm_buf, iv_size + KDF_SEED_SIZE) == 0) {
-	    GOSTerr(GOST_F_GOST2015_SET_ASN1_PARAMS, ERR_R_MALLOC_FAILURE);
-			goto end;
-	}
+  if (ASN1_STRING_set(gcp->ukm, ukm_buf, iv_size + KDF_SEED_SIZE) == 0) {
+      GOSTerr(GOST_F_GOST2015_SET_ASN1_PARAMS, ERR_R_MALLOC_FAILURE);
+      goto end;
+  }
 
-	len = i2d_GOST2015_CIPHER_PARAMS(gcp, &buf);
+  len = i2d_GOST2015_CIPHER_PARAMS(gcp, &buf);
 
-	if (len <= 0
-	    || (os = ASN1_OCTET_STRING_new()) == NULL
-			|| ASN1_OCTET_STRING_set(os, buf, len) == 0) {
-			goto end;
-	}
+  if (len <= 0
+      || (os = ASN1_OCTET_STRING_new()) == NULL
+      || ASN1_OCTET_STRING_set(os, buf, len) == 0) {
+      goto end;
+  }
 
-	ASN1_TYPE_set(params, V_ASN1_SEQUENCE, os);
-	ret = 1;
+  ASN1_TYPE_set(params, V_ASN1_SEQUENCE, os);
+  ret = 1;
 
 end:
-	OPENSSL_free(buf);
-	if (ret <= 0 && os)
-		ASN1_OCTET_STRING_free(os);
+  OPENSSL_free(buf);
+  if (ret <= 0 && os)
+    ASN1_OCTET_STRING_free(os);
 
-	GOST2015_CIPHER_PARAMS_free(gcp);
-	return ret;
+  GOST2015_CIPHER_PARAMS_free(gcp);
+  return ret;
 }
