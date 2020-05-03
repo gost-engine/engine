@@ -7,6 +7,7 @@
 #include "gost_grasshopper_defines.h"
 #include "gost_grasshopper_math.h"
 #include "gost_grasshopper_core.h"
+#include "gost_gost2015.h"
 
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -91,21 +92,18 @@ static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[6] = {
                                 gost_grasshopper_cipher_destroy_ctr,
                                 1,
                                 sizeof(gost_grasshopper_cipher_ctx_ctr),
-                                /* IV size is set to match full block, to make it responsibility of
-                                 * user to assign correct values (IV || 0), and to make naive context
-                                 * copy possible (for software such as openssh) */
-                                16,
+                                8,
                                 false}
     ,
     {
-                                     NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
-                                     gost_grasshopper_cipher_init_ctracpkm,
-                                     gost_grasshopper_cipher_do_ctracpkm,
-                                     gost_grasshopper_cipher_destroy_ctr,
-                                     1,
-                                     sizeof(gost_grasshopper_cipher_ctx_ctr),
-                                     16,
-                                     false}
+                                NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
+                                gost_grasshopper_cipher_init_ctracpkm,
+                                gost_grasshopper_cipher_do_ctracpkm,
+                                gost_grasshopper_cipher_destroy_ctr,
+                                1,
+                                sizeof(gost_grasshopper_cipher_ctx_ctr),
+                                8,
+                                false}
     ,
 };
 
@@ -690,32 +688,37 @@ int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX *ctx)
 
 int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 {
-    int len = 0;
-    unsigned char *buf = NULL;
-    ASN1_OCTET_STRING *os = ASN1_OCTET_STRING_new();
+	if (EVP_CIPHER_CTX_mode(ctx) == EVP_CIPH_CTR_MODE) {
+		gost_grasshopper_cipher_ctx_ctr *ctr = EVP_CIPHER_CTX_get_cipher_data(ctx);
 
-    if (!os || !ASN1_OCTET_STRING_set(os, buf, len)) {
-        ASN1_OCTET_STRING_free(os);
-        OPENSSL_free(buf);
-        GOSTerr(GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS,
-                ERR_R_MALLOC_FAILURE);
-        return 0;
-    }
-    OPENSSL_free(buf);
-
-    ASN1_TYPE_set(params, V_ASN1_SEQUENCE, os);
-    return 1;
+		return gost2015_set_asn1_params(params, EVP_CIPHER_CTX_original_iv(ctx), 8,
+				ctr->kdf_seed);
+	}
+	return 0;
 }
 
 GRASSHOPPER_INLINE int gost_grasshopper_get_asn1_parameters(EVP_CIPHER_CTX
                                                             *ctx, ASN1_TYPE
                                                             *params)
 {
-    if (ASN1_TYPE_get(params) != V_ASN1_SEQUENCE) {
-        return -1;
-    }
+	if (EVP_CIPHER_CTX_mode(ctx) == EVP_CIPH_CTR_MODE) {
+		gost_grasshopper_cipher_ctx_ctr *ctr = EVP_CIPHER_CTX_get_cipher_data(ctx);
 
-    return 1;
+		int iv_len = 16;
+		unsigned char iv[16];
+
+		if (gost2015_get_asn1_params(params, 16, iv, 8, ctr->kdf_seed) == 0) {
+			return 0;
+		}
+
+		memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), iv, iv_len);
+		memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx), iv, iv_len);
+
+		/* CMS implies 256kb mesh_section_size */
+		ctr->section_size = 256*1024;
+		return 1;
+	}
+	return 0;
 }
 
 int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,

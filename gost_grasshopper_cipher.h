@@ -30,6 +30,7 @@ typedef struct {
     grasshopper_w128_t partial_buffer;
     unsigned int section_size;  /* After how much bytes mesh the key,
 				   if 0 never mesh and work like plain ctr. */
+    unsigned char kdf_seed[8];
 } gost_grasshopper_cipher_ctx_ctr;
 
 typedef int (* grasshopper_init_cipher_func)(EVP_CIPHER_CTX* ctx, const unsigned char* key, const unsigned char* iv,
