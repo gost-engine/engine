@@ -33,6 +33,8 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_ENCODE_GOST_ALGOR_PARAMS                  101
 # define GOST_F_FILL_GOST_EC_PARAMS                       102
 # define GOST_F_GET_ENCRYPTION_PARAMS                     103
+# define GOST_F_GOST2015_GET_ASN1_PARAMS                  158
+# define GOST_F_GOST2015_SET_ASN1_PARAMS                  159
 # define GOST_F_GOST89_GET_ASN1_PARAMETERS                104
 # define GOST_F_GOST89_SET_ASN1_PARAMETERS                105
 # define GOST_F_GOST_CIPHER_CTL                           106
