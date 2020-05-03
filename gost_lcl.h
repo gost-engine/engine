@@ -130,6 +130,7 @@ typedef struct {                /* FIXME incomplete */
 typedef struct PSKeyTransport_st {
     ASN1_OCTET_STRING *psexp;
     X509_PUBKEY       *ephem_key;
+    ASN1_OCTET_STRING *ukm;
 } PSKeyTransport_gost;
 
 DECLARE_ASN1_FUNCTIONS(PSKeyTransport_gost)

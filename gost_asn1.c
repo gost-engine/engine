@@ -65,6 +65,7 @@ IMPLEMENT_ASN1_FUNCTIONS(MASKED_GOST_KEY)
 ASN1_NDEF_SEQUENCE(PSKeyTransport_gost) =
 {
     ASN1_SIMPLE(PSKeyTransport_gost, psexp, ASN1_OCTET_STRING),
-		ASN1_SIMPLE(PSKeyTransport_gost, ephem_key, X509_PUBKEY)
+		ASN1_SIMPLE(PSKeyTransport_gost, ephem_key, X509_PUBKEY),
+		ASN1_OPT(PSKeyTransport_gost, ukm, ASN1_OCTET_STRING)
 } ASN1_NDEF_SEQUENCE_END(PSKeyTransport_gost)
 IMPLEMENT_ASN1_FUNCTIONS(PSKeyTransport_gost)
