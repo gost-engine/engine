@@ -445,10 +445,12 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
         *(int *)arg2 = CMS_RECIPINFO_TRANS;
         return 1;
 	case ASN1_PKEY_CTRL_CMS_IS_RI_TYPE_SUPPORTED:
-			if (arg1 == CMS_RECIPINFO_AGREE || arg1 == CMS_RECIPINFO_TRANS)
-				return 1;
+			if (arg1 == CMS_RECIPINFO_AGREE || arg1 == CMS_RECIPINFO_TRANS) {
+          *(int *)arg2 = 1;
+				  return 1;
+      }
 			else
-				return 0;
+				  return 0;
 			break;
 #endif
 #endif
