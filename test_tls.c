@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -269,25 +270,67 @@ int test(const char *algname, const char *paramset)
     if (socketpair(AF_LOCAL, SOCK_STREAM, 0, sockfd) == -1)
 	err(1, "socketpair");
 
-    pid_t pid = fork();
-    if (pid < 0)
-	err(1, "fork");
+    setpgid(0, 0);
 
-    if (pid > 0) {
-	int status;
-
-	ret = s_client(sockfd[0]);
-	wait(&status);
-	ret |= WIFEXITED(status) && WEXITSTATUS(status);
-	X509_free(ck.cert);
-	EVP_PKEY_free(ck.pkey);
-    } else if (pid == 0) {
+    /* Run server in separate process. */
+    pid_t server_pid = fork();
+    if (server_pid < 0)
+	err(1, "fork server");
+    if (server_pid == 0) {
 	ret = s_server(ck.pkey, ck.cert, sockfd[1]);
 	X509_free(ck.cert);
 	EVP_PKEY_free(ck.pkey);
 	exit(ret);
     }
 
+    /* Run client in separate process. */
+    pid_t client_pid = fork();
+    if (client_pid < 0)
+	err(1, "fork client");
+    if (client_pid == 0) {
+	ret = s_client(sockfd[0]);
+	X509_free(ck.cert);
+	EVP_PKEY_free(ck.pkey);
+	exit(ret);
+    }
+
+    /* Wait for first child to exit. */
+    int status;
+    pid_t exited_pid = wait(&status);
+    ret = (WIFEXITED(status) && WEXITSTATUS(status)) ||
+	(WIFSIGNALED(status) && WTERMSIG(status));
+    if (ret) {
+	warnx(cRED "%s child %s with %d %s" cNORM,
+	    exited_pid == server_pid? "server" : "client",
+	    WIFSIGNALED(status)? "killed" : "exited",
+	    WIFSIGNALED(status)? WTERMSIG(status) : WEXITSTATUS(status),
+	    WIFSIGNALED(status)? strsignal(WTERMSIG(status)) : "");
+
+	/* If first child exited with error, kill other. */
+	warnx("terminating %s by force",
+	    exited_pid == server_pid? "client" : "server");
+	kill(exited_pid == server_pid? client_pid : server_pid, SIGTERM);
+    }
+
+    exited_pid = wait(&status);
+    /* Report error unless we killed it. */
+    if (!ret && (!WIFEXITED(status) || WEXITSTATUS(status)))
+	warnx(cRED "%s child %s with %d %s" cNORM,
+	    exited_pid == server_pid? "server" : "client",
+	    WIFSIGNALED(status)? "killed" : "exited",
+	    WIFSIGNALED(status)? WTERMSIG(status) : WEXITSTATUS(status),
+	    WIFSIGNALED(status)? strsignal(WTERMSIG(status)) : "");
+    ret |= (WIFEXITED(status) && WEXITSTATUS(status)) ||
+	(WIFSIGNALED(status) && WTERMSIG(status));
+
+    /* Every responsible process should free this. */
+    X509_free(ck.cert);
+    EVP_PKEY_free(ck.pkey);
+#ifdef __SANITIZE_ADDRESS__
+    /* Abort on the first (hopefully) ASan error. */
+    if (ret)
+	_exit(ret);
+#endif
     return ret;
 }
 
