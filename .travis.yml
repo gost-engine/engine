@@ -8,7 +8,8 @@ env:
   global:
     - PREFIX=${HOME}/opt
     - PATH=${PREFIX}/bin:${PATH}
-    - OPENSSL_BRANCH=openssl-3.0.0-alpha1
+    #- OPENSSL_BRANCH=openssl-3.0.0-alpha1
+    - OPENSSL_BRANCH=master
     - RPATH="-Wl,-rpath=${PREFIX}/lib"
 
 matrix:
