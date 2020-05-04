@@ -528,15 +528,15 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     unsigned int num = EVP_CIPHER_CTX_num(ctx);
-    size_t blocks, i, lasted;
+    size_t blocks, i, lasted = inl;
     grasshopper_w128_t tmp;
 
-    while ((num & GRASSHOPPER_BLOCK_MASK) && inl) {
+    while ((num & GRASSHOPPER_BLOCK_MASK) && lasted) {
         *out++ = *in++ ^ c->partial_buffer.b[num & GRASSHOPPER_BLOCK_MASK];
-        --inl;
+        --lasted;
         num++;
     }
-    blocks = inl / GRASSHOPPER_BLOCK_SIZE;
+    blocks = lasted / GRASSHOPPER_BLOCK_SIZE;
 
     // full parts
     for (i = 0; i < blocks; i++) {
@@ -552,10 +552,10 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
         in += GRASSHOPPER_BLOCK_SIZE;
         out += GRASSHOPPER_BLOCK_SIZE;
         num += GRASSHOPPER_BLOCK_SIZE;
+				lasted -= GRASSHOPPER_BLOCK_SIZE;
     }
 
     // last part
-    lasted = inl - blocks * GRASSHOPPER_BLOCK_SIZE;
     if (lasted > 0) {
         apply_acpkm_grasshopper(c, &num);
         grasshopper_encrypt_block(&c->c.encrypt_round_keys,
