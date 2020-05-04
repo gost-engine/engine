@@ -5,6 +5,7 @@
 
 #define MAGMA_MAC_MAX_SIZE 8
 #define KUZNYECHIK_MAC_MAX_SIZE 16
+#define OID_GOST_CMS_MAC "1.2.643.7.1.0.6.1.1"
 
 int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx, size_t mac_size,
 			unsigned char *encrypted_mac,

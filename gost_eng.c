@@ -159,6 +159,10 @@ static struct gost_cipher_minfo {
         cipher_gost_grasshopper_ctracpkm,
     },
     {
+        NID_kuznyechik_ctr_acpkm_omac,
+        cipher_gost_grasshopper_ctracpkm_omac,
+    },
+    {
         NID_magma_kexp15,
         cipher_magma_wrap,
     },
