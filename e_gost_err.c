@@ -41,6 +41,8 @@ static ERR_STRING_DATA GOST_str_functs[] = {
     {ERR_PACK(0, GOST_F_GOST_EC_VERIFY, 0), "gost_ec_verify"},
     {ERR_PACK(0, GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, 0),
      "gost_grasshopper_cipher_ctl"},
+    {ERR_PACK(0, GOST_F_GOST_GRASSHOPPER_CIPHER_DO_CTRACPKM_OMAC, 0),
+     "gost_grasshopper_cipher_do_ctracpkm_omac"},
     {ERR_PACK(0, GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS, 0),
      "gost_grasshopper_set_asn1_parameters"},
     {ERR_PACK(0, GOST_F_GOST_IMIT_CTRL, 0), "gost_imit_ctrl"},

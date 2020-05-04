@@ -46,6 +46,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_EC_SIGN                              109
 # define GOST_F_GOST_EC_VERIFY                            110
 # define GOST_F_GOST_GRASSHOPPER_CIPHER_CTL               111
+# define GOST_F_GOST_GRASSHOPPER_CIPHER_DO_CTRACPKM_OMAC  160
 # define GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS      112
 # define GOST_F_GOST_IMIT_CTRL                            113
 # define GOST_F_GOST_IMIT_FINAL                           114

@@ -584,6 +584,10 @@ int gost_grasshopper_cipher_do_ctracpkm_omac(EVP_CIPHER_CTX *ctx,
 		return gost2015_final_call(ctx, c->omac_ctx, KUZNYECHIK_MAC_MAX_SIZE, c->tag, gost_grasshopper_cipher_do_ctracpkm);
 	}
 
+  if (in == NULL) {
+      GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_DO_CTRACPKM_OMAC, ERR_R_EVP_LIB);
+      return -1;
+  }
 	result = gost_grasshopper_cipher_do_ctracpkm(ctx, out, in, inl);
 
 	/* As in and out can be the same pointer, process decrypted here */

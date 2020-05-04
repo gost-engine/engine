@@ -23,6 +23,8 @@ GOST_F_GOST_EC_KEYGEN:108:gost_ec_keygen
 GOST_F_GOST_EC_SIGN:109:gost_ec_sign
 GOST_F_GOST_EC_VERIFY:110:gost_ec_verify
 GOST_F_GOST_GRASSHOPPER_CIPHER_CTL:111:gost_grasshopper_cipher_ctl
+GOST_F_GOST_GRASSHOPPER_CIPHER_DO_CTRACPKM_OMAC:160:\
+	gost_grasshopper_cipher_do_ctracpkm_omac
 GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS:112:\
 	gost_grasshopper_set_asn1_parameters
 GOST_F_GOST_IMIT_CTRL:113:gost_imit_ctrl
