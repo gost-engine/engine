@@ -93,12 +93,8 @@ test -skip {![file exists test.crl]} "Verifying corrupted CRL" {
 
 test "Verifying CA certificate" {
 	grep "(cacert.pem|error|OK)" [openssl "verify -CAfile $::test::ca/cacert.pem $::test::ca/cacert.pem"]
-} 1 "error $::test::ca/cacert.pem: verification failed
-STDERR CONTENTS:
-C = RU, L = Moscow, CN = Test CA $ca_alg, O = Cryptocom, OU = OpenSSL CA, emailAddress = openssl@cryptocom.ru
-error 18 at 0 depth lookup: self signed certificate"
-
-
+} 0 "$::test::ca/cacert.pem: OK
+"
 
 test "Verifying certificate" {
 	grep "cert.pem" [openssl "verify -CAfile $::test::ca/cacert.pem $userdir/cert.pem"]
