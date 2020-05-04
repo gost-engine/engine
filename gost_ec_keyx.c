@@ -86,10 +86,15 @@ int VKO_compute_key(unsigned char *shared_key,
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    EVP_MD_CTX_init(mdctx);
-    EVP_DigestInit_ex(mdctx, md, NULL);
-    EVP_DigestUpdate(mdctx, databuf, buf_len);
-    EVP_DigestFinal_ex(mdctx, shared_key, NULL);
+
+    if (EVP_MD_CTX_init(mdctx) == 0
+        || EVP_DigestInit_ex(mdctx, md, NULL) == 0
+        || EVP_DigestUpdate(mdctx, databuf, buf_len) == 0
+        || EVP_DigestFinal_ex(mdctx, shared_key, NULL) == 0) {
+        GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_EVP_LIB);
+        goto err;
+    }
+
     ret = (EVP_MD_size(md) > 0) ? EVP_MD_size(md) : 0;
 
  err:
