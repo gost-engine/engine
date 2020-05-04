@@ -92,7 +92,7 @@ test -skip {![file exists test.crl]} "Verifying corrupted CRL" {
 "
 
 test "Verifying CA certificate" {
-	grep "(cacert.pem|error|OK)" [openssl "verify $::test::ca/cacert.pem"]
+	grep "(cacert.pem|error|OK)" [openssl "verify -CAflie $::test::ca/cacert.pem $::test::ca/cacert.pem"]
 } 1 "error $::test::ca/cacert.pem: verification failed
 STDERR CONTENTS:
 C = RU, L = Moscow, CN = Test CA $ca_alg, O = Cryptocom, OU = OpenSSL CA, emailAddress = openssl@cryptocom.ru
