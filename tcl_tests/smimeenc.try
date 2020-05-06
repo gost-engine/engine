@@ -33,7 +33,7 @@ test "Make registered user $user" {
 
 
 test "RSA User 1 encrypts message for RSA user 2" {
-	openssl "smime -encrypt -in encrypt.dat -des -out enc_rsa.msg U_enc_rsa_2/cert.pem"
+	openssl "smime -encrypt -in encrypt.dat -aes-128-cbc -out enc_rsa.msg U_enc_rsa_2/cert.pem"
 	file isfile enc_rsa.msg
 } 0 1
 
