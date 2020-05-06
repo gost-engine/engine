@@ -340,6 +340,8 @@ static int gost_cms_set_ktri_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *
 			gctx->cipher_nid = NID_magma_ctr;
 			break;
 
+		case NID_id_GostR3410_2001:
+		case NID_id_GostR3410_2001DH:
 		case NID_id_GostR3410_2012_256:
 		case NID_id_GostR3410_2012_512:
 			gctx->cipher_nid = NID_id_Gost28147_89;
