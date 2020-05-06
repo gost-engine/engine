@@ -153,8 +153,8 @@ int main(int argc, char **argv)
 		if (pass == 0) { /* sign */
 		    for (i = 0; i < cycles; i++) {
 			EVP_SignInit(md_ctx, mdtype);
-			EVP_SignUpdate(md_ctx, data, data_len);
-			err = EVP_SignFinal(md_ctx, &sigbuf[siglen * i],
+			err = EVP_SignUpdate(md_ctx, data, data_len)
+			   && EVP_SignFinal(md_ctx, &sigbuf[siglen * i],
 			    (unsigned int *)&siglen, pkey);
 			if (err != 1)
 			    printf("!");
@@ -163,8 +163,8 @@ int main(int argc, char **argv)
 		} else { /* verify */
 		    for (i = 0; i < cycles; i++) {
 			EVP_VerifyInit(md_ctx, mdtype);
-			EVP_VerifyUpdate(md_ctx, data, data_len);
-			err = EVP_VerifyFinal(md_ctx, &sigbuf[siglen * i],
+			err = EVP_VerifyUpdate(md_ctx, data, data_len)
+			   && EVP_VerifyFinal(md_ctx, &sigbuf[siglen * i],
 			    siglen, pkey);
 			EVP_MD_CTX_reset(md_ctx);
 			if (err != 1)
