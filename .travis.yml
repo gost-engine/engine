@@ -10,7 +10,7 @@ env:
     - PATH=${PREFIX}/bin:${PATH}
     - OPENSSL_BRANCH=master
     # known good commit
-    #- OPENSSL_BRANCH=edbb56ee4fafc07eb77747ad25278a04b89adc09
+    - OPENSSL_COMMIT=edbb56ee4fafc07eb77747ad25278a04b89adc09
     - RPATH="-Wl,-rpath=${PREFIX}/lib"
 
 matrix:
@@ -20,6 +20,7 @@ matrix:
       compiler: clang
     - name: gcc | openssl-master
       env: OPENSSL_BRANCH=master
+      env: OPENSSL_COMMIT=HEAD
     # Dynamic and static analysers
     - name: gcc+ASan | openssl-hope-for-best
       env: ASAN=-DASAN=1
@@ -53,8 +54,10 @@ before_script:
   - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
   - sudo cpanm --notest Test2::V0 > build.log 2>&1 || (cat build.log && exit 1)
   - if [ "$APT_INSTALL" ]; then sudo apt-get install -y $APT_INSTALL; fi
-  - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
+  #- git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
+  - git clone --single-branch -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
+  - git reset --hard ${OPENSSL_COMMIT}
   - git describe --always --long
   - $SETARCH ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} ${RPATH}
   - travis_wait $SETARCH make -s -j$(nproc) build_libs
