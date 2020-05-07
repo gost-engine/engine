@@ -9,20 +9,20 @@ env:
     - PREFIX=${HOME}/opt
     - PATH=${PREFIX}/bin:${PATH}
     #- OPENSSL_BRANCH=openssl-3.0.0-alpha1
-    - OPENSSL_BRANCH=master
+    - OPENSSL_BRANCH=edbb56ee4fafc07eb77747ad25278a04b89adc09
     - RPATH="-Wl,-rpath=${PREFIX}/lib"
 
 matrix:
   include:
-    - name: gcc | openssl-stable
-    - name: clang | openssl-stable
+    - name: gcc | openssl-known-good
+    - name: clang | openssl-known-good
       compiler: clang
     - name: gcc | openssl-master
       env: OPENSSL_BRANCH=master
     # Dynamic and static analysers
-    - name: gcc+ASan | openssl-stable
+    - name: gcc+ASan | openssl-known-good
       env: ASAN=-DASAN=1
-    - name: gcc+Coverity | openssl-stable (cron)
+    - name: gcc+Coverity | openssl-known-good (cron)
       env: COVERITY_SCAN_PROJECT_NAME="gost-engine" COVERITY_SCAN_BRANCH_PATTERN="*" COVERITY_SCAN_NOTIFICATION_EMAIL="beldmit@gmail.com" COVERITY_SCAN_BUILD_COMMAND="make"
       if: type == cron
       script:
@@ -31,22 +31,22 @@ matrix:
         - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ..
         - curl -s "https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh" | bash || true
     # Other arches
-    - name: gcc | openssl-stable
+    - name: gcc | openssl-known-good
       env: CFLAGS=-m32 LDFLAGS=-m32 SETARCH="setarch i386" APT_INSTALL=gcc-multilib
-    - name: gcc | openssl-stable
+    - name: gcc | openssl-known-good
       arch: ppc64le
-    - name: gcc | openssl-stable
+    - name: gcc | openssl-known-good
       arch: arm64
-    - name: gcc | openssl-stable
+    - name: gcc | openssl-known-good
       arch: s390x
     # Non-linux
-    - name: clang | openssl-stable
+    - name: clang | openssl-known-good
       os: osx
       compiler: clang
       env: RPATH="-Wl,-rpath,${PREFIX}/lib"
   allow_failures:
       env: OPENSSL_BRANCH=master
-      if: type == pull_request
+    #  if: type == pull_request
 
 before_script:
   - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
