@@ -1,26 +1,23 @@
 /*
- * Copyright (C) 2018 vt@altlinux.org. All Rights Reserved.
+ * Copyright (C) 2018,2020 Vitaly Chikunov <vt@altlinux.org>. All Rights Reserved.
  *
  * Contents licensed under the terms of the OpenSSL license
  * See https://www.openssl.org/source/license.html for details
  */
 
-#include "gost_grasshopper_cipher.h"
-#include "gost_grasshopper_defines.h"
-#include "gost_grasshopper_math.h"
-#include "gost_grasshopper_core.h"
-#include "e_gost_err.h"
-#include "gost_lcl.h"
+#include <openssl/engine.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <string.h>
 
-#define T(e) if (!(e)) {\
+#define T(e) ({ \
+    if (!(e)) {\
 	ERR_print_errors_fp(stderr);\
 	OpenSSLDie(__FILE__, __LINE__, #e);\
-    }
+    } \
+})
 
 #define cRED	"\033[1;31m"
 #define cDRED	"\033[0;31m"
@@ -57,19 +54,6 @@ static const unsigned char P_acpkm[] = {
     0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,0x22,
     0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,0x22,0x33,
     0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,0x22,0x33,0x44,
-};
-/* OMAC-ACPKM test vector from R 1323565.1.017-2018 A.4.1 */
-static const unsigned char P_omac_acpkm1[] = {
-    0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x00,0xFF,0xEE,0xDD,0xCC,0xBB,0xAA,0x99,0x88,
-    0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,
-};
-/* OMAC-ACPKM test vector from R 1323565.1.017-2018 A.4.2 */
-static const unsigned char P_omac_acpkm2[] = {
-    0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x00,0xFF,0xEE,0xDD,0xCC,0xBB,0xAA,0x99,0x88,
-    0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,
-    0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,
-    0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,
-    0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,0x00,0x11,0x22,
 };
 static const unsigned char E_ecb[] = {
     /* ECB test vectors from GOST R 34.13-2015  A.1.1 */
@@ -141,44 +125,103 @@ static const unsigned char E_cfb[] = {
     0xe1,0xc8,0x52,0xe9,0xa8,0x56,0x71,0x62,0xdb,0xb5,0xda,0x7f,0x66,0xde,0xa9,0x26,
 };
 
-static const unsigned char iv_ctr[]	= { 0x12,0x34,0x56,0x78,0x90,0xab,0xce,0xf0,
-					    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
+/* IV is half CNT size. */
+static const unsigned char iv_ctr[]	= { 0x12,0x34,0x56,0x78,0x90,0xab,0xce,0xf0 };
 /* Truncated to 128-bits IV from GOST examples. */
 static const unsigned char iv_128bit[]	= { 0x12,0x34,0x56,0x78,0x90,0xab,0xce,0xf0,
 					    0xa1,0xb2,0xc3,0xd4,0xe5,0xf0,0x01,0x12 };
 /* Universal IV for ACPKM-Master. */
-static const unsigned char iv_acpkm_m[]	= { 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
-					    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
-static const unsigned char MAC_omac[] = { 0x33,0x6f,0x4d,0x29,0x60,0x59,0xfb,0xe3 };
-static const unsigned char MAC_omac_acpkm1[] = {
-    0xB5,0x36,0x7F,0x47,0xB6,0x2B,0x99,0x5E,0xEB,0x2A,0x64,0x8C,0x58,0x43,0x14,0x5E,
-};
-static const unsigned char MAC_omac_acpkm2[] = {
-    0xFB,0xB8,0xDC,0xEE,0x45,0xBE,0xA6,0x7C,0x35,0xF5,0x8C,0x57,0x00,0x89,0x8E,0x5D,
-};
+static const unsigned char iv_acpkm_m[]	= { 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff };
 
-struct testcase {
-    const char *name;
-    const EVP_CIPHER *(*type)(void);
-    int stream;
+static struct testcase {
+    int nid;
+    int block; /* Actual underlying block size (bytes). */
+    int stream; /* Stream cipher. */
     const unsigned char *plaintext;
     const unsigned char *expected;
     size_t size;
     const unsigned char *iv;
     size_t iv_size;
     int acpkm;
-};
-static struct testcase testcases[] = {
-    { "ecb", cipher_gost_grasshopper_ecb, 0, P,  E_ecb,  sizeof(P),  NULL,       0, 0 },
-    { "ctr", cipher_gost_grasshopper_ctr, 1, P,  E_ctr,  sizeof(P),  iv_ctr,     sizeof(iv_ctr), 0 },
-    { "ctr-no-acpkm", cipher_gost_grasshopper_ctracpkm, 1, P,   E_ctr,   sizeof(P),       iv_ctr, sizeof(iv_ctr), 0 },
-    { "ctracpkm", cipher_gost_grasshopper_ctracpkm, 1, P_acpkm, E_acpkm, sizeof(P_acpkm), iv_ctr, sizeof(iv_ctr), 256 / 8 },
-    { "acpkm-Master", cipher_gost_grasshopper_ctracpkm, 0, P_acpkm_master, E_acpkm_master, sizeof(P_acpkm_master),
-	iv_acpkm_m, sizeof(iv_acpkm_m), 768 / 8 },
-    { "ofb", cipher_gost_grasshopper_ofb, 1, P,  E_ofb,  sizeof(P),  iv_128bit,  sizeof(iv_128bit), 0 },
-    { "cbc", cipher_gost_grasshopper_cbc, 0, P,  E_cbc,  sizeof(P),  iv_128bit,  sizeof(iv_128bit), 0 },
-    { "cfb", cipher_gost_grasshopper_cfb, 0, P,  E_cfb,  sizeof(P),  iv_128bit,  sizeof(iv_128bit), 0 },
-    NULL
+} testcases[] = {
+    {
+	.nid = NID_grasshopper_ecb,
+	.block = 16,
+	.plaintext = P,
+	.expected = E_ecb,
+	.size = sizeof(P),
+    },
+    {
+	.nid = NID_grasshopper_ctr,
+	.block = 16,
+	.stream = 1,
+	.plaintext = P,
+	.expected = E_ctr,
+	.size = sizeof(P),
+	.iv = iv_ctr,
+	.iv_size = sizeof(iv_ctr),
+    },
+    {
+	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
+	.block = 16,
+	.stream = 1,
+	.plaintext = P,
+	.expected = E_ctr,
+	.size = sizeof(P),
+	.iv = iv_ctr,
+	.iv_size = sizeof(iv_ctr),
+	/* no acpkm works same as ctr */
+    },
+    {
+	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
+	.block = 16,
+	.stream = 1,
+	.plaintext = P_acpkm,
+	.expected = E_acpkm,
+	.size = sizeof(P_acpkm),
+	.iv = iv_ctr,
+	.iv_size = sizeof(iv_ctr),
+	.acpkm = 256 / 8,
+    },
+    {
+	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
+	.block = 16,
+	.plaintext = P_acpkm_master,
+	.expected = E_acpkm_master,
+	.size = sizeof(P_acpkm_master),
+	.iv = iv_acpkm_m,
+	.iv_size = sizeof(iv_acpkm_m),
+	.acpkm = 768 / 8
+    },
+    {
+	.nid = NID_grasshopper_ofb,
+	.block = 16,
+	.stream = 1,
+	.plaintext = P,
+	.expected = E_ofb,
+	.size = sizeof(P),
+	.iv = iv_128bit,
+	.iv_size = sizeof(iv_128bit),
+    },
+    {
+	.nid = NID_grasshopper_cbc,
+	.block = 16,
+	.plaintext = P,
+	.expected = E_cbc,
+	.size = sizeof(P),
+	.iv = iv_128bit,
+	.iv_size = sizeof(iv_128bit),
+    },
+    {
+	.nid = NID_grasshopper_cfb,
+	.block = 16,
+	.plaintext = P,
+	.expected = E_cfb,
+	.size = sizeof(P),
+	.iv = iv_128bit,
+	.iv_size = sizeof(iv_128bit),
+    },
+    { 0 }
 };
 
 static void hexdump(const void *ptr, size_t len)
@@ -193,7 +236,7 @@ static void hexdump(const void *ptr, size_t len)
     printf("\n");
 }
 
-static int test_block(const EVP_CIPHER *type, const char *name,
+static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
     const unsigned char *pt, const unsigned char *exp, size_t size,
     const unsigned char *iv, size_t iv_size, int acpkm,
     int inplace)
@@ -205,8 +248,17 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     int ret = 0, test;
 
     OPENSSL_assert(ctx);
-    printf("Encryption test from %s [%s] %s\n", standard, name,
+    printf("Encryption test from %s [%s] %s: ", standard, name,
 	inplace ? "in-place" : "out-of-place");
+
+    T(EVP_CIPHER_iv_length(type) == iv_size);
+
+    if (EVP_CIPHER_block_size(type) == 1) {
+	/* Cannot test block size, but can report it's stream cipher. */
+	printf("stream: ");
+    } else
+	T(EVP_CIPHER_block_size(type) == block_size);
+
     /* test with single big chunk */
     EVP_CIPHER_CTX_init(ctx);
     T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 1));
@@ -220,16 +272,18 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     T(EVP_CipherUpdate(ctx, c, &outlen, inplace? c : pt, size));
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(ctx);
-    printf("  c[%d] = ", outlen);
-    hexdump(c, outlen);
 
     TEST_ASSERT(outlen != size || memcmp(c, exp, size));
+    if (test) {
+	printf("  c[%d] = ", outlen);
+	hexdump(c, outlen);
+    }
     ret |= test;
 
     /* test with small chunks of block size */
-    printf("Chunked encryption test from %s [%s] %s\n", standard, name,
+    printf("Chunked encryption test from %s [%s] %s: ", standard, name,
 	inplace ? "in-place" : "out-of-place");
-    int blocks = size / GRASSHOPPER_BLOCK_SIZE;
+    int blocks = size / block_size;
     int z;
     EVP_CIPHER_CTX_init(ctx);
     T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 1));
@@ -241,22 +295,24 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     if (acpkm)
 	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
     for (z = 0; z < blocks; z++) {
-	int offset = z * GRASSHOPPER_BLOCK_SIZE;
-	int sz = GRASSHOPPER_BLOCK_SIZE;
+	int offset = z * block_size;
+	int sz = block_size;
 
 	T(EVP_CipherUpdate(ctx, c + offset, &outlen, (inplace ? c : pt) + offset, sz));
     }
-    outlen = z * GRASSHOPPER_BLOCK_SIZE;
+    outlen = z * block_size;
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(ctx);
-    printf("  c[%d] = ", outlen);
-    hexdump(c, outlen);
 
     TEST_ASSERT(outlen != size || memcmp(c, exp, size));
+    if (test) {
+	printf("  c[%d] = ", outlen);
+	hexdump(c, outlen);
+    }
     ret |= test;
 
     /* test with single big chunk */
-    printf("Decryption test from %s [%s] %s\n", standard, name,
+    printf("Decryption test from %s [%s] %s: ", standard, name,
 	inplace ? "in-place" : "out-of-place");
     EVP_CIPHER_CTX_init(ctx);
     T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 0));
@@ -271,10 +327,12 @@ static int test_block(const EVP_CIPHER *type, const char *name,
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(ctx);
     EVP_CIPHER_CTX_free(ctx);
-    printf("  d[%d] = ", outlen);
-    hexdump(c, outlen);
 
     TEST_ASSERT(outlen != size || memcmp(c, pt, size));
+    if (test) {
+	printf("  d[%d] = ", outlen);
+	hexdump(c, outlen);
+    }
     ret |= test;
 
     return ret;
@@ -292,6 +350,10 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
     OPENSSL_assert(ctx);
     /* Cycle through all lengths from 1 upto maximum size */
     printf("Stream encryption test from %s [%s] \n", standard, name);
+
+    /* Block size for stream ciphers should be 1. */
+    T(EVP_CIPHER_block_size(type) == 1);
+
     for (z = 1; z <= size; z++) {
 	unsigned char c[size];
 	int outlen, tmplen;
@@ -327,46 +389,15 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
     return ret;
 }
 
-static int test_mac(const char *name, const char *from,
-    const EVP_MD *type, int acpkm, int acpkm_t,
-    const unsigned char *pt, size_t pt_size,
-    const unsigned char *mac, size_t mac_size)
-{
-    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-    unsigned char md_value[EVP_MAX_MD_SIZE];
-    int test;
-    unsigned int md_len;
-
-    OPENSSL_assert(ctx);
-    printf("%s test from %s\n", name, from);
-    EVP_MD_CTX_init(ctx);
-    T(EVP_DigestInit_ex(ctx, type, NULL));
-    T(EVP_MD_CTX_ctrl(ctx, EVP_MD_CTRL_SET_KEY, sizeof(K), (void *)K));
-    if (acpkm)
-	T(EVP_MD_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, acpkm_t ? &acpkm_t : NULL));
-    T(EVP_DigestUpdate(ctx, pt, pt_size));
-    if (EVP_MD_flags(EVP_MD_CTX_md(ctx)) & EVP_MD_FLAG_XOF) {
-	T(EVP_DigestFinalXOF(ctx, md_value, mac_size));
-	md_len = (unsigned int)mac_size;
-    } else {
-	T(EVP_MD_CTX_size(ctx) == mac_size);
-	T(EVP_DigestFinal_ex(ctx, md_value, &md_len));
-    }
-    EVP_MD_CTX_free(ctx);
-    printf("  MAC[%u] = ", md_len);
-    hexdump(md_value, mac_size);
-
-    TEST_ASSERT(md_len != mac_size ||
-	memcmp(mac, md_value, mac_size));
-
-    return test;
-}
-
 int main(int argc, char **argv)
 {
     int ret = 0;
     const struct testcase *t;
 
+#if MIPSEL
+    /* Trigger SIGBUS for unaligned access. */
+    sysmips(MIPS_FIXADE, 0);
+#endif
     setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();
     ERR_load_crypto_strings();
@@ -375,32 +406,23 @@ int main(int argc, char **argv)
     T(ENGINE_init(eng));
     T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
 
-    for (t = testcases; t->name; t++) {
+    for (t = testcases; t->nid; t++) {
 	int inplace;
 	const char *standard = t->acpkm? "R 23565.1.017-2018" : "GOST R 34.13-2015";
 
-	printf(cBLUE "# Tests for %s [%s]\n" cNORM, t->name, standard);
+	const EVP_CIPHER *type = EVP_get_cipherbynid(t->nid);
+	const char *name = EVP_CIPHER_name(type);
+
+	printf(cBLUE "# Tests for %s [%s]\n" cNORM, name, standard);
 	for (inplace = 0; inplace <= 1; inplace++)
-	    ret |= test_block(t->type(), t->name,
+	    ret |= test_block(type, name, t->block,
 		t->plaintext, t->expected, t->size,
 		t->iv, t->iv_size, t->acpkm, inplace);
 	if (t->stream)
-	    ret |= test_stream(t->type(), t->name,
+	    ret |= test_stream(type, name,
 		t->plaintext, t->expected, t->size,
 		t->iv, t->iv_size, t->acpkm);
     }
-
-    printf(cBLUE "# Tests for omac\n" cNORM);
-    ret |= test_mac("OMAC", "GOST R 34.13-2015", grasshopper_omac(), 0, 0,
-        P, sizeof(P), MAC_omac, sizeof(MAC_omac));
-    ret |= test_mac("OMAC-ACPKM", "R 1323565.1.017-2018 A.4.1",
-        grasshopper_omac_acpkm(), 32, 768 / 8,
-        P_omac_acpkm1, sizeof(P_omac_acpkm1),
-        MAC_omac_acpkm1, sizeof(MAC_omac_acpkm1));
-    ret |= test_mac("OMAC-ACPKM", "R 1323565.1.017-2018 A.4.2",
-        grasshopper_omac_acpkm(), 32, 768 / 8,
-        P_omac_acpkm2, sizeof(P_omac_acpkm2),
-        MAC_omac_acpkm2, sizeof(MAC_omac_acpkm2));
 
     ENGINE_finish(eng);
     ENGINE_free(eng);
