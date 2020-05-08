@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 vt@altlinux.org. All Rights Reserved.
+ * Copyright (C) 2018,2020 Vitaly Chikunov <vt@altlinux.org> All Rights Reserved.
  *
  * Contents licensed under the terms of the OpenSSL license
  * See https://www.openssl.org/source/license.html for details
@@ -11,6 +11,9 @@
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <string.h>
+#ifndef EVP_MD_CTRL_SET_KEY
+# include "gost_lcl.h"
+#endif
 
 #define T(e) if (!(e)) {\
 	ERR_print_errors_fp(stderr);\
@@ -44,7 +47,7 @@ static void hexdump(const void *ptr, size_t len)
 #define TEST_SIZE 256
 #define STEP_SIZE 16
 
-static int test_contexts(int nid, const int enc, int acpkm)
+static int test_contexts_cipher(int nid, const int enc, int acpkm)
 {
     EVP_CIPHER_CTX *ctx, *save;
     unsigned char pt[TEST_SIZE] = {1};
@@ -127,10 +130,88 @@ static int test_contexts(int nid, const int enc, int acpkm)
     return ret;
 }
 
-static struct testcase {
+static int test_contexts_digest(int nid, int mac)
+{
+    int ret = 0, test = 0;
+    unsigned char K[32] = {1};
+    const EVP_MD *type = EVP_get_digestbynid(nid);
+    const char *name = EVP_MD_name(type);
+
+    printf(cBLUE "Digest test for %s (nid %d)\n" cNORM, name, nid);
+
+    /* produce base digest */
+    EVP_MD_CTX *ctx, *save;
+    unsigned char pt[TEST_SIZE] = {1};
+    unsigned char b[EVP_MAX_MD_SIZE] = {0};
+    unsigned char c[EVP_MAX_MD_SIZE];
+    unsigned int outlen, tmplen;
+
+    /* Simply digest whole input. */
+    T(ctx = EVP_MD_CTX_new());
+    T(EVP_DigestInit_ex(ctx, type, NULL));
+    if (mac)
+	T(EVP_MD_CTX_ctrl(ctx, EVP_MD_CTRL_SET_KEY, sizeof(K), (void *)K));
+    T(EVP_DigestUpdate(ctx, pt, sizeof(pt)));
+    T(EVP_DigestFinal_ex(ctx, b, &tmplen));
+    save = ctx; /* will be not freed while cloning */
+
+    /* cloned digest */
+    EVP_MD_CTX_reset(ctx); /* test double reset */
+    EVP_MD_CTX_reset(ctx);
+    T(EVP_DigestInit_ex(ctx, type, NULL));
+    if (mac)
+	T(EVP_MD_CTX_ctrl(ctx, EVP_MD_CTRL_SET_KEY, sizeof(K), (void *)K));
+    printf(" cloned contexts: ");
+    memset(c, 0, sizeof(c));
+    int i;
+    for (i = 0; i < TEST_SIZE / STEP_SIZE; i++) {
+	/* Clone and continue digesting next part of input. */
+	EVP_MD_CTX *copy;
+	T(copy = EVP_MD_CTX_new());
+	T(EVP_MD_CTX_copy_ex(copy, ctx));
+
+	/* rolling */
+	if (save != ctx)
+	    EVP_MD_CTX_free(ctx);
+	ctx = copy;
+
+	T(EVP_DigestUpdate(ctx, pt + STEP_SIZE * i, STEP_SIZE));
+    }
+    outlen = i * STEP_SIZE;
+    T(EVP_DigestFinal_ex(ctx, c, &tmplen));
+    /* Should be same as the simple digest. */
+    TEST_ASSERT(outlen != TEST_SIZE || memcmp(c, b, EVP_MAX_MD_SIZE));
+    EVP_MD_CTX_free(ctx);
+    if (test) {
+	printf("  b[%d] = ", outlen);
+	hexdump(b, outlen);
+	printf("  c[%d] = ", outlen);
+	hexdump(c, outlen);
+    }
+    ret |= test;
+
+    /* Resume original context, what if it's damaged? */
+    printf("    base context: ");
+    memset(c, 0, sizeof(c));
+    T(EVP_DigestUpdate(save, pt, sizeof(pt)));
+    T(EVP_DigestFinal_ex(save, c, &tmplen));
+    TEST_ASSERT(outlen != TEST_SIZE || memcmp(c, b, EVP_MAX_MD_SIZE));
+    EVP_MD_CTX_free(save);
+    if (test) {
+	printf("  b[%d] = ", outlen);
+	hexdump(b, outlen);
+	printf("  c[%d] = ", outlen);
+	hexdump(c, outlen);
+    }
+    ret |= test;
+
+    return ret;
+}
+
+static struct testcase_cipher {
     int nid;
     int acpkm;
-} testcases[] = {
+} testcases_ciphers[] = {
     { NID_id_Gost28147_89, },
     { NID_gost89_cnt, },
     { NID_gost89_cnt_12, },
@@ -146,6 +227,20 @@ static struct testcase {
     { 0 },
 };
 
+static struct testcase_digest {
+    int nid;
+    int mac;
+} testcases_digests[] = {
+    { NID_id_GostR3411_94, },
+    { NID_id_Gost28147_89_MAC, 1 },
+    { NID_id_GostR3411_2012_256, },
+    { NID_id_GostR3411_2012_512, },
+    { NID_gost_mac_12, 1 },
+    { NID_magma_mac, 1 },
+    { NID_grasshopper_mac, 1 },
+    { NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac, 1 },
+    { 0 },
+};
 int main(int argc, char **argv)
 {
     int ret = 0;
@@ -158,10 +253,14 @@ int main(int argc, char **argv)
     T(ENGINE_init(eng));
     T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
 
-    const struct testcase *t;
-    for (t = testcases; t->nid; t++) {
-	ret |= test_contexts(t->nid, 1, t->acpkm);
-	ret |= test_contexts(t->nid, 0, t->acpkm);
+    const struct testcase_cipher *tc;
+    for (tc = testcases_ciphers; tc->nid; tc++) {
+	ret |= test_contexts_cipher(tc->nid, 1, tc->acpkm);
+	ret |= test_contexts_cipher(tc->nid, 0, tc->acpkm);
+    }
+    const struct testcase_digest *td;
+    for (td = testcases_digests; td->nid; td++) {
+	ret |= test_contexts_digest(td->nid, td->mac);
     }
 
     ENGINE_finish(eng);
