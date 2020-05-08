@@ -168,6 +168,11 @@ target_link_libraries(test_digest gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY
 add_test(NAME digest
 	COMMAND test_digest)
 
+add_executable(test_ciphers test_ciphers.c)
+target_link_libraries(test_ciphers gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME ciphers
+	COMMAND test_ciphers)
+
 add_executable(test_curves test_curves.c)
 target_link_libraries(test_curves gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME curves
@@ -192,11 +197,6 @@ add_executable(test_context test_context.c)
 target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME context
 	COMMAND test_context)
-
-add_executable(test_grasshopper test_grasshopper.c)
-target_link_libraries(test_grasshopper gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME grasshopper
-	COMMAND test_grasshopper)
 
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
@@ -229,11 +229,11 @@ target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLO
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
         test_digest
+        test_ciphers
         test_curves
         test_params
         test_sign
         test_context
-        test_grasshopper
         test_keyexpimp
         test_gost89
 	test_tls
