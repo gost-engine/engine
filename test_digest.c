@@ -9,6 +9,7 @@
 
 #include <openssl/engine.h>
 #include <openssl/evp.h>
+#include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
@@ -139,6 +140,7 @@ struct hash_testvec {
     const char *name;	   /* Test name and source. */
     const char *plaintext; /* Input (of psize), NULL for synthetic test. */
     const char *digest;	   /* Expected output (of EVP_MD_size or truncate). */
+    const char *hmac;	   /* Expected output for HMAC tests. */
     const char *key;	   /* MAC key.*/
     int psize;		   /* Input (plaintext) size. */
     int mdsize;		   /* Compare to EVP_MD_size() if non-zero. */
@@ -243,6 +245,36 @@ static const struct hash_testvec testvecs[] = {
 	.acpkm_t = 768 / 8,
 	.digest = MAC_omac_acpkm2,
 	.mdsize = sizeof(MAC_omac_acpkm2),
+    },
+    { /* HMAC tests. */
+	.nid = NID_id_GostR3411_2012_512,
+	.name = "HMAC_GOSTR3411_2012_512 from RFC 7836 (B) and R 50.1.113-2016 (A)",
+	.plaintext =
+	    "\x01\x26\xbd\xb8\x78\x00\xaf\x21\x43\x41\x45\x65\x63\x78\x01\x00",
+	.psize = 16,
+	.key =
+	    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+	    "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f",
+	.key_size = 32,
+	.hmac =
+	    "\xa5\x9b\xab\x22\xec\xae\x19\xc6\x5f\xbd\xe6\xe5\xf4\xe9\xf5\xd8"
+	    "\x54\x9d\x31\xf0\x37\xf9\xdf\x9b\x90\x55\x00\xe1\x71\x92\x3a\x77"
+	    "\x3d\x5f\x15\x30\xf2\xed\x7e\x96\x4c\xb2\xee\xdc\x29\xe9\xad\x2f"
+	    "\x3a\xfe\x93\xb2\x81\x4f\x79\xf5\x00\x0f\xfc\x03\x66\xc2\x51\xe6",
+    },
+    {
+	.nid = NID_id_GostR3411_2012_256,
+	.name = "HMAC_GOSTR3411_2012_256 from RFC 7836 (B) and R 50.1.113-2016 (A)",
+	.plaintext =
+	    "\x01\x26\xbd\xb8\x78\x00\xaf\x21\x43\x41\x45\x65\x63\x78\x01\x00",
+	.psize = 16,
+	.key =
+	    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+	    "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f",
+	.key_size = 32,
+	.hmac =
+	    "\xa1\xaa\x5f\x7d\xe4\x02\xd7\xb3\xd3\x23\xf2\x99\x1c\x8d\x45\x34"
+	    "\x01\x31\x37\x01\x0a\x83\x75\x4f\xd0\xaf\x6d\x7c\xd4\x92\x2e\xd9",
     },
     /* Other KATs. */
     {
@@ -382,6 +414,35 @@ static void hexdump(const void *ptr, size_t len)
     printf("\n");
 }
 
+static int do_hmac(const EVP_MD *type, const char *plaintext,
+    unsigned int psize, const char *etalon, int mdsize,
+    const char *key, unsigned int key_size)
+{
+    HMAC_CTX *ctx;
+    T(ctx = HMAC_CTX_new());
+    T(HMAC_Init_ex(ctx, key, key_size, type, NULL));
+    if (mdsize)
+	T(HMAC_size(ctx) == mdsize);
+    else
+	T(mdsize = HMAC_size(ctx));
+    T(HMAC_Update(ctx, (const unsigned char *)plaintext, psize));
+
+    unsigned int len;
+    unsigned char md[EVP_MAX_MD_SIZE];
+    T(HMAC_Final(ctx, md, &len));
+
+    HMAC_CTX_free(ctx);
+    T(len == mdsize);
+
+    if (memcmp(md, etalon, mdsize) != 0) {
+	printf(cRED "hmac mismatch\n" cNORM);
+	hexdump(etalon, mdsize);
+	hexdump(md, mdsize);
+	return 1;
+    }
+
+    return 0;
+}
 static int do_digest(const EVP_MD *type, const char *plaintext,
     unsigned int psize, const char *etalon, int mdsize, int truncate,
     const char *key, unsigned int key_size, int acpkm, int acpkm_t,
@@ -430,35 +491,44 @@ static int do_digest(const EVP_MD *type, const char *plaintext,
 
 static int do_test(const struct hash_testvec *tv)
 {
-	int ret = 0;
+    int ret = 0;
 
-	const EVP_MD *type;
-	T(type = EVP_get_digestbynid(tv->nid));
-	const char *name = EVP_MD_name(type);
-	printf(cBLUE "Test %s: %s: " cNORM, name, tv->name);
-	fflush(stdout);
+    const EVP_MD *type;
+    T(type = EVP_get_digestbynid(tv->nid));
+    const char *name = EVP_MD_name(type);
+    printf(cBLUE "%s Test %s: %s: " cNORM, tv->hmac? "HMAC" : "MD",
+	name, tv->name);
+    fflush(stdout);
+    if (tv->hmac)
+	ret |= do_hmac(type, tv->plaintext, tv->psize, tv->hmac,
+	    tv->mdsize, tv->key, tv->key_size);
+    else
 	ret |= do_digest(type, tv->plaintext, tv->psize, tv->digest,
 	    tv->mdsize, tv->truncate, tv->key, tv->key_size, tv->acpkm,
 	    tv->acpkm_t, tv->block_size);
 
-	/* Text alignment problems. */
-	int shifts = 32;
-	int i;
-	char *buf;
-	T(buf = OPENSSL_malloc(tv->psize + shifts));
-	for (i = 0; i < shifts; i++) {
-		memcpy(buf + i, tv->plaintext, tv->psize);
-		ret |= do_digest(type, buf + i, tv->psize, tv->digest,
-		    tv->mdsize, tv->truncate, tv->key, tv->key_size, tv->acpkm,
-		    tv->acpkm_t, tv->block_size);
-	}
-	OPENSSL_free(buf);
-
-	if (!ret)
-		printf(cGREEN "success\n" cNORM);
+    /* Test alignment problems. */
+    int shifts = 32;
+    int i;
+    char *buf;
+    T(buf = OPENSSL_malloc(tv->psize + shifts));
+    for (i = 0; i < shifts; i++) {
+	memcpy(buf + i, tv->plaintext, tv->psize);
+	if (tv->hmac)
+	    ret |= do_hmac(type, buf + i, tv->psize, tv->hmac,
+		tv->mdsize, tv->key, tv->key_size);
 	else
-		printf(cRED "fail\n" cNORM);
-	return ret;
+	    ret |= do_digest(type, buf + i, tv->psize, tv->digest,
+		tv->mdsize, tv->truncate, tv->key, tv->key_size,
+		tv->acpkm, tv->acpkm_t, tv->block_size);
+    }
+    OPENSSL_free(buf);
+
+    if (!ret)
+	printf(cGREEN "success\n" cNORM);
+    else
+	printf(cRED "fail\n" cNORM);
+    return ret;
 }
 
 #define SUPER_SIZE 256
@@ -547,7 +617,7 @@ static int do_synthetic_test(const struct hash_testvec *tv)
 {
     int ret = 0;
 
-    printf(cBLUE "Synthetic test %s: " cNORM, tv->name);
+    printf(cBLUE "MD Test %s: " cNORM, tv->name);
     fflush(stdout);
 
     unsigned int shifts;
