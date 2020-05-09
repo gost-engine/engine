@@ -6,7 +6,7 @@ How to Build
 
 To build and install OpenSSL GOST Engine, you will need
 
-* OpenSSL 1.1.1
+* OpenSSL 3.0 development version
 * an ANSI C compiler
 * CMake (3.0 or newer)
 
@@ -96,11 +96,10 @@ And section which describes configuration of the engine should contain
     engine_id = gost
     dynamic_path = /usr/lib/ssl/engines/libgost.so
     default_algorithms = ALL
-    CRYPT_PARAMS = id-Gost28147-89-CryptoPro-A-ParamSet
 
-BouncyCastle cryptoprovider has some problems with private key parsing from
-PrivateKeyInfo, so if you want to use old private key representation format,
-which supported by BC, you must add:
+Various cryptoproviders (e.g. BouncyCastle) has some problems with private key
+parsing from PrivateKeyInfo, so if you want to use old private key
+representation format, which supported by BC, you will have to add:
 
     GOST_PK_FORMAT = LEGACY_PK_WRAP
 
@@ -119,7 +118,8 @@ The `CRYPT_PARAMS` parameter is engine-specific. It allows the user to choose
 between different parameter sets of symmetric cipher algorithm. [RFC 4357][1]
 specifies several parameters for the GOST 28147-89 algorithm, but OpenSSL
 doesn't provide user interface to choose one when encrypting. So use engine
-configuration parameter instead.
+configuration parameter instead. It SHOULD NOT be used nowadays because all
+the parameters except the default one are deprecated now.
 
 Value of this parameter can be either short name, defined in OpenSSL
 `obj_dat.h` header file or numeric representation of OID, defined in
