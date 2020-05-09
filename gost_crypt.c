@@ -489,6 +489,8 @@ const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj)
         if (nid == NID_undef) {
             GOSTerr(GOST_F_GET_ENCRYPTION_PARAMS,
                     GOST_R_INVALID_CIPHER_PARAM_OID);
+            ERR_add_error_data(3, "Unsupported CRYPT_PARAMS='",
+                params, "' specified in environment or in config");
             return NULL;
         }
     } else {
