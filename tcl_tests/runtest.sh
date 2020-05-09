@@ -95,7 +95,7 @@ case "$ENGINE_NAME" in
 		OTHER_DIR=`echo $TESTDIR |sed 's/cryptocom/gost/'`
 		;;
 	gost)
-		BASE_TESTS="engine dgst mac pkcs8 enc req-genpkey req-newkey ca smime smime2 smimeenc cms cms2 cmsenc pkcs12 nopath ocsp ts ssl smime_io cms_io smimeenc_io cmsenc_io"
+		BASE_TESTS="engine dgst mac pkcs8 enc req-genpkey req-newkey ca smime smime2 smimeenc cms cms2 cmstc262019 cmsenc pkcs12 nopath ocsp ts ssl smime_io cms_io smimeenc_io cmsenc_io"
 		OTHER_DIR=`echo $TESTDIR |sed 's/gost/cryptocom/'`
 		;;
 	*)
