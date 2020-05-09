@@ -201,7 +201,7 @@ const EVP_CIPHER *cipher_magma_ctr(void)
         && ((_hidden_magma_ctr =
              EVP_CIPHER_meth_new(NID_magma_ctr, 1 /* block_size */ ,
                                  32 /* key_size */ )) == NULL
-            || !EVP_CIPHER_meth_set_iv_length(_hidden_magma_ctr, 8)
+            || !EVP_CIPHER_meth_set_iv_length(_hidden_magma_ctr, 4)
             || !EVP_CIPHER_meth_set_flags(_hidden_magma_ctr,
                                           EVP_CIPH_CTR_MODE |
                                           EVP_CIPH_NO_PADDING |
