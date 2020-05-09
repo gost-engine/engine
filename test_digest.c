@@ -13,9 +13,8 @@
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
-#if OPENSSL_VERSION_MAJOR < 3
 # include <openssl/hmac.h>
-#else
+#if OPENSSL_VERSION_MAJOR >= 3
 # include <openssl/core_names.h>
 #endif
 #include <openssl/obj_mac.h>
@@ -53,6 +52,9 @@
 		 printf(cRED "  Test FAILED\n" cNORM); \
 	     else \
 		 printf(cGREEN "  Test passed\n" cNORM);}
+
+/* To test older APIs. */
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 /*
  * Test keys from both GOST R 34.12-2015 and GOST R 34.13-2015,
@@ -451,8 +453,7 @@ static void hexdump(const void *ptr, size_t len)
     printf("\n");
 }
 
-#if OPENSSL_VERSION_MAJOR < 3
-static int do_hmac(const EVP_MD *type, const char *plaintext,
+static int do_hmac_old(const EVP_MD *type, const char *plaintext,
     unsigned int psize, const char *etalon, int mdsize,
     const char *key, unsigned int key_size)
 {
@@ -476,8 +477,8 @@ static int do_hmac(const EVP_MD *type, const char *plaintext,
     }
     return 0;
 }
-#else
-static int do_hmac(const EVP_MD *type, const char *plaintext,
+#if OPENSSL_VERSION_MAJOR >= 3
+static int do_hmac_prov(const EVP_MD *type, const char *plaintext,
     unsigned int psize, const char *etalon, int mdsize,
     const char *key, unsigned int key_size)
 {
@@ -512,6 +513,21 @@ static int do_hmac(const EVP_MD *type, const char *plaintext,
     return 0;
 }
 #endif
+
+static int do_hmac(const EVP_MD *type, const char *plaintext,
+    unsigned int psize, const char *etalon, int mdsize,
+    const char *key, unsigned int key_size)
+{
+    int ret;
+
+    /* Test old (deprecated) and (too) new APIs. */
+    ret = do_hmac_old(type, plaintext, psize, etalon, mdsize, key, key_size);
+#if OPENSSL_VERSION_MAJOR >= 3
+    ret |= do_hmac_prov(type, plaintext, psize, etalon, mdsize, key, key_size);
+#endif
+
+    return ret;
+}
 
 static int do_digest(const EVP_MD *type, const char *plaintext,
     unsigned int psize, const char *etalon, int mdsize, int truncate,
@@ -570,14 +586,6 @@ static int do_test(const struct hash_testvec *tv)
     const char *name = EVP_MD_name(type);
     printf(cBLUE "%s Test %s: %s: " cNORM, tv->hmac? "HMAC" : "MD",
 	name, tv->name);
-    fflush(stdout);
-    if (tv->hmac)
-	ret |= do_hmac(type, tv->plaintext, tv->psize, tv->hmac,
-	    tv->mdsize, tv->key, tv->key_size);
-    else
-	ret |= do_digest(type, tv->plaintext, tv->psize, tv->digest,
-	    tv->mdsize, tv->truncate, tv->key, tv->key_size, tv->acpkm,
-	    tv->acpkm_t, tv->block_size);
 
     /* Test alignment problems. */
     int shifts = 32;
