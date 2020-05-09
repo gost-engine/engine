@@ -31,20 +31,43 @@
 	     else \
 		 printf(cGREEN "Test passed\n" cNORM);}
 
-/* Test key from both GOST R 34.12-2015 and GOST R 34.13-2015. */
+/* Pragma to allow commenting out some tests. */
+#pragma GCC diagnostic ignored "-Wunused-const-variable"
+
+/*
+ * Test keys from both GOST R 34.12-2015 and GOST R 34.13-2015,
+ * for 128-bit cipher (A.1).
+ */
 static const unsigned char K[32] = {
     0x88,0x99,0xaa,0xbb,0xcc,0xdd,0xee,0xff,0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,
     0xfe,0xdc,0xba,0x98,0x76,0x54,0x32,0x10,0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef,
 };
 
-/* Plaintext from GOST R 34.13-2015 A.1.
- * First 16 bytes is vector (a) from GOST R 34.12-2015 A.1. */
+/*
+ * Key for 64-bit cipher (A.2).
+ */
+static const unsigned char Km[32] = {
+    0xff,0xee,0xdd,0xcc,0xbb,0xaa,0x99,0x88,0x77,0x66,0x55,0x44,0x33,0x22,0x11,0x00,
+    0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8,0xf9,0xfa,0xfb,0xfc,0xfd,0xfe,0xff,
+};
+
+/*
+ * Plaintext from GOST R 34.13-2015 A.1.
+ * First 16 bytes is vector (a) from GOST R 34.12-2015 A.1.
+ */
 static const unsigned char P[] = {
     0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x00,0xff,0xee,0xdd,0xcc,0xbb,0xaa,0x99,0x88,
     0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xaa,0xbb,0xcc,0xee,0xff,0x0a,
     0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xaa,0xbb,0xcc,0xee,0xff,0x0a,0x00,
     0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xaa,0xbb,0xcc,0xee,0xff,0x0a,0x00,0x11,
 };
+
+/* Plaintext for 64-bit cipher (A.2) */
+static const unsigned char Pm[] = {
+    0x92,0xde,0xf0,0x6b,0x3c,0x13,0x0a,0x59,0xdb,0x54,0xc7,0x04,0xf8,0x18,0x9d,0x20,
+    0x4a,0x98,0xfb,0x2e,0x67,0xa8,0x02,0x4c,0x89,0x12,0x40,0x9b,0x17,0xb5,0x7e,0x41,
+};
+
 /* Extended plaintext from tc26 acpkm Kuznyechik test vector */
 static const unsigned char P_acpkm[] = {
     0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x00,0xFF,0xEE,0xDD,0xCC,0xBB,0xAA,0x99,0x88,
@@ -69,6 +92,11 @@ static const unsigned char E_ctr[] = {
     0x85,0xee,0xe7,0x33,0xf6,0xa1,0x3e,0x5d,0xf3,0x3c,0xe4,0xb3,0x3c,0x45,0xde,0xe4,
     0xa5,0xea,0xe8,0x8b,0xe6,0x35,0x6e,0xd3,0xd5,0xe8,0x77,0xf1,0x35,0x64,0xa3,0xa5,
     0xcb,0x91,0xfa,0xb1,0xf2,0x0c,0xba,0xb6,0xd1,0xc6,0xd1,0x58,0x20,0xbd,0xba,0x73,
+};
+static const unsigned char Em_ctr[] = {
+    /* CTR test vectors from GOST R 34.13-2015  A.2.2 */
+    0x4e,0x98,0x11,0x0c,0x97,0xb7,0xb9,0x3c,0x3e,0x25,0x0d,0x93,0xd6,0xe8,0x5d,0x69,
+    0x13,0x6d,0x86,0x88,0x07,0xb2,0xdb,0xef,0x56,0x8e,0xb6,0x80,0xab,0x52,0xa1,0x2d,
 };
 static const unsigned char E_acpkm[] = {
     0xF1,0x95,0xD8,0xBE,0xC1,0x0E,0xD1,0xDB,0xD5,0x7B,0x5F,0xA2,0x40,0xBD,0xA1,0xB8,
@@ -124,9 +152,16 @@ static const unsigned char E_cfb[] = {
     0x07,0x3f,0x4d,0xd2,0xd6,0xde,0xb3,0xcf,0xb0,0x26,0x54,0x5f,0x7a,0xf1,0xd8,0xe8,
     0xe1,0xc8,0x52,0xe9,0xa8,0x56,0x71,0x62,0xdb,0xb5,0xda,0x7f,0x66,0xde,0xa9,0x26,
 };
+static const unsigned char Em_cbc[] = {
+    /* 28147-89 CBC test vector generated from canonical implementation */
+    0x96,0xd1,0xb0,0x5e,0xea,0x68,0x39,0x19,0xf3,0x96,0xb7,0x8c,0x1d,0x47,0xbb,0x61,
+    0x61,0x83,0xe2,0xcc,0xa9,0x76,0xa4,0xba,0xbe,0x9c,0xe8,0x7d,0x6f,0xa7,0x3c,0xf2,
+};
 
 /* IV is half CNT size. */
 static const unsigned char iv_ctr[]	= { 0x12,0x34,0x56,0x78,0x90,0xab,0xce,0xf0 };
+/* Third of IV from GOST R 34.13-2015 А.2.4 (Impossible to use full 192-bit IV.) */
+static const unsigned char iv_cbc[]	= { 0x12,0x34,0x56,0x78,0x90,0xab,0xcd,0xef };
 /* Truncated to 128-bits IV from GOST examples. */
 static const unsigned char iv_128bit[]	= { 0x12,0x34,0x56,0x78,0x90,0xab,0xce,0xf0,
 					    0xa1,0xb2,0xc3,0xd4,0xe5,0xf0,0x01,0x12 };
@@ -138,6 +173,7 @@ static struct testcase {
     int block; /* Actual underlying block size (bytes). */
     int stream; /* Stream cipher. */
     const unsigned char *plaintext;
+    const unsigned char *key;
     const unsigned char *expected;
     size_t size;
     const unsigned char *iv;
@@ -148,6 +184,7 @@ static struct testcase {
 	.nid = NID_grasshopper_ecb,
 	.block = 16,
 	.plaintext = P,
+	.key = K,
 	.expected = E_ecb,
 	.size = sizeof(P),
     },
@@ -156,6 +193,7 @@ static struct testcase {
 	.block = 16,
 	.stream = 1,
 	.plaintext = P,
+	.key = K,
 	.expected = E_ctr,
 	.size = sizeof(P),
 	.iv = iv_ctr,
@@ -166,6 +204,7 @@ static struct testcase {
 	.block = 16,
 	.stream = 1,
 	.plaintext = P,
+	.key = K,
 	.expected = E_ctr,
 	.size = sizeof(P),
 	.iv = iv_ctr,
@@ -177,6 +216,7 @@ static struct testcase {
 	.block = 16,
 	.stream = 1,
 	.plaintext = P_acpkm,
+	.key = K,
 	.expected = E_acpkm,
 	.size = sizeof(P_acpkm),
 	.iv = iv_ctr,
@@ -187,6 +227,7 @@ static struct testcase {
 	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
 	.block = 16,
 	.plaintext = P_acpkm_master,
+	.key = K,
 	.expected = E_acpkm_master,
 	.size = sizeof(P_acpkm_master),
 	.iv = iv_acpkm_m,
@@ -198,6 +239,7 @@ static struct testcase {
 	.block = 16,
 	.stream = 1,
 	.plaintext = P,
+	.key = K,
 	.expected = E_ofb,
 	.size = sizeof(P),
 	.iv = iv_128bit,
@@ -207,6 +249,7 @@ static struct testcase {
 	.nid = NID_grasshopper_cbc,
 	.block = 16,
 	.plaintext = P,
+	.key = K,
 	.expected = E_cbc,
 	.size = sizeof(P),
 	.iv = iv_128bit,
@@ -216,11 +259,34 @@ static struct testcase {
 	.nid = NID_grasshopper_cfb,
 	.block = 16,
 	.plaintext = P,
+	.key = K,
 	.expected = E_cfb,
 	.size = sizeof(P),
 	.iv = iv_128bit,
 	.iv_size = sizeof(iv_128bit),
     },
+    {
+	.nid = NID_magma_ctr,
+	.block = 8,
+	.plaintext = Pm,
+	.key = Km,
+	.expected = Em_ctr,
+	.size = sizeof(Pm),
+	.iv = iv_ctr,
+	.iv_size = sizeof(iv_ctr) / 2,
+    },
+#if 0
+    {
+	.nid = NID_magma_cbc,
+	.block = 8,
+	.plaintext = Pm,
+	.key = Km,
+	.expected = Em_cbc,
+	.size = sizeof(Pm),
+	.iv = iv_cbc,
+	.iv_size = sizeof(iv_cbc),
+    },
+#endif
     { 0 }
 };
 
@@ -237,8 +303,8 @@ static void hexdump(const void *ptr, size_t len)
 }
 
 static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
-    const unsigned char *pt, const unsigned char *exp, size_t size,
-    const unsigned char *iv, size_t iv_size, int acpkm,
+    const unsigned char *pt, const unsigned char *key, const unsigned char *exp,
+    size_t size, const unsigned char *iv, size_t iv_size, int acpkm,
     int inplace)
 {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
@@ -261,7 +327,7 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
 
     /* test with single big chunk */
     EVP_CIPHER_CTX_init(ctx);
-    T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 1));
+    T(EVP_CipherInit_ex(ctx, type, NULL, key, iv, 1));
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
     if (inplace)
 	memcpy(c, pt, size);
@@ -286,7 +352,7 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
     int blocks = size / block_size;
     int z;
     EVP_CIPHER_CTX_init(ctx);
-    T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 1));
+    T(EVP_CipherInit_ex(ctx, type, NULL, key, iv, 1));
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
     if (inplace)
 	memcpy(c, pt, size);
@@ -315,7 +381,7 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
     printf("Decryption test from %s [%s] %s: ", standard, name,
 	inplace ? "in-place" : "out-of-place");
     EVP_CIPHER_CTX_init(ctx);
-    T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 0));
+    T(EVP_CipherInit_ex(ctx, type, NULL, key, iv, 0));
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
     if (inplace)
 	memcpy(c, exp, size);
@@ -339,8 +405,8 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
 }
 
 static int test_stream(const EVP_CIPHER *type, const char *name,
-    const unsigned char *pt, const unsigned char *exp, size_t size,
-    const unsigned char *iv, size_t iv_size, int acpkm)
+    const unsigned char *pt, const unsigned char *key, const unsigned char *exp,
+    size_t size, const unsigned char *iv, size_t iv_size, int acpkm)
 {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     const char *standard = acpkm? "R 23565.1.017-2018" : "GOST R 34.13-2015";
@@ -361,7 +427,7 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
 	int i;
 
 	EVP_CIPHER_CTX_init(ctx);
-	T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, 1));
+	T(EVP_CipherInit_ex(ctx, type, NULL, key, iv, 1));
 	T(EVP_CIPHER_CTX_set_padding(ctx, 0));
 	memset(c, 0xff, sizeof(c));
 	if (acpkm)
@@ -416,11 +482,11 @@ int main(int argc, char **argv)
 	printf(cBLUE "# Tests for %s [%s]\n" cNORM, name, standard);
 	for (inplace = 0; inplace <= 1; inplace++)
 	    ret |= test_block(type, name, t->block,
-		t->plaintext, t->expected, t->size,
+		t->plaintext, t->key, t->expected, t->size,
 		t->iv, t->iv_size, t->acpkm, inplace);
 	if (t->stream)
 	    ret |= test_stream(type, name,
-		t->plaintext, t->expected, t->size,
+		t->plaintext, t->key, t->expected, t->size,
 		t->iv, t->iv_size, t->acpkm);
     }
 
