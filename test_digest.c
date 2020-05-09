@@ -8,11 +8,16 @@
  */
 
 #include <openssl/engine.h>
+#include <openssl/opensslv.h>
 #include <openssl/evp.h>
-#include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
+#if OPENSSL_VERSION_MAJOR < 3
+# include <openssl/hmac.h>
+#else
+# include <openssl/core_names.h>
+#endif
 #include <openssl/obj_mac.h>
 #include <string.h>
 #include <stdlib.h>
@@ -445,35 +450,68 @@ static void hexdump(const void *ptr, size_t len)
     printf("\n");
 }
 
+#if OPENSSL_VERSION_MAJOR < 3
 static int do_hmac(const EVP_MD *type, const char *plaintext,
     unsigned int psize, const char *etalon, int mdsize,
     const char *key, unsigned int key_size)
 {
+    unsigned int len;
+    unsigned char md[EVP_MAX_MD_SIZE];
+
     HMAC_CTX *ctx;
     T(ctx = HMAC_CTX_new());
     T(HMAC_Init_ex(ctx, key, key_size, type, NULL));
-    if (mdsize)
-	T(HMAC_size(ctx) == mdsize);
-    else
-	T(mdsize = HMAC_size(ctx));
     T(HMAC_Update(ctx, (const unsigned char *)plaintext, psize));
-
-    unsigned int len;
-    unsigned char md[EVP_MAX_MD_SIZE];
     T(HMAC_Final(ctx, md, &len));
-
     HMAC_CTX_free(ctx);
-    T(len == mdsize);
 
-    if (memcmp(md, etalon, mdsize) != 0) {
+    if (mdsize)
+	T(len == mdsize);
+    if (memcmp(md, etalon, len) != 0) {
 	printf(cRED "hmac mismatch\n" cNORM);
-	hexdump(etalon, mdsize);
-	hexdump(md, mdsize);
+	hexdump(etalon, len);
+	hexdump(md, len);
 	return 1;
     }
-
     return 0;
 }
+#else
+static int do_hmac(const EVP_MD *type, const char *plaintext,
+    unsigned int psize, const char *etalon, int mdsize,
+    const char *key, unsigned int key_size)
+{
+    size_t len;
+    unsigned char md[EVP_MAX_MD_SIZE];
+
+    EVP_MAC *hmac;
+    T(hmac = EVP_MAC_fetch(NULL, "HMAC", NULL));
+    EVP_MAC_CTX *ctx;
+    T(ctx = EVP_MAC_CTX_new(hmac));
+    OSSL_PARAM params[] = {
+	OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_DIGEST,
+	    (char *)EVP_MD_name(type), 0),
+	OSSL_PARAM_octet_string(OSSL_MAC_PARAM_KEY, (char *)key, key_size),
+	OSSL_PARAM_END
+    };
+    T(EVP_MAC_CTX_set_params(ctx, params));
+    T(EVP_MAC_init(ctx));
+    T(EVP_MAC_update(ctx, (unsigned char *)plaintext, psize));
+    T(EVP_MAC_final(ctx, md, &len, EVP_MAX_MD_SIZE));
+    EVP_MAC_CTX_free(ctx);
+    EVP_MAC_free(hmac);
+
+    if (mdsize)
+	T(len == mdsize);
+    if (memcmp(md, etalon, len) != 0) {
+	printf(cRED "hmac mismatch\n" cNORM);
+	hexdump(etalon, len);
+	hexdump(md, len);
+	return 1;
+    }
+    return 0;
+}
+#endif
+
 static int do_digest(const EVP_MD *type, const char *plaintext,
     unsigned int psize, const char *etalon, int mdsize, int truncate,
     const char *key, unsigned int key_size, int acpkm, int acpkm_t,
