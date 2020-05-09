@@ -217,7 +217,10 @@ struct ossl_gost_cipher_ctx {
     int paramNID;
     unsigned int count;
     int key_meshing;
+    unsigned char kdf_seed[8];
+    unsigned char tag[8];
     gost_ctx cctx;
+    EVP_MD_CTX *omac_ctx;
 };
 /* Structure to map parameter NID to S-block */
 struct gost_cipher_info {
@@ -247,6 +250,8 @@ const EVP_CIPHER *cipher_gost_cpacnt();
 const EVP_CIPHER *cipher_gost_cpcnt_12();
 const EVP_CIPHER *cipher_magma_cbc();
 const EVP_CIPHER *cipher_magma_ctr();
+const EVP_CIPHER *cipher_magma_ctr_acpkm();
+const EVP_CIPHER *cipher_magma_ctr_acpkm_omac();
 const EVP_CIPHER *cipher_magma_wrap();
 const EVP_CIPHER *cipher_kuznyechik_wrap();
 void cipher_gost_destroy();
