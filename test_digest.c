@@ -163,6 +163,14 @@ static const char etalon_carry[] = {
     0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x16,
 };
 
+/* This is another carry test. */
+static const char ff[] = {
+    0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+    0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+    0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+    0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+};
+
 struct hash_testvec {
     int nid;		   /* OpenSSL algorithm numeric id. */
     const char *name;	   /* Test name and source. */
@@ -398,7 +406,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\x2f\x4f\x65\x1f\xe8\x8f\xea\x46\xec\x6f\x22\x23\x72\x8d\x8d\xff"
 	    "\x39\x68\x89\x35\x58\xef\x00\xa3\x10\xc2\x3e\x7d\x19\x23\xba\x0c"
     },
-    { /* carry */
+    { /* Carry */
 	.nid = NID_id_GostR3411_2012_512,
 	.name = "(carry)",
 	.plaintext = etalon_carry,
@@ -418,6 +426,35 @@ static const struct hash_testvec testvecs[] = {
 	    "\x81\xbb\x63\x2f\xa3\x1f\xcc\x38\xb4\xc3\x79\xa6\x62\xdb\xc5\x8b"
 	    "\x9b\xed\x83\xf5\x0d\x3a\x1b\x2c\xe7\x27\x1a\xb0\x2d\x25\xba\xbb"
     },
+    { /* ff (Better carry test). */
+	.nid = NID_id_GostR3411_2012_512,
+	.name = "64 bytes of FF",
+	.plaintext = ff,
+	.psize = sizeof(ff),
+	.digest =
+	    "\x41\x62\x9d\xe6\x77\xd7\xe8\x09\x0c\x3c\xd7\x0a\xff\xe3\x30\x0d"
+	    "\x1e\x1c\xfb\xa2\xdb\x97\x94\x5e\xc3\x7f\xeb\x4e\x13\x75\xbc\x02"
+	    "\xa5\x3f\x00\x37\x0b\x7d\x71\x5b\x07\xf3\x7f\x93\xca\xc8\x44\xef"
+	    "\xad\xbf\xd1\xb8\x5f\x9d\xda\xe3\xde\x96\x56\xc0\xe9\x5a\xff\xc7"
+    },
+    {
+	.nid = NID_id_GostR3411_2012_256,
+	.name = "64 bytes of FF",
+	.plaintext = ff,
+	.psize = sizeof(ff),
+	.digest =
+	    "\x96\x4a\x5a\xb6\x02\x86\xf1\x06\x28\x87\x43\xe2\xfe\x1a\x42\x2d"
+	    "\x16\x08\x98\xca\x1b\xd5\x35\xe8\x31\xaa\x50\x0c\xfe\x34\xd7\xe8"
+    },
+    {
+	.nid = NID_id_GostR3411_94,
+	.name = "64 bytes of FF",
+	.plaintext = ff,
+	.psize = sizeof(ff),
+	.digest =
+	    "\x58\x50\x4d\x26\xb3\x67\x7e\x75\x6b\xa3\xf4\xa9\xfd\x2f\x14\xb3"
+	    "\xba\x54\x57\x06\x6a\x4a\xa1\xd7\x00\x65\x9b\x90\xdc\xdd\xd3\xc6"
+    },
     /* Synthetic tests. */
     {
 	.nid = NID_id_GostR3411_2012_256,
@@ -427,7 +464,8 @@ static const struct hash_testvec testvecs[] = {
 	.digest =
 	    "\xa2\xf3\x6d\x9c\x42\xa1\x1e\xad\xe3\xc1\xfe\x99\xf9\x99\xc3\x84"
 	    "\xe7\x98\xae\x24\x50\x75\x73\xd7\xfc\x99\x81\xa0\x45\x85\x41\xf6"
-    }, {
+    },
+    {
 	.nid = NID_id_GostR3411_2012_512,
 	.name = "streebog512 synthetic test",
 	.mdsize = 64,
