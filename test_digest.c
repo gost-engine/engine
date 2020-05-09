@@ -529,6 +529,68 @@ static int do_hmac(const EVP_MD *type, const char *plaintext,
     return ret;
 }
 
+/*
+ * If we have OMAC1/CMAC test vector,
+ * use CMAC provider to test it.
+ */
+static int do_cmac_prov(int iter, const char *plaintext,
+    const struct hash_testvec *t)
+{
+#if OPENSSL_VERSION_MAJOR >= 3
+    char *mdname = NULL;
+    /*
+     * CMAC needs CBC.
+     * Convert 'mac' digest to the underlying CBC cipher.
+     */
+    switch (t->nid) {
+	case NID_grasshopper_mac:
+	    mdname = "kuznyechik-cbc";
+	    break;
+	case NID_magma_mac:
+	    mdname = "magma-cbc";
+	    break;
+	default:
+	    return 0;
+    }
+
+    if (!iter)
+	printf("[Test CMAC using provider using %s] ", mdname);
+
+    size_t len;
+    unsigned char md[EVP_MAX_MD_SIZE];
+    size_t mdsize = t->mdsize;
+    if (t->truncate)
+	mdsize = t->truncate;
+
+    EVP_MAC *cmac;
+    T(cmac = EVP_MAC_fetch(NULL, "CMAC", NULL));
+    EVP_MAC_CTX *ctx;
+    T(ctx = EVP_MAC_CTX_new(cmac));
+    OSSL_PARAM params[] = {
+	OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_CIPHER, mdname, 0),
+	OSSL_PARAM_octet_string(OSSL_MAC_PARAM_KEY, (char *)t->key, t->key_size),
+	OSSL_PARAM_END
+    };
+    T(EVP_MAC_CTX_set_params(ctx, params));
+    T(EVP_MAC_init(ctx));
+    T(EVP_MAC_update(ctx, (unsigned char *)plaintext, t->psize));
+    T(EVP_MAC_final(ctx, md, &len, EVP_MAX_MD_SIZE));
+    EVP_MAC_CTX_free(ctx);
+    EVP_MAC_free(cmac);
+
+    /* CMAC provider will not respect outsize, and will output full block.
+     * So, just compare until what we need. */
+    T(mdsize <= len);
+    if (memcmp(md, t->digest, mdsize) != 0) {
+	printf(cRED "cmac mismatch\n" cNORM);
+	hexdump(t->digest, mdsize);
+	hexdump(md, len);
+	return 1;
+    }
+#endif
+    return 0;
+}
+
 static int do_digest(const EVP_MD *type, const char *plaintext,
     unsigned int psize, const char *etalon, int mdsize, int truncate,
     const char *key, unsigned int key_size, int acpkm, int acpkm_t,
@@ -601,6 +663,11 @@ static int do_test(const struct hash_testvec *tv)
 	    ret |= do_digest(type, buf + i, tv->psize, tv->digest,
 		tv->mdsize, tv->truncate, tv->key, tv->key_size,
 		tv->acpkm, tv->acpkm_t, tv->block_size);
+	/* Test CMAC provider. */
+	ret |= do_cmac_prov(i, buf + i, tv);
+	/* No need to continue loop on failure. */
+	if (ret)
+	    break;
     }
     OPENSSL_free(buf);
 
