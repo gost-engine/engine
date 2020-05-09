@@ -785,10 +785,11 @@ int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
                 d[7 - i] = in_ptr[i];
             }
             gostdecrypt(&(c->cctx), d, b);
+            memcpy(d, in_ptr, 8);
             for (i = 0; i < 8; i++) {
                 out_ptr[i] = iv[i] ^ b[7 - i];
             }
-            memcpy(iv, in_ptr, 8);
+            memcpy(iv, d, 8);
             out_ptr += 8;
             in_ptr += 8;
             inl -= 8;
