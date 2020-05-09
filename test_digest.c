@@ -47,6 +47,7 @@
 #define cDGREEN	"\033[0;32m"
 #define cBLUE	"\033[1;34m"
 #define cDBLUE	"\033[0;34m"
+#define cMAGENT "\033[1;35m"
 #define cNORM	"\033[m"
 #define TEST_ASSERT(e) {if ((test = (e))) \
 		 printf(cRED "  Test FAILED\n" cNORM); \
@@ -724,6 +725,19 @@ int main(int argc, char **argv)
 	    ret |= do_test(tv);
 	else
 	    ret |= do_synthetic_test(tv);
+    }
+
+    ENGINE_DIGESTS_PTR fn_c;
+    T(fn_c = ENGINE_get_digests(eng));
+    const int *nids;
+    int n, k;
+    n = fn_c(eng, NULL, &nids, 0);
+    for (k = 0; k < n; ++k) {
+	for (tv = testvecs; tv->nid; tv++)
+	    if (tv->nid == nids[k])
+		break;
+	if (!tv->nid)
+	    printf(cMAGENT "Digest %s is untested!\n" cNORM, OBJ_nid2sn(nids[k]));
     }
 
     ENGINE_finish(eng);
