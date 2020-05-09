@@ -49,11 +49,20 @@
 		 printf(cGREEN "  Test passed\n" cNORM);}
 
 /*
- * Test key from both GOST R 34.12-2015 and GOST R 34.13-2015.
+ * Test keys from both GOST R 34.12-2015 and GOST R 34.13-2015,
+ * for 128-bit cipher (A.1).
  */
 static const char K[32] = {
     0x88,0x99,0xaa,0xbb,0xcc,0xdd,0xee,0xff,0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,
     0xfe,0xdc,0xba,0x98,0x76,0x54,0x32,0x10,0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef,
+};
+
+/*
+ * Key for 64-bit cipher (A.2).
+ */
+static const char Km[32] = {
+    0xff,0xee,0xdd,0xcc,0xbb,0xaa,0x99,0x88,0x77,0x66,0x55,0x44,0x33,0x22,0x11,0x00,
+    0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8,0xf9,0xfa,0xfb,0xfc,0xfd,0xfe,0xff,
 };
 
 /*
@@ -67,10 +76,21 @@ static const char P[] = {
     0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xaa,0xbb,0xcc,0xee,0xff,0x0a,0x00,0x11,
 };
 
+/* Plaintext for 64-bit cipher (A.2) */
+static const char Pm[] = {
+    0x92,0xde,0xf0,0x6b,0x3c,0x13,0x0a,0x59,0xdb,0x54,0xc7,0x04,0xf8,0x18,0x9d,0x20,
+    0x4a,0x98,0xfb,0x2e,0x67,0xa8,0x02,0x4c,0x89,0x12,0x40,0x9b,0x17,0xb5,0x7e,0x41,
+};
+
 /*
- * OMAC1/CMAC test vector from GOST R 34.13-2015 А.1.6
+ * Kuznyechik OMAC1/CMAC test vector from GOST R 34.13-2015 А.1.6
  */
 static const char MAC_omac[] = { 0x33,0x6f,0x4d,0x29,0x60,0x59,0xfb,0xe3 };
+
+/*
+ * Magma OMAC1/CMAC test vector from GOST R 34.13-2015 А.2.6
+ */
+static const char MAC_magma_omac[] = { 0x15,0x4e,0x72,0x10 };
 
 /*
  * OMAC-ACPKM test vector from R 1323565.1.017-2018 A.4.1
@@ -154,7 +174,7 @@ struct hash_testvec {
 };
 
 static const struct hash_testvec testvecs[] = {
-    {
+    { /* Test vectors from standards. */
 	.nid = NID_id_GostR3411_2012_512,
 	.name = "M1 from RFC 6986 (10.1.1) and GOST R 34.11-2012 (А.1.1)",
 	.plaintext =
@@ -221,6 +241,17 @@ static const struct hash_testvec testvecs[] = {
 	.digest = MAC_omac,
 	.mdsize = 128 / 8,
 	.truncate = sizeof(MAC_omac),
+    },
+    {
+	.nid = NID_magma_mac,
+	.name = "P from GOST R 34.13-2015 (А.2.6)",
+	.plaintext = Pm,
+	.psize = sizeof(Pm),
+	.key = Km,
+	.key_size = sizeof(Km),
+	.digest = MAC_magma_omac,
+	.mdsize = 64 / 8,
+	.truncate = sizeof(MAC_magma_omac),
     },
     {
 	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,
@@ -483,6 +514,8 @@ static int do_digest(const EVP_MD *type, const char *plaintext,
     T(len == mdsize);
     if (memcmp(md, etalon, mdsize) != 0) {
 	printf(cRED "digest mismatch\n" cNORM);
+	hexdump(etalon, mdsize);
+	hexdump(md, mdsize);
 	return 1;
     }
 
