@@ -819,8 +819,7 @@ GRASSHOPPER_INLINE int gost_grasshopper_get_asn1_parameters(EVP_CIPHER_CTX
 	return 0;
 }
 
-int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
-                                void *ptr)
+int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_CTRL_RAND_KEY:{
@@ -922,34 +921,16 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg,
         }
 #endif
 		case EVP_CTRL_PROCESS_UNPROTECTED:
-				{
-					gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
-					ASN1_OBJECT *cmsmacobj = NULL;
-					if (c->c.type != GRASSHOPPER_CIPHER_CTRACPKMOMAC)
-						return -1;
-          cmsmacobj = OBJ_txt2obj(OID_GOST_CMS_MAC, 1);
-					if (cmsmacobj == NULL) {
-						GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, ERR_R_MALLOC_FAILURE);
-						return -1;
-					}
-					if (arg == 0) /*Decrypting*/ {
-						STACK_OF(X509_ATTRIBUTE) *x = ptr;
-						ASN1_OCTET_STRING *osExpectedMac = X509at_get0_data_by_OBJ(x,
-								cmsmacobj, -3, V_ASN1_OCTET_STRING);
-						ASN1_OBJECT_free(cmsmacobj);
+    {
+      STACK_OF(X509_ATTRIBUTE) *x = ptr;
+      gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
 
-						if (ptr == NULL || osExpectedMac ==NULL || osExpectedMac->length != KUZNYECHIK_MAC_MAX_SIZE)
-							return -1;
+      if (c->c.type != GRASSHOPPER_CIPHER_CTRACPKMOMAC)
+        return -1;
 
-						memcpy(c->tag, osExpectedMac->data, osExpectedMac->length);
-						return 1;
-					} else {
-						STACK_OF(X509_ATTRIBUTE) *x = ptr;
-						return (X509at_add1_attr_by_OBJ(&x, cmsmacobj,
-									V_ASN1_OCTET_STRING, c->tag, KUZNYECHIK_MAC_MAX_SIZE) == NULL) ? -1 : 1;
-					}
-				}
-			return 1;
+      return gost2015_process_unprotected_attributes(x, arg, KUZNYECHIK_MAC_MAX_SIZE, c->tag);
+    }
+    return 1;
     case EVP_CTRL_COPY: {
 			EVP_CIPHER_CTX *out = ptr;
 

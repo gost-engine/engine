@@ -120,3 +120,23 @@ end:
   GOST2015_CIPHER_PARAMS_free(gcp);
   return ret;
 }
+
+int gost2015_process_unprotected_attributes(STACK_OF(X509_ATTRIBUTE) *attrs,
+            int encryption, size_t mac_len, unsigned char *final_tag)
+{
+  if (encryption == 0) /*Decrypting*/ {
+    ASN1_OCTET_STRING *osExpectedMac = X509at_get0_data_by_OBJ(attrs,
+        OBJ_txt2obj(OID_GOST_CMS_MAC, 1), -3, V_ASN1_OCTET_STRING);
+
+    if (!osExpectedMac || osExpectedMac->length != (int)mac_len)
+      return -1;
+
+    memcpy(final_tag, osExpectedMac->data, osExpectedMac->length);
+  } else {
+    if (attrs == NULL)
+      return -1;
+    return (X509at_add1_attr_by_OBJ(&attrs, OBJ_txt2obj(OID_GOST_CMS_MAC, 1),
+          V_ASN1_OCTET_STRING, final_tag, mac_len) == NULL) ? -1 : 1;
+  }
+  return 1;
+}

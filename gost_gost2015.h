@@ -2,6 +2,7 @@
 #define GOST_GOST2015_H
 
 #include <openssl/evp.h>
+#include <openssl/x509.h>
 
 #define MAGMA_MAC_MAX_SIZE 8
 #define KUZNYECHIK_MAC_MAX_SIZE 16
@@ -20,4 +21,7 @@ int gost2015_get_asn1_params(const ASN1_TYPE *params, size_t ukm_size,
 
 int gost2015_set_asn1_params(ASN1_TYPE *params,
 	const unsigned char *iv, size_t iv_size, const unsigned char *kdf_seed);
+
+int gost2015_process_unprotected_attributes(STACK_OF(X509_ATTRIBUTE) *attrs,
+            int encryption, size_t mac_len, unsigned char *final_tag);
 #endif
