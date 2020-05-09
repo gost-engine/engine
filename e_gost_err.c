@@ -39,6 +39,7 @@ static ERR_STRING_DATA GOST_str_functs[] = {
     {ERR_PACK(0, GOST_F_GOST_EC_KEYGEN, 0), "gost_ec_keygen"},
     {ERR_PACK(0, GOST_F_GOST_EC_SIGN, 0), "gost_ec_sign"},
     {ERR_PACK(0, GOST_F_GOST_EC_VERIFY, 0), "gost_ec_verify"},
+    {ERR_PACK(0, GOST_F_GOST_ENCODE_CMS_PARAMS, 0), "gost_encode_cms_params"},
     {ERR_PACK(0, GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, 0),
      "gost_grasshopper_cipher_ctl"},
     {ERR_PACK(0, GOST_F_GOST_GRASSHOPPER_CIPHER_DO_CTRACPKM_OMAC, 0),
