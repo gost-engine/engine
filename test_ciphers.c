@@ -276,7 +276,6 @@ static struct testcase {
 	.iv = iv_ctr,
 	.iv_size = sizeof(iv_ctr) / 2,
     },
-#if 0
     {
 	.nid = NID_magma_cbc,
 	.block = 8,
@@ -287,7 +286,6 @@ static struct testcase {
 	.iv = iv_cbc,
 	.iv_size = sizeof(iv_cbc),
     },
-#endif
     { 0 }
 };
 
