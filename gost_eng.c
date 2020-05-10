@@ -234,7 +234,7 @@ static struct gost_meth_minfo {
         NID_grasshopper_mac,
         &pmeth_grasshopper_mac,
         &ameth_grasshopper_mac,
-        "GRASSHOPPER-MAC",
+        "KUZNYECHIK-MAC",
         "GOST R 34.13-2015 Grasshopper MAC",
     },
     {
