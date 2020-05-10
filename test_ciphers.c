@@ -24,6 +24,7 @@
 #define cGREEN	"\033[1;32m"
 #define cDGREEN	"\033[0;32m"
 #define cBLUE	"\033[1;34m"
+#define cMAGENT "\033[1;35m"
 #define cDBLUE	"\033[0;34m"
 #define cNORM	"\033[m"
 #define TEST_ASSERT(e) {if ((test = (e))) \
@@ -275,7 +276,6 @@ static struct testcase {
 	.iv = iv_ctr,
 	.iv_size = sizeof(iv_ctr) / 2,
     },
-#if 0
     {
 	.nid = NID_magma_cbc,
 	.block = 8,
@@ -286,7 +286,6 @@ static struct testcase {
 	.iv = iv_cbc,
 	.iv_size = sizeof(iv_cbc),
     },
-#endif
     { 0 }
 };
 
@@ -488,6 +487,19 @@ int main(int argc, char **argv)
 	    ret |= test_stream(type, name,
 		t->plaintext, t->key, t->expected, t->size,
 		t->iv, t->iv_size, t->acpkm);
+    }
+
+    ENGINE_CIPHERS_PTR fn_c;
+    T(fn_c = ENGINE_get_ciphers(eng));
+    const int *nids;
+    int n, k;
+    n = fn_c(eng, NULL, &nids, 0);
+    for (k = 0; k < n; ++k) {
+	for (t = testcases; t->nid; t++)
+	    if (t->nid == nids[k])
+		break;
+	if (!t->nid)
+	    printf(cMAGENT "Cipher %s is untested!\n" cNORM, OBJ_nid2sn(nids[k]));
     }
 
     ENGINE_finish(eng);
