@@ -152,7 +152,7 @@ Russian clients and RSA/DSA ciphersuites for foreign clients.
  
  Calculation of HMAC based on GOST R 34.11-94
 
- openssl dgst -md_gost94 -mac hmac -macopt key:<32 bytes of key> datafile
+ openssl dgst -md_gost94 -hmac <32 bytes of key> datafile
   
   (or use hexkey if key contain NUL bytes)
  Calculation of GOST 28147 MAC
