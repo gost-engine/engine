@@ -866,6 +866,9 @@ static int magma_cipher_do_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx, unsigned char *ou
 	if (in == NULL && inl == 0) /* Final call */
 		return gost2015_final_call(ctx, c->omac_ctx, MAGMA_MAC_MAX_SIZE, c->tag, magma_cipher_do_ctr);
 
+  if (in == NULL)
+      return -1;
+
 	/* As in and out can be the same pointer, process unencrypted here */
 	if (EVP_CIPHER_CTX_encrypting(ctx))
 		EVP_DigestSignUpdate(c->omac_ctx, in, inl);
