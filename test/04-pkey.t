@@ -13,7 +13,7 @@ $use_config = 1;
 
 # Set OPENSSL_ENGINES environment variable to just built engine
 if(!defined $ENV{'OPENSSL_ENGINES'}){
-        $ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
+        $ENV{'OPENSSL_ENGINES'} = abs_path("../bin");
 }
 
 $engine=$ENV{'ENGINE_NAME'}||"gost";

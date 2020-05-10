@@ -4,7 +4,7 @@ use Cwd 'abs_path';
 
 # Set OPENSSL_ENGINES environment variable to just built engine
 if(!defined $ENV{'OPENSSL_ENGINES'}){
-        $ENV{'OPENSSL_ENGINES'} = abs_path("../.libs");
+        $ENV{'OPENSSL_ENGINES'} = abs_path("../bin");
 }
 # Set engine name from environment to allow testing of different engines
 $engine=$ENV{'ENGINE_NAME'}||"gost";
