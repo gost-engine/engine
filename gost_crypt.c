@@ -602,7 +602,13 @@ int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
         if (!gost_cipher_set_param(c, NID_id_tc26_gost_28147_param_Z))
             return 0;
         EVP_CIPHER_CTX_set_app_data(ctx, EVP_CIPHER_CTX_get_cipher_data(ctx));
+
+        if (enc) {
+            if (init_zero_kdf_seed(c->kdf_seed) == 0)
+                return -1;
+        }
     }
+
     if (key)
         magma_key(&(c->cctx), key);
     if (iv) {
@@ -628,41 +634,24 @@ int magma_cipher_init_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx, const unsigned char *k
 {
 	if (key) {
     struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
-		unsigned char keys[64];
-		const EVP_MD *md = EVP_get_digestbynid(NID_magma_mac);
-		EVP_PKEY *mac_key;
+		unsigned char cipher_key[32];
+		c->omac_ctx = EVP_MD_CTX_new();
 
-		if (md == NULL)
-			return 0;
-
-		if (enc) {
-			if (RAND_bytes(c->kdf_seed, 8) != 1)
+		if (c->omac_ctx == NULL) {
+		    GOSTerr(GOST_F_MAGMA_CIPHER_INIT_CTR_ACPKM_OMAC, ERR_R_MALLOC_FAILURE);
 				return 0;
 		}
 
-		if (gost_kdftree2012_256(keys, 64, key, 32, (const unsigned char *)"kdf tree", 8, c->kdf_seed, 8, 1) <= 0)
-			return 0;
-
-		c->omac_ctx = EVP_MD_CTX_new();
-		mac_key = EVP_PKEY_new_mac_key(NID_magma_mac, NULL, keys+32, 32);
-
-		if (mac_key == NULL || c->omac_ctx == NULL) {
-			EVP_PKEY_free(mac_key);
-			OPENSSL_cleanse(keys, sizeof(keys));
-			return 0;
+		if (gost2015_acpkm_omac_init(NID_magma_mac, enc, key,
+		                 c->omac_ctx, cipher_key, c->kdf_seed) != 1) {
+		    EVP_MD_CTX_free(c->omac_ctx);
+				c->omac_ctx = NULL;
+		    return 0;
 		}
 
-		if (EVP_DigestInit_ex(c->omac_ctx, md, NULL) <= 0 ||
-			EVP_DigestSignInit(c->omac_ctx, NULL, md, NULL, mac_key) <= 0) {
-			EVP_PKEY_free(mac_key);
-			OPENSSL_cleanse(keys, sizeof(keys));
-			return 0;
-		}
-		EVP_PKEY_free(mac_key);
-		OPENSSL_cleanse(keys + 32, sizeof(keys) - 32);
-
-		return magma_cipher_init(ctx, keys, iv, enc);
+		return magma_cipher_init(ctx, cipher_key, iv, enc);
 	}
+
 	return magma_cipher_init(ctx, key, iv, enc);
 }
 

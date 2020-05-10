@@ -24,4 +24,10 @@ int gost2015_set_asn1_params(ASN1_TYPE *params,
 
 int gost2015_process_unprotected_attributes(STACK_OF(X509_ATTRIBUTE) *attrs,
             int encryption, size_t mac_len, unsigned char *final_tag);
+
+int gost2015_acpkm_omac_init(int nid, int enc, const unsigned char *inkey,
+                             EVP_MD_CTX *omac_ctx,
+                             unsigned char *outkey, unsigned char *kdf_seed);
+int init_zero_kdf_seed(unsigned char *kdf_seed);
+
 #endif

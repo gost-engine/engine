@@ -48,6 +48,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_ENCODE_CMS_PARAMS                    161
 # define GOST_F_GOST_GRASSHOPPER_CIPHER_CTL               111
 # define GOST_F_GOST_GRASSHOPPER_CIPHER_DO_CTRACPKM_OMAC  160
+# define GOST_F_GOST_GRASSHOPPER_CIPHER_INIT_CTRACPKM_OMAC 162
 # define GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS      112
 # define GOST_F_GOST_IMIT_CTRL                            113
 # define GOST_F_GOST_IMIT_FINAL                           114
@@ -55,8 +56,9 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_KDFTREE2012_256                      149
 # define GOST_F_GOST_KEXP15                               143
 # define GOST_F_GOST_KIMP15                               148
-# define GOST_F_MAGMA_CIPHER_CTL                          162
-# define GOST_F_MAGMA_CIPHER_CTL_ACPKM_OMAC               163
+# define GOST_F_MAGMA_CIPHER_CTL                          163
+# define GOST_F_MAGMA_CIPHER_CTL_ACPKM_OMAC               164
+# define GOST_F_MAGMA_CIPHER_INIT_CTR_ACPKM_OMAC          165
 # define GOST_F_OMAC_ACPKM_IMIT_CTRL                      144
 # define GOST_F_OMAC_ACPKM_IMIT_FINAL                     145
 # define GOST_F_OMAC_ACPKM_IMIT_UPDATE                    146

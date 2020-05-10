@@ -2,6 +2,7 @@
 #include "gost_gost2015.h"
 #include "e_gost_err.h"
 #include <string.h>
+#include <openssl/rand.h>
 
 int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx, size_t mac_size,
 			unsigned char *encrypted_mac,
@@ -139,4 +140,54 @@ int gost2015_process_unprotected_attributes(STACK_OF(X509_ATTRIBUTE) *attrs,
           V_ASN1_OCTET_STRING, final_tag, mac_len) == NULL) ? -1 : 1;
   }
   return 1;
+}
+
+int gost2015_acpkm_omac_init(int nid, int enc, const unsigned char *inkey,
+                             EVP_MD_CTX *omac_ctx,
+                             unsigned char *outkey, unsigned char *kdf_seed)
+{
+  int ret = 0;
+  unsigned char keys[64];
+  const EVP_MD *md = EVP_get_digestbynid(nid);
+  EVP_PKEY *mac_key;
+
+  if (md == NULL)
+    return 0;
+
+  if (enc) {
+    if (RAND_bytes(kdf_seed, 8) != 1)
+      return 0;
+  }
+
+  if (gost_kdftree2012_256(keys, 64, inkey, 32, (const unsigned char *)"kdf tree", 8, kdf_seed, 8, 1) <= 0)
+    return 0;
+
+  mac_key = EVP_PKEY_new_mac_key(nid, NULL, keys+32, 32);
+
+  if (mac_key == NULL)
+    goto end;
+
+  if (EVP_DigestInit_ex(omac_ctx, md, NULL) <= 0 ||
+      EVP_DigestSignInit(omac_ctx, NULL, md, NULL, mac_key) <= 0)
+       goto end;
+
+  memcpy(outkey, keys, 32);
+
+  ret = 1;
+end:
+  EVP_PKEY_free(mac_key);
+  OPENSSL_cleanse(keys, sizeof(keys));
+
+  return ret;
+}
+
+int init_zero_kdf_seed(unsigned char *kdf_seed)
+{
+  int is_zero_kdfseed = 1, i;
+  for (i = 0; i < 8; i++) {
+    if (kdf_seed[i] != 0)
+      is_zero_kdfseed = 0;
+  }
+
+  return is_zero_kdfseed ? RAND_bytes(kdf_seed, 8) : 1;
 }

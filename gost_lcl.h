@@ -68,8 +68,8 @@ struct gost_pmeth_data {
     int sign_param_nid;         /* Should be set whenever parameters are
                                  * filled */
     EVP_MD *md;
-    unsigned char *shared_ukm;
-    size_t shared_ukm_size;     /* XXX temporary use shared_ukm and hash for 2018 CKE */
+    unsigned char shared_ukm[32];
+    size_t shared_ukm_size;
     int peer_key_used;
     int cipher_nid;             /* KExp15/KImp15 algs */
 };

@@ -369,6 +369,42 @@ static int gost_cms_set_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
 	GOSTerr(GOST_F_GOST_CMS_SET_SHARED_INFO, GOST_R_UNSUPPORTED_RECIPIENT_INFO);
 	return 0;
 }
+
+static ASN1_STRING *gost_encode_cms_params(int ka_nid)
+{
+	ASN1_STRING *ret = NULL;
+	ASN1_STRING *params = ASN1_STRING_new();
+
+	/* It's a hack. We have only one OID here, so we can use
+	 * GOST_KEY_PARAMS which is a sequence of 3 OIDs,
+	 * the 1st one is mandatory and the rest are optional */
+	GOST_KEY_PARAMS *gkp = GOST_KEY_PARAMS_new();
+
+	if (params == NULL || gkp == NULL) {
+		  GOSTerr(GOST_F_GOST_ENCODE_CMS_PARAMS, ERR_R_MALLOC_FAILURE);
+			goto end;
+	}
+
+	gkp->key_params = OBJ_nid2obj(ka_nid);
+	params->length = i2d_GOST_KEY_PARAMS(gkp, &params->data);
+
+	if (params->length < 0) {
+		  GOSTerr(GOST_F_GOST_ENCODE_CMS_PARAMS, ERR_R_MALLOC_FAILURE);
+			goto end;
+	}
+
+	params->type = V_ASN1_SEQUENCE;
+	ret = params;
+
+end:
+	GOST_KEY_PARAMS_free(gkp);
+
+	if (ret == NULL)
+		ASN1_STRING_free(params);
+
+	return ret;
+}
+
 /*
  * Control function
  */
@@ -425,14 +461,44 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 #ifndef OPENSSL_NO_CMS
     case ASN1_PKEY_CTRL_CMS_ENVELOPE:
         if (arg1 == 0) {
-            ASN1_STRING *params = encode_gost_algor_params(pkey);
-            if (!params) {
-                return -1;
-            }
-            CMS_RecipientInfo_ktri_get0_algs((CMS_RecipientInfo *)arg2, NULL,
-                                             NULL, &alg1);
-            X509_ALGOR_set0(alg1, OBJ_nid2obj(EVP_PKEY_id(pkey)),
-                            V_ASN1_SEQUENCE, params);
+          EVP_PKEY_CTX *pctx;
+          CMS_RecipientInfo *ri = arg2;
+
+          struct gost_pmeth_data *gctx = NULL;
+          ASN1_STRING *params = NULL;
+
+          pctx = CMS_RecipientInfo_get0_pkey_ctx(ri);
+          if (!pctx)
+            return 0;
+
+          gctx = EVP_PKEY_CTX_get_data(pctx);
+
+          switch (gctx->cipher_nid) {
+            case NID_magma_ctr:
+            case NID_kuznyechik_ctr:
+              {
+                int ka_nid;
+
+                nid = (gctx->cipher_nid == NID_magma_ctr) ? NID_magma_kexp15 :
+                  NID_kuznyechik_kexp15;
+
+                ka_nid = (EVP_PKEY_base_id(pkey) == NID_id_GostR3410_2012_256) ?
+                  NID_id_tc26_agreement_gost_3410_2012_256 : NID_id_tc26_agreement_gost_3410_2012_512;
+
+                params = gost_encode_cms_params(ka_nid);
+              }
+              break;
+            default:
+                params = encode_gost_algor_params(pkey);
+              break;
+          }
+
+          if (params == NULL)
+              return -1;
+
+          CMS_RecipientInfo_ktri_get0_algs((CMS_RecipientInfo *)arg2, NULL,
+              NULL, &alg1);
+          X509_ALGOR_set0(alg1, OBJ_nid2obj(nid), V_ASN1_SEQUENCE, params);
         } else {
           EVP_PKEY_CTX *pctx;
           CMS_RecipientInfo *ri = arg2;
