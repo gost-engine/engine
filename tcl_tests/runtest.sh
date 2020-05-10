@@ -12,14 +12,14 @@
 # Пререквизиты, которые должны быть установлены на машине:
 # 1. tclsh.  Может называться с версией (см. список версий ниже в цикле
 # перебора)
-# 2. ssh (что характерно, называться должен именно так). Должен быть 
+# 2. ssh (что характерно, называться должен именно так). Должен быть
 # настроен заход по ключам без пароля на lynx и все используемые эталонники.
-# Ключи этих машин должны быть в knownhosts (с полными доменными именами 
+# Ключи этих машин должны быть в knownhosts (с полными доменными именами
 # серверов, то есть lynx.lan.cryptocom.ru и т.д.)
 # 3. Под Windows скрипт выполняется в среде MinGW, при этом нужно "донастроить"
 # ssh, а именно создать в разделе реестра
 # HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters
-# DWORD-ключ DisableUserTOSSetting=0 
+# DWORD-ключ DisableUserTOSSetting=0
 
 CRYPTOPACK_MAIN_VERSION=3
 
@@ -40,7 +40,7 @@ fi
 if [ -z "$OPENSSL_APP" ]; then
 	echo "openssl not found"
 	exit 1
-else 
+else
 	echo "Using $OPENSSL_APP as openssl"
 fi
 
@@ -124,7 +124,7 @@ for t in $BASE_TESTS; do
 		if $TCLSH $t.try > $TESTDIR/$t.out 2>&1; then
 			head -1 $TESTDIR/$t.out
 		else
-			fail=1
+			fail=2
 			cat $TESTDIR/$t.out
 			echo "=== Output failures of $TESTDIR/$t.log ==="
 			awk "/ ends failed/" RS= ORS='\n\n' $TESTDIR/$t.log |
@@ -133,32 +133,32 @@ for t in $BASE_TESTS; do
 			exit 1
 		fi
 	else
-		$TCLSH $t.try || fail=1
+		$TCLSH $t.try || fail=3
 	fi
 done
 
 if false; then # ignore some tests for a time
-ALG_LIST="rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A" $TCLSH ssl.try -clientconf $OPENSSL_CONF || fail=1
-ALG_LIST="rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A" $TCLSH ssl.try -serverconf $OPENSSL_CONF || fail=1
-	
+ALG_LIST="rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A" $TCLSH ssl.try -clientconf $OPENSSL_CONF || fail=4
+ALG_LIST="rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A" $TCLSH ssl.try -serverconf $OPENSSL_CONF || fail=5
+
 for t in $PKCS7_COMPATIBILITY_TESTS; do
-	$TCLSH $t.try || fail=1
+	$TCLSH $t.try || fail=6
 done
 for t in $SERVER_TESTS; do
-	$TCLSH server.try $t || fail=1
+	$TCLSH server.try $t || fail=7
 done
 for t in $CLIENT_TESTS; do
-	$TCLSH client.try $t || fail=1
+	$TCLSH client.try $t || fail=8
 done
 if [ -n "WINCLIENT_TESTS" ]; then
 	if [ -z "$CVS_RSH" ]; then
 		CVS_RSH=ssh
 		export CVS_RSH
-	fi	
+	fi
 	for t in $WINCLIENT_TESTS; do
-		$TCLSH wcli.try $t || fail=1
+		$TCLSH wcli.try $t || fail=9
 	done
-fi	
+fi
 if [ -d $OTHER_DIR ]; then
 	OTHER_DIR=../${OTHER_DIR} $TCLSH interop.try
 fi
@@ -176,12 +176,12 @@ if [ -d OtherVersion ] ; then
 			echo "No GOST=providing engine found" 1>&2
 			exit 1;
 	esac
-fi	
+fi
 fi # false
 $TCLSH calcstat ${TESTDIR}/stats ${TESTDIR}/test.result
 grep "leaked" ${TESTDIR}/*.log
-if [ $fail  -ne 0 ]; then 
-	echo "Some tests FAILED."
-fi	
+if [ $fail  -ne 0 ]; then
+	echo "Some tests FAILED, code $fail."
+fi
 
 exit $fail
