@@ -244,7 +244,6 @@ extern struct gost_cipher_info gost_cipher_list[];
 /* Find encryption params from ASN1_OBJECT */
 const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj);
 /* Implementation of GOST 28147-89 cipher in CFB and CNT modes */
-const EVP_CIPHER *cipher_gost_cbc();
 const EVP_CIPHER *cipher_gost_cpacnt();
 const EVP_CIPHER *cipher_gost_cpcnt_12();
 const EVP_CIPHER *cipher_magma_cbc();
@@ -343,5 +342,6 @@ EVP_CIPHER *GOST_init_cipher(GOST_cipher *c);
 void GOST_deinit_cipher(GOST_cipher *c);
 
 extern GOST_cipher Gost28147_89_cipher;
+extern GOST_cipher Gost28147_89_cbc_cipher;
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
