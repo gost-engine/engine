@@ -153,7 +153,8 @@ static struct gost_cipher_minfo {
     },
     {
         NID_magma_cbc,
-        cipher_magma_cbc,
+        NULL,
+	&magma_cbc_cipher,
     },
     {
         NID_magma_ctr,
