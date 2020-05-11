@@ -123,7 +123,8 @@ static struct gost_cipher_minfo {
     },
     {
         NID_gost89_cnt_12,
-        cipher_gost_cpcnt_12,
+        NULL,
+	&Gost28147_89_cnt_12_cipher,
     },
     {
         NID_gost89_cbc,
