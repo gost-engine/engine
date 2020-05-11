@@ -126,7 +126,8 @@ static struct gost_cipher_minfo {
     },
     {
         NID_gost89_cbc,
-        cipher_gost_cbc,
+        NULL,
+	&Gost28147_89_cbc_cipher,
     },
     {
         NID_grasshopper_ecb,
