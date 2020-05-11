@@ -109,10 +109,12 @@ static struct gost_digest_minfo {
 static struct gost_cipher_minfo {
     int nid;
     const EVP_CIPHER *(*cipher)(void);
+    GOST_cipher *reg;
 } gost_cipher_array[] = {
     {
         NID_id_Gost28147_89,
-        cipher_gost,
+        NULL,
+	&Gost28147_89_cipher,
     },
     {
         NID_gost89_cnt,
@@ -279,9 +281,16 @@ static int gost_engine_destroy(ENGINE* e) {
         dinfo->destroy();
     }
 
-    cipher_gost_destroy();
-    cipher_gost_grasshopper_destroy();
-    wrap_ciphers_destroy();
+    struct gost_cipher_minfo *cinfo = gost_cipher_array;
+    for (; cinfo->nid; cinfo++) {
+	if (cinfo->reg)
+	    GOST_deinit_cipher(cinfo->reg);
+	else
+	    EVP_CIPHER_meth_free((EVP_CIPHER *)cinfo->cipher());
+    }
+
+    //cipher_gost_grasshopper_destroy();
+    //wrap_ciphers_destroy();
 
     gost_param_free();
 
@@ -363,9 +372,16 @@ static int bind_gost(ENGINE* e, const char* id) {
         goto end;
 
     struct gost_cipher_minfo *cinfo = gost_cipher_array;
-    for (; cinfo->nid; cinfo++)
-        if (!EVP_add_cipher(cinfo->cipher()))
+    for (; cinfo->nid; cinfo++) {
+	const EVP_CIPHER *cipher;
+
+	if (cinfo->reg)
+	    cipher = GOST_init_cipher(cinfo->reg);
+	else
+	    cipher = cinfo->cipher();
+	if (!EVP_add_cipher(cipher))
             goto end;
+    }
 
     struct gost_digest_minfo *dinfo = gost_digest_array;
     for (; dinfo->nid; dinfo++) {
@@ -430,7 +446,10 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
 
     for (; info->nid; info++)
         if (nid == info->nid) {
-            *cipher = info->cipher();
+	    if (info->reg)
+		*cipher = GOST_init_cipher(info->reg);
+	    else
+		*cipher = info->cipher();
             return 1;
         }
     *cipher = NULL;

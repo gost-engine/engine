@@ -244,7 +244,6 @@ extern struct gost_cipher_info gost_cipher_list[];
 /* Find encryption params from ASN1_OBJECT */
 const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj);
 /* Implementation of GOST 28147-89 cipher in CFB and CNT modes */
-const EVP_CIPHER *cipher_gost();
 const EVP_CIPHER *cipher_gost_cbc();
 const EVP_CIPHER *cipher_gost_cpacnt();
 const EVP_CIPHER *cipher_gost_cpcnt_12();
@@ -319,4 +318,30 @@ int pack_sign_cp(ECDSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
 /* Get private key as BIGNUM from both 34.10-2001 keys*/
 /* Returns pointer into EVP_PKEY structure */
 BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey);
+
+/* Struct describing cipher and used for init/deinit.*/
+struct gost_cipher_st {
+    int nid;
+    EVP_CIPHER *cipher;
+    int block_size;     /* (bytes) */
+    int key_len;        /* (bytes) */
+    int iv_len;
+    int flags;
+    int (*init) (EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                 const unsigned char *iv, int enc);
+    int (*do_cipher)(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                     const unsigned char *in, size_t inl);
+    int (*cleanup)(EVP_CIPHER_CTX *);
+    int ctx_size;
+    int (*set_asn1_parameters)(EVP_CIPHER_CTX *, ASN1_TYPE *);
+    int (*get_asn1_parameters)(EVP_CIPHER_CTX *, ASN1_TYPE *);
+    int (*ctrl)(EVP_CIPHER_CTX *, int type, int arg, void *ptr);
+};
+typedef struct gost_cipher_st GOST_cipher;
+
+EVP_CIPHER *GOST_init_cipher(GOST_cipher *c);
+void GOST_deinit_cipher(GOST_cipher *c);
+
+extern GOST_cipher Gost28147_89_cipher;
 #endif
+/* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
