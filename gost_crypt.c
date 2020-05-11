@@ -194,39 +194,24 @@ GOST_cipher magma_ctr_cipher = {
     .ctrl = magma_cipher_ctl,
 };
 
-static EVP_CIPHER *_hidden_magma_ctr_acpkm = NULL;
-const EVP_CIPHER *cipher_magma_ctr_acpkm(void)
-{
-    if (_hidden_magma_ctr_acpkm == NULL
-        && ((_hidden_magma_ctr_acpkm =
-             EVP_CIPHER_meth_new(NID_magma_ctr_acpkm, 1 /* block_size */ ,
-                                 32 /* key_size */ )) == NULL
-            || !EVP_CIPHER_meth_set_iv_length(_hidden_magma_ctr_acpkm, 4)
-            || !EVP_CIPHER_meth_set_flags(_hidden_magma_ctr_acpkm,
-                                          EVP_CIPH_CTR_MODE |
-                                          EVP_CIPH_NO_PADDING |
-                                          EVP_CIPH_CUSTOM_IV |
-                                          EVP_CIPH_RAND_KEY |
-                                          EVP_CIPH_ALWAYS_CALL_INIT)
-            || !EVP_CIPHER_meth_set_init(_hidden_magma_ctr_acpkm, magma_cipher_init)
-            || !EVP_CIPHER_meth_set_do_cipher(_hidden_magma_ctr_acpkm,
-                                              magma_cipher_do_ctr)
-            || !EVP_CIPHER_meth_set_cleanup(_hidden_magma_ctr_acpkm,
-                                            gost_cipher_cleanup)
-            || !EVP_CIPHER_meth_set_impl_ctx_size(_hidden_magma_ctr_acpkm,
-                                                  sizeof(struct
-                                                         ossl_gost_cipher_ctx))
-            || !EVP_CIPHER_meth_set_set_asn1_params(_hidden_magma_ctr_acpkm,
-                                                    magma_set_asn1_parameters)
-            || !EVP_CIPHER_meth_set_get_asn1_params(_hidden_magma_ctr_acpkm,
-                                                    magma_get_asn1_parameters)
-
-            || !EVP_CIPHER_meth_set_ctrl(_hidden_magma_ctr_acpkm, magma_cipher_ctl))) {
-        EVP_CIPHER_meth_free(_hidden_magma_ctr_acpkm);
-        _hidden_magma_ctr_acpkm = NULL;
-    }
-    return _hidden_magma_ctr_acpkm;
-}
+GOST_cipher magma_ctr_acpkm_cipher = {
+    .nid = NID_magma_ctr_acpkm,
+    .block_size = 1,
+    .key_len = 32,
+    .iv_len = 4,
+    .flags = EVP_CIPH_CTR_MODE |
+        EVP_CIPH_NO_PADDING |
+        EVP_CIPH_CUSTOM_IV |
+        EVP_CIPH_RAND_KEY |
+        EVP_CIPH_ALWAYS_CALL_INIT,
+    .init = magma_cipher_init,
+    .do_cipher = magma_cipher_do_ctr,
+    .cleanup = gost_cipher_cleanup,
+    .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
+    .set_asn1_parameters = gost89_set_asn1_parameters,
+    .get_asn1_parameters = gost89_get_asn1_parameters,
+    .ctrl = magma_cipher_ctl,
+};
 
 static EVP_CIPHER *_hidden_magma_ctr_acpkm_omac = NULL;
 const EVP_CIPHER *cipher_magma_ctr_acpkm_omac(void)

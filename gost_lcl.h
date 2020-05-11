@@ -346,5 +346,6 @@ extern GOST_cipher Gost28147_89_cbc_cipher;
 extern GOST_cipher Gost28147_89_cnt_cipher;
 extern GOST_cipher Gost28147_89_cnt_12_cipher;
 extern GOST_cipher magma_ctr_cipher;
+extern GOST_cipher magma_ctr_acpkm_cipher;
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
