@@ -157,7 +157,8 @@ static struct gost_cipher_minfo {
     },
     {
         NID_magma_ctr,
-        cipher_magma_ctr,
+        NULL,
+	&magma_ctr_cipher,
     },
     {
         NID_magma_ctr_acpkm,
