@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 use TAP::Harness;
 
+exit 0 if (defined $ENV{'SKIP_PERL_TEST'});
+
 if(defined $ENV{'OPENSSL_ROOT_DIR'}) {
     my $openssl_libdir;
     my $openssl_bindir;
