@@ -1,6 +1,8 @@
 /**********************************************************************
- *                          gost_crypt.c                              *
+ *             gost_crypt.c - Initialize all ciphers                  *
+ *                                                                    *
  *             Copyright (c) 2005-2006 Cryptocom LTD                  *
+ *             Copyright (c) 2020 Chikunov Vitaly <vt@altlinux.org>   *
  *         This file is distributed under the same license as OpenSSL *
  *                                                                    *
  *       OpenSSL interface to GOST 28147-89 cipher functions          *
@@ -67,42 +69,55 @@ static int magma_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params);
 static int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
 static int magma_cipher_ctl_acpkm_omac(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
 
-static EVP_CIPHER *_hidden_Gost28147_89_cipher = NULL;
-const EVP_CIPHER *cipher_gost(void)
+EVP_CIPHER *GOST_init_cipher(GOST_cipher *c)
 {
-    if (_hidden_Gost28147_89_cipher == NULL
-        && ((_hidden_Gost28147_89_cipher =
-             EVP_CIPHER_meth_new(NID_id_Gost28147_89, 1 /* block_size */ ,
-                                 32 /* key_size */ )) == NULL
-            || !EVP_CIPHER_meth_set_iv_length(_hidden_Gost28147_89_cipher, 8)
-            || !EVP_CIPHER_meth_set_flags(_hidden_Gost28147_89_cipher,
-                                          EVP_CIPH_CFB_MODE |
-                                          EVP_CIPH_NO_PADDING |
-                                          EVP_CIPH_CUSTOM_IV |
-                                          EVP_CIPH_RAND_KEY |
-                                          EVP_CIPH_ALWAYS_CALL_INIT)
-            || !EVP_CIPHER_meth_set_init(_hidden_Gost28147_89_cipher,
-                                         gost_cipher_init)
-            || !EVP_CIPHER_meth_set_do_cipher(_hidden_Gost28147_89_cipher,
-                                              gost_cipher_do_cfb)
-            || !EVP_CIPHER_meth_set_cleanup(_hidden_Gost28147_89_cipher,
-                                            gost_cipher_cleanup)
-            || !EVP_CIPHER_meth_set_impl_ctx_size(_hidden_Gost28147_89_cipher,
-                                                  sizeof(struct
-                                                         ossl_gost_cipher_ctx))
-            ||
-            !EVP_CIPHER_meth_set_set_asn1_params(_hidden_Gost28147_89_cipher,
-                                                 gost89_set_asn1_parameters)
-            ||
-            !EVP_CIPHER_meth_set_get_asn1_params(_hidden_Gost28147_89_cipher,
-                                                 gost89_get_asn1_parameters)
-            || !EVP_CIPHER_meth_set_ctrl(_hidden_Gost28147_89_cipher,
-                                         gost_cipher_ctl))) {
-        EVP_CIPHER_meth_free(_hidden_Gost28147_89_cipher);
-        _hidden_Gost28147_89_cipher = NULL;
+    if (c->cipher)
+        return c->cipher;
+
+    EVP_CIPHER *cipher;
+    if (!(cipher = EVP_CIPHER_meth_new(c->nid, c->block_size, c->key_len))
+        || !EVP_CIPHER_meth_set_iv_length(cipher, c->iv_len)
+        || !EVP_CIPHER_meth_set_flags(cipher, c->flags)
+        || !EVP_CIPHER_meth_set_init(cipher, c->init)
+        || !EVP_CIPHER_meth_set_do_cipher(cipher, c->do_cipher)
+        || !EVP_CIPHER_meth_set_cleanup(cipher, c->cleanup)
+        || !EVP_CIPHER_meth_set_impl_ctx_size(cipher, c->ctx_size)
+        || !EVP_CIPHER_meth_set_set_asn1_params(cipher, c->set_asn1_parameters)
+        || !EVP_CIPHER_meth_set_get_asn1_params(cipher, c->get_asn1_parameters)
+        || !EVP_CIPHER_meth_set_ctrl(cipher, c->ctrl)) {
+        EVP_CIPHER_meth_free(cipher);
+        cipher = NULL;
     }
-    return _hidden_Gost28147_89_cipher;
+    c->cipher = cipher;
+    return c->cipher;
 }
+
+void GOST_deinit_cipher(GOST_cipher *c)
+{
+    if (c->cipher) {
+        EVP_CIPHER_meth_free(c->cipher);
+        c->cipher = NULL;
+    }
+}
+
+GOST_cipher Gost28147_89_cipher = {
+    .nid = NID_id_Gost28147_89,
+    .block_size = 1,
+    .key_len = 32,
+    .iv_len = 8,
+    .flags = EVP_CIPH_CFB_MODE |
+        EVP_CIPH_NO_PADDING |
+        EVP_CIPH_CUSTOM_IV |
+        EVP_CIPH_RAND_KEY |
+        EVP_CIPH_ALWAYS_CALL_INIT,
+    .init = gost_cipher_init,
+    .do_cipher = gost_cipher_do_cfb,
+    .cleanup = gost_cipher_cleanup,
+    .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
+    .set_asn1_parameters = gost89_set_asn1_parameters,
+    .get_asn1_parameters = gost89_get_asn1_parameters,
+    .ctrl = gost_cipher_ctl,
+};
 
 static EVP_CIPHER *_hidden_Gost28147_89_cbc = NULL;
 const EVP_CIPHER *cipher_gost_cbc(void)
@@ -340,8 +355,8 @@ const EVP_CIPHER *cipher_magma_cbc(void)
 
 void cipher_gost_destroy(void)
 {
-    EVP_CIPHER_meth_free(_hidden_Gost28147_89_cipher);
-    _hidden_Gost28147_89_cipher = NULL;
+    //EVP_CIPHER_meth_free(_hidden_Gost28147_89_cipher);
+    //_hidden_Gost28147_89_cipher = NULL;
     EVP_CIPHER_meth_free(_hidden_gost89_cnt);
     _hidden_gost89_cnt = NULL;
     EVP_CIPHER_meth_free(_hidden_Gost28147_89_cbc);
@@ -1444,3 +1459,4 @@ int gost_imit_cleanup(EVP_MD_CTX *ctx)
     memset(EVP_MD_CTX_md_data(ctx), 0, sizeof(struct ossl_gost_imit_ctx));
     return 1;
 }
+/* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
