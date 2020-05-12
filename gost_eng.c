@@ -52,58 +52,15 @@ static EVP_PKEY_ASN1_METHOD* ameth_GostR3410_2001 = NULL,
         * ameth_magma_mac = NULL,  * ameth_grasshopper_mac = NULL,
         * ameth_magma_mac_acpkm = NULL,  * ameth_grasshopper_mac_acpkm = NULL;
 
-static struct gost_digest_minfo {
-    int nid;
-    EVP_MD *(*digest)(void);
-    void (*destroy)(void);
-    const char *sn;
-    const char *alias;
-} gost_digest_array[] = {
-    {
-        NID_id_GostR3411_94,
-        digest_gost,
-        digest_gost_destroy,
-    },
-    {
-        NID_id_Gost28147_89_MAC,
-        imit_gost_cpa,
-        imit_gost_cpa_destroy,
-    },
-    {
-        NID_id_GostR3411_2012_256,
-        digest_gost2012_256,
-        digest_gost2012_256_destroy,
-        SN_id_GostR3411_2012_256,
-        "streebog256",
-    },
-    {
-        NID_id_GostR3411_2012_512,
-        digest_gost2012_512,
-        digest_gost2012_512_destroy,
-        SN_id_GostR3411_2012_512,
-        "streebog512",
-    },
-    {
-        NID_gost_mac_12,
-        imit_gost_cp_12,
-        imit_gost_cp_12_destroy,
-    },
-    {
-        NID_magma_mac,
-        magma_omac,
-        magma_omac_destroy,
-    },
-    {
-        NID_grasshopper_mac,
-        grasshopper_omac,
-        grasshopper_omac_destroy,
-    },
-    {
-        NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,
-        grasshopper_omac_acpkm,
-        grasshopper_omac_acpkm_destroy,
-    },
-    { 0 },
+GOST_digest *gost_digest_array[] = {
+    &GostR3411_94_digest,
+    &Gost28147_89_MAC_digest,
+    &GostR3411_2012_256_digest,
+    &GostR3411_2012_512_digest,
+    &Gost28147_89_mac_12_digest,
+    &magma_mac_digest,
+    &grasshopper_mac_digest,
+    &kuznyechik_ctracpkm_omac_digest,
 };
 
 GOST_cipher *gost_cipher_array[] = {
@@ -203,9 +160,9 @@ static struct gost_meth_minfo {
 # define OSSL_NELEM(x) (sizeof(x)/sizeof((x)[0]))
 #endif
 
-/* `- 1' because of terminating zero element */
-static int known_digest_nids[OSSL_NELEM(gost_digest_array) - 1];
+static int known_digest_nids[OSSL_NELEM(gost_digest_array)];
 static int known_cipher_nids[OSSL_NELEM(gost_cipher_array)];
+/* `- 1' because of terminating zero element */
 static int known_meths_nids[OSSL_NELEM(gost_meth_array) - 1];
 
 static int gost_engine_init(ENGINE* e) {
@@ -217,14 +174,10 @@ static int gost_engine_finish(ENGINE* e) {
 }
 
 static int gost_engine_destroy(ENGINE* e) {
-    struct gost_digest_minfo *dinfo = gost_digest_array;
-    for (; dinfo->nid; dinfo++) {
-        if (dinfo->alias)
-            EVP_delete_digest_alias(dinfo->alias);
-        dinfo->destroy();
-    }
-
     int i;
+
+    for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
+	GOST_deinit_digest(gost_digest_array[i]);
     for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++)
 	GOST_deinit_cipher(gost_cipher_array[i]);
 
@@ -313,12 +266,8 @@ static int bind_gost(ENGINE* e, const char* id) {
             goto end;
     }
 
-    struct gost_digest_minfo *dinfo = gost_digest_array;
-    for (; dinfo->nid; dinfo++) {
-        if (!EVP_add_digest(dinfo->digest()))
-            goto end;
-        if (dinfo->alias &&
-            !EVP_add_digest_alias(dinfo->sn, dinfo->alias))
+    for (i = 0; i < OSSL_NELEM(gost_digest_array); i++) {
+	if (!EVP_add_digest(GOST_init_digest(gost_digest_array[i])))
             goto end;
     }
 
@@ -339,21 +288,21 @@ IMPLEMENT_DYNAMIC_BIND_FN(bind_gost)
 static int gost_digests(ENGINE *e, const EVP_MD **digest,
                         const int **nids, int nid)
 {
-    struct gost_digest_minfo *info = gost_digest_array;
+    int i;
 
     if (!digest) {
         int *n = known_digest_nids;
 
         *nids = n;
-        for (; info->nid; info++)
-            *n++ = info->nid;
-        return OSSL_NELEM(known_digest_nids);
+        for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
+            *n++ = gost_digest_array[i]->nid;
+        return i;
     }
 
-    for (; info->nid; info++)
-        if (nid == info->nid) {
-            *digest = info->digest();
-            return 1;
+    for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
+        if (nid == gost_digest_array[i]->nid) {
+	    *digest = GOST_init_digest(gost_digest_array[i]);
+	    return 1;
         }
     *digest = NULL;
     return 0;
