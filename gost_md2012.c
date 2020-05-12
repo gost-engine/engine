@@ -39,6 +39,7 @@ GOST_digest GostR3411_2012_template_digest = {
 
 GOST_digest GostR3411_2012_256_digest = {
     .nid = NID_id_GostR3411_2012_256,
+    .alias = "streebog256",
     .template = &GostR3411_2012_template_digest,
     .result_size = 32,
     .init = gost_digest_init256,
@@ -57,6 +58,7 @@ void digest_gost2012_256_destroy(void)
 
 GOST_digest GostR3411_2012_512_digest = {
     .nid = NID_id_GostR3411_2012_512,
+    .alias = "streebog512",
     .template = &GostR3411_2012_template_digest,
     .result_size = 64,
     .init = gost_digest_init512,

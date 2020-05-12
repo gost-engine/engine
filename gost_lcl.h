@@ -363,6 +363,7 @@ extern GOST_cipher kuznyechik_kexp15_cipher;
 struct gost_digest_st {
     struct gost_digest_st *template;
     int nid;
+    const char *alias;
     EVP_MD *digest;
     int result_size;
     int input_blocksize;
