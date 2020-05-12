@@ -360,5 +360,27 @@ extern GOST_cipher grasshopper_ctr_acpkm_omac_cipher;
 extern GOST_cipher magma_kexp15_cipher;
 extern GOST_cipher kuznyechik_kexp15_cipher;
 
+struct gost_digest_st {
+    struct gost_digest_st *template;
+    int nid;
+    EVP_MD *digest;
+    int result_size;
+    int input_blocksize;
+    int app_datasize;
+    int flags;
+    int (*init)(EVP_MD_CTX *ctx);
+    int (*update)(EVP_MD_CTX *ctx, const void *data, size_t count);
+    int (*final)(EVP_MD_CTX *ctx, unsigned char *md);
+    int (*copy)(EVP_MD_CTX *to, const EVP_MD_CTX *from);
+    int (*cleanup)(EVP_MD_CTX *ctx);
+    int (*ctrl)(EVP_MD_CTX *ctx, int cmd, int p1, void *p2);
+};
+typedef struct gost_digest_st GOST_digest;
+
+EVP_MD *GOST_init_digest(GOST_digest *d);
+void GOST_deinit_digest(GOST_digest *d);
+
+extern GOST_digest GostR3411_94_digest;
+
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
