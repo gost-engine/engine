@@ -320,6 +320,7 @@ BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey);
 
 /* Struct describing cipher and used for init/deinit.*/
 struct gost_cipher_st {
+    struct gost_cipher_st *template; /* template struct */
     int nid;
     EVP_CIPHER *cipher;
     int block_size;     /* (bytes) */
