@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 vt@altlinux.org. All Rights Reserved.
+ * Copyright (C) 2018,2020 Vitaly Chikunov <vt@altlinux.org>. All Rights Reserved.
  * Copyright (c) 2010 The OpenSSL Project.  All rights reserved.
  *
  * Contents licensed under the terms of the OpenSSL license

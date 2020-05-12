@@ -3,9 +3,10 @@
 /**********************************************************************
  *                        gost_lcl.h                                  *
  *             Copyright (c) 2006 Cryptocom LTD                       *
+ *             Copyright (c) 2020 Vitaly Chikunov <vt@altlinux.org>   *
  *       This file is distributed under the same license as OpenSSL   *
  *                                                                    *
- *         Internal declarations  used in GOST engine                *
+ *         Internal declarations  used in GOST engine                 *
  *         OpenSSL 0.9.9 libraries required to compile and use        *
  *                              this code                             *
  **********************************************************************/

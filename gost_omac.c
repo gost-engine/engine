@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2019 Dmitry Belyavskiy <beldmit@gmail.com>
+ * Copyright (c) 2020 Vitaly Chikunov <vt@altlinux.org>
+ *
+ * Contents licensed under the terms of the OpenSSL license
+ * See https://www.openssl.org/source/license.html for details
+ */
 #include <string.h>
 #include <openssl/cmac.h>
 #include <openssl/conf.h>
