@@ -188,11 +188,13 @@ static struct gost_cipher_minfo {
     },
     {
         NID_magma_kexp15,
-        cipher_magma_wrap,
+        NULL,
+	&magma_kexp15_cipher,
     },
     {
         NID_kuznyechik_kexp15,
-        cipher_kuznyechik_wrap,
+        NULL,
+	&kuznyechik_kexp15_cipher
     },
     { 0 },
 };

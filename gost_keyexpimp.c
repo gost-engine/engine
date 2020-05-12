@@ -412,55 +412,28 @@ int wrap_ctrl (EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 	}
 }
 
-static EVP_CIPHER *hidden_magma_wrap_cipher, *hidden_kuznyechik_wrap_cipher;
+static GOST_cipher wrap_template_cipher = {
+    .key_len = GOSTKEYLEN * 2,
+    .flags = GOST_WRAP_FLAGS,
+    .ctx_size = sizeof(GOST_WRAP_CTX),
+    .ctrl = wrap_ctrl,
+};
 
-const EVP_CIPHER *cipher_magma_wrap(void)
-{
-	if (hidden_magma_wrap_cipher == NULL
-			&& ((hidden_magma_wrap_cipher =
-					EVP_CIPHER_meth_new(NID_magma_kexp15, 8 /* block_size */ ,
-						GOSTKEYLEN*2 /* key_size */ )) == NULL
-				|| !EVP_CIPHER_meth_set_iv_length(hidden_magma_wrap_cipher, 4)
-				|| !EVP_CIPHER_meth_set_flags(hidden_magma_wrap_cipher, GOST_WRAP_FLAGS)
-				|| !EVP_CIPHER_meth_set_init(hidden_magma_wrap_cipher, magma_wrap_init)
-				|| !EVP_CIPHER_meth_set_ctrl(hidden_magma_wrap_cipher, wrap_ctrl)
-				|| !EVP_CIPHER_meth_set_do_cipher(hidden_magma_wrap_cipher, magma_wrap_do)
-				|| !EVP_CIPHER_meth_set_impl_ctx_size(hidden_magma_wrap_cipher, sizeof(GOST_WRAP_CTX))
-				|| !EVP_add_cipher(hidden_magma_wrap_cipher)
-				)) {
-		EVP_CIPHER_meth_free(hidden_magma_wrap_cipher);
-		hidden_magma_wrap_cipher = NULL;
-	}
+GOST_cipher magma_kexp15_cipher = {
+    .template = &wrap_template_cipher,
+    .nid = NID_magma_kexp15,
+    .block_size = 8,
+    .iv_len = 4,
+    .init = magma_wrap_init,
+    .do_cipher = magma_wrap_do,
+};
 
-	return hidden_magma_wrap_cipher;
-}
-
-const EVP_CIPHER *cipher_kuznyechik_wrap(void)
-{
-	if (hidden_kuznyechik_wrap_cipher == NULL
-			&& ((hidden_kuznyechik_wrap_cipher =
-					EVP_CIPHER_meth_new(NID_kuznyechik_kexp15, 16 /* FIXME block_size */ ,
-						GOSTKEYLEN*2 /* key_size */ )) == NULL
-				|| !EVP_CIPHER_meth_set_iv_length(hidden_kuznyechik_wrap_cipher, 8)
-				|| !EVP_CIPHER_meth_set_flags(hidden_kuznyechik_wrap_cipher, GOST_WRAP_FLAGS)
-				|| !EVP_CIPHER_meth_set_init(hidden_kuznyechik_wrap_cipher, kuznyechik_wrap_init)
-				|| !EVP_CIPHER_meth_set_ctrl(hidden_kuznyechik_wrap_cipher, wrap_ctrl)
-				|| !EVP_CIPHER_meth_set_do_cipher(hidden_kuznyechik_wrap_cipher, kuznyechik_wrap_do)
-				|| !EVP_CIPHER_meth_set_impl_ctx_size(hidden_kuznyechik_wrap_cipher, sizeof(GOST_WRAP_CTX))
-				|| !EVP_add_cipher(hidden_kuznyechik_wrap_cipher)
-				)) {
-		EVP_CIPHER_meth_free(hidden_kuznyechik_wrap_cipher);
-		hidden_kuznyechik_wrap_cipher = NULL;
-	}
-
-	return hidden_kuznyechik_wrap_cipher;
-}
-
-void wrap_ciphers_destroy(void)
-{
-	EVP_CIPHER_meth_free(hidden_magma_wrap_cipher);
-	hidden_magma_wrap_cipher = NULL;
-
-	EVP_CIPHER_meth_free(hidden_kuznyechik_wrap_cipher);
-	hidden_kuznyechik_wrap_cipher = NULL;
-}
+GOST_cipher kuznyechik_kexp15_cipher = {
+    .template = &wrap_template_cipher,
+    .nid = NID_kuznyechik_kexp15,
+    .block_size = 16,
+    .iv_len = 8,
+    .init = kuznyechik_wrap_init,
+    .do_cipher = kuznyechik_wrap_do,
+};
+/* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
