@@ -350,5 +350,13 @@ extern GOST_cipher magma_ctr_cipher;
 extern GOST_cipher magma_ctr_acpkm_cipher;
 extern GOST_cipher magma_ctr_acpkm_omac_cipher;
 extern GOST_cipher magma_cbc_cipher;
+extern GOST_cipher grasshopper_ecb_cipher;
+extern GOST_cipher grasshopper_cbc_cipher;
+extern GOST_cipher grasshopper_cfb_cipher;
+extern GOST_cipher grasshopper_ofb_cipher;
+extern GOST_cipher grasshopper_ctr_cipher;
+extern GOST_cipher grasshopper_ctr_acpkm_cipher;
+extern GOST_cipher grasshopper_ctr_acpkm_omac_cipher;
+
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
