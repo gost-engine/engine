@@ -63,12 +63,16 @@ EVP_MD *GOST_init_digest(GOST_digest *d)
         EVP_MD_meth_free(md);
         md = NULL;
     }
+    if (md && d->alias)
+        EVP_add_digest_alias(EVP_MD_name(md), d->alias);
     d->digest = md;
     return md;
 }
 
 void GOST_deinit_digest(GOST_digest *d)
 {
+    if (d->alias)
+        EVP_delete_digest_alias(d->alias);
     EVP_MD_meth_free(d->digest);
     d->digest = NULL;
 }
