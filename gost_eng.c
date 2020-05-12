@@ -133,23 +133,28 @@ static struct gost_cipher_minfo {
     },
     {
         NID_grasshopper_ecb,
-        cipher_gost_grasshopper_ecb,
+        NULL,
+	&grasshopper_ecb_cipher,
     },
     {
         NID_grasshopper_cbc,
-        cipher_gost_grasshopper_cbc,
+        NULL,
+	&grasshopper_cbc_cipher,
     },
     {
         NID_grasshopper_cfb,
-        cipher_gost_grasshopper_cfb,
+        NULL,
+	&grasshopper_cfb_cipher,
     },
     {
         NID_grasshopper_ofb,
-        cipher_gost_grasshopper_ofb,
+        NULL,
+	&grasshopper_ofb_cipher,
     },
     {
         NID_grasshopper_ctr,
-        cipher_gost_grasshopper_ctr,
+        NULL,
+	&grasshopper_ctr_cipher,
     },
     {
         NID_magma_cbc,
@@ -172,12 +177,14 @@ static struct gost_cipher_minfo {
 	&magma_ctr_acpkm_omac_cipher,
     },
     {
-        NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
-        cipher_gost_grasshopper_ctracpkm,
+        NID_kuznyechik_ctr_acpkm,
+        NULL,
+	&grasshopper_ctr_acpkm_cipher,
     },
     {
         NID_kuznyechik_ctr_acpkm_omac,
-        cipher_gost_grasshopper_ctracpkm_omac,
+        NULL,
+	&grasshopper_ctr_acpkm_omac_cipher,
     },
     {
         NID_magma_kexp15,

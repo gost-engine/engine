@@ -1,5 +1,6 @@
 /*
  * Maxim Tishkov 2016
+ * Copyright (c) 2020 Vitaly Chikunov <vt@altlinux.org>
  * This file is distributed under the same license as OpenSSL
  */
 
@@ -44,6 +45,103 @@ struct GRASSHOPPER_CIPHER_PARAMS {
     int iv_size;
     bool padding;
     int extra_flags;
+};
+
+static GOST_cipher grasshopper_template_cipher = {
+    .block_size = GRASSHOPPER_BLOCK_SIZE,
+    .key_len = GRASSHOPPER_KEY_SIZE,
+    .flags = EVP_CIPH_RAND_KEY |
+        EVP_CIPH_ALWAYS_CALL_INIT,
+    .do_cipher = gost_grasshopper_cipher_do,
+    .cleanup = gost_grasshopper_cipher_cleanup,
+    .ctx_size = sizeof(gost_grasshopper_cipher_ctx),
+    .set_asn1_parameters = gost_grasshopper_set_asn1_parameters,
+    .get_asn1_parameters = gost_grasshopper_get_asn1_parameters,
+    .ctrl = gost_grasshopper_cipher_ctl,
+};
+
+GOST_cipher grasshopper_ecb_cipher = {
+    .nid = NID_grasshopper_ecb,
+    .template = &grasshopper_template_cipher,
+    .flags = EVP_CIPH_ECB_MODE,
+    .init = gost_grasshopper_cipher_init_ecb,
+    .do_cipher = gost_grasshopper_cipher_do_ecb,
+};
+
+GOST_cipher grasshopper_cbc_cipher = {
+    .nid = NID_grasshopper_cbc,
+    .template = &grasshopper_template_cipher,
+    .iv_len = 16,
+    .flags = EVP_CIPH_CBC_MODE |
+        EVP_CIPH_CUSTOM_IV,
+    .init = gost_grasshopper_cipher_init_cbc,
+    .do_cipher = gost_grasshopper_cipher_do_cbc,
+};
+
+GOST_cipher grasshopper_ofb_cipher = {
+    .nid = NID_grasshopper_ofb,
+    .template = &grasshopper_template_cipher,
+    .block_size = 1,
+    .iv_len = 16,
+    .flags = EVP_CIPH_OFB_MODE |
+        EVP_CIPH_NO_PADDING |
+        EVP_CIPH_CUSTOM_IV,
+    .init = gost_grasshopper_cipher_init_ofb,
+    .do_cipher = gost_grasshopper_cipher_do_ofb,
+};
+
+GOST_cipher grasshopper_cfb_cipher = {
+    .nid = NID_grasshopper_cfb,
+    .template = &grasshopper_template_cipher,
+    .block_size = 1,
+    .iv_len = 16,
+    .flags = EVP_CIPH_CFB_MODE |
+        EVP_CIPH_NO_PADDING |
+        EVP_CIPH_CUSTOM_IV,
+    .init = gost_grasshopper_cipher_init_cfb,
+    .do_cipher = gost_grasshopper_cipher_do_cfb,
+};
+
+GOST_cipher grasshopper_ctr_cipher = {
+    .nid = NID_grasshopper_ctr,
+    .template = &grasshopper_template_cipher,
+    .block_size = 1,
+    .iv_len = 8,
+    .flags = EVP_CIPH_CTR_MODE |
+        EVP_CIPH_NO_PADDING |
+        EVP_CIPH_CUSTOM_IV,
+    .init = gost_grasshopper_cipher_init_ctr,
+    .do_cipher = gost_grasshopper_cipher_do_ctr,
+    .ctx_size = sizeof(gost_grasshopper_cipher_ctx_ctr),
+};
+
+GOST_cipher grasshopper_ctr_acpkm_cipher = {
+    .nid = NID_kuznyechik_ctr_acpkm,
+    .template = &grasshopper_template_cipher,
+    .block_size = 1,
+    .iv_len = 8,
+    .flags = EVP_CIPH_CTR_MODE |
+        EVP_CIPH_NO_PADDING |
+        EVP_CIPH_CUSTOM_IV,
+    .init = gost_grasshopper_cipher_init_ctracpkm,
+    .do_cipher = gost_grasshopper_cipher_do_ctracpkm,
+    .ctx_size = sizeof(gost_grasshopper_cipher_ctx_ctr),
+};
+
+GOST_cipher grasshopper_ctr_acpkm_omac_cipher = {
+    .nid = NID_kuznyechik_ctr_acpkm_omac,
+    .template = &grasshopper_template_cipher,
+    .block_size = 1,
+    .iv_len = 8,
+    .flags = EVP_CIPH_CTR_MODE |
+        EVP_CIPH_NO_PADDING |
+        EVP_CIPH_CUSTOM_IV |
+        EVP_CIPH_FLAG_CUSTOM_CIPHER |
+        EVP_CIPH_FLAG_CIPHER_WITH_MAC |
+        EVP_CIPH_CUSTOM_COPY,
+    .init = gost_grasshopper_cipher_init_ctracpkm_omac,
+    .do_cipher = gost_grasshopper_cipher_do_ctracpkm_omac,
+    .ctx_size = sizeof(gost_grasshopper_cipher_ctx_ctr),
 };
 
 static struct GRASSHOPPER_CIPHER_PARAMS gost_cipher_params[7] = {
@@ -1069,3 +1167,4 @@ void cipher_gost_grasshopper_destroy(void)
     EVP_CIPHER_meth_free(gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_CTRACPKMOMAC]);
     gost_grasshopper_ciphers[GRASSHOPPER_CIPHER_CTRACPKMOMAC] = NULL;
 }
+/* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
