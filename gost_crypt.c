@@ -69,22 +69,34 @@ static int magma_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params);
 static int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
 static int magma_cipher_ctl_acpkm_omac(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
 
+/*
+ * Single level template accessor.
+ * Note: that you cannot template 0 value.
+ */
+#define TPL(st,field) ( \
+    ((st)->field) ?: TPL_VAL(st,field) \
+)
+
+#define TPL_VAL(st,field) ( \
+    ((st)->template ? (st)->template->field : 0) \
+)
+
 EVP_CIPHER *GOST_init_cipher(GOST_cipher *c)
 {
     if (c->cipher)
         return c->cipher;
 
     EVP_CIPHER *cipher;
-    if (!(cipher = EVP_CIPHER_meth_new(c->nid, c->block_size, c->key_len))
-        || !EVP_CIPHER_meth_set_iv_length(cipher, c->iv_len)
-        || !EVP_CIPHER_meth_set_flags(cipher, c->flags)
-        || !EVP_CIPHER_meth_set_init(cipher, c->init)
-        || !EVP_CIPHER_meth_set_do_cipher(cipher, c->do_cipher)
-        || !EVP_CIPHER_meth_set_cleanup(cipher, c->cleanup)
-        || !EVP_CIPHER_meth_set_impl_ctx_size(cipher, c->ctx_size)
-        || !EVP_CIPHER_meth_set_set_asn1_params(cipher, c->set_asn1_parameters)
-        || !EVP_CIPHER_meth_set_get_asn1_params(cipher, c->get_asn1_parameters)
-        || !EVP_CIPHER_meth_set_ctrl(cipher, c->ctrl)) {
+    if (!(cipher = EVP_CIPHER_meth_new(c->nid, TPL(c, block_size), TPL(c, key_len)))
+        || !EVP_CIPHER_meth_set_iv_length(cipher, TPL(c, iv_len))
+        || !EVP_CIPHER_meth_set_flags(cipher, c->flags | TPL_VAL(c, flags))
+        || !EVP_CIPHER_meth_set_init(cipher, TPL(c, init))
+        || !EVP_CIPHER_meth_set_do_cipher(cipher, TPL(c, do_cipher))
+        || !EVP_CIPHER_meth_set_cleanup(cipher, TPL(c, cleanup))
+        || !EVP_CIPHER_meth_set_impl_ctx_size(cipher, TPL(c, ctx_size))
+        || !EVP_CIPHER_meth_set_set_asn1_params(cipher, TPL(c, set_asn1_parameters))
+        || !EVP_CIPHER_meth_set_get_asn1_params(cipher, TPL(c, get_asn1_parameters))
+        || !EVP_CIPHER_meth_set_ctrl(cipher, TPL(c, ctrl))) {
         EVP_CIPHER_meth_free(cipher);
         cipher = NULL;
     }
@@ -100,158 +112,114 @@ void GOST_deinit_cipher(GOST_cipher *c)
     }
 }
 
-GOST_cipher Gost28147_89_cipher = {
-    .nid = NID_id_Gost28147_89,
-    .block_size = 1,
+static GOST_cipher gost_template_cipher = {
+    .block_size = 8,
     .key_len = 32,
     .iv_len = 8,
-    .flags = EVP_CIPH_CFB_MODE |
-        EVP_CIPH_NO_PADDING |
-        EVP_CIPH_CUSTOM_IV |
+    .flags = EVP_CIPH_CUSTOM_IV |
         EVP_CIPH_RAND_KEY |
         EVP_CIPH_ALWAYS_CALL_INIT,
-    .init = gost_cipher_init,
-    .do_cipher = gost_cipher_do_cfb,
     .cleanup = gost_cipher_cleanup,
     .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
     .set_asn1_parameters = gost89_set_asn1_parameters,
     .get_asn1_parameters = gost89_get_asn1_parameters,
     .ctrl = gost_cipher_ctl,
+};
+
+GOST_cipher Gost28147_89_cipher = {
+    .nid = NID_id_Gost28147_89,
+    .template = &gost_template_cipher,
+    .block_size = 1,
+    .flags = EVP_CIPH_CFB_MODE |
+        EVP_CIPH_NO_PADDING,
+    .init = gost_cipher_init,
+    .do_cipher = gost_cipher_do_cfb,
 };
 
 GOST_cipher Gost28147_89_cbc_cipher = {
     .nid = NID_gost89_cbc,
-    .block_size = 8,
-    .key_len = 32,
-    .iv_len = 8,
-    .flags = EVP_CIPH_CBC_MODE |
-        EVP_CIPH_CUSTOM_IV |
-        EVP_CIPH_RAND_KEY |
-        EVP_CIPH_ALWAYS_CALL_INIT,
+    .template = &gost_template_cipher,
+    .flags = EVP_CIPH_CBC_MODE,
     .init = gost_cipher_init_cbc,
     .do_cipher = gost_cipher_do_cbc,
-    .cleanup = gost_cipher_cleanup,
-    .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
-    .set_asn1_parameters = gost89_set_asn1_parameters,
-    .get_asn1_parameters = gost89_get_asn1_parameters,
-    .ctrl = gost_cipher_ctl,
 };
 
 GOST_cipher Gost28147_89_cnt_cipher = {
     .nid = NID_gost89_cnt,
+    .template = &gost_template_cipher,
     .block_size = 1,
-    .key_len = 32,
-    .iv_len = 8,
     .flags = EVP_CIPH_OFB_MODE |
-        EVP_CIPH_NO_PADDING |
-        EVP_CIPH_CUSTOM_IV |
-        EVP_CIPH_RAND_KEY |
-        EVP_CIPH_ALWAYS_CALL_INIT,
+        EVP_CIPH_NO_PADDING,
     .init = gost_cipher_init_cpa,
     .do_cipher = gost_cipher_do_cnt,
-    .cleanup = gost_cipher_cleanup,
-    .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
-    .set_asn1_parameters = gost89_set_asn1_parameters,
-    .get_asn1_parameters = gost89_get_asn1_parameters,
-    .ctrl = gost_cipher_ctl,
 };
 
 GOST_cipher Gost28147_89_cnt_12_cipher = {
     .nid = NID_gost89_cnt_12,
+    .template = &gost_template_cipher,
     .block_size = 1,
-    .key_len = 32,
-    .iv_len = 8,
     .flags = EVP_CIPH_OFB_MODE |
-        EVP_CIPH_NO_PADDING |
-        EVP_CIPH_CUSTOM_IV |
-        EVP_CIPH_RAND_KEY |
-        EVP_CIPH_ALWAYS_CALL_INIT,
+        EVP_CIPH_NO_PADDING,
     .init = gost_cipher_init_cp_12,
     .do_cipher = gost_cipher_do_cnt,
+};
+
+static GOST_cipher magma_template_cipher = {
+    .block_size = 8,
+    .key_len = 32,
+    .iv_len = 8,
+    .flags = EVP_CIPH_CUSTOM_IV |
+        EVP_CIPH_RAND_KEY |
+        EVP_CIPH_ALWAYS_CALL_INIT,
     .cleanup = gost_cipher_cleanup,
     .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
-    .set_asn1_parameters = gost89_set_asn1_parameters,
-    .get_asn1_parameters = gost89_get_asn1_parameters,
-    .ctrl = gost_cipher_ctl,
+    .set_asn1_parameters = magma_set_asn1_parameters,
+    .get_asn1_parameters = magma_get_asn1_parameters,
+    .do_cipher = magma_cipher_do_ctr,
+    .ctrl = magma_cipher_ctl,
 };
 
 GOST_cipher magma_ctr_cipher = {
     .nid = NID_magma_ctr,
+    .template = &magma_template_cipher,
     .block_size = 1,
-    .key_len = 32,
     .iv_len = 4,
     .flags = EVP_CIPH_CTR_MODE |
-        EVP_CIPH_NO_PADDING |
-        EVP_CIPH_CUSTOM_IV |
-        EVP_CIPH_RAND_KEY |
-        EVP_CIPH_ALWAYS_CALL_INIT,
+        EVP_CIPH_NO_PADDING,
     .init = magma_cipher_init,
-    .do_cipher = magma_cipher_do_ctr,
-    .cleanup = gost_cipher_cleanup,
-    .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
-    .set_asn1_parameters = gost89_set_asn1_parameters,
-    .get_asn1_parameters = gost89_get_asn1_parameters,
-    .ctrl = magma_cipher_ctl,
 };
 
 GOST_cipher magma_ctr_acpkm_cipher = {
     .nid = NID_magma_ctr_acpkm,
+    .template = &magma_template_cipher,
     .block_size = 1,
-    .key_len = 32,
     .iv_len = 4,
     .flags = EVP_CIPH_CTR_MODE |
-        EVP_CIPH_NO_PADDING |
-        EVP_CIPH_CUSTOM_IV |
-        EVP_CIPH_RAND_KEY |
-        EVP_CIPH_ALWAYS_CALL_INIT,
+        EVP_CIPH_NO_PADDING,
     .init = magma_cipher_init,
-    .do_cipher = magma_cipher_do_ctr,
-    .cleanup = gost_cipher_cleanup,
-    .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
-    .set_asn1_parameters = gost89_set_asn1_parameters,
-    .get_asn1_parameters = gost89_get_asn1_parameters,
-    .ctrl = magma_cipher_ctl,
 };
 
 GOST_cipher magma_ctr_acpkm_omac_cipher = {
     .nid = NID_magma_ctr_acpkm_omac,
+    .template = &magma_template_cipher,
     .block_size = 1,
-    .key_len = 32,
     .iv_len = 4,
     .flags = EVP_CIPH_CTR_MODE |
         EVP_CIPH_NO_PADDING |
-        EVP_CIPH_CUSTOM_IV |
-        EVP_CIPH_RAND_KEY |
-        EVP_CIPH_ALWAYS_CALL_INIT |
         EVP_CIPH_CUSTOM_COPY |
         EVP_CIPH_FLAG_CUSTOM_CIPHER |
         EVP_CIPH_FLAG_CIPHER_WITH_MAC,
     .init = magma_cipher_init_ctr_acpkm_omac,
     .do_cipher = magma_cipher_do_ctr_acpkm_omac,
-    .cleanup = gost_cipher_cleanup,
-    .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
-    .set_asn1_parameters = gost89_set_asn1_parameters,
-    .get_asn1_parameters = gost89_get_asn1_parameters,
     .ctrl = magma_cipher_ctl_acpkm_omac,
 };
 
 GOST_cipher magma_cbc_cipher = {
     .nid = NID_magma_cbc,
-    .block_size = 8,
-    .key_len = 32,
-    .iv_len = 8,
-    .flags = EVP_CIPH_CBC_MODE |
-        EVP_CIPH_NO_PADDING |
-        EVP_CIPH_CUSTOM_IV |
-        EVP_CIPH_RAND_KEY |
-        EVP_CIPH_ALWAYS_CALL_INIT,
+    .template = &gost_template_cipher,
+    .flags = EVP_CIPH_CBC_MODE,
     .init = magma_cipher_init,
     .do_cipher = magma_cipher_do_cbc,
-    .cleanup = gost_cipher_cleanup,
-    .ctx_size = sizeof(struct ossl_gost_cipher_ctx),
-    .set_asn1_parameters = gost89_set_asn1_parameters,
-    .get_asn1_parameters = gost89_get_asn1_parameters,
-    .ctrl = magma_cipher_ctl,
 };
 
 /* Implementation of GOST 28147-89 in MAC (imitovstavka) mode */
