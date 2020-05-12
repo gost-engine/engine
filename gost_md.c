@@ -19,36 +19,68 @@ static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md);
 static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from);
 static int gost_digest_cleanup(EVP_MD_CTX *ctx);
 
-static EVP_MD *_hidden_GostR3411_94_md = NULL;
+GOST_digest GostR3411_94_digest = {
+    .nid = NID_id_GostR3411_94,
+    .result_size = 32,
+    .input_blocksize = 32,
+    .app_datasize = sizeof(struct ossl_gost_digest_ctx),
+    .init = gost_digest_init,
+    .update = gost_digest_update,
+    .final = gost_digest_final,
+    .copy = gost_digest_copy,
+    .cleanup = gost_digest_cleanup,
+};
+
+/*
+ * Single level template accessor.
+ * Note: that you cannot template 0 value.
+ */
+#define TPL(st,field) ( \
+    ((st)->field) ?: TPL_VAL(st,field) \
+)
+
+#define TPL_VAL(st,field) ( \
+    ((st)->template ? (st)->template->field : 0) \
+)
+
+EVP_MD *GOST_init_digest(GOST_digest *d)
+{
+    if (d->digest)
+        return d->digest;
+
+    EVP_MD *md;
+    if (!(md = EVP_MD_meth_new(d->nid, NID_undef))
+        || !EVP_MD_meth_set_result_size(md, TPL(d, result_size))
+        || !EVP_MD_meth_set_input_blocksize(md, TPL(d, input_blocksize))
+        || !EVP_MD_meth_set_app_datasize(md, TPL(d, app_datasize))
+        || !EVP_MD_meth_set_flags(md, d->flags | TPL_VAL(d, flags))
+        || !EVP_MD_meth_set_init(md, TPL(d, init))
+        || !EVP_MD_meth_set_update(md, TPL(d, update))
+        || !EVP_MD_meth_set_final(md, TPL(d, final))
+        || !EVP_MD_meth_set_copy(md, TPL(d, copy))
+        || !EVP_MD_meth_set_cleanup(md, TPL(d, cleanup))
+        || !EVP_MD_meth_set_ctrl(md, TPL(d, ctrl))) {
+        EVP_MD_meth_free(md);
+        md = NULL;
+    }
+    d->digest = md;
+    return md;
+}
+
+void GOST_deinit_digest(GOST_digest *d)
+{
+    EVP_MD_meth_free(d->digest);
+    d->digest = NULL;
+}
 
 EVP_MD *digest_gost(void)
 {
-    if (_hidden_GostR3411_94_md == NULL) {
-        EVP_MD *md;
-
-        if ((md = EVP_MD_meth_new(NID_id_GostR3411_94, NID_undef)) == NULL
-            || !EVP_MD_meth_set_result_size(md, 32)
-            || !EVP_MD_meth_set_input_blocksize(md, 32)
-            || !EVP_MD_meth_set_app_datasize(md,
-                                             sizeof(struct
-                                                    ossl_gost_digest_ctx))
-            || !EVP_MD_meth_set_init(md, gost_digest_init)
-            || !EVP_MD_meth_set_update(md, gost_digest_update)
-            || !EVP_MD_meth_set_final(md, gost_digest_final)
-            || !EVP_MD_meth_set_copy(md, gost_digest_copy)
-            || !EVP_MD_meth_set_cleanup(md, gost_digest_cleanup)) {
-            EVP_MD_meth_free(md);
-            md = NULL;
-        }
-        _hidden_GostR3411_94_md = md;
-    }
-    return _hidden_GostR3411_94_md;
+    return GOST_init_digest(&GostR3411_94_digest);
 }
 
 void digest_gost_destroy(void)
 {
-    EVP_MD_meth_free(_hidden_GostR3411_94_md);
-    _hidden_GostR3411_94_md = NULL;
+    GOST_deinit_digest(&GostR3411_94_digest);
 }
 
 int gost_digest_init(EVP_MD_CTX *ctx)
@@ -89,3 +121,4 @@ int gost_digest_cleanup(EVP_MD_CTX *ctx)
                sizeof(struct ossl_gost_digest_ctx));
     return 1;
 }
+/* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
