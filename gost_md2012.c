@@ -1,6 +1,7 @@
 /**********************************************************************
  *                          gost_md2012.c                             *
  *             Copyright (c) 2013 Cryptocom LTD.                      *
+ *             Copyright (c) 2020 Vitaly Chikunov <vt@altlinux.org>   *
  *         This file is distributed under the same license as OpenSSL *
  *                                                                    *
  *          GOST R 34.11-2012 interface to OpenSSL engine.            *

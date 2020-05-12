@@ -1,6 +1,7 @@
 /**********************************************************************
  *                          md_gost.c                                 *
  *             Copyright (c) 2005-2006 Cryptocom LTD                  *
+ *             Copyright (c) 2020 Vitaly Chikunov <vt@altlinux.org>   *
  *         This file is distributed under the same license as OpenSSL *
  *                                                                    *
  *       OpenSSL interface to GOST R 34.11-94 hash functions          *
