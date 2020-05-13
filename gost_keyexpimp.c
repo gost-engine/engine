@@ -407,7 +407,7 @@ static int kuznyechik_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
 	}
 }
 
-int wrap_ctrl (EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+static int wrap_ctrl (EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
 	switch(type)
 	{
