@@ -290,7 +290,7 @@ GOST_digest Gost28147_89_mac_12_digest = {
  * upon engine initialization
  */
 
-struct gost_cipher_info gost_cipher_list[] = {
+static struct gost_cipher_info gost_cipher_list[] = {
     /*- NID *//*
      * Subst block
      *//*
@@ -424,7 +424,7 @@ static int gost_cipher_init_cp_12(EVP_CIPHER_CTX *ctx,
 }
 
 /* Initializes EVP_CIPHER_CTX with default values */
-int gost_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+static int gost_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                      const unsigned char *iv, int enc)
 {
     return gost_cipher_init_param(ctx, key, iv, enc, NID_undef,
@@ -432,7 +432,7 @@ int gost_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 }
 
 /* Initializes EVP_CIPHER_CTX with default values */
-int gost_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+static int gost_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                          const unsigned char *iv, int enc)
 {
     return gost_cipher_init_param(ctx, key, iv, enc, NID_undef,
@@ -440,7 +440,7 @@ int gost_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 }
 
 /* Initializes EVP_CIPHER_CTX with default values */
-int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+static int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                       const unsigned char *iv, int enc)
 {
     struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -476,7 +476,7 @@ int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 }
 
 /* Initializes EVP_CIPHER_CTX with default values */
-int magma_cipher_init_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+static int magma_cipher_init_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                       const unsigned char *iv, int enc)
 {
 	if (key) {
@@ -552,7 +552,7 @@ static void gost_cnt_next(void *ctx, unsigned char *iv, unsigned char *buf)
 }
 
 /* GOST encryption in CBC mode */
-int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
+static int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
                        const unsigned char *in, size_t inl)
 {
     unsigned char b[8];
@@ -589,7 +589,7 @@ int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
 }
 
 /* MAGMA encryption in CBC mode */
-int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
+static int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
                         const unsigned char *in, size_t inl)
 {
     unsigned char b[8];
@@ -731,7 +731,7 @@ static int magma_cipher_do_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx, unsigned char *ou
 	return inl;
 }
 /* GOST encryption in CFB mode */
-int gost_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
+static int gost_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
                        const unsigned char *in, size_t inl)
 {
     const unsigned char *in_ptr = in;
@@ -850,7 +850,7 @@ static int gost_cipher_do_cnt(EVP_CIPHER_CTX *ctx, unsigned char *out,
 }
 
 /* Cleaning up of EVP_CIPHER_CTX */
-int gost_cipher_cleanup(EVP_CIPHER_CTX *ctx)
+static int gost_cipher_cleanup(EVP_CIPHER_CTX *ctx)
 {
     struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
 		EVP_MD_CTX_free(c->omac_ctx);
@@ -860,7 +860,7 @@ int gost_cipher_cleanup(EVP_CIPHER_CTX *ctx)
 }
 
 /* Control function for gost cipher */
-int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+static int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_CTRL_RAND_KEY:
@@ -943,7 +943,7 @@ int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 }
 
 /* Control function for gost cipher */
-int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+static int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_CTRL_RAND_KEY:
@@ -1007,7 +1007,7 @@ static int magma_cipher_ctl_acpkm_omac(EVP_CIPHER_CTX *ctx, int type, int arg, v
 }
 
 /* Set cipher parameters from ASN1 structure */
-int gost89_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
+static int gost89_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 {
     int len = 0;
     unsigned char *buf = NULL;
@@ -1052,7 +1052,7 @@ int gost89_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 }
 
 /* Store parameters into ASN1 structure */
-int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
+static int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 {
     int len;
     GOST_CIPHER_PARAMS *gcp = NULL;
@@ -1164,7 +1164,7 @@ static void mac_block_mesh(struct ossl_gost_imit_ctx *c,
     c->count = c->count % 1024 + 8;
 }
 
-int gost_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
+static int gost_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
 {
     struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
     const unsigned char *p = data;
@@ -1197,7 +1197,7 @@ int gost_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
     return 1;
 }
 
-int gost_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
+static int gost_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
 {
     struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
     if (!c->key_set) {
@@ -1220,7 +1220,7 @@ int gost_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
     return 1;
 }
 
-int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
+static int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_MD_CTRL_KEY_LEN:
@@ -1276,7 +1276,7 @@ int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
     }
 }
 
-int gost_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
+static int gost_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
     if (EVP_MD_CTX_md_data(to) && EVP_MD_CTX_md_data(from)) {
         memcpy(EVP_MD_CTX_md_data(to), EVP_MD_CTX_md_data(from),
@@ -1286,7 +1286,7 @@ int gost_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 }
 
 /* Clean up imit ctx */
-int gost_imit_cleanup(EVP_MD_CTX *ctx)
+static int gost_imit_cleanup(EVP_MD_CTX *ctx)
 {
     memset(EVP_MD_CTX_md_data(ctx), 0, sizeof(struct ossl_gost_imit_ctx));
     return 1;

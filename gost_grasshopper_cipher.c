@@ -151,7 +151,7 @@ static void acpkm_next(gost_grasshopper_cipher_ctx * c)
 }
 
 /* Set 256 bit  key into context */
-GRASSHOPPER_INLINE void
+static GRASSHOPPER_INLINE void
 gost_grasshopper_cipher_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 {
     int i;
@@ -165,7 +165,7 @@ gost_grasshopper_cipher_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 }
 
 /* Set master 256-bit key to be used in TLSTREE calculation into context */
-GRASSHOPPER_INLINE void
+static GRASSHOPPER_INLINE void
 gost_grasshopper_master_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 {
     int i;
@@ -176,7 +176,7 @@ gost_grasshopper_master_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 }
 
 /* Cleans up key from context */
-GRASSHOPPER_INLINE void
+static GRASSHOPPER_INLINE void
 gost_grasshopper_cipher_destroy(gost_grasshopper_cipher_ctx * c)
 {
     int i;
@@ -205,7 +205,7 @@ gost_grasshopper_cipher_destroy_ctr(gost_grasshopper_cipher_ctx * c)
     grasshopper_zero128(&ctx->partial_buffer);
 }
 
-int gost_grasshopper_cipher_init(EVP_CIPHER_CTX *ctx,
+static int gost_grasshopper_cipher_init(EVP_CIPHER_CTX *ctx,
                                  const unsigned char *key,
                                  const unsigned char *iv, int enc)
 {
@@ -238,45 +238,50 @@ int gost_grasshopper_cipher_init(EVP_CIPHER_CTX *ctx,
     return 1;
 }
 
-GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ecb(EVP_CIPHER_CTX *ctx, const unsigned char
-                                                        *key, const unsigned char
-                                                        *iv, int enc)
+static GRASSHOPPER_INLINE int
+gost_grasshopper_cipher_init_ecb(EVP_CIPHER_CTX *ctx, const unsigned char
+                                 *key, const unsigned char
+                                 *iv, int enc)
 {
     gost_grasshopper_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     c->type = GRASSHOPPER_CIPHER_ECB;
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
 
-GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char
-                                                        *key, const unsigned char
-                                                        *iv, int enc)
+static GRASSHOPPER_INLINE int
+gost_grasshopper_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char
+                                 *key, const unsigned char
+                                 *iv, int enc)
 {
     gost_grasshopper_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     c->type = GRASSHOPPER_CIPHER_CBC;
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
 
-GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ofb(EVP_CIPHER_CTX *ctx, const unsigned char
-                                                        *key, const unsigned char
-                                                        *iv, int enc)
+static GRASSHOPPER_INLINE
+int gost_grasshopper_cipher_init_ofb(EVP_CIPHER_CTX *ctx, const unsigned char
+                                     *key, const unsigned char
+                                     *iv, int enc)
 {
     gost_grasshopper_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     c->type = GRASSHOPPER_CIPHER_OFB;
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
 
-GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_cfb(EVP_CIPHER_CTX *ctx, const unsigned char
-                                                        *key, const unsigned char
-                                                        *iv, int enc)
+static GRASSHOPPER_INLINE int
+gost_grasshopper_cipher_init_cfb(EVP_CIPHER_CTX *ctx, const unsigned char
+                                 *key, const unsigned char
+                                 *iv, int enc)
 {
     gost_grasshopper_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     c->type = GRASSHOPPER_CIPHER_CFB;
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
 
-GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ctr(EVP_CIPHER_CTX *ctx, const unsigned char
-                                                        *key, const unsigned char
-                                                        *iv, int enc)
+static GRASSHOPPER_INLINE int
+gost_grasshopper_cipher_init_ctr(EVP_CIPHER_CTX *ctx, const unsigned char
+                                 *key, const unsigned char
+                                 *iv, int enc)
 {
     gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
 
@@ -288,10 +293,11 @@ GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ctr(EVP_CIPHER_CTX *ctx, con
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
 
-GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ctracpkm(EVP_CIPHER_CTX
-                                                             *ctx, const unsigned
-                                                             char *key, const unsigned
-                                                             char *iv, int enc)
+static GRASSHOPPER_INLINE int
+gost_grasshopper_cipher_init_ctracpkm(EVP_CIPHER_CTX
+                                      *ctx, const unsigned
+                                      char *key, const unsigned
+                                      char *iv, int enc)
 {
     gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
 
@@ -303,10 +309,11 @@ GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ctracpkm(EVP_CIPHER_CTX
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
 
-GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ctracpkm_omac(EVP_CIPHER_CTX
-                                                             *ctx, const unsigned
-                                                             char *key, const unsigned
-                                                             char *iv, int enc)
+static GRASSHOPPER_INLINE int
+gost_grasshopper_cipher_init_ctracpkm_omac(EVP_CIPHER_CTX
+                                           *ctx, const unsigned
+                                           char *key, const unsigned
+                                           char *iv, int enc)
 {
 	gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
 
@@ -337,8 +344,8 @@ GRASSHOPPER_INLINE int gost_grasshopper_cipher_init_ctracpkm_omac(EVP_CIPHER_CTX
 	return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
 
-int gost_grasshopper_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *out,
-                                   const unsigned char *in, size_t inl)
+static int gost_grasshopper_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                                          const unsigned char *in, size_t inl)
 {
     gost_grasshopper_cipher_ctx *c =
         (gost_grasshopper_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -367,8 +374,8 @@ int gost_grasshopper_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *out,
     return 1;
 }
 
-int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
-                                   const unsigned char *in, size_t inl)
+static int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                                          const unsigned char *in, size_t inl)
 {
     gost_grasshopper_cipher_ctx *c =
         (gost_grasshopper_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -428,8 +435,8 @@ static void ctr128_inc(unsigned char *counter)
     inc_counter(counter, 16);
 }
 
-int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
-                                   const unsigned char *in, size_t inl)
+static int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                                          const unsigned char *in, size_t inl)
 {
     gost_grasshopper_cipher_ctx_ctr *c = (gost_grasshopper_cipher_ctx_ctr *)
         EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -497,9 +504,10 @@ static inline void apply_acpkm_grasshopper(gost_grasshopper_cipher_ctx_ctr *
 
 /* If meshing is not configured via ctrl (setting section_size)
  * this function works exactly like plain ctr */
-int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
-                                        unsigned char *out,
-                                        const unsigned char *in, size_t inl)
+static int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
+                                               unsigned char *out,
+                                               const unsigned char *in,
+                                               size_t inl)
 {
     gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
@@ -547,9 +555,10 @@ int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     return inl;
 }
 
-int gost_grasshopper_cipher_do_ctracpkm_omac(EVP_CIPHER_CTX *ctx,
-                                        unsigned char *out,
-                                        const unsigned char *in, size_t inl)
+static int gost_grasshopper_cipher_do_ctracpkm_omac(EVP_CIPHER_CTX *ctx,
+                                                    unsigned char *out,
+                                                    const unsigned char *in,
+                                                    size_t inl)
 {
 	int result;
   gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -587,8 +596,8 @@ static void gost_grasshopper_cnt_next(gost_grasshopper_cipher_ctx * ctx,
     memcpy(iv, buf, 16);
 }
 
-int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *out,
-                                   const unsigned char *in, size_t inl)
+static int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                                          const unsigned char *in, size_t inl)
 {
     gost_grasshopper_cipher_ctx *c = (gost_grasshopper_cipher_ctx *)
         EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -651,8 +660,8 @@ int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *out,
     return 1;
 }
 
-int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
-                                   const unsigned char *in, size_t inl)
+static int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                                          const unsigned char *in, size_t inl)
 {
     gost_grasshopper_cipher_ctx *c =
         (gost_grasshopper_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -737,7 +746,7 @@ int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
     return 1;
 }
 
-int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX *ctx)
+static int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX *ctx)
 {
     gost_grasshopper_cipher_ctx *c =
         (gost_grasshopper_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -753,7 +762,7 @@ int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX *ctx)
     return 1;
 }
 
-int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
+static int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 {
 	if (EVP_CIPHER_CTX_mode(ctx) == EVP_CIPH_CTR_MODE) {
 		gost_grasshopper_cipher_ctx_ctr *ctr = EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -767,9 +776,8 @@ int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 	return 0;
 }
 
-GRASSHOPPER_INLINE int gost_grasshopper_get_asn1_parameters(EVP_CIPHER_CTX
-                                                            *ctx, ASN1_TYPE
-                                                            *params)
+static GRASSHOPPER_INLINE int
+gost_grasshopper_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 {
 	if (EVP_CIPHER_CTX_mode(ctx) == EVP_CIPH_CTR_MODE) {
 		gost_grasshopper_cipher_ctx_ctr *ctr = EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -791,7 +799,7 @@ GRASSHOPPER_INLINE int gost_grasshopper_get_asn1_parameters(EVP_CIPHER_CTX
 	return 0;
 }
 
-int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_CTRL_RAND_KEY:{

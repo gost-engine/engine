@@ -79,7 +79,7 @@ static int omac_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
     return CMAC_Update(c->cmac_ctx, data, count);
 }
 
-int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
+static int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
 {
     OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
     unsigned char mac[MAX_GOST_OMAC_SIZE];
@@ -96,7 +96,7 @@ int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
     return 1;
 }
 
-int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
+static int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
     OMAC_CTX *c_to = EVP_MD_CTX_md_data(to);
     const OMAC_CTX *c_from = EVP_MD_CTX_md_data(from);
@@ -123,7 +123,7 @@ int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 }
 
 /* Clean up imit ctx */
-int omac_imit_cleanup(EVP_MD_CTX *ctx)
+static int omac_imit_cleanup(EVP_MD_CTX *ctx)
 {
     OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
 
@@ -153,6 +153,7 @@ static int omac_key(OMAC_CTX * c, const EVP_CIPHER *cipher,
     return 1;
 }
 
+/* Called directly by gost_kexp15() */
 int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {

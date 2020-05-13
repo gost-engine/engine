@@ -357,7 +357,7 @@ int omac_acpkm_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
     return 1;
 }
 
-int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
+static int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
     OMAC_ACPKM_CTX *c_to = EVP_MD_CTX_md_data(to);
     const OMAC_ACPKM_CTX *c_from = EVP_MD_CTX_md_data(from);
@@ -383,7 +383,7 @@ int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 }
 
 /* Clean up imit ctx */
-int omac_acpkm_imit_cleanup(EVP_MD_CTX *ctx)
+static int omac_acpkm_imit_cleanup(EVP_MD_CTX *ctx)
 {
     OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
 
