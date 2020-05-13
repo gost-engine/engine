@@ -78,16 +78,6 @@ void GOST_deinit_digest(GOST_digest *d)
     d->digest = NULL;
 }
 
-EVP_MD *digest_gost(void)
-{
-    return GOST_init_digest(&GostR3411_94_digest);
-}
-
-void digest_gost_destroy(void)
-{
-    GOST_deinit_digest(&GostR3411_94_digest);
-}
-
 int gost_digest_init(EVP_MD_CTX *ctx)
 {
     struct ossl_gost_digest_ctx *c = EVP_MD_CTX_md_data(ctx);

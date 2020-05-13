@@ -509,13 +509,3 @@ GOST_digest kuznyechik_ctracpkm_omac_digest = {
     .cleanup = omac_acpkm_imit_cleanup,
     .ctrl = omac_acpkm_imit_ctrl,
 };
-
-EVP_MD *grasshopper_omac_acpkm(void)
-{
-    return GOST_init_digest(&kuznyechik_ctracpkm_omac_digest);
-}
-
-void grasshopper_omac_acpkm_destroy(void)
-{
-    GOST_deinit_digest(&kuznyechik_ctracpkm_omac_digest);
-}

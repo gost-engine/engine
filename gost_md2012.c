@@ -47,16 +47,6 @@ GOST_digest GostR3411_2012_256_digest = {
     .ctrl = gost_digest_ctrl_256,
 };
 
-EVP_MD *digest_gost2012_256(void)
-{
-    return GOST_init_digest(&GostR3411_2012_256_digest);
-}
-
-void digest_gost2012_256_destroy(void)
-{
-    GOST_deinit_digest(&GostR3411_2012_256_digest);
-}
-
 GOST_digest GostR3411_2012_512_digest = {
     .nid = NID_id_GostR3411_2012_512,
     .alias = "streebog512",
@@ -65,16 +55,6 @@ GOST_digest GostR3411_2012_512_digest = {
     .init = gost_digest_init512,
     .ctrl = gost_digest_ctrl_512,
 };
-
-EVP_MD *digest_gost2012_512(void)
-{
-    return GOST_init_digest(&GostR3411_2012_512_digest);
-}
-
-void digest_gost2012_512_destroy(void)
-{
-    GOST_deinit_digest(&GostR3411_2012_512_digest);
-}
 
 static int gost_digest_init512(EVP_MD_CTX *ctx)
 {

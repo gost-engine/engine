@@ -929,6 +929,7 @@ int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *pt
     return 1;
 }
 
+/* Called directly by CMAC_ACPKM_Init() */
 const GRASSHOPPER_INLINE EVP_CIPHER *cipher_gost_grasshopper_ctracpkm()
 {
     return GOST_init_cipher(&grasshopper_ctr_acpkm_cipher);
