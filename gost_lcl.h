@@ -194,25 +194,6 @@ struct ossl_gost_digest_ctx {
     gost_hash_ctx dctx;
     gost_ctx cctx;
 };
-/* EVP_MD structure for GOST R 34.11 */
-EVP_MD *digest_gost(void);
-void digest_gost_destroy(void);
-/* EVP MD structure for GOST R 34.11-2012 algorithms */
-EVP_MD *digest_gost2012_256(void);
-EVP_MD *digest_gost2012_512(void);
-void digest_gost2012_256_destroy(void);
-void digest_gost2012_512_destroy(void);
-/* EVP_MD structure for GOST 28147 in MAC mode */
-EVP_MD *imit_gost_cpa(void);
-void imit_gost_cpa_destroy(void);
-EVP_MD *imit_gost_cp_12(void);
-void imit_gost_cp_12_destroy(void);
-EVP_MD *magma_omac(void);
-void magma_omac_destroy(void);
-EVP_MD *grasshopper_omac(void);
-EVP_MD *grasshopper_omac_acpkm(void);
-void grasshopper_omac_destroy(void);
-void grasshopper_omac_acpkm_destroy(void);
 /* Cipher context used for EVP_CIPHER operation */
 struct ossl_gost_cipher_ctx {
     int paramNID;
@@ -240,21 +221,8 @@ struct ossl_gost_imit_ctx {
     int key_set;
     int dgst_size;
 };
-/* Table which maps parameter NID to S-blocks */
-extern struct gost_cipher_info gost_cipher_list[];
 /* Find encryption params from ASN1_OBJECT */
 const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj);
-/* Implementation of GOST 28147-89 cipher in CFB and CNT modes */
-const EVP_CIPHER *cipher_gost_cpacnt();
-const EVP_CIPHER *cipher_gost_cpcnt_12();
-const EVP_CIPHER *cipher_magma_cbc();
-const EVP_CIPHER *cipher_magma_ctr();
-const EVP_CIPHER *cipher_magma_ctr_acpkm();
-const EVP_CIPHER *cipher_magma_ctr_acpkm_omac();
-const EVP_CIPHER *cipher_magma_wrap();
-const EVP_CIPHER *cipher_kuznyechik_wrap();
-void cipher_gost_destroy();
-void wrap_ciphers_destroy();
 
 void inc_counter(unsigned char *counter, size_t counter_bytes);
 

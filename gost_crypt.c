@@ -270,16 +270,6 @@ GOST_digest Gost28147_89_MAC_digest = {
     .ctrl = gost_imit_ctrl,
 };
 
-EVP_MD *imit_gost_cpa(void)
-{
-    return GOST_init_digest(&Gost28147_89_MAC_digest);
-}
-
-void imit_gost_cpa_destroy(void)
-{
-    GOST_deinit_digest(&Gost28147_89_MAC_digest);
-}
-
 GOST_digest Gost28147_89_mac_12_digest = {
     .nid = NID_gost_mac_12,
     .result_size = 4,
@@ -293,16 +283,6 @@ GOST_digest Gost28147_89_mac_12_digest = {
     .cleanup = gost_imit_cleanup,
     .ctrl = gost_imit_ctrl,
 };
-
-EVP_MD *imit_gost_cp_12(void)
-{
-    return GOST_init_digest(&Gost28147_89_mac_12_digest);
-}
-
-void imit_gost_cp_12_destroy(void)
-{
-    GOST_deinit_digest(&Gost28147_89_mac_12_digest);
-}
 
 /*
  * Correspondence between gost parameter OIDs and substitution blocks

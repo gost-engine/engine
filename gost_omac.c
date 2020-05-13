@@ -277,23 +277,3 @@ GOST_digest grasshopper_mac_digest = {
     .result_size = 16,
     .init = grasshopper_imit_init,
 };
-
-EVP_MD *magma_omac(void)
-{
-    return GOST_init_digest(&magma_mac_digest);
-}
-
-void magma_omac_destroy(void)
-{
-    GOST_deinit_digest(&magma_mac_digest);
-}
-
-EVP_MD *grasshopper_omac(void)
-{
-    return GOST_init_digest(&grasshopper_mac_digest);
-}
-
-void grasshopper_omac_destroy(void)
-{
-    GOST_deinit_digest(&grasshopper_mac_digest);
-}
