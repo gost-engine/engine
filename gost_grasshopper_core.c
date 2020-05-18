@@ -101,7 +101,7 @@ void grasshopper_set_decrypt_key(grasshopper_round_keys_t* subkeys, const grassh
 
 void grasshopper_encrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source,
                                grasshopper_w128_t* target, grasshopper_w128_t* buffer) {
-		int i;
+    int i;
     grasshopper_copy128(target, source);
 
     for (i = 0; i < 9; i++) {
@@ -114,7 +114,7 @@ void grasshopper_encrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w1
 
 void grasshopper_decrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source,
                                grasshopper_w128_t* target, grasshopper_w128_t* buffer) {
-		int i;
+    int i;
     grasshopper_copy128(target, source);
 
     grasshopper_append128multi(buffer, target, grasshopper_l_dec128);
