@@ -177,9 +177,9 @@ static int gost_engine_destroy(ENGINE* e) {
     int i;
 
     for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
-	GOST_deinit_digest(gost_digest_array[i]);
+        GOST_deinit_digest(gost_digest_array[i]);
     for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++)
-	GOST_deinit_cipher(gost_cipher_array[i]);
+        GOST_deinit_cipher(gost_cipher_array[i]);
 
     gost_param_free();
 
@@ -262,12 +262,12 @@ static int bind_gost(ENGINE* e, const char* id) {
 
     int i;
     for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++) {
-	if (!EVP_add_cipher(GOST_init_cipher(gost_cipher_array[i])))
+        if (!EVP_add_cipher(GOST_init_cipher(gost_cipher_array[i])))
             goto end;
     }
 
     for (i = 0; i < OSSL_NELEM(gost_digest_array); i++) {
-	if (!EVP_add_digest(GOST_init_digest(gost_digest_array[i])))
+        if (!EVP_add_digest(GOST_init_digest(gost_digest_array[i])))
             goto end;
     }
 
@@ -301,8 +301,8 @@ static int gost_digests(ENGINE *e, const EVP_MD **digest,
 
     for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
         if (nid == gost_digest_array[i]->nid) {
-	    *digest = GOST_init_digest(gost_digest_array[i]);
-	    return 1;
+            *digest = GOST_init_digest(gost_digest_array[i]);
+            return 1;
         }
     *digest = NULL;
     return 0;
@@ -325,8 +325,8 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
 
     for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++)
         if (nid == gost_cipher_array[i]->nid) {
-	    *cipher = GOST_init_cipher(gost_cipher_array[i]);
-	    return 1;
+            *cipher = GOST_init_cipher(gost_cipher_array[i]);
+            return 1;
         }
     *cipher = NULL;
     return 0;

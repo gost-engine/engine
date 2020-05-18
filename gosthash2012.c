@@ -69,28 +69,28 @@ static INLINE void add512(union uint512_u * RESTRICT x,
 
 # ifdef HAVE_ADDCARRY_U64
     for (i = 0; i < 8; i++)
-	CF = _addcarry_u64(CF, x->QWORD[i] , y->QWORD[i], &(x->QWORD[i]));
+    CF = _addcarry_u64(CF, x->QWORD[i] , y->QWORD[i], &(x->QWORD[i]));
 # else
     for (i = 0; i < 8; i++) {
-	const unsigned long long left = x->QWORD[i];
-	unsigned long long sum;
+        const unsigned long long left = x->QWORD[i];
+        unsigned long long sum;
 
-	sum = left + y->QWORD[i] + CF;
-	/*
-	 * (sum == left): is noop, because it's possible only
-	 * when `left' is added with `0 + 0' or with `ULLONG_MAX + 1',
-	 * in that case `CF' (carry) retain previous value, which is correct,
-	 * because when `left + 0 + 0' there was no overflow (thus no carry),
-	 * and when `left + ULLONG_MAX + 1' value is wrapped back to
-	 * itself with overflow, thus creating carry.
-	 *
-	 * (sum != left):
-	 * if `sum' is not wrapped (sum > left) there should not be carry,
-	 * if `sum' is wrapped (sum < left) there should be carry.
-	 */
-	if (sum != left)
-	    CF = (sum < left);
-	x->QWORD[i] = sum;
+        sum = left + y->QWORD[i] + CF;
+        /*
+         * (sum == left): is noop, because it's possible only
+         * when `left' is added with `0 + 0' or with `ULLONG_MAX + 1',
+         * in that case `CF' (carry) retain previous value, which is correct,
+         * because when `left + 0 + 0' there was no overflow (thus no carry),
+         * and when `left + ULLONG_MAX + 1' value is wrapped back to
+         * itself with overflow, thus creating carry.
+         *
+         * (sum != left):
+         * if `sum' is not wrapped (sum > left) there should not be carry,
+         * if `sum' is wrapped (sum < left) there should be carry.
+         */
+        if (sum != left)
+            CF = (sum < left);
+            x->QWORD[i] = sum;
     }
 # endif /* !__x86_64__ */
 #else /* __GOST3411_BIG_ENDIAN__ */

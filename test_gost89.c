@@ -58,7 +58,7 @@ int main(void)
 
     if (memcmp(meshed_key, buf, 32)) {
         fprintf(stderr, "Magma meshing failed");
-	ret = 1;
+        ret = 1;
     }
 
     acpkm_magma_key_meshing(&ctx);

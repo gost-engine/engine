@@ -48,11 +48,11 @@ int VKO_compute_key(unsigned char *shared_key,
     UKM = BN_lebin2bn(ukm, ukm_size, NULL);
     p = BN_CTX_get(ctx);
     order = BN_CTX_get(ctx);
-		cofactor = BN_CTX_get(ctx);
+    cofactor = BN_CTX_get(ctx);
     X = BN_CTX_get(ctx);
     Y = BN_CTX_get(ctx);
     EC_GROUP_get_order(EC_KEY_get0_group(priv_key), order, ctx);
-		EC_GROUP_get_cofactor(EC_KEY_get0_group(priv_key), cofactor, ctx);
+    EC_GROUP_get_cofactor(EC_KEY_get0_group(priv_key), cofactor, ctx);
     BN_mod_mul(UKM, UKM, cofactor, order, ctx);
     BN_mod_mul(p, key, UKM, order, ctx);
     if (!EC_POINT_mul(EC_KEY_get0_group(priv_key), pnt, NULL, pub_key, p, ctx)) {
@@ -61,8 +61,8 @@ int VKO_compute_key(unsigned char *shared_key,
     }
     if (!EC_POINT_get_affine_coordinates(EC_KEY_get0_group(priv_key),
                                         pnt, X, Y, ctx)) {
-	GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_EC_LIB);
-	goto err;
+        GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_EC_LIB);
+        goto err;
     }
 
     half_len = BN_num_bytes(order);
@@ -417,11 +417,11 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     }
 
     if (data->shared_ukm_size == 0) {
-      if (RAND_bytes(data->shared_ukm, 32) <= 0) {
-        GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, ERR_R_INTERNAL_ERROR);
-        goto err;
-			}
-      data->shared_ukm_size = 32;
+        if (RAND_bytes(data->shared_ukm, 32) <= 0) {
+            GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, ERR_R_INTERNAL_ERROR);
+            goto err;
+        }
+        data->shared_ukm_size = 32;
     }
 
     if (gost_keg(data->shared_ukm, pkey_nid,
@@ -471,7 +471,7 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
  err:
     OPENSSL_cleanse(expkeys, sizeof(expkeys));
     if (key_is_ephemeral)
-      EVP_PKEY_free(sec_key);
+        EVP_PKEY_free(sec_key);
 
     PSKeyTransport_gost_free(pst);
     OPENSSL_free(exp_buf);
@@ -681,16 +681,16 @@ int pkey_gost_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
                       size_t *key_len, const unsigned char *in, size_t in_len)
 {
     struct gost_pmeth_data *gctx = EVP_PKEY_CTX_get_data(pctx);
-	switch (gctx->cipher_nid)
-	{
-		case NID_id_Gost28147_89:
-		case NID_undef: /* FIXME */
-			return pkey_GOST_ECcp_decrypt(pctx, key, key_len, in, in_len);
-		case NID_kuznyechik_ctr:
-		case NID_magma_ctr:
-			return pkey_gost2018_decrypt(pctx, key, key_len, in, in_len);
-		default:
+    switch (gctx->cipher_nid)
+    {
+        case NID_id_Gost28147_89:
+        case NID_undef: /* FIXME */
+            return pkey_GOST_ECcp_decrypt(pctx, key, key_len, in, in_len);
+        case NID_kuznyechik_ctr:
+        case NID_magma_ctr:
+            return pkey_gost2018_decrypt(pctx, key, key_len, in, in_len);
+        default:
       GOSTerr(GOST_F_PKEY_GOST_DECRYPT, ERR_R_INTERNAL_ERROR);
       return -1;
-	}
+    }
 }

@@ -29,14 +29,14 @@ static R3410_ec_params *gost_nid2params(int nid)
 
     /* Map tc26-2012 256-bit parameters to cp-2001 parameters */
     switch (nid) {
-	case NID_id_tc26_gost_3410_2012_256_paramSetB:
-	    nid = NID_id_GostR3410_2001_CryptoPro_A_ParamSet;
-	    break;
-	case NID_id_tc26_gost_3410_2012_256_paramSetC:
-	    nid = NID_id_GostR3410_2001_CryptoPro_B_ParamSet;
-	    break;
-	case NID_id_tc26_gost_3410_2012_256_paramSetD:
-	    nid = NID_id_GostR3410_2001_CryptoPro_C_ParamSet;
+    case NID_id_tc26_gost_3410_2012_256_paramSetB:
+        nid = NID_id_GostR3410_2001_CryptoPro_A_ParamSet;
+        break;
+    case NID_id_tc26_gost_3410_2012_256_paramSetC:
+        nid = NID_id_GostR3410_2001_CryptoPro_B_ParamSet;
+        break;
+    case NID_id_tc26_gost_3410_2012_256_paramSetD:
+        nid = NID_id_GostR3410_2001_CryptoPro_C_ParamSet;
     }
 
     /* Search nid in 2012 paramset */
