@@ -16,6 +16,7 @@
 #include <openssl/obj_mac.h>
 #include <openssl/ec.h>
 #include <openssl/bn.h>
+#include <openssl/store.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -37,6 +38,7 @@
 #define cDGREEN	"\033[0;32m"
 #define cBLUE	"\033[1;34m"
 #define cDBLUE	"\033[0;34m"
+#define cCYAN	"\033[1;36m"
 #define cNORM	"\033[m"
 #define TEST_ASSERT(e) {if ((test = (e))) \
 		 printf(cRED "  Test FAILED\n" cNORM); \
@@ -133,6 +135,85 @@ static int test_sign(struct test_sign *t)
     if (err != 1)
 	return -1;
 
+    /* Convert to PEM and back. */
+    BIO *bp;
+    T(bp = BIO_new(BIO_s_secmem()));
+    T(PEM_write_bio_PrivateKey(bp, priv_key, NULL, NULL, 0, NULL, NULL));
+    pkey = NULL;
+    T(PEM_read_bio_PrivateKey(bp, &pkey, NULL, NULL));
+    printf("\tPEM_read_bio_PrivateKey:");
+    /* Yes, it compares only public part. */
+    err = !EVP_PKEY_cmp(priv_key, pkey);
+    print_test_result(!err);
+    ret |= err;
+    EVP_PKEY_free(pkey);
+
+    /* Convert to DER and back, using _PrivateKey_bio API. */
+    T(BIO_reset(bp));
+    T(i2d_PrivateKey_bio(bp, priv_key));
+    T(d2i_PrivateKey_bio(bp, &pkey));
+    printf("\td2i_PrivateKey_bio:\t");
+    err = !EVP_PKEY_cmp(priv_key, pkey);
+    print_test_result(!err);
+    ret |= err;
+    EVP_PKEY_free(pkey);
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    /* Try d2i_PrivateKey_ex_bio, added in 3.0. */
+    T(BIO_reset(bp));
+    T(i2d_PrivateKey_bio(bp, priv_key));
+    T(d2i_PrivateKey_ex_bio(bp, &pkey, NULL, NULL));
+    printf("\td2i_PrivateKey_ex_bio:\t");
+    err = !EVP_PKEY_cmp(priv_key, pkey);
+    print_test_result(!err);
+    ret |= err;
+    EVP_PKEY_free(pkey);
+#endif
+
+    /* Convert to DER and back, using OSSL_STORE API. */
+    T(BIO_reset(bp));
+    T(i2d_PrivateKey_bio(bp, priv_key));
+    printf("\tOSSL_STORE_attach:\t");
+    fflush(stdout);
+    pkey = NULL;
+    OSSL_STORE_CTX *cts;
+    T(cts = OSSL_STORE_attach(bp, NULL, "file", NULL, NULL, NULL, NULL, NULL));
+    for (;;) {
+	OSSL_STORE_INFO *info = OSSL_STORE_load(cts);
+	if (!info) {
+	    ERR_print_errors_fp(stderr);
+	    T(OSSL_STORE_eof(cts));
+	    break;
+	}
+	if (OSSL_STORE_INFO_get_type(info) == OSSL_STORE_INFO_PKEY) {
+	    T((pkey = OSSL_STORE_INFO_get1_PKEY(info)));
+	}
+	OSSL_STORE_INFO_free(info);
+    }
+    OSSL_STORE_close(cts);
+    if (pkey) {
+	err = !EVP_PKEY_cmp(priv_key, pkey);
+	print_test_result(!err);
+	ret |= err;
+	EVP_PKEY_free(pkey);
+    } else
+	printf(cCYAN "skipped\n" cNORM);
+    BIO_free(bp);
+
+    /* Convert to DER and back, using memory API. */
+    unsigned char *kptr = NULL;
+    int klen;
+    T(klen = i2d_PrivateKey(priv_key, &kptr));
+    const unsigned char *tptr = kptr; /* will be moved by d2i_PrivateKey */
+    pkey = NULL;
+    T(d2i_PrivateKey(type, &pkey, &tptr, klen));
+    printf("\td2i_PrivateKey:\t\t");
+    err = !EVP_PKEY_cmp(priv_key, pkey);
+    print_test_result(!err);
+    ret |= err;
+    EVP_PKEY_free(pkey);
+    OPENSSL_free(kptr);
+
     /* Create another key using string interface. */
     EVP_PKEY *key1;
     T(key1 = EVP_PKEY_new());
@@ -145,6 +226,7 @@ static int test_sign(struct test_sign *t)
     err = EVP_PKEY_keygen(ctx1, &key2);
     printf("\tEVP_PKEY_*_str:\t\t");
     print_test_result(err);
+    ret |= !err;
 
     /* Check if key type and curve_name match expected values. */
     int id = EVP_PKEY_id(key2);
