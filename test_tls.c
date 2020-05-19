@@ -63,6 +63,9 @@ struct certkey {
     X509 *cert;
 };
 
+static int verbose;
+static const char *cipher_list;
+
 /* How much K to transfer between client and server. */
 #define KTRANSFER (1 * 1024)
 
@@ -81,6 +84,8 @@ static int s_server(EVP_PKEY *pkey, X509 *cert, int client)
     SSL *ssl;
     T(ssl = SSL_new(ctx));
     T(SSL_set_fd(ssl, client));
+    if (cipher_list)
+	T(SSL_set_cipher_list(ssl, cipher_list));
     T(SSL_accept(ssl) == 1);
 
     /* Receive data from client */
@@ -121,6 +126,8 @@ static int s_client(int server)
     SSL *ssl;
     T(BIO_get_ssl(sbio, &ssl));
     T(SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY));
+    if (cipher_list)
+	T(SSL_set_cipher_list(ssl, cipher_list));
 #if 0
     /* Does not work with reneg. */
     BIO_set_ssl_renegotiate_bytes(sbio, 100 * 1024);
@@ -130,10 +137,10 @@ static int s_client(int server)
 
     printf("Protocol: %s\n", SSL_get_version(ssl));
     printf("Cipher:   %s\n", SSL_get_cipher_name(ssl));
-#if 0
-    SSL_SESSION *sess = SSL_get0_session(ssl);
-    SSL_SESSION_print_fp(stdout, sess);
-#endif
+    if (verbose) {
+	SSL_SESSION *sess = SSL_get0_session(ssl);
+	SSL_SESSION_print_fp(stdout, sess);
+    }
 
     X509 *cert;
     T(cert = SSL_get_peer_certificate(ssl));
@@ -346,7 +353,12 @@ int main(int argc, char **argv)
     T(ENGINE_init(eng));
     T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
 
+    char *p;
+    if ((p = getenv("VERBOSE")))
+	verbose = atoi(p);
+
     /* ret |= test("rsa", NULL); */
+    cipher_list = "LEGACY-GOST2012-GOST8912-GOST8912";
     ret |= test("gost2012_256", "A");
     ret |= test("gost2012_256", "B");
     ret |= test("gost2012_256", "C");
