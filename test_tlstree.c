@@ -127,7 +127,7 @@ int main(void)
 		if (seq0[i] != 0)
 			break;
 	}
-	EVP_CIPHER_CTX_ctrl(enc, EVP_CTRL_TLS1_2_TLSTREE, 0, seq0);
+	EVP_CIPHER_CTX_ctrl(enc, EVP_CTRL_TLSTREE, 0, seq0);
 	EVP_Cipher(enc, data0_processed, data0, sizeof(data0));
 	EVP_Cipher(enc, data0_processed+sizeof(data0), mac0, 16);
 
@@ -161,7 +161,7 @@ int main(void)
 		if (seq63[i] != 0)
 			break;
 	}
-	EVP_CIPHER_CTX_ctrl(enc, EVP_CTRL_TLS1_2_TLSTREE, 0, seq63);
+	EVP_CIPHER_CTX_ctrl(enc, EVP_CTRL_TLSTREE, 0, seq63);
 	EVP_Cipher(enc, data63_processed, data63, sizeof(data63));
 	EVP_Cipher(enc, data63_processed+sizeof(data63), mac63, 16);
 
