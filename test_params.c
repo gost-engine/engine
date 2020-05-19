@@ -880,13 +880,32 @@ static void print_test_result(int err)
 	ERR_print_errors_fp(stderr);
 }
 
+/* copy-paste from crypto/crmf/crmf_lib.c */
+static int X509_PUBKEY_cmp(X509_PUBKEY *a, X509_PUBKEY *b)
+{
+    X509_ALGOR *algA = NULL, *algB = NULL;
+    int res = 0;
+
+    if (a == b)
+	return 0;
+    if (a == NULL || !X509_PUBKEY_get0_param(NULL, NULL, NULL, &algA, a)
+	|| algA == NULL)
+	return -1;
+    if (b == NULL || !X509_PUBKEY_get0_param(NULL, NULL, NULL, &algB, b)
+	|| algB == NULL)
+	return 1;
+    if ((res = X509_ALGOR_cmp(algA, algB)) != 0)
+	return res;
+    return !EVP_PKEY_cmp(X509_PUBKEY_get0(a), X509_PUBKEY_get0(b));
+}
+
 static int test_cert(struct test_cert *tc)
 {
     int ret = 0, err;
     X509 *x;
     const unsigned char *p;
 
-    printf(cBLUE "Test %s (it):\n" cNORM, tc->name);
+    printf(cBLUE "Test %s (it): " cNORM, tc->name);
     p = tc->cert;
     T(x = d2i_X509(NULL, &p, tc->len));
 
@@ -913,6 +932,54 @@ static int test_cert(struct test_cert *tc)
     int param_nid = OBJ_obj2nid((ASN1_OBJECT *)(p1->value.ptr));
     printf(" (curve %s)\n", OBJ_nid2sn(param_nid));
     sk_ASN1_TYPE_pop_free(seq, ASN1_TYPE_free);
+
+    /*
+     * Conversion tests.
+     */
+    /* Convert cert to DER and back. */
+    BIO *bp;
+    T(bp = BIO_new(BIO_s_mem()));
+    T(i2d_X509_bio(bp, x));
+    X509 *y = NULL;
+    T(d2i_X509_bio(bp, &y));
+    err = X509_cmp(x, y);
+    printf("  d2i_X509_bio\t\t\t");
+    print_test_result(!err);
+    ret |= err;
+    X509_free(y);
+
+    /* Convert cert to PEM and back. */
+    y = NULL;
+    T(PEM_write_bio_X509(bp, x));
+    T(PEM_read_bio_X509(bp, &y, 0, NULL));
+    err = X509_cmp(x, y);
+    printf("  PEM_read_bio_X509\t\t");
+    print_test_result(!err);
+    ret |= err;
+    X509_free(y);
+
+    /* Convert public key to PEM and back. */
+    T(BIO_reset(bp));
+    T(PEM_write_bio_X509_PUBKEY(bp, xk));
+    X509_PUBKEY *tk = NULL;
+    T(PEM_read_bio_X509_PUBKEY(bp, &tk, NULL, NULL));
+    err = X509_PUBKEY_cmp(xk, tk);
+    X509_PUBKEY_free(tk);
+    printf("  PEM_read_bio_X509_PUBKEY\t");
+    print_test_result(!err);
+    ret |= err;
+
+    /* Convert public key to DER and back. */
+    T(BIO_reset(bp));
+    T(i2d_X509_PUBKEY_bio(bp, xk));
+    tk = NULL;
+    T(d2i_X509_PUBKEY_bio(bp, &tk));
+    err = X509_PUBKEY_cmp(xk, tk);
+    X509_PUBKEY_free(tk);
+    printf("  d2i_X509_PUBKEY_bio\t\t");
+    print_test_result(!err);
+    ret |= err;
+    BIO_free(bp);
 
     /*
      * Verify
@@ -1112,5 +1179,9 @@ int main(int argc, char **argv)
     ENGINE_finish(eng);
     ENGINE_free(eng);
 
+    if (ret)
+	printf(cDRED "= Some tests FAILED!\n" cNORM);
+    else
+	printf(cDGREEN "= All tests passed!\n" cNORM);
     return ret;
 }
