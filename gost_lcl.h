@@ -3,9 +3,10 @@
 /**********************************************************************
  *                        gost_lcl.h                                  *
  *             Copyright (c) 2006 Cryptocom LTD                       *
+ *             Copyright (c) 2020 Vitaly Chikunov <vt@altlinux.org>   *
  *       This file is distributed under the same license as OpenSSL   *
  *                                                                    *
- *         Internal declarations  used in GOST engine                *
+ *         Internal declarations  used in GOST engine                 *
  *         OpenSSL 0.9.9 libraries required to compile and use        *
  *                              this code                             *
  **********************************************************************/
@@ -193,25 +194,6 @@ struct ossl_gost_digest_ctx {
     gost_hash_ctx dctx;
     gost_ctx cctx;
 };
-/* EVP_MD structure for GOST R 34.11 */
-EVP_MD *digest_gost(void);
-void digest_gost_destroy(void);
-/* EVP MD structure for GOST R 34.11-2012 algorithms */
-EVP_MD *digest_gost2012_256(void);
-EVP_MD *digest_gost2012_512(void);
-void digest_gost2012_256_destroy(void);
-void digest_gost2012_512_destroy(void);
-/* EVP_MD structure for GOST 28147 in MAC mode */
-EVP_MD *imit_gost_cpa(void);
-void imit_gost_cpa_destroy(void);
-EVP_MD *imit_gost_cp_12(void);
-void imit_gost_cp_12_destroy(void);
-EVP_MD *magma_omac(void);
-void magma_omac_destroy(void);
-EVP_MD *grasshopper_omac(void);
-EVP_MD *grasshopper_omac_acpkm(void);
-void grasshopper_omac_destroy(void);
-void grasshopper_omac_acpkm_destroy(void);
 /* Cipher context used for EVP_CIPHER operation */
 struct ossl_gost_cipher_ctx {
     int paramNID;
@@ -239,21 +221,8 @@ struct ossl_gost_imit_ctx {
     int key_set;
     int dgst_size;
 };
-/* Table which maps parameter NID to S-blocks */
-extern struct gost_cipher_info gost_cipher_list[];
 /* Find encryption params from ASN1_OBJECT */
 const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj);
-/* Implementation of GOST 28147-89 cipher in CFB and CNT modes */
-const EVP_CIPHER *cipher_gost_cpacnt();
-const EVP_CIPHER *cipher_gost_cpcnt_12();
-const EVP_CIPHER *cipher_magma_cbc();
-const EVP_CIPHER *cipher_magma_ctr();
-const EVP_CIPHER *cipher_magma_ctr_acpkm();
-const EVP_CIPHER *cipher_magma_ctr_acpkm_omac();
-const EVP_CIPHER *cipher_magma_wrap();
-const EVP_CIPHER *cipher_kuznyechik_wrap();
-void cipher_gost_destroy();
-void wrap_ciphers_destroy();
 
 void inc_counter(unsigned char *counter, size_t counter_bytes);
 
@@ -359,6 +328,36 @@ extern GOST_cipher grasshopper_ctr_acpkm_cipher;
 extern GOST_cipher grasshopper_ctr_acpkm_omac_cipher;
 extern GOST_cipher magma_kexp15_cipher;
 extern GOST_cipher kuznyechik_kexp15_cipher;
+
+struct gost_digest_st {
+    struct gost_digest_st *template;
+    int nid;
+    const char *alias;
+    EVP_MD *digest;
+    int result_size;
+    int input_blocksize;
+    int app_datasize;
+    int flags;
+    int (*init)(EVP_MD_CTX *ctx);
+    int (*update)(EVP_MD_CTX *ctx, const void *data, size_t count);
+    int (*final)(EVP_MD_CTX *ctx, unsigned char *md);
+    int (*copy)(EVP_MD_CTX *to, const EVP_MD_CTX *from);
+    int (*cleanup)(EVP_MD_CTX *ctx);
+    int (*ctrl)(EVP_MD_CTX *ctx, int cmd, int p1, void *p2);
+};
+typedef struct gost_digest_st GOST_digest;
+
+EVP_MD *GOST_init_digest(GOST_digest *d);
+void GOST_deinit_digest(GOST_digest *d);
+
+extern GOST_digest GostR3411_94_digest;
+extern GOST_digest Gost28147_89_MAC_digest;
+extern GOST_digest Gost28147_89_mac_12_digest;
+extern GOST_digest GostR3411_2012_256_digest;
+extern GOST_digest GostR3411_2012_512_digest;
+extern GOST_digest magma_mac_digest;
+extern GOST_digest grasshopper_mac_digest;
+extern GOST_digest kuznyechik_ctracpkm_omac_digest;
 
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */

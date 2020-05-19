@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 vt@altlinux.org. All Rights Reserved.
+ * Copyright (C) 2018,2020 Vitaly Chikunov <vt@altlinux.org>. All Rights Reserved.
  * Copyright (c) 2010 The OpenSSL Project.  All rights reserved.
  *
  * Contents licensed under the terms of the OpenSSL license
@@ -357,7 +357,7 @@ int omac_acpkm_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
     return 1;
 }
 
-int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
+static int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
     OMAC_ACPKM_CTX *c_to = EVP_MD_CTX_md_data(to);
     const OMAC_ACPKM_CTX *c_from = EVP_MD_CTX_md_data(from);
@@ -383,7 +383,7 @@ int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 }
 
 /* Clean up imit ctx */
-int omac_acpkm_imit_cleanup(EVP_MD_CTX *ctx)
+static int omac_acpkm_imit_cleanup(EVP_MD_CTX *ctx)
 {
     OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
 
@@ -496,36 +496,16 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
     }
 }
 
-static EVP_MD *_hidden_grasshopper_omac_acpkm_md = NULL;
-
-EVP_MD *grasshopper_omac_acpkm(void)
-{
-    if (_hidden_grasshopper_omac_acpkm_md == NULL) {
-        EVP_MD *md;
-
-        if ((md =
-             EVP_MD_meth_new(NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,
-              NID_undef)) == NULL
-            || !EVP_MD_meth_set_result_size(md, MAX_GOST_OMAC_ACPKM_SIZE)
-            || !EVP_MD_meth_set_input_blocksize(md, GRASSHOPPER_BLOCK_SIZE)
-            || !EVP_MD_meth_set_app_datasize(md, sizeof(OMAC_ACPKM_CTX))
-            || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_XOF)
-            || !EVP_MD_meth_set_init(md, grasshopper_omac_acpkm_init)
-            || !EVP_MD_meth_set_update(md, omac_acpkm_imit_update)
-            || !EVP_MD_meth_set_final(md, omac_acpkm_imit_final)
-            || !EVP_MD_meth_set_copy(md, omac_acpkm_imit_copy)
-            || !EVP_MD_meth_set_cleanup(md, omac_acpkm_imit_cleanup)
-            || !EVP_MD_meth_set_ctrl(md, omac_acpkm_imit_ctrl)) {
-            EVP_MD_meth_free(md);
-            md = NULL;
-        }
-        _hidden_grasshopper_omac_acpkm_md = md;
-    }
-    return _hidden_grasshopper_omac_acpkm_md;
-}
-
-void grasshopper_omac_acpkm_destroy(void)
-{
-    EVP_MD_meth_free(_hidden_grasshopper_omac_acpkm_md);
-    _hidden_grasshopper_omac_acpkm_md = NULL;
-}
+GOST_digest kuznyechik_ctracpkm_omac_digest = {
+    .nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,
+    .result_size = MAX_GOST_OMAC_ACPKM_SIZE,
+    .input_blocksize = GRASSHOPPER_BLOCK_SIZE,
+    .app_datasize = sizeof(OMAC_ACPKM_CTX),
+    .flags = EVP_MD_FLAG_XOF,
+    .init = grasshopper_omac_acpkm_init,
+    .update = omac_acpkm_imit_update,
+    .final = omac_acpkm_imit_final,
+    .copy = omac_acpkm_imit_copy,
+    .cleanup = omac_acpkm_imit_cleanup,
+    .ctrl = omac_acpkm_imit_ctrl,
+};

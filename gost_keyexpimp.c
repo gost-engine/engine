@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2019 Dmitry Belyavskiy <beldmit@gmail.com>
+ * Copyright (c) 2020 Vitaly Chikunov <vt@altlinux.org>
+ *
+ * Contents licensed under the terms of the OpenSSL license
+ * See https://www.openssl.org/source/license.html for details
+ */
 #ifdef _WIN32
 #include <winsock.h>
 #else
@@ -400,7 +407,7 @@ static int kuznyechik_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
 	}
 }
 
-int wrap_ctrl (EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+static int wrap_ctrl (EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
 	switch(type)
 	{

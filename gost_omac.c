@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2019 Dmitry Belyavskiy <beldmit@gmail.com>
+ * Copyright (c) 2020 Vitaly Chikunov <vt@altlinux.org>
+ *
+ * Contents licensed under the terms of the OpenSSL license
+ * See https://www.openssl.org/source/license.html for details
+ */
 #include <string.h>
 #include <openssl/cmac.h>
 #include <openssl/conf.h>
@@ -72,7 +79,7 @@ static int omac_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
     return CMAC_Update(c->cmac_ctx, data, count);
 }
 
-int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
+static int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
 {
     OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
     unsigned char mac[MAX_GOST_OMAC_SIZE];
@@ -89,7 +96,7 @@ int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
     return 1;
 }
 
-int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
+static int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
     OMAC_CTX *c_to = EVP_MD_CTX_md_data(to);
     const OMAC_CTX *c_from = EVP_MD_CTX_md_data(from);
@@ -116,7 +123,7 @@ int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 }
 
 /* Clean up imit ctx */
-int omac_imit_cleanup(EVP_MD_CTX *ctx)
+static int omac_imit_cleanup(EVP_MD_CTX *ctx)
 {
     OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
 
@@ -146,6 +153,7 @@ static int omac_key(OMAC_CTX * c, const EVP_CIPHER *cipher,
     return 1;
 }
 
+/* Called directly by gost_kexp15() */
 int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
@@ -246,66 +254,27 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
     }
 }
 
-static EVP_MD *_hidden_magma_mac_md = NULL;
+static GOST_digest omac_template_digest = {
+    .input_blocksize = 8,
+    .app_datasize = sizeof(OMAC_CTX),
+    .flags = EVP_MD_FLAG_XOF,
+    .update = omac_imit_update,
+    .final = omac_imit_final,
+    .copy = omac_imit_copy,
+    .cleanup = omac_imit_cleanup,
+    .ctrl = omac_imit_ctrl,
+};
 
-EVP_MD *magma_omac(void)
-{
-    if (_hidden_magma_mac_md == NULL) {
-        EVP_MD *md;
+GOST_digest magma_mac_digest = {
+    .nid = NID_magma_mac,
+    .template = &omac_template_digest,
+    .result_size = 8,
+    .init = magma_imit_init,
+};
 
-        if ((md = EVP_MD_meth_new(NID_magma_mac, NID_undef)) == NULL
-            || !EVP_MD_meth_set_result_size(md, 8)
-            || !EVP_MD_meth_set_input_blocksize(md, 8)
-            || !EVP_MD_meth_set_app_datasize(md, sizeof(OMAC_CTX))
-            || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_XOF)
-            || !EVP_MD_meth_set_init(md, magma_imit_init)
-            || !EVP_MD_meth_set_update(md, omac_imit_update)
-            || !EVP_MD_meth_set_final(md, omac_imit_final)
-            || !EVP_MD_meth_set_copy(md, omac_imit_copy)
-            || !EVP_MD_meth_set_cleanup(md, omac_imit_cleanup)
-            || !EVP_MD_meth_set_ctrl(md, omac_imit_ctrl)) {
-            EVP_MD_meth_free(md);
-            md = NULL;
-        }
-        _hidden_magma_mac_md = md;
-    }
-    return _hidden_magma_mac_md;
-}
-
-void magma_omac_destroy(void)
-{
-    EVP_MD_meth_free(_hidden_magma_mac_md);
-    _hidden_magma_mac_md = NULL;
-}
-
-static EVP_MD *_hidden_grasshopper_mac_md = NULL;
-
-EVP_MD *grasshopper_omac(void)
-{
-    if (_hidden_grasshopper_mac_md == NULL) {
-        EVP_MD *md;
-
-        if ((md = EVP_MD_meth_new(NID_grasshopper_mac, NID_undef)) == NULL
-            || !EVP_MD_meth_set_result_size(md, 16)
-            || !EVP_MD_meth_set_input_blocksize(md, 8)
-            || !EVP_MD_meth_set_app_datasize(md, sizeof(OMAC_CTX))
-            || !EVP_MD_meth_set_flags(md, EVP_MD_FLAG_XOF)
-            || !EVP_MD_meth_set_init(md, grasshopper_imit_init)
-            || !EVP_MD_meth_set_update(md, omac_imit_update)
-            || !EVP_MD_meth_set_final(md, omac_imit_final)
-            || !EVP_MD_meth_set_copy(md, omac_imit_copy)
-            || !EVP_MD_meth_set_cleanup(md, omac_imit_cleanup)
-            || !EVP_MD_meth_set_ctrl(md, omac_imit_ctrl)) {
-            EVP_MD_meth_free(md);
-            md = NULL;
-        }
-        _hidden_grasshopper_mac_md = md;
-    }
-    return _hidden_grasshopper_mac_md;
-}
-
-void grasshopper_omac_destroy(void)
-{
-    EVP_MD_meth_free(_hidden_grasshopper_mac_md);
-    _hidden_grasshopper_mac_md = NULL;
-}
+GOST_digest grasshopper_mac_digest = {
+    .nid = NID_grasshopper_mac,
+    .template = &omac_template_digest,
+    .result_size = 16,
+    .init = grasshopper_imit_init,
+};
