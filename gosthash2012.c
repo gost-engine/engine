@@ -90,7 +90,7 @@ static INLINE void add512(union uint512_u * RESTRICT x,
          */
         if (sum != left)
             CF = (sum < left);
-            x->QWORD[i] = sum;
+        x->QWORD[i] = sum;
     }
 # endif /* !__x86_64__ */
 #else /* __GOST3411_BIG_ENDIAN__ */
