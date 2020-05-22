@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2020 Dmitry Belyavskiy <beldmit@gmail.com>
+ *
+ * Contents licensed under the terms of the OpenSSL license
+ * See https://www.openssl.org/source/license.html for details
+ */
 #include "gost_lcl.h"
 #include "gost_gost2015.h"
 #include "e_gost_err.h"

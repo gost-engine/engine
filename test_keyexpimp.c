@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2019-2020 Dmitry Belyavskiy <beldmit@gmail.com>
+ *
+ * Contents licensed under the terms of the OpenSSL license
+ * See https://www.openssl.org/source/license.html for details
+ */
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdio.h>

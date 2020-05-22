@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2020 Dmitry Belyavskiy <beldmit@gmail.com>
+ *
+ * Contents licensed under the terms of the OpenSSL license
+ * See https://www.openssl.org/source/license.html for details
+ */
 #ifndef GOST_GOST2015_H
 #define GOST_GOST2015_H
 

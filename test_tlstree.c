@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2019-2020 Dmitry Belyavskiy <beldmit@gmail.com>
+ *
+ * Contents licensed under the terms of the OpenSSL license
+ * See https://www.openssl.org/source/license.html for details
+ */
 # include <stdio.h>
 # include <string.h>
 # include <openssl/err.h>
