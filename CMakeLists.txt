@@ -226,6 +226,9 @@ endif()
 add_executable(sign benchmark/sign.c)
 target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
 
+add_executable(sign-time benchmark/sign-time.c)
+target_link_libraries(sign-time gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
+
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
         test_digest
