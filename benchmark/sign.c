@@ -85,8 +85,6 @@ int main(int argc, char **argv)
 	opterr = 0;
 	while((option = getopt(argc, argv, "l:c:C")) >= 0)
 	{
-		if(option == ':') option = optopt;
-		if(optarg && (optarg[0] == '-')) { optind--; optarg = NULL; }
 		switch (option)
 		{
 			case 'l':
