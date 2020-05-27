@@ -224,7 +224,7 @@ BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey)
  * GOST CMS processing functions
  */
 /* FIXME reaarange declarations */
-static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub);
+static int pub_decode_gost_ec(EVP_PKEY *pk, const X509_PUBKEY *pub);
 
 static int gost_cms_set_kari_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
 {
@@ -896,7 +896,7 @@ static int param_cmp_gost_ec(const EVP_PKEY *a, const EVP_PKEY *b)
 }
 
 /* ---------- Public key functions * --------------------------------------*/
-static int pub_decode_gost_ec(EVP_PKEY *pk, X509_PUBKEY *pub)
+static int pub_decode_gost_ec(EVP_PKEY *pk, const X509_PUBKEY *pub)
 {
     X509_ALGOR *palg = NULL;
     const unsigned char *pubkey_buf = NULL;
