@@ -191,6 +191,11 @@ target_link_libraries(test_params gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY
 add_test(NAME parameters
 	COMMAND test_params)
 
+add_executable(test_derive test_derive.c)
+target_link_libraries(test_derive gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME derive
+	COMMAND test_derive)
+
 add_executable(test_sign test_sign.c)
 target_link_libraries(test_sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME sign/verify
@@ -240,6 +245,7 @@ set(BINARY_TESTS_TARGETS
         test_ciphers
         test_curves
         test_params
+        test_derive
         test_sign
         test_context
         test_keyexpimp
