@@ -64,6 +64,7 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
 # define maclen_ctrl_string "size"
 # define EVP_PKEY_CTRL_GOST_MAC_HEXKEY (EVP_PKEY_ALG_CTRL+3)
 # define EVP_PKEY_CTRL_MAC_LEN (EVP_PKEY_ALG_CTRL+5)
+# define EVP_PKEY_CTRL_SET_VKO (EVP_PKEY_ALG_CTRL+11)
 /* Pmeth internal representation */
 struct gost_pmeth_data {
     int sign_param_nid;         /* Should be set whenever parameters are
@@ -73,6 +74,7 @@ struct gost_pmeth_data {
     size_t shared_ukm_size;
     int peer_key_used;
     int cipher_nid;             /* KExp15/KImp15 algs */
+    int vko_dgst_nid;
 };
 
 struct gost_mac_pmeth_data {

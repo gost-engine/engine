@@ -120,6 +120,7 @@ int VKO_compute_key(unsigned char *shared_key,
 }
 
 /*
+ * KEG Algorithm described in R 1323565.1.020-2018 6.4.5.1.
  * keyout expected to be 64 bytes
  * */
 static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
@@ -175,6 +176,10 @@ static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
  * EVP_PKEY_METHOD callback derive.
  * Implements VKO R 34.10-2001/2012 algorithms
  */
+/*
+ * Backend for EVP_PKEY_derive()
+ * It have KEG mode (default) and VKO mode (enable by EVP_PKEY_CTRL_SET_VKO).
+ */
 int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
 {
     /*
@@ -191,11 +196,26 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
         GOSTerr(GOST_F_PKEY_GOST_EC_DERIVE, GOST_R_UKM_NOT_SET);
         return 0;
     }
+
+    /* VKO */
+    if (data->vko_dgst_nid) {
+        if (!key) {
+            *keylen = data->vko_dgst_nid == NID_id_GostR3411_2012_256? 32 : 64;
+            return 1;
+        }
+        *keylen = VKO_compute_key(key,
+                                  EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
+                                  (EC_KEY *)EVP_PKEY_get0(my_key),
+                                  data->shared_ukm, data->shared_ukm_size,
+                                  data->vko_dgst_nid);
+        return (*keylen) ? 1 : 0;
+    }
+
     /*
      * shared_ukm_size = 8 stands for pre-2018 cipher suites
      * It means 32 bytes of key length, 8 byte UKM, 32-bytes hash
      *
-     * shared_ukm_size = 32 stands for pre-2018 cipher suites
+     * shared_ukm_size = 32 stands for post-2018 cipher suites
      * It means 64 bytes of shared_key, 16 bytes of UKM and either
      * 64 bytes of hash or 64 bytes of TLSTREE output
      * */
@@ -207,7 +227,6 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
                 *keylen = 32;
                 return 1;
             }
-
             EVP_PKEY_get_default_digest_nid(my_key, &dgst_nid);
             if (dgst_nid == NID_id_GostR3411_2012_512)
                 dgst_nid = NID_id_GostR3411_2012_256;
@@ -702,3 +721,4 @@ int pkey_gost_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
       return -1;
     }
 }
+/* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
