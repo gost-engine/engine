@@ -148,9 +148,24 @@ static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
         pctx->sign_param_nid = (int)p1;
         return 1;
     case EVP_PKEY_CTRL_SET_IV:
-        OPENSSL_assert(p2 != NULL);
+	if (p1 > sizeof(pctx->shared_ukm) || !p2) {
+	    GOSTerr(GOST_F_PKEY_GOST_CTRL, GOST_R_UKM_NOT_SET);
+	    return 0;
+	}
         memcpy(pctx->shared_ukm, p2, (int)p1);
         pctx->shared_ukm_size = p1;
+        return 1;
+    case EVP_PKEY_CTRL_SET_VKO:
+	switch (p1) {
+	    case 0: /* switch to KEG */
+	    case NID_id_GostR3411_2012_256:
+	    case NID_id_GostR3411_2012_512:
+		break;
+	    default:
+		GOSTerr(GOST_F_PKEY_GOST_CTRL, GOST_R_INVALID_DIGEST_TYPE);
+		return 0;
+	}
+        pctx->vko_dgst_nid = p1;
         return 1;
   case EVP_PKEY_CTRL_CIPHER:
         switch (p1) {
