@@ -217,6 +217,19 @@ static int pkey_gost_ec_ctrl_str_common(EVP_PKEY_CTX *ctx,
     OPENSSL_free(tmp);
 
     return pkey_gost_ctrl(ctx, EVP_PKEY_CTRL_SET_IV, len, ukm_buf);
+  } else if (strcmp(type, vko_ctrl_string) == 0) {
+      int bits = atoi(value);
+      int vko_dgst_nid = 0;
+
+      if (bits == 256)
+	  vko_dgst_nid = NID_id_GostR3411_2012_256;
+      else if (bits == 512)
+	  vko_dgst_nid = NID_id_GostR3411_2012_512;
+      else if (bits != 0) {
+	  GOSTerr(GOST_F_PKEY_GOST_EC_CTRL_STR_COMMON, GOST_R_INVALID_DIGEST_TYPE);
+	  return 0;
+      }
+      return pkey_gost_ctrl(ctx, EVP_PKEY_CTRL_SET_VKO, vko_dgst_nid, NULL);
   }
   return -2;
 }
