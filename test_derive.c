@@ -233,9 +233,9 @@ int test_derive(struct test_derive *t, const char *name)
     EVP_PKEY_free(keyB);
 
     if (t->kek_len == skeylen && memcmp(t->kek, skey, skeylen) == 0)
-        printf(cGREEN "KEK match" cNORM "\n");
+        printf(cGREEN "KEK match etalon" cNORM "\n");
     else {
-        printf(cRED "KEK mismatch" cNORM "\n");
+        printf(cRED "KEK mismatch etalon" cNORM "\n");
         ret = 1;
     }
     OPENSSL_free(skey);
@@ -258,6 +258,108 @@ int test_derive_pair(struct test_derive *t)
     return ret;
 }
 
+static EVP_PKEY *keygen(const char *algo, const char *param)
+{
+    EVP_PKEY *key = NULL;
+
+    EVP_PKEY *tkey = EVP_PKEY_new();
+    T(EVP_PKEY_set_type_str(tkey, algo, -1));
+    int pkey_id = EVP_PKEY_id(tkey);
+    EVP_PKEY_free(tkey);
+
+    EVP_PKEY_CTX *ctx;
+    T((ctx = EVP_PKEY_CTX_new_id(pkey_id, NULL)));
+    T(EVP_PKEY_keygen_init(ctx));
+    T(EVP_PKEY_CTX_ctrl_str(ctx, "paramset", param));
+    T(EVP_PKEY_keygen(ctx, &key));
+    EVP_PKEY_CTX_free(ctx);
+    return key;
+}
+
+unsigned char *derive(EVP_PKEY *keyA, EVP_PKEY *keyB, int dgst_nid,
+                      int ukm_len, size_t *len)
+{
+    EVP_PKEY_CTX *ctx;
+    T(ctx = EVP_PKEY_CTX_new(keyA, NULL));
+    T(EVP_PKEY_derive_init(ctx));
+    T(EVP_PKEY_derive_set_peer(ctx, keyB));
+    if (dgst_nid)
+        T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_SET_VKO,
+                            dgst_nid, NULL));
+    if (ukm_len) {
+        unsigned char ukm[32] = { 1 };
+
+        OPENSSL_assert(ukm_len <= sizeof(ukm));
+        T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_SET_IV,
+                            ukm_len, ukm));
+    }
+
+    T(EVP_PKEY_derive(ctx, NULL, len));
+    unsigned char *skey;
+    T(skey = OPENSSL_malloc(*len));
+
+    T(EVP_PKEY_derive(ctx, skey, len));
+#ifdef DEBUG
+    BIO_dump_fp(stdout, skey, *len);
+#endif
+    EVP_PKEY_CTX_free(ctx);
+    return skey;
+}
+
+int test_derive_alg(const char *algo, const char *param, int mode)
+{
+    int ret = 0;
+
+    char *name = NULL;
+    int dgst_nid = 0;
+    int ukm_len = 0;
+    switch (mode) {
+    case 0:
+        dgst_nid = NID_id_GostR3411_2012_256;
+        name = "VKO256";
+        ukm_len = 1;
+        break;
+    case 1:
+        dgst_nid = NID_id_GostR3411_2012_512;
+        name = "VKO512";
+        ukm_len = 1;
+        break;
+    case 2:
+        name = "VKO";
+        ukm_len = 8;
+        break;
+    case 3:
+        if (!strcmp(algo, "gost2001"))
+            return 0; /* Skip. */
+        name = "KEG";
+        ukm_len = 32;
+        break;
+#define NR_MODES 4
+    default:
+        abort();
+    }
+    printf(cBLUE "Test %s for %s %s" cNORM " - ", name, algo, param);
+
+    EVP_PKEY *keyA = keygen(algo, param);
+    EVP_PKEY *keyB = keygen(algo, param);
+
+    size_t skeyA_len, skeyB_len;
+    unsigned char *skeyA = derive(keyA, keyB, dgst_nid, ukm_len, &skeyA_len);
+    unsigned char *skeyB = derive(keyB, keyA, dgst_nid, ukm_len, &skeyB_len);
+
+    ret = memcmp(skeyA, skeyB, skeyA_len);
+    if (!ret)
+        printf(cGREEN "KEK match" cNORM "\n");
+    else
+        printf(cRED "KEK mismatch" cNORM "\n");
+
+    EVP_PKEY_free(keyA);
+    EVP_PKEY_free(keyB);
+    OPENSSL_free(skeyA);
+    OPENSSL_free(skeyB);
+    return ret;
+}
+
 int main(int argc, char **argv)
 {
     int ret = 0;
@@ -273,6 +375,19 @@ int main(int argc, char **argv)
     int i;
     for (i = 0; i < OSSL_NELEM(derive_tests); i++)
         ret |= test_derive_pair(&derive_tests[i]);
+
+    for (i = 0; i < NR_MODES; i++) {
+        ret |= test_derive_alg("gost2001", "A", i);
+        ret |= test_derive_alg("gost2001", "B", i);
+        ret |= test_derive_alg("gost2001", "C", i);
+        ret |= test_derive_alg("gost2012_256", "A", i);
+        ret |= test_derive_alg("gost2012_256", "B", i);
+        ret |= test_derive_alg("gost2012_256", "C", i);
+        ret |= test_derive_alg("gost2012_256", "TCA", i);
+        ret |= test_derive_alg("gost2012_512", "A", i);
+        ret |= test_derive_alg("gost2012_512", "B", i);
+        ret |= test_derive_alg("gost2012_512", "C", i);
+    }
 
     ENGINE_finish(eng);
     ENGINE_free(eng);
