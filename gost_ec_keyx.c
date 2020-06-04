@@ -71,7 +71,7 @@ int VKO_compute_key(unsigned char *shared_key,
             break;
     }
 
-    if (!EC_POINT_mul(grp, pnt, NULL, pub_key, scalar, ctx)) {
+    if (!gost_ec_point_mul(grp, pnt, NULL, pub_key, scalar, ctx)) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_ERROR_POINT_MUL);
         goto err;
     }

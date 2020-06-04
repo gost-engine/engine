@@ -247,6 +247,22 @@ ECDSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey);
 int gost_ec_verify(const unsigned char *dgst, int dgst_len,
                    ECDSA_SIG *sig, EC_KEY *ec);
 int gost_ec_compute_public(EC_KEY *ec);
+int gost_ec_point_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n,
+                      const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);
+
+#define CURVEDEF(a) \
+int point_mul_##a(const EC_GROUP *group, EC_POINT *r, const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);\
+int point_mul_g_##a(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n, BN_CTX *ctx);\
+int point_mul_two_##a(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n, const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);
+
+CURVEDEF(id_GostR3410_2001_CryptoPro_A_ParamSet)
+CURVEDEF(id_GostR3410_2001_CryptoPro_B_ParamSet)
+CURVEDEF(id_GostR3410_2001_CryptoPro_C_ParamSet)
+CURVEDEF(id_GostR3410_2001_TestParamSet)
+CURVEDEF(id_tc26_gost_3410_2012_256_paramSetA)
+CURVEDEF(id_tc26_gost_3410_2012_512_paramSetA)
+CURVEDEF(id_tc26_gost_3410_2012_512_paramSetB)
+CURVEDEF(id_tc26_gost_3410_2012_512_paramSetC)
 
 /* VKO */
 int VKO_compute_key(unsigned char *shared_key,
