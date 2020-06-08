@@ -84,8 +84,9 @@ int VKO_compute_key(unsigned char *shared_key,
     /*
      * Serialize elliptic curve point same way as we do it when saving key
      */
-    BN_bn2lebinpad(X, databuf, half_len);
-    BN_bn2lebinpad(Y, databuf + half_len, half_len);
+    if (BN_bn2lebinpad(X, databuf, half_len) != half_len
+        || BN_bn2lebinpad(Y, databuf + half_len, half_len) != half_len)
+        goto err;
 
     if ((mdctx = EVP_MD_CTX_new()) == NULL) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
