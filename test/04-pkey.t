@@ -226,7 +226,10 @@ MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEBBCD5+u2ebYwQ9iDYWHmif4XeGgj2OijJuq4YsbTN
 MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEBBCDVwXdvq1zdBBmzVjG1WOBQR/dkwCzF6KSIiVkfQVCsKg==
 -----END PRIVATE KEY-----',
 'c019d8939e12740a328625cea86efa3b39170412772b3c110536410bdd58a854',
-'e9f7c57547fa0cd3c9942c62f9c74a553626d5f9810975a476825cd6f22a4e86'],
+'e9f7c57547fa0cd3c9942c62f9c74a553626d5f9810975a476825cd6f22a4e86',
+'-----BEGIN PUBLIC KEY-----
+MF4wFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEBA0MABEB3WS+MEcXnrMCdavPRgF28U5PDlV1atDh1ADUFxoB/f80OjqQ0T7cGQtk/2nWCGDX7uUrBGA8dql8Bnw9Sgn5+
+-----END PUBLIC KEY-----'],
 'id-tc26-gost-3410-2012-256-paramSetB'=>
 ['-----BEGIN PRIVATE KEY-----
 MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQECBCDQ6G51VK2+96rvFyG/dRqWOFNJA33jQajAnzra585aIA==
@@ -286,11 +289,14 @@ MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEA79FKW7MqF4pQJJvpAhKd9YkwsFXBzcaUhYt3N
 MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEAiCNNQAMnur4EG8eSDpr5WjJaoHquSsK3wydCrGM3Cdbaa0kiuj5m0Mx16Vow7AwvG2DvlKJL8HgwuBqWlDaYa
 -----END PRIVATE KEY-----',
 '6e1db0da8832660fbf761119e41d356a1599686a157c9a598b8e18b56cb09791',
-'2df0dfa8d437689d41fad965f13ea28ce27c29dd84514b376ea6ad9f0c7e3ece']
+'2df0dfa8d437689d41fad965f13ea28ce27c29dd84514b376ea6ad9f0c7e3ece',
+'-----BEGIN PUBLIC KEY-----
+MIGgMBcGCCqFAwcBAQECMAsGCSqFAwcBAgECAwOBhAAEgYCPdAER26Ym73DSUXBamTLJcntdV3oZ7RRx/+Ijf13GnF36o36i8tEC13uJqOOmujEkAGPtui6yE4iJNVU0uM6yHmIEM5H0c81Sd/VQD8yXW1hyGAZvTMc+U/6oa30YU9YY7+t759d1CIVznPmq9C+VbAApyDCMFjuYnKD/nChsGA==
+-----END PUBLIC KEY-----']
 );
-    plan(52);
+    plan(54);
     while(my($id, $v) = each %derives) {
-        my ($alice,$alicehash,$bob,$bobhash,$secrethash) = @$v;
+        my ($alice,$alicehash,$bob,$bobhash,$secrethash,$malice) = @$v;
         # Alice: keygen
         open $F,">",'alice.prv';
         print $F $alice;
@@ -309,6 +315,14 @@ MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEAiCNNQAMnur4EG8eSDpr5WjJaoHquSsK3wydCr
         # Bob: derive
         system("openssl pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey alice.pub.der -peerform DER -pkeyopt ukmhex:0100000000000000 -out secret_b.bin");
         like(`openssl dgst -sha256 -r secret_b.bin`, qr/^$secrethash/, "Compute shared key:$id:Bob");
+        if ($malice ne "") {
+            # Malice: negative test -- this PEM is in the small subgroup
+            open $F,">",'malice.pub';
+            print $F $malice;
+            close $F;
+            # NB system should return true on failure, so this is a negative test
+            ok(system("openssl pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey malice.pub -peerform PEM -pkeyopt ukmhex:0100000000000000 -out secret_m.bin"), "Compute shared key:$id:Malice");
+        }
     }
     unlink "alice.prv";
     unlink "alice.pub.der";
@@ -316,6 +330,8 @@ MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEAiCNNQAMnur4EG8eSDpr5WjJaoHquSsK3wydCr
     unlink "bob.pub.der";
     unlink "secret_a.bin";
     unlink "secret_b.bin";
+    unlink "malice.pub";
+    unlink "secret_m.bin";
 };
 
 # 10. Разобрать стандартый encrypted key
