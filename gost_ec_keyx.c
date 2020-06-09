@@ -1,9 +1,15 @@
 /**********************************************************************
  *                        gost_ec_keyx.c                              *
+ *                                                                    *
  *             Copyright (c) 2005-2013 Cryptocom LTD                  *
+ *   Copyright (c) 2018,2020 Dmitry Belyavskiy <beldmit@gmail.com>    *
+ *   Copyright (c) 2020 Billy Brumley <bbrumley@gmail.com>            *
+ *                                                                    *
  *         This file is distributed under the same license as OpenSSL *
  *                                                                    *
- *   VK0 34.10-2001 key exchange and GOST R 34.10-2001                *
+ *   VK0 R 50.1.113-2016 / RFC 7836                                   *
+ *   KEG R 1323565.1.020-2018                                         *
+ *   VK0 34.10-2001 key exchange and GOST R 34.10-2001 (RFC 4357)     *
  *   based PKCS7/SMIME support                                        *
  *          Requires OpenSSL 0.9.9 for compilation                    *
  **********************************************************************/
