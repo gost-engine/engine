@@ -1291,4 +1291,3 @@ static int gost_imit_cleanup(EVP_MD_CTX *ctx)
     memset(EVP_MD_CTX_md_data(ctx), 0, sizeof(struct ossl_gost_imit_ctx));
     return 1;
 }
-/* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
