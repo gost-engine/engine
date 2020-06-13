@@ -315,7 +315,7 @@ MIGgMBcGCCqFAwcBAQECMAsGCSqFAwcBAgECAwOBhAAEgYCPdAER26Ym73DSUXBamTLJcntdV3oZ7RRx
         # Bob: derive
         system("openssl pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey alice.pub.der -peerform DER -pkeyopt ukmhex:0100000000000000 -out secret_b.bin");
         like(`openssl dgst -sha256 -r secret_b.bin`, qr/^$secrethash/, "Compute shared key:$id:Bob");
-        if ($malice ne "") {
+        if (defined $malice && $malice ne "") {
             # Malice: negative test -- this PEM is in the small subgroup
             open $F,">",'malice.pub';
             print $F $malice;
