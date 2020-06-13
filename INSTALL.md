@@ -21,10 +21,10 @@ Instead of `Release` you can use `Debug`, `RelWithDebInfo` or `MinSizeRel` confi
 See [cmake docs](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) for details.
 You will find built binaries in `../bin` directory.
 
-If you want to build against a specific OpenSSL instance (you will need it
-if you have more than one OpenSSL instance for example), you can use
-the `cmake` variable `OPENSSL_ROOT_DIR` to specify path of the desirable
-OpenSSL instance:
+If you want to build against a specific OpenSSL instance (you will need it if
+you have more than one OpenSSL instance for example), you can use the `cmake`
+variable `OPENSSL_ROOT_DIR` to specify absolute path of the desirable OpenSSL
+instance:
 
     $ cmake -DOPENSSL_ROOT_DIR=/PATH/TO/OPENSSL/ ..
 
