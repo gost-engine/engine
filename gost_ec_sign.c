@@ -224,15 +224,7 @@ ECDSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
                 GOSTerr(GOST_F_GOST_EC_SIGN, GOST_R_RNG_ERROR);
                 goto err;
             }
-            /*
-             * To avoid timing information leaking the length of k,
-             * compute C*k using an equivalent scalar of fixed bit-length */
-            if (!BN_add(k, k, order)
-                || (BN_num_bits(k) <= BN_num_bits(order)
-                    && !BN_add(k, k, order))) {
-                goto err;
-            }
-            if (!EC_POINT_mul(group, C, k, NULL, NULL, ctx)) {
+            if (!gost_ec_point_mul(group, C, k, NULL, NULL, ctx)) {
                 GOSTerr(GOST_F_GOST_EC_SIGN, ERR_R_EC_LIB);
                 goto err;
             }
@@ -387,7 +379,7 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
         GOSTerr(GOST_F_GOST_EC_VERIFY, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    if (!EC_POINT_mul(group, C, z1, pub_key, z2, ctx)) {
+    if (!gost_ec_point_mul(group, C, z1, pub_key, z2, ctx)) {
         GOSTerr(GOST_F_GOST_EC_VERIFY, ERR_R_EC_LIB);
         goto err;
     }
@@ -458,7 +450,7 @@ int gost_ec_compute_public(EC_KEY *ec)
         goto err;
     }
 
-    if (!EC_POINT_mul(group, pub_key, priv_key, NULL, NULL, ctx)) {
+    if (!gost_ec_point_mul(group, pub_key, priv_key, NULL, NULL, ctx)) {
         GOSTerr(GOST_F_GOST_EC_COMPUTE_PUBLIC, ERR_R_EC_LIB);
         goto err;
     }
@@ -473,6 +465,101 @@ int gost_ec_compute_public(EC_KEY *ec)
     BN_CTX_end(ctx);
     BN_CTX_free(ctx);
     return ok;
+}
+
+int gost_ec_point_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n,
+                      const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx)
+{
+    if (group == NULL || r == NULL || ctx == NULL)
+        return 0;
+
+    if (m != NULL && n != NULL) {
+        /* verification */
+        if (q == NULL)
+            return 0;
+        switch(EC_GROUP_get_curve_name(group)) {
+            case NID_id_GostR3410_2001_CryptoPro_A_ParamSet:
+            case NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet:
+            case NID_id_tc26_gost_3410_2012_256_paramSetB:
+                return point_mul_two_id_GostR3410_2001_CryptoPro_A_ParamSet(group, r, n, q, m, ctx);
+            case NID_id_GostR3410_2001_CryptoPro_B_ParamSet:
+            case NID_id_tc26_gost_3410_2012_256_paramSetC:
+                return point_mul_two_id_GostR3410_2001_CryptoPro_B_ParamSet(group, r, n, q, m, ctx);
+            case NID_id_GostR3410_2001_CryptoPro_C_ParamSet:
+            case NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet:
+            case NID_id_tc26_gost_3410_2012_256_paramSetD:
+                return point_mul_two_id_GostR3410_2001_CryptoPro_C_ParamSet(group, r, n, q, m, ctx);
+            case NID_id_GostR3410_2001_TestParamSet:
+                return point_mul_two_id_GostR3410_2001_TestParamSet(group, r, n, q, m, ctx);
+            case NID_id_tc26_gost_3410_2012_256_paramSetA:
+                return point_mul_two_id_tc26_gost_3410_2012_256_paramSetA(group, r, n, q, m, ctx);
+            case NID_id_tc26_gost_3410_2012_512_paramSetA:
+                return point_mul_two_id_tc26_gost_3410_2012_512_paramSetA(group, r, n, q, m, ctx);
+            case NID_id_tc26_gost_3410_2012_512_paramSetB:
+                return point_mul_two_id_tc26_gost_3410_2012_512_paramSetB(group, r, n, q, m, ctx);
+            case NID_id_tc26_gost_3410_2012_512_paramSetC:
+                return point_mul_two_id_tc26_gost_3410_2012_512_paramSetC(group, r, n, q, m, ctx);
+            default:
+                return EC_POINT_mul(group, r, n, q, m, ctx);
+        }
+    } else if (n != NULL) {
+        /* mul g */
+        switch(EC_GROUP_get_curve_name(group)) {
+            case NID_id_GostR3410_2001_CryptoPro_A_ParamSet:
+            case NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet:
+            case NID_id_tc26_gost_3410_2012_256_paramSetB:
+                return point_mul_g_id_GostR3410_2001_CryptoPro_A_ParamSet(group, r, n, ctx);
+            case NID_id_GostR3410_2001_CryptoPro_B_ParamSet:
+            case NID_id_tc26_gost_3410_2012_256_paramSetC:
+                return point_mul_g_id_GostR3410_2001_CryptoPro_B_ParamSet(group, r, n, ctx);
+            case NID_id_GostR3410_2001_CryptoPro_C_ParamSet:
+            case NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet:
+            case NID_id_tc26_gost_3410_2012_256_paramSetD:
+                return point_mul_g_id_GostR3410_2001_CryptoPro_C_ParamSet(group, r, n, ctx);
+            case NID_id_GostR3410_2001_TestParamSet:
+                return point_mul_g_id_GostR3410_2001_TestParamSet(group, r, n, ctx);
+            case NID_id_tc26_gost_3410_2012_256_paramSetA:
+                return point_mul_g_id_tc26_gost_3410_2012_256_paramSetA(group, r, n, ctx);
+            case NID_id_tc26_gost_3410_2012_512_paramSetA:
+                return point_mul_g_id_tc26_gost_3410_2012_512_paramSetA(group, r, n, ctx);
+            case NID_id_tc26_gost_3410_2012_512_paramSetB:
+                return point_mul_g_id_tc26_gost_3410_2012_512_paramSetB(group, r, n, ctx);
+            case NID_id_tc26_gost_3410_2012_512_paramSetC:
+                return point_mul_g_id_tc26_gost_3410_2012_512_paramSetC(group, r, n, ctx);
+            default:
+                return EC_POINT_mul(group, r, n, q, m, ctx);
+        }
+    } else if (m != NULL) {
+        if (q == NULL)
+            return 0;
+        /* mul */
+        switch(EC_GROUP_get_curve_name(group)) {
+            case NID_id_GostR3410_2001_CryptoPro_A_ParamSet:
+            case NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet:
+            case NID_id_tc26_gost_3410_2012_256_paramSetB:
+                return point_mul_id_GostR3410_2001_CryptoPro_A_ParamSet(group, r, q, m, ctx);
+            case NID_id_GostR3410_2001_CryptoPro_B_ParamSet:
+            case NID_id_tc26_gost_3410_2012_256_paramSetC:
+                return point_mul_id_GostR3410_2001_CryptoPro_B_ParamSet(group, r, q, m, ctx);
+            case NID_id_GostR3410_2001_CryptoPro_C_ParamSet:
+            case NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet:
+            case NID_id_tc26_gost_3410_2012_256_paramSetD:
+                return point_mul_id_GostR3410_2001_CryptoPro_C_ParamSet(group, r, q, m, ctx);
+            case NID_id_GostR3410_2001_TestParamSet:
+                return point_mul_id_GostR3410_2001_TestParamSet(group, r, q, m, ctx);
+            case NID_id_tc26_gost_3410_2012_256_paramSetA:
+                return point_mul_id_tc26_gost_3410_2012_256_paramSetA(group, r, q, m, ctx);
+            case NID_id_tc26_gost_3410_2012_512_paramSetA:
+                return point_mul_id_tc26_gost_3410_2012_512_paramSetA(group, r, q, m, ctx);
+            case NID_id_tc26_gost_3410_2012_512_paramSetB:
+                return point_mul_id_tc26_gost_3410_2012_512_paramSetB(group, r, q, m, ctx);
+            case NID_id_tc26_gost_3410_2012_512_paramSetC:
+                return point_mul_id_tc26_gost_3410_2012_512_paramSetC(group, r, q, m, ctx);
+            default:
+                return EC_POINT_mul(group, r, n, q, m, ctx);
+        }
+    }
+    return 0;
 }
 
 /*

@@ -136,6 +136,14 @@ set(GOST_CORE_SOURCE_FILES
 set(GOST_EC_SOURCE_FILES
         gost_ec_keyx.c
         gost_ec_sign.c
+        ecp_id_GostR3410_2001_CryptoPro_A_ParamSet.c
+        ecp_id_GostR3410_2001_CryptoPro_B_ParamSet.c
+        ecp_id_GostR3410_2001_CryptoPro_C_ParamSet.c
+        ecp_id_GostR3410_2001_TestParamSet.c
+        ecp_id_tc26_gost_3410_2012_256_paramSetA.c
+        ecp_id_tc26_gost_3410_2012_512_paramSetA.c
+        ecp_id_tc26_gost_3410_2012_512_paramSetB.c
+        ecp_id_tc26_gost_3410_2012_512_paramSetC.c
         )
 
 set (GOST_OMAC_SOURCE_FILES
