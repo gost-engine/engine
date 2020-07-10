@@ -6469,9 +6469,9 @@ static int scalar_get_bit(const unsigned char in[64], int idx) {
  * {\pm 1, \pm 3, \pm 5, \pm 7, \pm 9, ...}
  * i.e. signed odd digits with _no zeroes_ -- that makes it "regular".
  */
-static void scalar_rwnaf(char out[103], const unsigned char in[64]) {
+static void scalar_rwnaf(int8_t out[103], const unsigned char in[64]) {
     int i;
-    char window, d;
+    int8_t window, d;
 
     window = (in[0] & (DRADIX_WNAF - 1)) | 1;
     for (i = 0; i < 102; i++) {
@@ -6491,9 +6491,9 @@ static void scalar_rwnaf(char out[103], const unsigned char in[64]) {
  * Compute "textbook" wnaf representation of a scalar.
  * NB: not constant time
  */
-static void scalar_wnaf(char out[513], const unsigned char in[64]) {
+static void scalar_wnaf(int8_t out[513], const unsigned char in[64]) {
     int i;
-    char window, d;
+    int8_t window, d;
 
     window = in[0] & (DRADIX_WNAF - 1);
     for (i = 0; i < 513; i++) {
@@ -6513,8 +6513,8 @@ static void scalar_wnaf(char out[513], const unsigned char in[64]) {
 static void var_smul_wnaf_two(pt_aff_t *out, const unsigned char a[64],
                               const unsigned char b[64], const pt_aff_t *P) {
     int i, d, is_neg, is_inf = 1, flipped = 0;
-    char anaf[513] = {0};
-    char bnaf[513] = {0};
+    int8_t anaf[513] = {0};
+    int8_t bnaf[513] = {0};
     pt_prj_t Q;
     pt_prj_t precomp[DRADIX / 2];
 
@@ -6580,7 +6580,7 @@ static void var_smul_wnaf_two(pt_aff_t *out, const unsigned char a[64],
 static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[64],
                            const pt_aff_t *P) {
     int i, j, d, diff, is_neg;
-    char rnaf[103] = {0};
+    int8_t rnaf[103] = {0};
     pt_prj_t Q, lut;
     pt_prj_t precomp[DRADIX / 2];
 
@@ -6656,7 +6656,7 @@ static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[64],
  */
 static void fixed_smul_cmb(pt_aff_t *out, const unsigned char scalar[64]) {
     int i, j, k, d, diff, is_neg = 0;
-    char rnaf[103] = {0};
+    int8_t rnaf[103] = {0};
     pt_prj_t Q, R;
     pt_aff_t lut;
 
@@ -6767,6 +6767,7 @@ static void point_mul(unsigned char outx[64], unsigned char outy[64],
     fiat_id_tc26_gost_3410_2012_512_paramSetB_to_bytes(outx, P.X);
     fiat_id_tc26_gost_3410_2012_512_paramSetB_to_bytes(outy, P.Y);
 }
+
 
 #include <openssl/ec.h>
 
@@ -21902,9 +21903,9 @@ static int scalar_get_bit(const unsigned char in[64], int idx) {
  * {\pm 1, \pm 3, \pm 5, \pm 7, \pm 9, ...}
  * i.e. signed odd digits with _no zeroes_ -- that makes it "regular".
  */
-static void scalar_rwnaf(char out[103], const unsigned char in[64]) {
+static void scalar_rwnaf(int8_t out[103], const unsigned char in[64]) {
     int i;
-    char window, d;
+    int8_t window, d;
 
     window = (in[0] & (DRADIX_WNAF - 1)) | 1;
     for (i = 0; i < 102; i++) {
@@ -21924,9 +21925,9 @@ static void scalar_rwnaf(char out[103], const unsigned char in[64]) {
  * Compute "textbook" wnaf representation of a scalar.
  * NB: not constant time
  */
-static void scalar_wnaf(char out[513], const unsigned char in[64]) {
+static void scalar_wnaf(int8_t out[513], const unsigned char in[64]) {
     int i;
-    char window, d;
+    int8_t window, d;
 
     window = in[0] & (DRADIX_WNAF - 1);
     for (i = 0; i < 513; i++) {
@@ -21946,8 +21947,8 @@ static void scalar_wnaf(char out[513], const unsigned char in[64]) {
 static void var_smul_wnaf_two(pt_aff_t *out, const unsigned char a[64],
                               const unsigned char b[64], const pt_aff_t *P) {
     int i, d, is_neg, is_inf = 1, flipped = 0;
-    char anaf[513] = {0};
-    char bnaf[513] = {0};
+    int8_t anaf[513] = {0};
+    int8_t bnaf[513] = {0};
     pt_prj_t Q;
     pt_prj_t precomp[DRADIX / 2];
 
@@ -22013,7 +22014,7 @@ static void var_smul_wnaf_two(pt_aff_t *out, const unsigned char a[64],
 static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[64],
                            const pt_aff_t *P) {
     int i, j, d, diff, is_neg;
-    char rnaf[103] = {0};
+    int8_t rnaf[103] = {0};
     pt_prj_t Q, lut;
     pt_prj_t precomp[DRADIX / 2];
 
@@ -22089,7 +22090,7 @@ static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[64],
  */
 static void fixed_smul_cmb(pt_aff_t *out, const unsigned char scalar[64]) {
     int i, j, k, d, diff, is_neg = 0;
-    char rnaf[103] = {0};
+    int8_t rnaf[103] = {0};
     pt_prj_t Q, R;
     pt_aff_t lut;
 
@@ -22200,6 +22201,7 @@ static void point_mul(unsigned char outx[64], unsigned char outy[64],
     fiat_id_tc26_gost_3410_2012_512_paramSetB_to_bytes(outx, P.X);
     fiat_id_tc26_gost_3410_2012_512_paramSetB_to_bytes(outy, P.Y);
 }
+
 
 #include <openssl/ec.h>
 
