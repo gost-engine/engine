@@ -3322,8 +3322,8 @@ static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
     /* temporary variables */
     fe_t t0, t1;
     /* constants */
-    const limb_t *S = const_S;
     const limb_t *T = const_T;
+    const limb_t *S = const_S;
     const limb_t *X1 = P->X;
     const limb_t *Y1 = P->Y;
     const limb_t *Z1 = P->Z;
@@ -3350,8 +3350,8 @@ static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
  */
 static void point_legacy2edwards(pt_prj_t *Q, const pt_aff_t *P) {
     /* constants */
-    const limb_t *S = const_S;
     const limb_t *T = const_T;
+    const limb_t *S = const_S;
     const limb_t *X1 = P->X;
     const limb_t *Y1 = P->Y;
     limb_t *X3 = Q->X;
@@ -3417,9 +3417,9 @@ static int scalar_get_bit(const unsigned char in[32], int idx) {
  * {\pm 1, \pm 3, \pm 5, \pm 7, \pm 9, ...}
  * i.e. signed odd digits with _no zeroes_ -- that makes it "regular".
  */
-static void scalar_rwnaf(char out[52], const unsigned char in[32]) {
+static void scalar_rwnaf(int8_t out[52], const unsigned char in[32]) {
     int i;
-    char window, d;
+    int8_t window, d;
 
     window = (in[0] & (DRADIX_WNAF - 1)) | 1;
     for (i = 0; i < 51; i++) {
@@ -3439,9 +3439,9 @@ static void scalar_rwnaf(char out[52], const unsigned char in[32]) {
  * Compute "textbook" wnaf representation of a scalar.
  * NB: not constant time
  */
-static void scalar_wnaf(char out[257], const unsigned char in[32]) {
+static void scalar_wnaf(int8_t out[257], const unsigned char in[32]) {
     int i;
-    char window, d;
+    int8_t window, d;
 
     window = in[0] & (DRADIX_WNAF - 1);
     for (i = 0; i < 257; i++) {
@@ -3461,8 +3461,8 @@ static void scalar_wnaf(char out[257], const unsigned char in[32]) {
 static void var_smul_wnaf_two(pt_aff_t *out, const unsigned char a[32],
                               const unsigned char b[32], const pt_aff_t *P) {
     int i, d, is_neg, is_inf = 1, flipped = 0;
-    char anaf[257] = {0};
-    char bnaf[257] = {0};
+    int8_t anaf[257] = {0};
+    int8_t bnaf[257] = {0};
     pt_prj_t Q;
     pt_prj_t precomp[DRADIX / 2];
 
@@ -3536,7 +3536,7 @@ static void var_smul_wnaf_two(pt_aff_t *out, const unsigned char a[32],
 static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[32],
                            const pt_aff_t *P) {
     int i, j, d, diff, is_neg;
-    char rnaf[52] = {0};
+    int8_t rnaf[52] = {0};
     pt_prj_t Q, lut;
     pt_prj_t precomp[DRADIX / 2];
 
@@ -3624,7 +3624,7 @@ static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[32],
  */
 static void fixed_smul_cmb(pt_aff_t *out, const unsigned char scalar[32]) {
     int i, j, k, d, diff, is_neg = 0;
-    char rnaf[52] = {0};
+    int8_t rnaf[52] = {0};
     pt_prj_t Q, R;
     pt_aff_t lut;
 
@@ -3736,6 +3736,7 @@ static void point_mul(unsigned char outx[32], unsigned char outy[32],
     fiat_id_tc26_gost_3410_2012_256_paramSetA_to_bytes(outx, P.X);
     fiat_id_tc26_gost_3410_2012_256_paramSetA_to_bytes(outy, P.Y);
 }
+
 
 #include <openssl/ec.h>
 
@@ -8463,8 +8464,8 @@ static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
     /* temporary variables */
     fe_t t0, t1;
     /* constants */
-    const limb_t *S = const_S;
     const limb_t *T = const_T;
+    const limb_t *S = const_S;
     const limb_t *X1 = P->X;
     const limb_t *Y1 = P->Y;
     const limb_t *Z1 = P->Z;
@@ -8491,8 +8492,8 @@ static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
  */
 static void point_legacy2edwards(pt_prj_t *Q, const pt_aff_t *P) {
     /* constants */
-    const limb_t *S = const_S;
     const limb_t *T = const_T;
+    const limb_t *S = const_S;
     const limb_t *X1 = P->X;
     const limb_t *Y1 = P->Y;
     limb_t *X3 = Q->X;
@@ -8558,9 +8559,9 @@ static int scalar_get_bit(const unsigned char in[32], int idx) {
  * {\pm 1, \pm 3, \pm 5, \pm 7, \pm 9, ...}
  * i.e. signed odd digits with _no zeroes_ -- that makes it "regular".
  */
-static void scalar_rwnaf(char out[52], const unsigned char in[32]) {
+static void scalar_rwnaf(int8_t out[52], const unsigned char in[32]) {
     int i;
-    char window, d;
+    int8_t window, d;
 
     window = (in[0] & (DRADIX_WNAF - 1)) | 1;
     for (i = 0; i < 51; i++) {
@@ -8580,9 +8581,9 @@ static void scalar_rwnaf(char out[52], const unsigned char in[32]) {
  * Compute "textbook" wnaf representation of a scalar.
  * NB: not constant time
  */
-static void scalar_wnaf(char out[257], const unsigned char in[32]) {
+static void scalar_wnaf(int8_t out[257], const unsigned char in[32]) {
     int i;
-    char window, d;
+    int8_t window, d;
 
     window = in[0] & (DRADIX_WNAF - 1);
     for (i = 0; i < 257; i++) {
@@ -8602,8 +8603,8 @@ static void scalar_wnaf(char out[257], const unsigned char in[32]) {
 static void var_smul_wnaf_two(pt_aff_t *out, const unsigned char a[32],
                               const unsigned char b[32], const pt_aff_t *P) {
     int i, d, is_neg, is_inf = 1, flipped = 0;
-    char anaf[257] = {0};
-    char bnaf[257] = {0};
+    int8_t anaf[257] = {0};
+    int8_t bnaf[257] = {0};
     pt_prj_t Q;
     pt_prj_t precomp[DRADIX / 2];
 
@@ -8677,7 +8678,7 @@ static void var_smul_wnaf_two(pt_aff_t *out, const unsigned char a[32],
 static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[32],
                            const pt_aff_t *P) {
     int i, j, d, diff, is_neg;
-    char rnaf[52] = {0};
+    int8_t rnaf[52] = {0};
     pt_prj_t Q, lut;
     pt_prj_t precomp[DRADIX / 2];
 
@@ -8765,7 +8766,7 @@ static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[32],
  */
 static void fixed_smul_cmb(pt_aff_t *out, const unsigned char scalar[32]) {
     int i, j, k, d, diff, is_neg = 0;
-    char rnaf[52] = {0};
+    int8_t rnaf[52] = {0};
     pt_prj_t Q, R;
     pt_aff_t lut;
 
@@ -8877,6 +8878,7 @@ static void point_mul(unsigned char outx[32], unsigned char outy[32],
     fiat_id_tc26_gost_3410_2012_256_paramSetA_to_bytes(outx, P.X);
     fiat_id_tc26_gost_3410_2012_256_paramSetA_to_bytes(outy, P.Y);
 }
+
 
 #include <openssl/ec.h>
 
