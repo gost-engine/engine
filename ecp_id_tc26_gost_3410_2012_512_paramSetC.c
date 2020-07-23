@@ -4126,7 +4126,7 @@ static void point_add_proj(pt_prj_t *R, const pt_prj_t *Q, const pt_prj_t *P) {
  */
 static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
     /* temporary variables */
-    fe_t t0, t1;
+    fe_t t0;
     /* constants */
     const limb_t *S = const_S;
     const limb_t *T = const_T;
@@ -4139,13 +4139,13 @@ static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
     limb_t *Z3 = Q->Z;
 
     /* the curve arith formula */
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_add(t0, Z1, Y1);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_sub(t1, Z1, Y1);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(T3, S, t0);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_add(T3, Z1, Y1);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_sub(t0, Z1, Y1);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(T3, S, T3);
     fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(Y3, Z1, T3);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(Z3, X3, t1);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(t1, t1, T);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_add(t0, T3, t1);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(Z3, X1, t0);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(t0, t0, T);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_add(t0, T3, t0);
     fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(X3, X1, t0);
 }
 
@@ -4156,8 +4156,8 @@ static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
  */
 static void point_legacy2edwards(pt_prj_t *Q, const pt_aff_t *P) {
     /* constants */
-    const limb_t *S = const_S;
     const limb_t *T = const_T;
+    const limb_t *S = const_S;
     const limb_t *X1 = P->X;
     const limb_t *Y1 = P->Y;
     limb_t *X3 = Q->X;
@@ -11976,10 +11976,10 @@ static void point_add_proj(pt_prj_t *R, const pt_prj_t *Q, const pt_prj_t *P) {
  */
 static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
     /* temporary variables */
-    fe_t t0, t1;
+    fe_t t0;
     /* constants */
-    const limb_t *T = const_T;
     const limb_t *S = const_S;
+    const limb_t *T = const_T;
     const limb_t *X1 = P->X;
     const limb_t *Y1 = P->Y;
     const limb_t *Z1 = P->Z;
@@ -11989,13 +11989,13 @@ static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
     limb_t *Z3 = Q->Z;
 
     /* the curve arith formula */
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_add(t0, Z1, Y1);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_sub(t1, Z1, Y1);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(T3, S, t0);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_add(T3, Z1, Y1);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_sub(t0, Z1, Y1);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(T3, S, T3);
     fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(Y3, Z1, T3);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(Z3, X3, t1);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(t1, t1, T);
-    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_add(t0, T3, t1);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(Z3, X1, t0);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(t0, t0, T);
+    fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_add(t0, T3, t0);
     fiat_id_tc26_gost_3410_2012_512_paramSetC_carry_mul(X3, X1, t0);
 }
 
@@ -12006,8 +12006,8 @@ static void point_edwards2legacy(pt_prj_t *Q, const pt_prj_t *P) {
  */
 static void point_legacy2edwards(pt_prj_t *Q, const pt_aff_t *P) {
     /* constants */
-    const limb_t *T = const_T;
     const limb_t *S = const_S;
+    const limb_t *T = const_T;
     const limb_t *X1 = P->X;
     const limb_t *Y1 = P->Y;
     limb_t *X3 = Q->X;
