@@ -177,7 +177,7 @@ static int test_sign(struct test_sign *t)
     fflush(stdout);
     pkey = NULL;
     OSSL_STORE_CTX *cts;
-    T(cts = OSSL_STORE_attach(bp, NULL, "file", NULL, NULL, NULL, NULL, NULL));
+    T(cts = OSSL_STORE_attach(bp, "file", NULL, NULL, NULL, NULL, NULL, NULL));
     for (;;) {
 	OSSL_STORE_INFO *info = OSSL_STORE_load(cts);
 	if (!info) {
