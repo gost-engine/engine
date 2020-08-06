@@ -529,7 +529,7 @@ static int do_hmac_prov(int iter, const EVP_MD *type, const char *plaintext,
     EVP_MAC *hmac;
     T(hmac = EVP_MAC_fetch(NULL, "HMAC", NULL));
     EVP_MAC_CTX *ctx;
-    T(ctx = EVP_MAC_new_ctx(hmac));
+    T(ctx = EVP_MAC_CTX_new(hmac));
     OSSL_PARAM params[] = {
 	OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_DIGEST,
 	    (char *)EVP_MD_name(type), 0),
@@ -537,11 +537,11 @@ static int do_hmac_prov(int iter, const EVP_MD *type, const char *plaintext,
 	    (char *)t->key, t->key_size),
 	OSSL_PARAM_END
     };
-    T(EVP_MAC_set_ctx_params(ctx, params));
+    T(EVP_MAC_CTX_set_params(ctx, params));
     T(EVP_MAC_init(ctx));
     T(EVP_MAC_update(ctx, (unsigned char *)plaintext, t->psize));
     T(EVP_MAC_final(ctx, md, &len, EVP_MAX_MD_SIZE));
-    EVP_MAC_free_ctx(ctx);
+    EVP_MAC_CTX_free(ctx);
     EVP_MAC_free(hmac);
 
     if (t->mdsize)
@@ -606,17 +606,17 @@ static int do_cmac_prov(int iter, const char *plaintext,
     EVP_MAC *cmac;
     T(cmac = EVP_MAC_fetch(NULL, "CMAC", NULL));
     EVP_MAC_CTX *ctx;
-    T(ctx = EVP_MAC_new_ctx(cmac));
+    T(ctx = EVP_MAC_CTX_new(cmac));
     OSSL_PARAM params[] = {
 	OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_CIPHER, mdname, 0),
 	OSSL_PARAM_octet_string(OSSL_MAC_PARAM_KEY, (char *)t->key, t->key_size),
 	OSSL_PARAM_END
     };
-    T(EVP_MAC_set_ctx_params(ctx, params));
+    T(EVP_MAC_CTX_set_params(ctx, params));
     T(EVP_MAC_init(ctx));
     T(EVP_MAC_update(ctx, (unsigned char *)plaintext, t->psize));
     T(EVP_MAC_final(ctx, md, &len, EVP_MAX_MD_SIZE));
-    EVP_MAC_free_ctx(ctx);
+    EVP_MAC_CTX_free(ctx);
     EVP_MAC_free(cmac);
 
     /* CMAC provider will not respect outsize, and will output full block.
