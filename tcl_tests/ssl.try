@@ -42,7 +42,7 @@ if {[info exists env(ALG_LIST)]} {
 }
 
 array set suites {
-rsa:1024 {ECDHE-RSA-AES256-SHA}
+rsa:1024 {ECDHE-RSA-AES256-SHA@SECLEVEL=0}
 gost2001:XA {GOST2001-GOST89-GOST89 GOST2001-NULL-GOST94@SECLEVEL=0 LEGACY-GOST2012-GOST8912-GOST8912 IANA-GOST2012-GOST8912-GOST8912 GOST2012-NULL-GOST12@SECLEVEL=0}
 gost2012_256:XA {LEGACY-GOST2012-GOST8912-GOST8912 GOST2012-NULL-GOST12@SECLEVEL=0}
 gost2012_512:A {LEGACY-GOST2012-GOST8912-GOST8912 GOST2012-NULL-GOST12@SECLEVEL=0}
@@ -202,7 +202,7 @@ foreach proto $proto_list {
 						-CAfile $::test::ca/cacert.pem -verify_return_error \
 						-verify 1 -state -cipher $suite] \
 						[list -www -cert localhost_$alg_fn/cert.pem \
-						-key localhost_$alg_fn/seckey.pem $protos($proto)] {}] 
+						-key localhost_$alg_fn/seckey.pem $protos($proto) -cipher ALL@SECLEVEL=0] {}] 
 					if {[regexp -lineanchor \
 					{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
 					[lindex $list 0] -> result_proto result_cipher]} {
@@ -210,7 +210,7 @@ foreach proto $proto_list {
 					} else {
 						lindex $list 1
 					}	
-				} 0 [list 0 $proto $suite]
+				} 0 [list 0 $proto $raw_name]
 
 
 				test "Сервер c несколькими алгоритмами, клиент $suite $proto" {
@@ -220,7 +220,7 @@ foreach proto $proto_list {
 						[list -www -cert localhost_rsa/cert.pem \
 						-key localhost_rsa/seckey.pem \
 						-dcert localhost_$alg_fn/cert.pem \
-						-dkey localhost_$alg_fn/seckey.pem $protos($proto)] {}] 
+						-dkey localhost_$alg_fn/seckey.pem $protos($proto) -cipher ALL@SECLEVEL=0] {}] 
 					if {[regexp -lineanchor \
 					{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
 					[lindex $list 0] -> result_proto result_cipher]} {
@@ -228,18 +228,18 @@ foreach proto $proto_list {
 					} else {
 						lindex $list 1
 					}	
-				} 0 [list 0 $proto $suite]
+				} 0 [list 0 $proto $raw_name]
 
 			}
 
 			test "Сервер c несколькими алгоритмами, клиент AES256-SHA $proto" {
 				set list [client_server [list -connect localhost:4433 \
 					-CAfile $::test::ca/cacert.pem -verify_return_error \
-					-verify 1 -state -cipher AES256-SHA] \
+					-verify 1 -state -cipher AES256-SHA@SECLEVEL=0] \
 					[list -www -cert localhost_rsa/cert.pem \
 					-key localhost_rsa/seckey.pem \
 					-dcert localhost_$alg_fn/cert.pem \
-					-dkey localhost_$alg_fn/seckey.pem $protos($proto)] {}] 
+					-dkey localhost_$alg_fn/seckey.pem $protos($proto) -cipher ALL@SECLEVEL=0] {}] 
 				if {[regexp -lineanchor \
 				{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
 				[lindex $list 0] -> result_proto result_cipher]} {
