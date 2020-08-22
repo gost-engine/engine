@@ -973,7 +973,7 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     pval = params;
 
     order = BN_new();
-    if (!order) {
+    if (order == NULL || EC_GROUP_get_order(EC_KEY_get0_group(ec), order, NULL) == 0) {
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
