@@ -40,27 +40,24 @@ static EVP_PKEY *create_key(const char *algname, const char *param)
 	EVP_PKEY *key1 = EVP_PKEY_new(), *newkey = NULL;
 	EVP_PKEY_CTX *ctx = NULL;
 
-	if(EVP_PKEY_set_type_str(key1, algname, strlen(algname)) <= 0)
-	{
-		goto err;
-	}
-	if(!(ctx = EVP_PKEY_CTX_new(key1, NULL)))
-	{
-		goto err;
-	}
-	EVP_PKEY_keygen_init(ctx);
-	if(ERR_peek_last_error())
-	{
-		goto err;
-	}
-	if(EVP_PKEY_CTX_ctrl_str(ctx, "paramset", param) <= 0)
-	{
-		goto err;
-	}
-	if(EVP_PKEY_keygen(ctx, &newkey) <= 0)
-	{
-		goto err;
-	}
+	if (EVP_PKEY_set_type_str(key1, algname, strlen(algname)) <= 0)
+		  goto err;
+
+	if (!(ctx = EVP_PKEY_CTX_new(key1, NULL)))
+		  goto err;
+
+	if (EVP_PKEY_keygen_init(ctx) == 0)
+		  goto err;
+
+	if (ERR_peek_last_error())
+		  goto err;
+
+	if (EVP_PKEY_CTX_ctrl_str(ctx, "paramset", param) <= 0)
+		  goto err;
+
+	if (EVP_PKEY_keygen(ctx, &newkey) <= 0)
+		  goto err;
+
 err:
 	if(ctx)
 		EVP_PKEY_CTX_free(ctx);
