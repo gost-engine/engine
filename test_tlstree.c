@@ -101,7 +101,7 @@ int main(void)
 	int i;
 
 	OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, NULL);
-		
+
 	memset(data63, 0, 4096);
 
 	md = EVP_get_digestbynid(NID_grasshopper_mac);
@@ -126,7 +126,10 @@ int main(void)
 
 	ciph = EVP_get_cipherbynid(NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm);
 	enc = EVP_CIPHER_CTX_new();
-	EVP_EncryptInit_ex(enc, ciph, NULL, enc_key, full_iv);
+	if (EVP_EncryptInit_ex(enc, ciph, NULL, enc_key, full_iv) <= 0) {
+		fprintf(stderr, "Internal error");
+		exit(1);
+	}
 
 	for (i = 7; i >= 0; i--) {
 		++seq0[i];
