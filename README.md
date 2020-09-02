@@ -1,7 +1,9 @@
 # engine
 A reference implementation of the Russian GOST crypto algorithms for OpenSSL
 
-Compatibility: OpenSSL 1.0.2 (needs patches), OpenSSL 1.1.*
+Compatibility: OpenSSL 1.1.1 (needs patches)
+*This branch should not compile with vanilla OpenSSL 1.1.1!
+It requires patching OpenSSL using the patches/openssl_111g.diff*
 
 License: same as the corresponding version of OpenSSL.
 

@@ -8,7 +8,7 @@ include(CheckCSourceRuns)
 
 enable_testing()
 
-find_package(OpenSSL 3.0 REQUIRED)
+find_package(OpenSSL 1.1.1 REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
