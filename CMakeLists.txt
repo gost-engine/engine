@@ -66,6 +66,18 @@ if (ADDCARRY_U64)
   add_definitions(-DHAVE_ADDCARRY_U64)
 endif()
 
+check_c_source_runs("
+  int main(void) {
+    char buf[16] = { 0, 1, 2 };
+    int *p = buf + 1;
+    int *q = buf + 2;
+    return (*p == *q);
+  }
+  " RELAXED_ALIGNMENT)
+if (NOT RELAXED_ALIGNMENT)
+  add_definitions(-DSTRICT_ALIGNMENT)
+endif()
+
 set(BIN_DIRECTORY bin)
 
 # Same soversion as OpenSSL
