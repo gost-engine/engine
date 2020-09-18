@@ -238,17 +238,10 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
 int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
                  const unsigned char *tlsseq)
 {
-#ifndef L_ENDIAN
-    uint64_t gh_c1 = 0xFFFFFFFF00000000, gh_c2 = 0xFFFFFFFFFFF80000,
-        gh_c3 = 0xFFFFFFFFFFFFFFC0;
-    uint64_t mg_c1 = 0xFFFFFFC000000000, mg_c2 = 0xFFFFFFFFFE000000,
-        mg_c3 = 0xFFFFFFFFFFFFF000;
-#else
     uint64_t gh_c1 = 0x00000000FFFFFFFF, gh_c2 = 0x0000F8FFFFFFFFFF,
         gh_c3 = 0xC0FFFFFFFFFFFFFF;
     uint64_t mg_c1 = 0x00000000C0FFFFFF, mg_c2 = 0x000000FEFFFFFFFF,
         mg_c3 = 0x00F0FFFFFFFFFFFF;
-#endif
     uint64_t c1, c2, c3;
     uint64_t seed1, seed2, seed3;
     uint64_t seq;
@@ -269,7 +262,7 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
         return 0;
     }
 #ifndef L_ENDIAN
-    BUF_reverse(&seq, tlsseq, 8);
+    BUF_reverse((unsigned char *)&seq, tlsseq, 8);
 #else
     memcpy(&seq, tlsseq, 8);
 #endif
