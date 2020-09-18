@@ -6,6 +6,7 @@
 #include <string.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
+#include <openssl/buffer.h>
 
 #include "gost_lcl.h"
 #include "e_gost_err.h"
@@ -260,7 +261,11 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
     default:
         return 0;
     }
+#ifndef L_ENDIAN
+    BUF_reverse(&seq, tlsseq, 8);
+#else
     memcpy(&seq, tlsseq, 8);
+#endif
     seed1 = seq & c1;
     seed2 = seq & c2;
     seed3 = seq & c3;
