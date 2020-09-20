@@ -66,7 +66,7 @@ static GRASSHOPPER_INLINE void grasshopper_zero128(grasshopper_w128_t* x) {
 
 static GRASSHOPPER_INLINE void grasshopper_copy128(grasshopper_w128_t* to, const grasshopper_w128_t* from) {
 #if(GRASSHOPPER_BITS == 8 || GRASSHOPPER_BITS == 16)
-    __builtin_memcpy(&to, &from, sizeof(w128_t));
+    __builtin_memcpy(&to, &from, sizeof(grasshopper_w128_t));
 #else
 		int i;
     for (i = 0; i < GRASSHOPPER_BIT_PARTS; i++) {
