@@ -29,7 +29,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <err.h>
 
 /* For X509_NAME_add_entry_by_txt */
 #pragma GCC diagnostic ignored "-Wpointer-sign"
@@ -68,6 +67,17 @@ static const char *cipher_list;
 
 /* How much K to transfer between client and server. */
 #define KTRANSFER (1 * 1024)
+
+static void err(int eval, const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+    printf(": %s\n", strerror(errno));
+    exit(eval);
+}
 
 /*
  * Simple TLS Server code is based on
@@ -274,7 +284,7 @@ int test(const char *algname, const char *paramset)
     ck = certgen(algname, paramset);
 
     int sockfd[2];
-    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, sockfd) == -1)
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd) == -1)
 	err(1, "socketpair");
 
     setpgid(0, 0);
@@ -307,14 +317,14 @@ int test(const char *algname, const char *paramset)
     ret = (WIFEXITED(status) && WEXITSTATUS(status)) ||
 	(WIFSIGNALED(status) && WTERMSIG(status));
     if (ret) {
-	warnx(cRED "%s child %s with %d %s" cNORM,
+	fprintf(stderr, cRED "%s child %s with %d %s" cNORM,
 	    exited_pid == server_pid? "server" : "client",
 	    WIFSIGNALED(status)? "killed" : "exited",
 	    WIFSIGNALED(status)? WTERMSIG(status) : WEXITSTATUS(status),
 	    WIFSIGNALED(status)? strsignal(WTERMSIG(status)) : "");
 
 	/* If first child exited with error, kill other. */
-	warnx("terminating %s by force",
+	fprintf(stderr, "terminating %s by force",
 	    exited_pid == server_pid? "client" : "server");
 	kill(exited_pid == server_pid? client_pid : server_pid, SIGTERM);
     }
@@ -322,7 +332,7 @@ int test(const char *algname, const char *paramset)
     exited_pid = wait(&status);
     /* Report error unless we killed it. */
     if (!ret && (!WIFEXITED(status) || WEXITSTATUS(status)))
-	warnx(cRED "%s child %s with %d %s" cNORM,
+	fprintf(stderr, cRED "%s child %s with %d %s" cNORM,
 	    exited_pid == server_pid? "server" : "client",
 	    WIFSIGNALED(status)? "killed" : "exited",
 	    WIFSIGNALED(status)? WTERMSIG(status) : WEXITSTATUS(status),
