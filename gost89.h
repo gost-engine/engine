@@ -60,6 +60,8 @@ void gostcrypt(gost_ctx * c, const byte * in, byte * out);
 void gostdecrypt(gost_ctx * c, const byte * in, byte * out);
 /* Set key into context */
 void gost_key(gost_ctx * c, const byte * k);
+/* Set key into context without key mask */
+void gost_key_nomask(gost_ctx * c, const byte * k);
 /* Set key into context */
 void magma_key(gost_ctx * c, const byte * k);
 /* Get key from context */

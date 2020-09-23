@@ -444,20 +444,32 @@ void gost_dec_cfb(gost_ctx * ctx, const byte * iv, const byte * cipher,
 void gost_enc_with_key(gost_ctx * c, byte * key, byte * inblock,
                        byte * outblock)
 {
-    gost_key(c, key);
+    gost_key_nomask(c, key);
     gostcrypt(c, inblock, outblock);
 }
 
-/* Set 256 bit gost89 key into context */
-void gost_key(gost_ctx * c, const byte * k)
+static void gost_key_impl(gost_ctx * c, const byte * k)
 {
     int i, j;
-    RAND_priv_bytes((unsigned char *)c->mask, sizeof(c->mask));
     for (i = 0, j = 0; i < 8; ++i, j += 4) {
         c->key[i] =
             (k[j] | (k[j + 1] << 8) | (k[j + 2] << 16) | ((word32) k[j + 3] <<
                                                          24)) - c->mask[i];
     }
+}
+
+/* Set 256 bit gost89 key into context */
+void gost_key(gost_ctx * c, const byte * k)
+{
+    RAND_priv_bytes((unsigned char *)c->mask, sizeof(c->mask));
+    gost_key_impl(c, k);
+}
+
+/* Set 256 bit gost89 key into context without key mask */
+void gost_key_nomask(gost_ctx * c, const byte * k)
+{
+    memset(c->mask, 0, sizeof(c->mask));
+    gost_key_impl(c, k);
 }
 
 /* Set 256 bit Magma key into context */
