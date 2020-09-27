@@ -977,7 +977,10 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    EC_GROUP_get_order(EC_KEY_get0_group(ec), order, NULL);
+    if (EC_GROUP_get_order(EC_KEY_get0_group(ec), order, NULL) == 0) {
+        GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
     pub_key = EC_KEY_get0_public_key(ec);
     if (!pub_key) {
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, GOST_R_PUBLIC_KEY_UNDEFINED);
