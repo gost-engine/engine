@@ -575,11 +575,13 @@ static int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
         }
     } else {
         while (inl > 0) {
+            unsigned char tmpiv[8];
             gostdecrypt(&(c->cctx), in_ptr, b);
+            memcpy(tmpiv, in_ptr, 8);
             for (i = 0; i < 8; i++) {
                 out_ptr[i] = iv[i] ^ b[i];
             }
-            memcpy(iv, in_ptr, 8);
+            memcpy(iv, tmpiv, 8);
             out_ptr += 8;
             in_ptr += 8;
             inl -= 8;
