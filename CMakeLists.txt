@@ -69,8 +69,8 @@ endif()
 check_c_source_runs("
   int main(void) {
     char buf[16] = { 0, 1, 2 };
-    int *p = buf + 1;
-    int *q = buf + 2;
+    int *p = (int *)(buf + 1);
+    int *q = (int *)(buf + 2);
     return (*p == *q);
   }
   " RELAXED_ALIGNMENT)
