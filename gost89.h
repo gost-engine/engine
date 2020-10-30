@@ -33,6 +33,7 @@ typedef struct {
 
 /* Cipher context includes key and preprocessed  substitution block */
 typedef struct {
+    u4 master_key[8];
     u4 key[8];
     u4 mask[8];
     /* Constant s-boxes -- set up in gost_init(). */
@@ -64,6 +65,8 @@ void gost_key(gost_ctx * c, const byte * k);
 void gost_key_nomask(gost_ctx * c, const byte * k);
 /* Set key into context */
 void magma_key(gost_ctx * c, const byte * k);
+/* Set master 256-bit key to be used in TLSTREE calculation into context */
+void magma_master_key(gost_ctx *c, const byte *k);
 /* Get key from context */
 void gost_get_key(gost_ctx * c, byte * k);
 /* Set S-blocks into context */
