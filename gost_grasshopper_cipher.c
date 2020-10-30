@@ -821,41 +821,38 @@ static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, v
             c->section_size = arg;
             break;
         }
-#ifdef EVP_CTRL_TLS1_2_TLSTREE
-    case EVP_CTRL_TLS1_2_TLSTREE:
+    case EVP_CTRL_TLSTREE:
         {
           unsigned char newkey[32];
           int mode = EVP_CIPHER_CTX_mode(ctx);
-          static const unsigned char zeroseq[8];
           gost_grasshopper_cipher_ctx_ctr *ctr_ctx = NULL;
           gost_grasshopper_cipher_ctx *c = NULL;
 
           unsigned char adjusted_iv[16];
           unsigned char seq[8];
-          int j, carry;
+          int j, carry, decrement_arg;
           if (mode != EVP_CIPH_CTR_MODE)
-            return -1;
+              return -1;
 
           ctr_ctx = (gost_grasshopper_cipher_ctx_ctr *)
-            EVP_CIPHER_CTX_get_cipher_data(ctx);
+              EVP_CIPHER_CTX_get_cipher_data(ctx);
           c = &(ctr_ctx->c);
 
+          /*
+           * 'arg' parameter indicates what we should do with sequence value.
+           * 
+           * When function called, seq is incremented after MAC calculation.
+           * In ETM mode, we use seq 'as is' in the ctrl-function (arg = 0)
+           * Otherwise we have to decrease it in the implementation (arg = 1).
+           */
           memcpy(seq, ptr, 8);
-          if (EVP_CIPHER_CTX_encrypting(ctx)) {
-            /*
-             * OpenSSL increments seq after mac calculation.
-             * As we have Mac-Then-Encrypt, we need decrement it here on encryption
-             * to derive the key correctly.
-             * */
-            if (memcmp(seq, zeroseq, 8) != 0)
-            {
-              for(j=7; j>=0; j--)
-              {
-                if (seq[j] != 0) {seq[j]--; break;}
-                else seq[j]  = 0xFF;
-              }
-            }
+          decrement_arg = arg;
+          if (!decrement_sequence(seq, decrement_arg))
+          {
+              GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, GOST_R_CTRL_CALL_FAILED);
+              return -1;
           }
+
           if (gost_tlstree(NID_grasshopper_cbc, c->master_key.k.b, newkey,
                 (const unsigned char *)seq) > 0) {
             memset(adjusted_iv, 0, 16);
@@ -874,7 +871,6 @@ static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, v
           }
         }
         return -1;
-#endif
 #if 0
     case EVP_CTRL_AEAD_GET_TAG:
     case EVP_CTRL_AEAD_SET_TAG:
