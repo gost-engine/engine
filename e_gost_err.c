@@ -11,7 +11,17 @@
 #include <openssl/err.h>
 #include "e_gost_err.h"
 
+#ifdef OPENSSL_VERSION_MAJOR
+/*
+ * OpenSSL 3.0 or higher:
+ * Function codes are no more, and ERR_raise() + ERR_set_debug is preferred
+ * to ERR_PUT_error().
+ */
+# define OPENSSL_ERR_NEW_WORLD_ORDER
+#endif
+
 #ifndef OPENSSL_NO_ERR
+# ifndef OPENSSL_ERR_NEW_WORLD_ORDER
 
 static ERR_STRING_DATA GOST_str_functs[] = {
     {ERR_PACK(0, GOST_F_DECODE_GOST_ALGOR_PARAMS, 0),
@@ -104,6 +114,7 @@ static ERR_STRING_DATA GOST_str_functs[] = {
     {ERR_PACK(0, GOST_F_VKO_COMPUTE_KEY, 0), "VKO_compute_key"},
     {0, NULL}
 };
+# endif
 
 static ERR_STRING_DATA GOST_str_reasons[] = {
     {ERR_PACK(0, 0, GOST_R_BAD_KEY_PARAMETERS_FORMAT),
@@ -175,7 +186,9 @@ int ERR_load_GOST_strings(void)
 
     if (!error_loaded) {
 #ifndef OPENSSL_NO_ERR
+# ifndef OPENSSL_ERR_NEW_WORLD_ORDER
         ERR_load_strings(lib_code, GOST_str_functs);
+# endif
         ERR_load_strings(lib_code, GOST_str_reasons);
 #endif
         error_loaded = 1;
@@ -187,7 +200,9 @@ void ERR_unload_GOST_strings(void)
 {
     if (error_loaded) {
 #ifndef OPENSSL_NO_ERR
+# ifndef OPENSSL_ERR_NEW_WORLD_ORDER
         ERR_unload_strings(lib_code, GOST_str_functs);
+# endif
         ERR_unload_strings(lib_code, GOST_str_reasons);
 #endif
         error_loaded = 0;
@@ -198,5 +213,10 @@ void ERR_GOST_error(int function, int reason, char *file, int line)
 {
     if (lib_code == 0)
         lib_code = ERR_get_next_error_library();
+#ifndef OPENSSL_ERR_NEW_WORLD_ORDER
     ERR_PUT_error(lib_code, function, reason, file, line);
+#else
+    ERR_raise(lib_code, reason);
+    ERR_set_debug(file, line, NULL);
+#endif
 }
