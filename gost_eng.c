@@ -176,6 +176,13 @@ static struct gost_meth_minfo {
         "GOST R 34.10-2001",
     },
     {
+        NID_id_GostR3410_2001DH,
+        &pmeth_GostR3410_2001,
+        &ameth_GostR3410_2001,
+        "GOST2001 DH",
+        "GOST R 34.10-2001 DH",
+    },
+    {
         NID_id_Gost28147_89_MAC,
         &pmeth_Gost28147_MAC,
         &ameth_Gost28147_MAC,
