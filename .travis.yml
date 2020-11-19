@@ -42,7 +42,7 @@ matrix:
     - name: clang | openssl-stable
       os: osx
       compiler: clang
-      env: RPATH="-Wl,-rpath,${PREFIX}/lib"
+      #env: RPATH="-Wl,-rpath,${PREFIX}/lib"
   allow_failures:
       env: OPENSSL_BRANCH=master
       if: type == pull_request
