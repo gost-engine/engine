@@ -644,34 +644,41 @@ static void ctr64_inc(unsigned char *counter)
     inc_counter(counter, 8);
 }
 
+#define MAGMA_BLOCK_SIZE 8
+#define MAGMA_BLOCK_MASK (MAGMA_BLOCK_SIZE - 1)
+static inline void apply_acpkm_magma(struct ossl_gost_cipher_ctx *
+                                           ctx, unsigned int *num)
+{
+    if (!ctx->key_meshing || (*num < ctx->key_meshing))
+        return;
+    acpkm_magma_key_meshing(&ctx->cctx);
+    *num &= MAGMA_BLOCK_MASK;
+}
+
 /* MAGMA encryption in CTR mode */
 static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                const unsigned char *in, size_t inl)
 {
     const unsigned char *in_ptr = in;
     unsigned char *out_ptr = out;
-    size_t i = 0;
     size_t j;
     struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     unsigned char *buf = EVP_CIPHER_CTX_buf_noconst(ctx);
     unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
+    unsigned int num = EVP_CIPHER_CTX_num(ctx);
+    size_t blocks, i, lasted = inl;
     unsigned char b[8];
 /* Process partial blocks */
-    if (EVP_CIPHER_CTX_num(ctx)) {
-        for (j = EVP_CIPHER_CTX_num(ctx), i = 0; j < 8 && i < inl;
-             j++, i++, in_ptr++, out_ptr++) {
-            *out_ptr = buf[7 - j] ^ (*in_ptr);
-        }
-        if (j == 8) {
-            EVP_CIPHER_CTX_set_num(ctx, 0);
-        } else {
-            EVP_CIPHER_CTX_set_num(ctx, j);
-            return inl;
-        }
+    while ((num & MAGMA_BLOCK_MASK) && lasted) {
+        *out_ptr++ = *in_ptr++ ^ buf[7 - (num & MAGMA_BLOCK_MASK)];
+        --lasted;
+        num++;
     }
+    blocks = lasted / MAGMA_BLOCK_SIZE;
 
 /* Process full blocks */
-    for (; i + 8 <= inl; i += 8, in_ptr += 8, out_ptr += 8) {
+    for (i = 0; i < blocks; i++) {
+        apply_acpkm_magma(c, &num);
         for (j = 0; j < 8; j++) {
             b[7 - j] = iv[j];
         }
@@ -680,31 +687,28 @@ static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
             out_ptr[j] = buf[7 - j] ^ in_ptr[j];
         }
         ctr64_inc(iv);
-        c->count += 8;
-        if (c->key_meshing && (c->count % c->key_meshing == 0))
-            acpkm_magma_key_meshing(&(c->cctx));
+        c->count += MAGMA_BLOCK_SIZE;
+        in_ptr += MAGMA_BLOCK_SIZE;
+        out_ptr += MAGMA_BLOCK_SIZE;
+        num += MAGMA_BLOCK_SIZE;
+        lasted -= MAGMA_BLOCK_SIZE;
     }
 
 /* Process the rest of plaintext */
-    if (i < inl) {
+    if (lasted > 0) {
+        apply_acpkm_magma(c, &num);
         for (j = 0; j < 8; j++) {
             b[7 - j] = iv[j];
         }
         gostcrypt(&(c->cctx), b, buf);
 
-        for (j = 0; i < inl; j++, i++) {
-            out_ptr[j] = buf[7 - j] ^ in_ptr[j];
-        }
-
+        for (i = 0; i < lasted; i++)
+            out_ptr[i] = buf[7 - i] ^ in_ptr[i];
         ctr64_inc(iv);
-        c->count += 8;
-        if (c->key_meshing && (c->count % c->key_meshing == 0))
-            acpkm_magma_key_meshing(&(c->cctx));
-
-        EVP_CIPHER_CTX_set_num(ctx, j);
-    } else {
-        EVP_CIPHER_CTX_set_num(ctx, 0);
+        c->count += j;
+        num += lasted;
     }
+    EVP_CIPHER_CTX_set_num(ctx, num);
 
     return inl;
 }
