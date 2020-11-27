@@ -43,6 +43,7 @@ static int pkey_bits_gost(const EVP_PKEY *pk)
 
     switch (EVP_PKEY_base_id(pk)) {
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
     case NID_id_GostR3410_2012_256:
         return 256;
     case NID_id_GostR3410_2012_512:
@@ -87,6 +88,7 @@ static ASN1_STRING *encode_gost_algor_params(const EVP_PKEY *key)
 	}
         break;
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
         gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_94_CryptoProParamSet);
         break;
@@ -127,6 +129,7 @@ static int gost_decode_nid_params(EVP_PKEY *pkey, int pkey_nid, int param_nid)
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2012_512:
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
         if (!key_ptr) {
             key_ptr = EC_KEY_new();
             if (!EVP_PKEY_assign(pkey, pkey_nid, key_ptr)) {
@@ -186,6 +189,7 @@ static int gost_set_priv_key(EVP_PKEY *pkey, BIGNUM *priv)
     case NID_id_GostR3410_2012_512:
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
         {
             EC_KEY *ec = EVP_PKEY_get0(pkey);
             if (!ec) {
@@ -210,6 +214,7 @@ BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey)
     case NID_id_GostR3410_2012_512:
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
         {
             EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pkey);
             if (ec)
@@ -421,6 +426,7 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
         md_nid = NID_id_GostR3411_2012_256;
         break;
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
     case NID_id_GostR3410_94:
         md_nid = NID_id_GostR3411_94;
         break;
@@ -1059,6 +1065,7 @@ static int pkey_size_gost(const EVP_PKEY *pk)
     switch (EVP_PKEY_base_id(pk)) {
     case NID_id_GostR3410_94:
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
     case NID_id_GostR3410_2012_256:
         return 64;
     case NID_id_GostR3410_2012_512:
@@ -1153,6 +1160,7 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
         return 0;
     switch (nid) {
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
         EVP_PKEY_asn1_set_free(*ameth, pkey_free_gost_ec);
         EVP_PKEY_asn1_set_private(*ameth,
                                   priv_decode_gost, priv_encode_gost,

@@ -276,7 +276,7 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     EVP_PKEY *pubk = EVP_PKEY_CTX_get0_pkey(pctx);
     struct gost_pmeth_data *data = EVP_PKEY_CTX_get_data(pctx);
     int pkey_nid = EVP_PKEY_base_id(pubk);
-    ASN1_OBJECT *crypt_params_obj = (pkey_nid == NID_id_GostR3410_2001) ?
+    ASN1_OBJECT *crypt_params_obj = (pkey_nid == NID_id_GostR3410_2001 || pkey_nid == NID_id_GostR3410_2001DH) ?
         OBJ_nid2obj(NID_id_Gost28147_89_CryptoPro_A_ParamSet) :
         OBJ_nid2obj(NID_id_tc26_gost_28147_param_Z);
     const struct gost_cipher_info *param =
