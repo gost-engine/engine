@@ -39,6 +39,7 @@ static int pkey_gost_init(EVP_PKEY_CTX *ctx)
     if (pkey && EVP_PKEY_get0(pkey)) {
         switch (EVP_PKEY_base_id(pkey)) {
         case NID_id_GostR3410_2001:
+        case NID_id_GostR3410_2001DH:
         case NID_id_GostR3410_2012_256:
         case NID_id_GostR3410_2012_512:
             {
@@ -104,6 +105,7 @@ static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
             switch (EVP_MD_type((const EVP_MD *)p2)) {
             case NID_id_GostR3411_94:
                 if (pkey_nid == NID_id_GostR3410_2001
+                    || pkey_nid == NID_id_GostR3410_2001DH
                     || pkey_nid == NID_id_GostR3410_94) {
                     pctx->md = (EVP_MD *)p2;
                     return 1;
@@ -492,6 +494,7 @@ static int pkey_gost_ec_cp_sign(EVP_PKEY_CTX *ctx, unsigned char *sig,
 
     switch (EVP_PKEY_base_id(pkey)) {
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
     case NID_id_GostR3410_2012_256:
         order = 64;
         break;
@@ -1049,6 +1052,7 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
 
     switch (id) {
     case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
         EVP_PKEY_meth_set_ctrl(*pmeth,
                                pkey_gost_ctrl, pkey_gost_ec_ctrl_str_256);
         EVP_PKEY_meth_set_sign(*pmeth, NULL, pkey_gost_ec_cp_sign);

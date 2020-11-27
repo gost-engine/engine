@@ -39,6 +39,7 @@ static int gost_pkey_asn1_meths(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
                                 const int** nids, int nid);
 
 static EVP_PKEY_METHOD* pmeth_GostR3410_2001 = NULL,
+        * pmeth_GostR3410_2001DH = NULL,
         * pmeth_GostR3410_2012_256 = NULL,
         * pmeth_GostR3410_2012_512 = NULL,
         * pmeth_Gost28147_MAC = NULL, * pmeth_Gost28147_MAC_12 = NULL,
@@ -46,6 +47,7 @@ static EVP_PKEY_METHOD* pmeth_GostR3410_2001 = NULL,
         * pmeth_magma_mac_acpkm = NULL,  * pmeth_grasshopper_mac_acpkm = NULL;
 
 static EVP_PKEY_ASN1_METHOD* ameth_GostR3410_2001 = NULL,
+        * ameth_GostR3410_2001DH = NULL,
         * ameth_GostR3410_2012_256 = NULL,
         * ameth_GostR3410_2012_512 = NULL,
         * ameth_Gost28147_MAC = NULL, * ameth_Gost28147_MAC_12 = NULL,
@@ -96,6 +98,13 @@ static struct gost_meth_minfo {
         &ameth_GostR3410_2001,
         "GOST2001",
         "GOST R 34.10-2001",
+    },
+    {
+        NID_id_GostR3410_2001DH,
+        &pmeth_GostR3410_2001DH,
+        &ameth_GostR3410_2001DH,
+        "GOST2001 DH",
+        "GOST R 34.10-2001 DH",
     },
     {
         NID_id_Gost28147_89_MAC,
