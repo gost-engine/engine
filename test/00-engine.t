@@ -38,7 +38,7 @@ if ( -f $engine . ".info") {
 
 $engine_info= <<EOINF;
 (gost) Reference implementation of GOST engine
- [gost89, gost89-cnt, gost89-cnt-12, gost89-cbc, grasshopper-ecb, grasshopper-cbc, grasshopper-cfb, grasshopper-ofb, grasshopper-ctr, magma-cbc, magma-ctr, id-tc26-cipher-gostr3412-2015-kuznyechik-ctracpkm, md_gost94, gost-mac, md_gost12_256, md_gost12_512, gost-mac-12, magma-mac, grasshopper-mac, id-tc26-cipher-gostr3412-2015-kuznyechik-ctracpkm-omac, gost2001, gost-mac, gost2012_256, gost2012_512, gost-mac-12, magma-mac, grasshopper-mac, id-tc26-cipher-gostr3412-2015-magma-ctracpkm-omac, id-tc26-cipher-gostr3412-2015-kuznyechik-ctracpkm-omac]
+ [gost89, gost89-cnt, gost89-cnt-12, gost89-cbc, grasshopper-ecb, grasshopper-cbc, grasshopper-cfb, grasshopper-ofb, grasshopper-ctr, magma-cbc, magma-ctr, id-tc26-cipher-gostr3412-2015-kuznyechik-ctracpkm, md_gost94, gost-mac, md_gost12_256, md_gost12_512, gost-mac-12, magma-mac, grasshopper-mac, id-tc26-cipher-gostr3412-2015-kuznyechik-ctracpkm-omac, gost2001, id-GostR3410-2001DH, gost-mac, gost2012_256, gost2012_512, gost-mac-12, magma-mac, grasshopper-mac, id-tc26-cipher-gostr3412-2015-magma-ctracpkm-omac, id-tc26-cipher-gostr3412-2015-kuznyechik-ctracpkm-omac]
 EOINF
 }
 
