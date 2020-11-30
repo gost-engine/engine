@@ -765,7 +765,7 @@ static int gost_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
         }
     }
 
-    for (; i + 8 < inl; i += 8, in_ptr += 8, out_ptr += 8) {
+    for (; (inl - i) >= 8; i += 8, in_ptr += 8, out_ptr += 8) {
         /*
          * block cipher current iv
          */
@@ -826,7 +826,7 @@ static int gost_cipher_do_cnt(EVP_CIPHER_CTX *ctx, unsigned char *out,
         }
     }
 
-    for (; i + 8 < inl; i += 8, in_ptr += 8, out_ptr += 8) {
+    for (; (inl - i) >= 8; i += 8, in_ptr += 8, out_ptr += 8) {
         /*
          * block cipher current iv
          */
