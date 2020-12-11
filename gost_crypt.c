@@ -477,8 +477,8 @@ static int magma_cipher_init_param(EVP_CIPHER_CTX *ctx,
     }
     memcpy(EVP_CIPHER_CTX_iv_noconst(ctx),
            EVP_CIPHER_CTX_original_iv(ctx), EVP_CIPHER_CTX_iv_length(ctx));
-    if (EVP_CIPHER_CTX_nid(ctx) == NID_magma_ctr_acpkm
-     || EVP_CIPHER_CTX_nid(ctx) == NID_magma_ctr_acpkm_omac) {
+    if (EVP_CIPHER_CTX_nid(ctx) == NID_id_tc26_cipher_gostr3412_2015_magma_ctracpkm
+     || EVP_CIPHER_CTX_nid(ctx) == NID_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac) {
        c->key_meshing = 1024;
     } else {
        c->key_meshing = 0;
