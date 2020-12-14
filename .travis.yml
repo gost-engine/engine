@@ -61,10 +61,9 @@ before_script:
   - cd ..
 
 script:
-  - set -e
-  - mkdir build
-  - cd build
-  - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ${ASAN} ..
-  - make
-  - make test CTEST_OUTPUT_ON_FAILURE=1
-  - if [ -z "$ASAN" ]; then make tcl_tests; fi
+  - mkdir build || exit 1
+  - cd build || exit 1
+  - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ${ASAN} .. || exit 1
+  - make || exit 1
+  - make test CTEST_OUTPUT_ON_FAILURE=1 || exit 1
+  - if [ -z "$ASAN" ]; then make tcl_tests || exit 1; fi
