@@ -1,0 +1,54 @@
+name: CI
+on: [push, pull_request]
+
+env:
+    OPENSSL_BRANCH: openssl-3.0.0-alpha8
+
+jobs:
+    gcc-openssl-stable:
+        runs-on: ubuntu-20.04
+        steps:
+            - uses: actions/checkout@v2
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    clang-openssl-stable:
+        runs-on: ubuntu-20.04
+        env:
+            CC: clang
+        steps:
+            - uses: actions/checkout@v2
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    gcc-openssl-master:
+        runs-on: ubuntu-20.04
+        env:
+            OPENSSL_BRANCH: master
+        steps:
+            - uses: actions/checkout@v2
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    gcc-asan-openssl-master:
+        runs-on: ubuntu-20.04
+        env:
+            OPENSSL_BRANCH: master
+            ASAN: -DASAN=1
+        steps:
+            - uses: actions/checkout@v2
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    gcc-openssl-stable-x86:
+        runs-on: ubuntu-20.04
+        env:
+            CFLAGS: -m32
+            LDFLAGS: -m32
+            SETARCH: "setarch i386"
+            APT_INSTALL: gcc-multilib
+        steps:
+            - uses: actions/checkout@v2
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
