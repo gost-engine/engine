@@ -34,13 +34,13 @@ test -skip {![file exists $username/seckey.pem]} "OID в секретном кл
 
 test -skip {![file exists $username/seckey.pem]} "Алгоритм $alg, заявка по секретному ключу" {
 	makeFile $username/req.conf [makeConf]
-	openssl "req -new -config $username/req.conf -key $username/seckey.pem -out $username/req.pem"	
+	openssl "req -new -config $username/req.conf -key $username/seckey.pem -out $username/req.pem"
 	expr {[file size $username/req.pem] > 0}
 } 0 1
 
 test -skip {![file exists $username/req.pem]} "Подпись под заявкой корректна" {
 	grep "verif" [openssl "req -verify -in $username/req.pem"]
-} 0 {verify OK
+} 0 {Certificate request self-signature verify OK
 }
 
 test -skip {![file exists $username/req.pem]} "OID в заявке, алгоритм $alg" {
@@ -48,7 +48,7 @@ test -skip {![file exists $username/req.pem]} "OID в заявке, алгори
 } 0 [mkObjList [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg]] [hash_with_sign_long_name $alg]]
 
 test -skip {![file exists $username/seckey.pem]} "Алгоритм $alg, сертификат по секретному ключу" {
-	openssl "req -new -x509 -config $username/req.conf -key $username/seckey.pem -out $username/cert.pem"	
+	openssl "req -new -x509 -config $username/req.conf -key $username/seckey.pem -out $username/cert.pem"
 	expr {[file size $username/cert.pem] > 0}
 } 0 1
 
@@ -73,7 +73,7 @@ test -skip {![file exists $username/seckey.der]} -createsfiles $username/req2.pe
 
 test -skip {![file exists $username/req2.pem]} "Подпись под заявкой корректна" {
 	grep "verif" [openssl "req -verify -in $username/req2.pem"]
-} 0 {verify OK
+} 0 {Certificate request self-signature verify OK
 }
 
 }
