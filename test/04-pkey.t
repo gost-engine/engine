@@ -133,10 +133,10 @@ ENjS+gA=
         print $F $pubkey;
         close $F;
         #3. Прочитать публичный и напечать его в виде текста
-        is(`openssl pkey -pubin -noout -in tmp.pem -text`,$pubtext,
+        is(`openssl pkey -pubin -noout -in tmp.pem -text_pub`,$pubtext,
             "Read and print public key $alg:$paramset");
     }
-    unlink "tmp.pem";
+    #unlink "tmp.pem";
 };
 
 #4. Сгенерировать ключ два раза (для всех алгоритов и параметров).
