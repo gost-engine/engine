@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 2.8)
 project(ccgost C)
 
+# -- Fix for Entware & Entware-ng (Tested with OpenSSL 1.1.1i)
+find_package(OpenSSL REQUIRED)
+if( OpenSSL_FOUND )
+  set (OPENSSL_INCLUDE "${OPENSSL_INCLUDE_DIR}/")
+  include_directories(${OPENSSL_INCLUDE})
+  message(STATUS "Using OpenSSL ${OPENSSL_VERSION}")
+  message(STATUS "OpenSSL include dir: ${OPENSSL_INCLUDE}")
+  message(STATUS "OpenSSL libraries: ${OPENSSL_LIBRARIES}")
+endif()
+# -- End Fix for Entware && Entware-ng (Tested with OpenSSL 1.1.1i)
+
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
    message(STATUS "Using Clang and adding -Qunused-arguments flag")
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
@@ -124,3 +135,9 @@ set(GOST_SUM_12_SOURCE_FILES
 #add_executable(gostsum12 ${GOST_SUM_12_SOURCE_FILES})
 #
 #target_link_libraries(gostsum12 gost)
+INSTALL(
+  TARGETS gost
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib  # <-- Add this line
+  COMPONENT library
+)
