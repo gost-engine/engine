@@ -10,7 +10,7 @@ if( OpenSSL_FOUND )
   message(STATUS "OpenSSL include dir: ${OPENSSL_INCLUDE}")
   message(STATUS "OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 endif()
-# -- End Fix for Entware && Entware-ng (Tested with OpenSSL 1.1.1i)
+# -- End Fix for Entware & Entware-ng (Tested with OpenSSL 1.1.1i)
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
    message(STATUS "Using Clang and adding -Qunused-arguments flag")
@@ -132,12 +132,11 @@ set(GOST_SUM_12_SOURCE_FILES
         gostsum12.c
         )
 
-#add_executable(gostsum12 ${GOST_SUM_12_SOURCE_FILES})
-#
-#target_link_libraries(gostsum12 gost)
+# -- Fix for Entware & Entware-ng (Tested with OpenSSL 1.1.1i)
 INSTALL(
   TARGETS gost
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib  # <-- Add this line
   COMPONENT library
 )
+# -- End Fix for Entware & Entware-ng (Tested with OpenSSL 1.1.1i)
