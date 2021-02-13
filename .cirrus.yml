@@ -8,6 +8,8 @@ FreeBSD_task:
   install_script:
     - pkg install -y git cmake p5-App-cpanminus gdb pkgconf
     - sudo cpanm --notest Test2::V0
+  update_git_script:
+    - git submodule update --recursive --init
   script:
     - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
     - cd openssl
