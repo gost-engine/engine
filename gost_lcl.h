@@ -337,6 +337,7 @@ typedef struct gost_cipher_st GOST_cipher;
 EVP_CIPHER *GOST_init_cipher(GOST_cipher *c);
 void GOST_deinit_cipher(GOST_cipher *c);
 
+/* ENGINE implementation data */
 extern GOST_cipher Gost28147_89_cipher;
 extern GOST_cipher Gost28147_89_cbc_cipher;
 extern GOST_cipher Gost28147_89_cnt_cipher;
@@ -354,6 +355,10 @@ extern GOST_cipher grasshopper_ctr_acpkm_cipher;
 extern GOST_cipher grasshopper_ctr_acpkm_omac_cipher;
 extern GOST_cipher magma_kexp15_cipher;
 extern GOST_cipher kuznyechik_kexp15_cipher;
+
+/* Provider implementation data */
+extern const OSSL_ALGORITHM GOST_prov_ciphers[];
+void GOST_prov_deinit_ciphers(void);
 
 struct gost_digest_st {
     struct gost_digest_st *template;

@@ -86,6 +86,10 @@ static const OSSL_ALGORITHM *gost_operation(void *vprovctx,
                                                 int operation_id,
                                                 const int *no_cache)
 {
+    switch (operation_id) {
+    case OSSL_OP_CIPHER:
+        return GOST_prov_ciphers;
+    }
     return NULL;
 }
 
@@ -105,6 +109,7 @@ static const OSSL_ITEM *gost_get_reason_strings(void *provctx)
 /* The function that tears down this provider */
 static void gost_teardown(void *vprovctx)
 {
+    GOST_prov_deinit_ciphers();
     provider_ctx_free(vprovctx);
 }
 

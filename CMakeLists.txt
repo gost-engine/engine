@@ -199,6 +199,7 @@ set(GOST_ENGINE_SOURCE_FILES
 
 set(GOST_PROV_SOURCE_FILES
         gost_prov.c
+        gost_prov_cipher.c
         )
 
 set(TEST_ENVIRONMENT_COMMON
