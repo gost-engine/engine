@@ -24,6 +24,22 @@ static const char* engine_gost_id = "gost";
 static const char* engine_gost_name =
         "Reference implementation of GOST engine";
 
+const ENGINE_CMD_DEFN gost_cmds[] = {
+    {GOST_CTRL_CRYPT_PARAMS,
+     "CRYPT_PARAMS",
+     "OID of default GOST 28147-89 parameters",
+     ENGINE_CMD_FLAG_STRING},
+    {GOST_CTRL_PBE_PARAMS,
+     "PBE_PARAMS",
+     "Shortname of default digest alg for PBE",
+     ENGINE_CMD_FLAG_STRING},
+    {GOST_CTRL_PK_FORMAT,
+     "GOST_PK_FORMAT",
+     "Private key format params",
+     ENGINE_CMD_FLAG_STRING},
+    {0, NULL, NULL, 0}
+};
+
 /* Symmetric cipher and digest function registrar */
 
 static int gost_ciphers(ENGINE* e, const EVP_CIPHER** cipher,
