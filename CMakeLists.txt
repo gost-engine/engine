@@ -131,6 +131,9 @@ set(GOST_GRASSHOPPER_SOURCE_FILES
 set(GOST_CORE_SOURCE_FILES
         e_gost_err.c
         e_gost_err.h
+        gost_ameth.c
+        gost_pmeth.c
+        gost_ctl.c
         gost_asn1.c
         gost_crypt.c
         gost_keywrap.c
@@ -174,9 +177,6 @@ set(GOST_LIB_SOURCE_FILES
         )
 
 set(GOST_ENGINE_SOURCE_FILES
-        gost_ameth.c
-        gost_pmeth.c
-        gost_ctl.c
         gost_eng.c
         )
 
