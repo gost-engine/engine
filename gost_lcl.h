@@ -10,6 +10,7 @@
  *         OpenSSL 0.9.9 libraries required to compile and use        *
  *                              this code                             *
  **********************************************************************/
+# include <openssl/core.h>
 # include <openssl/bn.h>
 # include <openssl/evp.h>
 # include <openssl/asn1t.h>
