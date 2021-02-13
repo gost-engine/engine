@@ -381,6 +381,7 @@ typedef struct gost_digest_st GOST_digest;
 EVP_MD *GOST_init_digest(GOST_digest *d);
 void GOST_deinit_digest(GOST_digest *d);
 
+/* ENGINE implementation data */
 extern GOST_digest GostR3411_94_digest;
 extern GOST_digest Gost28147_89_MAC_digest;
 extern GOST_digest Gost28147_89_mac_12_digest;
@@ -389,6 +390,10 @@ extern GOST_digest GostR3411_2012_512_digest;
 extern GOST_digest magma_mac_digest;
 extern GOST_digest grasshopper_mac_digest;
 extern GOST_digest kuznyechik_ctracpkm_omac_digest;
+
+/* Provider implementation data */
+extern const OSSL_ALGORITHM GOST_prov_digests[];
+void GOST_prov_deinit_digests(void);
 
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
