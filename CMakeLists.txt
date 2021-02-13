@@ -80,9 +80,6 @@ endif()
 
 set(BIN_DIRECTORY bin)
 
-# Same soversion as OpenSSL
-set(GOST_SOVERSION "${OPENSSL_VERSION_MAJOR}.${OPENSSL_VERSION_MINOR}")
-
 set(OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${BIN_DIRECTORY})
 
 #set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
@@ -136,10 +133,13 @@ set(GOST_CORE_SOURCE_FILES
         e_gost_err.h
         gost_asn1.c
         gost_crypt.c
-        gost_ctl.c
-        gost_eng.c
         gost_keywrap.c
         gost_keywrap.h
+        gost_md.c
+        gost_md2012.c
+        gost_omac.c
+        gost_omac_acpkm.c
+        gost_gost2015.c
         gost_lcl.h
         gost_params.c
         gost_keyexpimp.c
@@ -164,6 +164,7 @@ set (GOST_OMAC_SOURCE_FILES
         )
 
 set(GOST_LIB_SOURCE_FILES
+        ${GOST_CORE_SOURCE_FILES}
         ${GOST_89_SOURCE_FILES}
         ${GOST_HASH_SOURCE_FILES}
         ${GOST_HASH_2012_SOURCE_FILES}
@@ -173,64 +174,60 @@ set(GOST_LIB_SOURCE_FILES
         )
 
 set(GOST_ENGINE_SOURCE_FILES
-        ${GOST_CORE_SOURCE_FILES}
         gost_ameth.c
-        gost_md.c
-        gost_md2012.c
         gost_pmeth.c
-        gost_omac.c
-        gost_omac_acpkm.c
-        gost_gost2015.c
+        gost_ctl.c
+        gost_eng.c
         )
 
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_digest gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME digest
 	COMMAND test_digest)
 
 add_executable(test_ciphers test_ciphers.c)
-target_link_libraries(test_ciphers gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_ciphers gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME ciphers
 	COMMAND test_ciphers)
 
 add_executable(test_curves test_curves.c)
-target_link_libraries(test_curves gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_curves gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME curves
 	COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_params gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME parameters
 	COMMAND test_params)
 
 add_executable(test_derive test_derive.c)
-target_link_libraries(test_derive gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_derive gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME derive
 	COMMAND test_derive)
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_sign gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME sign/verify
 	COMMAND test_sign)
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+target_link_libraries(test_tls gost_core ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
 add_test(NAME TLS
 	COMMAND test_tls)
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_context gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME context
 	COMMAND test_context)
 
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_keyexpimp gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME keyexpimp
 	COMMAND test_keyexpimp)
 
 add_executable(test_gost89 test_gost89.c)
-target_link_libraries(test_gost89 gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_gost89 gost_core ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME gost89
 	COMMAND test_gost89)
 
@@ -249,7 +246,7 @@ if(NOT SKIP_PERL_TESTS)
 endif()
 
 add_executable(sign benchmark/sign.c)
-target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
+target_link_libraries(sign gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
 
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
@@ -269,9 +266,8 @@ set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-add_library(gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
+add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
-set_target_properties(gost_engine PROPERTIES VERSION ${GOST_SOVERSION} SOVERSION ${GOST_SOVERSION})
 target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 
 set(GOST_SUM_SOURCE_FILES
