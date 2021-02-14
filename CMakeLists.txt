@@ -9,6 +9,9 @@ include(CheckCSourceRuns)
 enable_testing()
 
 find_package(OpenSSL 3.0 REQUIRED)
+find_program(OPENSSL_PROGRAM openssl
+  PATHS ${OPENSSL_ROOT_DIR} PATH_SUFFIXES apps bin NO_DEFAULT_PATH)
+message("-- Found OpenSSL application: ${OPENSSL_PROGRAM}")
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -238,11 +241,17 @@ if(NOT SKIP_PERL_TESTS)
     execute_process(COMMAND perl -MTest2::V0 -e ""
 	ERROR_QUIET RESULT_VARIABLE HAVE_TEST2_V0)
     if(NOT HAVE_TEST2_V0)
+        set(TEST_ENVIRONMENT
+          CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+          PERL5LIB=${CMAKE_CURRENT_SOURCE_DIR}/test
+          OPENSSL_ENGINES=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+          OPENSSL_PROGRAM=${OPENSSL_PROGRAM}
+          OPENSSL_CRYPTO_LIBRARY=${OPENSSL_CRYPTO_LIBRARY}
+          OPENSSL_CONF=${CMAKE_CURRENT_SOURCE_DIR}/test/empty.cnf
+          )
 	add_test(NAME engine
-	    COMMAND perl run_tests
-	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
-	set_tests_properties(engine PROPERTIES ENVIRONMENT
-	    "OPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR};OPENSSL_ENGINES=${OUTPUT_DIRECTORY};OPENSSL_CONF=${CMAKE_SOURCE_DIR}/test/empty.cnf")
+	    COMMAND prove --merge -PWrapOpenSSL ${CMAKE_CURRENT_SOURCE_DIR}/test)
+	set_tests_properties(engine PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
     else()
       message(STATUS "No Test2::V0 perl module (engine tests skipped)")
     endif()
