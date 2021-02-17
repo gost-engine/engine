@@ -275,12 +275,22 @@ set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+# The GOST engine in module form
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
 # Set the suffix explicitly to adapt to OpenSSL's idea of what a
 # module suffix should be
 set_target_properties(gost_engine PROPERTIES
   PREFIX "" OUTPUT_NAME "gost" SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
 target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+
+# The GOST engine in library form
+add_library(lib_gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
+set_target_properties(lib_gost_engine PROPERTIES
+  COMPILE_DEFINITIONS "BUILDING_ENGINE_AS_LIBRARY"
+  PUBLIC_HEADER gost-engine.h
+  OUTPUT_NAME "gost")
+target_link_libraries(lib_gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+
 
 set(GOST_SUM_SOURCE_FILES
         gostsum.c
