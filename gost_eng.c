@@ -16,6 +16,7 @@
 #include <openssl/obj_mac.h>
 #include "e_gost_err.h"
 #include "gost_lcl.h"
+#include "gost-engine.h"
 
 #include "gost_grasshopper_cipher.h"
 
@@ -190,125 +191,6 @@ static int known_cipher_nids[OSSL_NELEM(gost_cipher_array)];
 /* `- 1' because of terminating zero element */
 static int known_meths_nids[OSSL_NELEM(gost_meth_array) - 1];
 
-static int gost_engine_init(ENGINE* e) {
-    return 1;
-}
-
-static int gost_engine_finish(ENGINE* e) {
-    return 1;
-}
-
-static int gost_engine_destroy(ENGINE* e) {
-    int i;
-
-    for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
-        GOST_deinit_digest(gost_digest_array[i]);
-    for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++)
-        GOST_deinit_cipher(gost_cipher_array[i]);
-
-    gost_param_free();
-
-    struct gost_meth_minfo *minfo = gost_meth_array;
-    for (; minfo->nid; minfo++) {
-        *minfo->pmeth = NULL;
-        *minfo->ameth = NULL;
-    }
-
-    ERR_unload_GOST_strings();
-
-    return 1;
-}
-
-static int bind_gost(ENGINE* e, const char* id) {
-    int ret = 0;
-    if (id != NULL && strcmp(id, engine_gost_id) != 0)
-        return 0;
-    if (ameth_GostR3410_2001) {
-        printf("GOST engine already loaded\n");
-        goto end;
-    }
-    if (!ENGINE_set_id(e, engine_gost_id)) {
-        printf("ENGINE_set_id failed\n");
-        goto end;
-    }
-    if (!ENGINE_set_name(e, engine_gost_name)) {
-        printf("ENGINE_set_name failed\n");
-        goto end;
-    }
-    if (!ENGINE_set_digests(e, gost_digests)) {
-        printf("ENGINE_set_digests failed\n");
-        goto end;
-    }
-    if (!ENGINE_set_ciphers(e, gost_ciphers)) {
-        printf("ENGINE_set_ciphers failed\n");
-        goto end;
-    }
-    if (!ENGINE_set_pkey_meths(e, gost_pkey_meths)) {
-        printf("ENGINE_set_pkey_meths failed\n");
-        goto end;
-    }
-    if (!ENGINE_set_pkey_asn1_meths(e, gost_pkey_asn1_meths)) {
-        printf("ENGINE_set_pkey_asn1_meths failed\n");
-        goto end;
-    }
-    /* Control function and commands */
-    if (!ENGINE_set_cmd_defns(e, gost_cmds)) {
-        fprintf(stderr, "ENGINE_set_cmd_defns failed\n");
-        goto end;
-    }
-    if (!ENGINE_set_ctrl_function(e, gost_control_func)) {
-        fprintf(stderr, "ENGINE_set_ctrl_func failed\n");
-        goto end;
-    }
-    if (!ENGINE_set_destroy_function(e, gost_engine_destroy)
-        || !ENGINE_set_init_function(e, gost_engine_init)
-        || !ENGINE_set_finish_function(e, gost_engine_finish)) {
-        goto end;
-    }
-
-    struct gost_meth_minfo *minfo = gost_meth_array;
-    for (; minfo->nid; minfo++) {
-
-        /* This skip looks temporary. */
-        if (minfo->nid == NID_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac)
-            continue;
-
-        if (!register_ameth_gost(minfo->nid, minfo->ameth, minfo->pemstr,
-                minfo->info))
-            goto end;
-        if (!register_pmeth_gost(minfo->nid, minfo->pmeth, 0))
-            goto end;
-    }
-
-    if (!ENGINE_register_ciphers(e)
-        || !ENGINE_register_digests(e)
-        || !ENGINE_register_pkey_meths(e))
-        goto end;
-
-    int i;
-    for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++) {
-        if (!EVP_add_cipher(GOST_init_cipher(gost_cipher_array[i])))
-            goto end;
-    }
-
-    for (i = 0; i < OSSL_NELEM(gost_digest_array); i++) {
-        if (!EVP_add_digest(GOST_init_digest(gost_digest_array[i])))
-            goto end;
-    }
-
-    ENGINE_register_all_complete();
-
-    ERR_load_GOST_strings();
-    ret = 1;
-    end:
-    return ret;
-}
-
-#ifndef OPENSSL_NO_DYNAMIC_ENGINE
-IMPLEMENT_DYNAMIC_BIND_FN(bind_gost)
-    IMPLEMENT_DYNAMIC_CHECK_FN()
-#endif                          /* ndef OPENSSL_NO_DYNAMIC_ENGINE */
-
 /* ENGINE_DIGESTS_PTR callback installed by ENGINE_set_digests */
 static int gost_digests(ENGINE *e, const EVP_MD **digest,
                         const int **nids, int nid)
@@ -404,29 +286,183 @@ static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
     return 0;
 }
 
-#ifdef OPENSSL_NO_DYNAMIC_ENGINE
+static int gost_engine_init(ENGINE* e) {
+    return 1;
+}
 
-static ENGINE* engine_gost(void) {
-    ENGINE* ret = ENGINE_new();
-    if (!ret)
-        return NULL;
-    if (!bind_gost(ret, engine_gost_id)) {
-        ENGINE_free(ret);
-        return NULL;
+static int gost_engine_finish(ENGINE* e) {
+    return 1;
+}
+
+static int gost_engine_destroy(ENGINE* e) {
+    int i;
+
+    for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
+        GOST_deinit_digest(gost_digest_array[i]);
+    for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++)
+        GOST_deinit_cipher(gost_cipher_array[i]);
+
+    gost_param_free();
+
+    struct gost_meth_minfo *minfo = gost_meth_array;
+    for (; minfo->nid; minfo++) {
+        *minfo->pmeth = NULL;
+        *minfo->ameth = NULL;
     }
+
+    ERR_unload_GOST_strings();
+
+    return 1;
+}
+
+/*
+ * Following is the glue that populates the ENGINE structure and that
+ * binds it to OpenSSL libraries
+ */
+
+static int populate_gost_engine(ENGINE* e) {
+    int ret = 0;
+
+    if (e == NULL)
+        goto end;
+    if (!ENGINE_set_id(e, engine_gost_id)) {
+        printf("ENGINE_set_id failed\n");
+        goto end;
+    }
+    if (!ENGINE_set_name(e, engine_gost_name)) {
+        printf("ENGINE_set_name failed\n");
+        goto end;
+    }
+    if (!ENGINE_set_digests(e, gost_digests)) {
+        printf("ENGINE_set_digests failed\n");
+        goto end;
+    }
+    if (!ENGINE_set_ciphers(e, gost_ciphers)) {
+        printf("ENGINE_set_ciphers failed\n");
+        goto end;
+    }
+    if (!ENGINE_set_pkey_meths(e, gost_pkey_meths)) {
+        printf("ENGINE_set_pkey_meths failed\n");
+        goto end;
+    }
+    if (!ENGINE_set_pkey_asn1_meths(e, gost_pkey_asn1_meths)) {
+        printf("ENGINE_set_pkey_asn1_meths failed\n");
+        goto end;
+    }
+    /* Control function and commands */
+    if (!ENGINE_set_cmd_defns(e, gost_cmds)) {
+        fprintf(stderr, "ENGINE_set_cmd_defns failed\n");
+        goto end;
+    }
+    if (!ENGINE_set_ctrl_function(e, gost_control_func)) {
+        fprintf(stderr, "ENGINE_set_ctrl_func failed\n");
+        goto end;
+    }
+    if (!ENGINE_set_destroy_function(e, gost_engine_destroy)
+        || !ENGINE_set_init_function(e, gost_engine_init)
+        || !ENGINE_set_finish_function(e, gost_engine_finish)) {
+        goto end;
+    }
+
+    /*
+     * "register" in "register_ameth_gost" and "register_pmeth_gost" is
+     * not registering in an ENGINE sense, where things are hooked into
+     * OpenSSL's library.  "register_ameth_gost" and "register_pmeth_gost"
+     * merely allocate and populate the method structures of this engine.
+     */
+    struct gost_meth_minfo *minfo = gost_meth_array;
+    for (; minfo->nid; minfo++) {
+
+        /* This skip looks temporary. */
+        if (minfo->nid == NID_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac)
+            continue;
+
+        if (!register_ameth_gost(minfo->nid, minfo->ameth, minfo->pemstr,
+                minfo->info))
+            goto end;
+        if (!register_pmeth_gost(minfo->nid, minfo->pmeth, 0))
+            goto end;
+    }
+
+    ret = 1;
+  end:
     return ret;
 }
 
+static int bind_gost_engine(ENGINE* e) {
+    int ret = 0;
+
+    if (!ENGINE_register_ciphers(e)
+        || !ENGINE_register_digests(e)
+        || !ENGINE_register_pkey_meths(e))
+        goto end;
+
+    int i;
+    for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++) {
+        if (!EVP_add_cipher(GOST_init_cipher(gost_cipher_array[i])))
+            goto end;
+    }
+
+    for (i = 0; i < OSSL_NELEM(gost_digest_array); i++) {
+        if (!EVP_add_digest(GOST_init_digest(gost_digest_array[i])))
+            goto end;
+    }
+
+    ENGINE_register_all_complete();
+
+    ERR_load_GOST_strings();
+    ret = 1;
+  end:
+    return ret;
+}
+
+static int check_gost_engine(ENGINE* e, const char* id)
+{
+    if (id != NULL && strcmp(id, engine_gost_id) != 0)
+        return 0;
+    if (ameth_GostR3410_2001) {
+        printf("GOST engine already loaded\n");
+        return 0;
+    }
+    return 1;
+}
+
+static int make_gost_engine(ENGINE* e, const char* id)
+{
+    return check_gost_engine(e, id)
+        && populate_gost_engine(e)
+        && bind_gost_engine(e);
+}
+
+#ifndef BUILDING_ENGINE_AS_LIBRARY
+
+/*
+ * When building gost-engine as a dynamically loadable module, these two
+ * lines do everything that's needed, and OpenSSL's libcrypto will be able
+ * to call its entry points, v_check and bind_engine.
+ */
+
+IMPLEMENT_DYNAMIC_BIND_FN(make_gost_engine)
+IMPLEMENT_DYNAMIC_CHECK_FN()
+
+#else
+
+/*
+ * When building gost-engine as a shared library, the application that uses
+ * it must manually call ENGINE_load_gost() for it to bind itself into the
+ * libcrypto libraries.
+ */
+
 void ENGINE_load_gost(void) {
     ENGINE* toadd;
-    if (pmeth_GostR3410_2001)
-        return;
-    toadd = engine_gost();
-    if (!toadd)
-        return;
-    ENGINE_add(toadd);
+    int ret = 0;
+
+    if ((toadd = ENGINE_new()) != NULL
+        && (ret = make_gost_engine(toadd, engine_gost_id)) > 0)
+        ENGINE_add(toadd);
     ENGINE_free(toadd);
-    ERR_clear_error();
+    if (ret > 0)
+        ERR_clear_error();
 }
 
 #endif
