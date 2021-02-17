@@ -31,7 +31,10 @@ jobs:
             - run: .github/script.sh
 
     gcc-asan-openssl-master:
-        runs-on: ubuntu-20.04
+        strategy:
+            matrix:
+                os: [ ubuntu-20.04, macos-11.0 ]
+        runs-on: ${{matrix.os}}
         env:
             OPENSSL_BRANCH: master
             ASAN: -DASAN=1
