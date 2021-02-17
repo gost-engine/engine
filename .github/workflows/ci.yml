@@ -41,7 +41,7 @@ jobs:
             - run: .github/script.sh
 
     macos-asan-openssl-master:
-        runs-on: macos-11.0
+        runs-on: macos-latest
         env:
             OPENSSL_BRANCH: master
             ASAN: -DASAN=1
