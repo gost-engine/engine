@@ -40,6 +40,34 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
+    macos-asan-openssl-master:
+        runs-on: macos-latest
+        env:
+            OPENSSL_BRANCH: master
+            ASAN: -DASAN=1
+        steps:
+            - name: install cpanm and Test2::V0
+              uses: perl-actions/install-with-cpanm@v1
+              with:
+                  install: Test2::V0
+            - name: Checkout gost-engine
+              uses: actions/checkout@v2
+            - name: checkout OpenSSL
+              uses: actions/checkout@v2
+              with:
+                  repository: openssl/openssl
+                  ref: master
+                  path: openssl
+            - name: configure OpenSSL
+              run: |
+                  mkdir $HOME/opt
+                  ./Configure --prefix=$HOME/opt
+              working-directory: openssl
+            - name: build+install OpenSSL
+              run: make -s install_sw
+              working-directory: openssl
+            - run: .github/script.sh
+
     gcc-openssl-stable-x86:
         runs-on: ubuntu-20.04
         env:
