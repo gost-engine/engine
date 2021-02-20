@@ -2,7 +2,7 @@ name: CI
 on: [push, pull_request]
 
 env:
-    OPENSSL_BRANCH: openssl-3.0.0-alpha11
+    OPENSSL_BRANCH: openssl-3.0.0-alpha12
 
 jobs:
     gcc-openssl-stable:
