@@ -39,6 +39,11 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
         goto err;
     }
 
+    if (shared_len + mac_len > (unsigned int)(*out_len)) {
+        GOSTerr(GOST_F_GOST_KEXP15, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+
     /* we expect IV of half length */
     memset(iv_full, 0, 16);
     memcpy(iv_full, iv, ivlen);
@@ -113,6 +118,16 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
 
     if (mac_len == 0) {
         GOSTerr(GOST_F_GOST_KIMP15, GOST_R_INVALID_CIPHER);
+        goto err;
+    }
+
+    if (expkeylen > sizeof(out)) {
+        GOSTerr(GOST_F_GOST_KIMP15, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+
+    if (ivlen > 16) {
+        GOSTerr(GOST_F_GOST_KIMP15, ERR_R_INTERNAL_ERROR);
         goto err;
     }
 
