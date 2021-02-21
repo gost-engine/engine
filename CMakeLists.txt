@@ -281,7 +281,7 @@ add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
 # module suffix should be
 set_target_properties(gost_engine PROPERTIES
   PREFIX "" OUTPUT_NAME "gost" SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
-target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(gost_engine PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARY})
 
 # The GOST engine in library form
 add_library(lib_gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
@@ -289,7 +289,7 @@ set_target_properties(lib_gost_engine PROPERTIES
   COMPILE_DEFINITIONS "BUILDING_ENGINE_AS_LIBRARY"
   PUBLIC_HEADER gost-engine.h
   OUTPUT_NAME "gost")
-target_link_libraries(lib_gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(lib_gost_engine PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARY})
 
 
 set(GOST_SUM_SOURCE_FILES
@@ -318,14 +318,21 @@ add_custom_target(tcl_tests
 add_executable(test_tlstree test_tlstree.c)
 target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
 
-# install
-set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
+# install programs and manuals
+install(TARGETS gostsum gost12sum)
+install(FILES gostsum.1 gost12sum.1 DESTINATION ${CMAKE_INSTALL_DIR}/man1)
 
-install(TARGETS gost_engine gostsum gost12sum EXPORT GostEngineConfig
+# install engine in library and module form
+install(TARGETS lib_gost_engine EXPORT GostEngineConfig)
+install(TARGETS gost_engine EXPORT GostEngineConfig
         LIBRARY  DESTINATION ${OPENSSL_ENGINES_DIR}
-        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES gostsum.1 gost12sum.1 DESTINATION ${OPENSSL_MAN_INSTALL_DIR})
+        RUNTIME  DESTINATION ${OPENSSL_ENGINES_DIR})
 if (MSVC)
- install(FILES $<TARGET_PDB_FILE:gost_engine> DESTINATION ${OPENSSL_ENGINES_DIR} OPTIONAL)
- install(FILES $<TARGET_PDB_FILE:gostsum> $<TARGET_PDB_FILE:gost12sum> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+  install(FILES $<TARGET_PDB_FILE:lib_gost_engine>
+    EXPORT GostEngineConfig DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+  install(FILES $<TARGET_PDB_FILE:gostsum> $<TARGET_PDB_FILE:gost12sum>
+    EXPORT GostEngineConfig DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+  install(FILES $<TARGET_PDB_FILE:gost_engine>
+    EXPORT GostEngineConfig DESTINATION ${OPENSSL_ENGINES_DIR} OPTIONAL)
 endif()
+install(EXPORT GostEngineConfig DESTINATION GostEngine/share/cmake/GostEngine)
