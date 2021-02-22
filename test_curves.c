@@ -32,9 +32,9 @@
 #define TEST_ASSERT(e) { \
 	test = e; \
 	if (test) \
-		printf(cRED "  Test FAILED\n" cNORM); \
+		printf(cRED "  Test FAILED" cNORM "\n"); \
 	else \
-		printf(cGREEN "  Test passed\n" cNORM); \
+		printf(cGREEN "  Test passed" cNORM "\n"); \
 }
 
 struct test_curve {
@@ -93,7 +93,7 @@ static int parameter_test(struct test_curve *tc)
     printf("\n");
 
     if (!OBJ_nid2obj(nid)) {
-	printf(cRED "NID %d not found\n" cNORM, nid);
+	printf(cRED "NID %d not found" cNORM "\n", nid);
 	return 1;
     }
 
@@ -109,7 +109,7 @@ static int parameter_test(struct test_curve *tc)
     EC_KEY *ec;
     T(ec = EC_KEY_new());
     if (!fill_GOST_EC_params(ec, nid)) {
-	printf(cRED "fill_GOST_EC_params FAIL\n" cNORM);
+	printf(cRED "fill_GOST_EC_params FAIL" cNORM "\n");
 	ERR_print_errors_fp(stderr);
 	return 1;
     }
@@ -242,8 +242,8 @@ int main(int argc, char **argv)
     ENGINE_free(eng);
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!\n" cNORM);
+	printf(cDRED "= Some tests FAILED!" cNORM "\n");
     else
-	printf(cDGREEN "= All tests passed!\n" cNORM);
+	printf(cDGREEN "= All tests passed!" cNORM "\n");
     return ret;
 }

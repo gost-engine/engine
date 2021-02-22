@@ -28,9 +28,9 @@
 #define cDBLUE	"\033[0;34m"
 #define cNORM	"\033[m"
 #define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "  Test FAILED\n" cNORM); \
+		 printf(cRED "  Test FAILED" cNORM "\n"); \
 	     else \
-		 printf(cGREEN "  Test passed\n" cNORM);}
+		 printf(cGREEN "  Test passed" cNORM "\n");}
 
 static void hexdump(const void *ptr, size_t len)
 {
@@ -61,7 +61,7 @@ static int test_contexts_cipher(int nid, const int enc, int acpkm)
     const EVP_CIPHER *type = EVP_get_cipherbynid(nid);
     const char *name = EVP_CIPHER_name(type);
 
-    printf(cBLUE "%s test for %s (nid %d)\n" cNORM,
+    printf(cBLUE "%s test for %s (nid %d)" cNORM "\n",
 	enc ? "Encryption" : "Decryption", name, nid);
 
     /* produce base encryption */
@@ -137,7 +137,7 @@ static int test_contexts_digest(int nid, int mac)
     const EVP_MD *type = EVP_get_digestbynid(nid);
     const char *name = EVP_MD_name(type);
 
-    printf(cBLUE "Digest test for %s (nid %d)\n" cNORM, name, nid);
+    printf(cBLUE "Digest test for %s (nid %d)" cNORM "\n", name, nid);
 
     /* produce base digest */
     EVP_MD_CTX *ctx, *save;
@@ -267,8 +267,8 @@ int main(int argc, char **argv)
     ENGINE_free(eng);
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!\n" cNORM);
+	printf(cDRED "= Some tests FAILED!" cNORM "\n");
     else
-	printf(cDGREEN "= All tests passed!\n" cNORM);
+	printf(cDGREEN "= All tests passed!" cNORM "\n");
     return ret;
 }

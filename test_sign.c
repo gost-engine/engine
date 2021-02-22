@@ -41,9 +41,9 @@
 #define cCYAN	"\033[1;36m"
 #define cNORM	"\033[m"
 #define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "  Test FAILED\n" cNORM); \
+		 printf(cRED "  Test FAILED" cNORM "\n"); \
 	     else \
-		 printf(cGREEN "  Test passed\n" cNORM);}
+		 printf(cGREEN "  Test passed" cNORM "\n");}
 
 struct test_sign {
     const char *name;
@@ -83,17 +83,17 @@ static void hexdump(const void *ptr, size_t len)
 static void print_test_tf(int err, int val, const char *t, const char *f)
 {
     if (err == 1)
-	printf(cGREEN "%s\n" cNORM, t);
+	printf(cGREEN "%s" cNORM "\n", t);
     else
-	printf(cRED "%s [%d]\n" cNORM, f, val);
+	printf(cRED "%s [%d]" cNORM "\n", f, val);
 }
 
 static void print_test_result(int err)
 {
     if (err == 1)
-	printf(cGREEN "success\n" cNORM);
+	printf(cGREEN "success" cNORM "\n");
     else if (err == 0)
-	printf(cRED "failure\n" cNORM);
+	printf(cRED "failure" cNORM "\n");
     else
 	ERR_print_errors_fp(stderr);
 }
@@ -103,7 +103,7 @@ static int test_sign(struct test_sign *t)
     int ret = 0, err;
     size_t len = t->bits / 8;
 
-    printf(cBLUE "Test %s:\n" cNORM, t->name);
+    printf(cBLUE "Test %s:" cNORM "\n", t->name);
 
     /* Signature type from size. */
     int type = 0;
@@ -197,7 +197,7 @@ static int test_sign(struct test_sign *t)
 	ret |= err;
 	EVP_PKEY_free(pkey);
     } else
-	printf(cCYAN "skipped\n" cNORM);
+	printf(cCYAN "skipped" cNORM "\n");
     BIO_free(bp);
 
     /* Convert to DER and back, using memory API. */
@@ -334,8 +334,8 @@ int main(int argc, char **argv)
     ENGINE_free(eng);
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!\n" cNORM);
+	printf(cDRED "= Some tests FAILED!" cNORM "\n");
     else
-	printf(cDGREEN "= All tests passed!\n" cNORM);
+	printf(cDGREEN "= All tests passed!" cNORM "\n");
     return ret;
 }
