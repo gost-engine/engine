@@ -28,9 +28,9 @@
 #define cDBLUE	"\033[0;34m"
 #define cNORM	"\033[m"
 #define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "Test FAILED\n" cNORM); \
+		 printf(cRED "Test FAILED" cNORM "\n"); \
 	     else \
-		 printf(cGREEN "Test passed\n" cNORM);}
+		 printf(cGREEN "Test passed" cNORM "\n");}
 
 /* Pragma to allow commenting out some tests. */
 #pragma GCC diagnostic ignored "-Wunused-const-variable"
@@ -478,7 +478,7 @@ int main(int argc, char **argv)
 	const EVP_CIPHER *type = EVP_get_cipherbynid(t->nid);
 	const char *name = EVP_CIPHER_name(type);
 
-	printf(cBLUE "# Tests for %s [%s]\n" cNORM, name, standard);
+	printf(cBLUE "# Tests for %s [%s]" cNORM "\n", name, standard);
 	for (inplace = 0; inplace <= 1; inplace++)
 	    ret |= test_block(type, name, t->block,
 		t->plaintext, t->key, t->expected, t->size,
@@ -499,15 +499,15 @@ int main(int argc, char **argv)
 	    if (t->nid == nids[k])
 		break;
 	if (!t->nid)
-	    printf(cMAGENT "Cipher %s is untested!\n" cNORM, OBJ_nid2sn(nids[k]));
+	    printf(cMAGENT "Cipher %s is untested!" cNORM "\n", OBJ_nid2sn(nids[k]));
     }
 
     ENGINE_finish(eng);
     ENGINE_free(eng);
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!\n" cNORM);
+	printf(cDRED "= Some tests FAILED!" cNORM "\n");
     else
-	printf(cDGREEN "= All tests passed!\n" cNORM);
+	printf(cDGREEN "= All tests passed!" cNORM "\n");
     return ret;
 }

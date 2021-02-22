@@ -31,9 +31,9 @@
 #define cCYAN   "\033[1;36m"
 #define cNORM   "\033[m"
 #define TEST_ASSERT(e) {if ((test = (e))) \
-                 printf(cRED "  Test FAILED\n" cNORM); \
+                 printf(cRED "  Test FAILED" cNORM "\n"); \
              else \
-                 printf(cGREEN "  Test passed\n" cNORM);}
+                 printf(cGREEN "  Test passed" cNORM "\n");}
 
 #ifndef OSSL_NELEM
 # define OSSL_NELEM(x) (sizeof(x)/sizeof((x)[0]))
@@ -185,7 +185,7 @@ static EVP_PKEY *load_private_key(int key_nid, int param_nid, const char *pk,
             printf("Public key %08x matches private key %08x\n",
                    *(int *)pub, *(int *)pk);
         else {
-            printf(cRED "Public key mismatch!\n" cNORM);
+            printf(cRED "Public key mismatch!" cNORM "\n");
             exit(1);
         }
         EC_POINT_free(xy);
@@ -393,9 +393,9 @@ int main(int argc, char **argv)
     ENGINE_free(eng);
 
     if (ret)
-        printf(cDRED "= Some tests FAILED!\n" cNORM);
+        printf(cDRED "= Some tests FAILED!" cNORM "\n");
     else
-        printf(cDGREEN "= All tests passed!\n" cNORM);
+        printf(cDGREEN "= All tests passed!" cNORM "\n");
     return ret;
 }
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */

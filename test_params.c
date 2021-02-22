@@ -39,9 +39,9 @@
 #define cDBLUE	"\033[0;34m"
 #define cNORM	"\033[m"
 #define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "  Test FAILED\n" cNORM); \
+		 printf(cRED "  Test FAILED" cNORM "\n"); \
 	     else \
-		 printf(cGREEN "  Test passed\n" cNORM);}
+		 printf(cGREEN "  Test passed" cNORM "\n");}
 
 struct test_param {
     unsigned int param;		/* NID of EC parameters */
@@ -873,9 +873,9 @@ static void hexdump(const void *ptr, size_t len)
 static void print_test_result(int err)
 {
     if (err == 1)
-	printf(cGREEN "correct\n" cNORM);
+	printf(cGREEN "correct" cNORM "\n");
     else if (err == 0)
-	printf(cRED "incorrect\n" cNORM);
+	printf(cRED "incorrect" cNORM "\n");
     else
 	ERR_print_errors_fp(stderr);
 }
@@ -1050,7 +1050,7 @@ static int test_param(struct test_param *t)
     int hash_nid = 0;
     const char *sn = OBJ_nid2sn(t->param);
 
-    printf(cBLUE "Test %s (cp):\n" cNORM, sn);
+    printf(cBLUE "Test %s (cp):" cNORM "\n", sn);
 
     switch (t->len) {
 	case 256 / 8:
@@ -1180,8 +1180,8 @@ int main(int argc, char **argv)
     ENGINE_free(eng);
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!\n" cNORM);
+	printf(cDRED "= Some tests FAILED!" cNORM "\n");
     else
-	printf(cDGREEN "= All tests passed!\n" cNORM);
+	printf(cDGREEN "= All tests passed!" cNORM "\n");
     return ret;
 }
