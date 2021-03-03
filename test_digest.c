@@ -533,12 +533,9 @@ static int do_hmac_prov(int iter, const EVP_MD *type, const char *plaintext,
     OSSL_PARAM params[] = {
 	OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_DIGEST,
 	    (char *)EVP_MD_name(type), 0),
-	OSSL_PARAM_octet_string(OSSL_MAC_PARAM_KEY,
-	    (char *)t->key, t->key_size),
 	OSSL_PARAM_END
     };
-    T(EVP_MAC_CTX_set_params(ctx, params));
-    T(EVP_MAC_init(ctx));
+    T(EVP_MAC_init(ctx, (const unsigned char *)t->key, t->key_size, params));
     T(EVP_MAC_update(ctx, (unsigned char *)plaintext, t->psize));
     T(EVP_MAC_final(ctx, md, &len, EVP_MAX_MD_SIZE));
     EVP_MAC_CTX_free(ctx);
@@ -609,11 +606,10 @@ static int do_cmac_prov(int iter, const char *plaintext,
     T(ctx = EVP_MAC_CTX_new(cmac));
     OSSL_PARAM params[] = {
 	OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_CIPHER, mdname, 0),
-	OSSL_PARAM_octet_string(OSSL_MAC_PARAM_KEY, (char *)t->key, t->key_size),
 	OSSL_PARAM_END
     };
     T(EVP_MAC_CTX_set_params(ctx, params));
-    T(EVP_MAC_init(ctx));
+    T(EVP_MAC_init(ctx, (const unsigned char *)t->key, t->key_size, params));
     T(EVP_MAC_update(ctx, (unsigned char *)plaintext, t->psize));
     T(EVP_MAC_final(ctx, md, &len, EVP_MAX_MD_SIZE));
     EVP_MAC_CTX_free(ctx);
