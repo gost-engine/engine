@@ -319,11 +319,11 @@ add_executable(test_tlstree test_tlstree.c)
 target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
 
 # install programs and manuals
-install(TARGETS gostsum gost12sum)
+install(TARGETS gostsum gost12sum RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES gostsum.1 gost12sum.1 DESTINATION ${CMAKE_INSTALL_DIR}/man1)
 
 # install engine in library and module form
-install(TARGETS lib_gost_engine EXPORT GostEngineConfig)
+install(TARGETS lib_gost_engine EXPORT GostEngineConfig LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(TARGETS gost_engine EXPORT GostEngineConfig
         LIBRARY  DESTINATION ${OPENSSL_ENGINES_DIR}
         RUNTIME  DESTINATION ${OPENSSL_ENGINES_DIR})
