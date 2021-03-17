@@ -958,6 +958,7 @@ static int test_cert(struct test_cert *tc)
     ret |= err;
     X509_free(y);
 
+#if OPENSSL_VERSION_MAJOR >= 3
     /* Convert public key to PEM and back. */
     T(BIO_reset(bp));
     T(PEM_write_bio_X509_PUBKEY(bp, xk));
@@ -979,6 +980,8 @@ static int test_cert(struct test_cert *tc)
     printf("  d2i_X509_PUBKEY_bio\t\t");
     print_test_result(!err);
     ret |= err;
+#endif
+
     BIO_free(bp);
 
     /*

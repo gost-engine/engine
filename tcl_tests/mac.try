@@ -115,7 +115,7 @@ test "Вычисление MAC magma-mac (пример из ГОСТ 2015 34.13)
 
 #FIXME my regression
 test "Вычисление MAC grasshopper-mac (пример из ГОСТ 2015 34.13)" {
-	grep kuznyechik-mac [openssl "dgst -mac kuznyechik-mac -macopt hexkey:8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef mac-grasshopper.dat"]
-} 0 "KUZNYECHIK-MAC-kuznyechik-mac(mac-grasshopper.dat)= 336f4d296059fbe34ddeb35b37749c67\n"
+	grep grasshopper-mac [openssl "dgst -mac kuznyechik-mac -macopt hexkey:8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef mac-grasshopper.dat"]
+} 0 "KUZNYECHIK-MAC-grasshopper-mac(mac-grasshopper.dat)= 336f4d296059fbe34ddeb35b37749c67\n"
 
 end_tests

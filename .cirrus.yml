@@ -4,13 +4,14 @@ FreeBSD_task:
   env:
     PREFIX: ${HOME}/opt
     PATH: ${PREFIX}/bin:${PATH}
-    OPENSSL_BRANCH: master
+    OPENSSL_BRANCH: OpenSSL_1_1_1g
   install_script:
     - pkg install -y git cmake p5-App-cpanminus gdb pkgconf
     - sudo cpanm --notest Test2::V0
   script:
     - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
     - cd openssl
+    - patch -p0 < ../patches/openssl_111g.diff
     - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib && make all install_sw > build.log 2>&1 || (cat build.log && exit 1)
     - cd ..
     - mkdir build

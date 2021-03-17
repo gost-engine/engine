@@ -358,7 +358,7 @@ int main(int argc, char **argv)
 	verbose = atoi(p);
 
     ret |= test("rsa", NULL);
-    cipher_list = "LEGACY-GOST2012-GOST8912-GOST8912";
+    cipher_list = "GOST2012-GOST8912-GOST8912";
     ret |= test("gost2012_256", "A");
     ret |= test("gost2012_256", "B");
     ret |= test("gost2012_256", "C");

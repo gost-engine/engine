@@ -305,6 +305,9 @@ int pack_sign_cp(ECDSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
 /* Get private key as BIGNUM from both 34.10-2001 keys*/
 /* Returns pointer into EVP_PKEY structure */
 BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey);
+/* from gost_crypt.c */
+/* Decrements 8-byte sequence */ 
+int decrement_sequence(unsigned char *seq, int decrement);
 
 /* Struct describing cipher and used for init/deinit.*/
 struct gost_cipher_st {

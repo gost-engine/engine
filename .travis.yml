@@ -8,7 +8,7 @@ env:
   global:
     - PREFIX=${HOME}/opt
     - PATH=${PREFIX}/bin:${PATH}
-    - OPENSSL_BRANCH=openssl-3.0.0-alpha6
+    - OPENSSL_BRANCH=OpenSSL_1_1_1g
     - RPATH="-Wl,-rpath=${PREFIX}/lib"
 
 matrix:
@@ -16,8 +16,6 @@ matrix:
     - name: gcc | openssl-stable
     - name: clang | openssl-stable
       compiler: clang
-    - name: gcc | openssl-master
-      env: OPENSSL_BRANCH=master
     # Dynamic and static analysers
     - name: gcc+ASan | openssl-stable
       env: ASAN=-DASAN=1
@@ -53,6 +51,7 @@ before_script:
   - if [ "$APT_INSTALL" ]; then sudo apt-get install -y $APT_INSTALL; fi
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
+  - patch -p0 < ../patches/openssl_111g.diff
   - git describe --always --long
   - $SETARCH ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} ${RPATH}
   - travis_wait $SETARCH make -s -j$(nproc) build_libs
@@ -61,9 +60,9 @@ before_script:
   - cd ..
 
 script:
-  - set -e
   - mkdir build
   - cd build
+  - set -e
   - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_LIBRARIES=${PREFIX}/lib -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ${ASAN} ..
   - make
   - make test CTEST_OUTPUT_ON_FAILURE=1
