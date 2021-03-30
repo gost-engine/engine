@@ -10,7 +10,7 @@ test -createsfiles {dgst.dat dgst0.dat dgst2.dat dgst8.dat dgst63.dat mac-grassh
 	makeFile dgst2.dat [string repeat "1\n" 1] binary
 	makeFile dgst8.dat [string repeat "1\n" 4] binary
 	makeFile dgst63.dat "012345678901234567890123456789012345678901234567890123456789012" binary
-	file copy -force ../mac-grasshopper.dat ../mac-magma.dat .
+	file copy -force $::test::src/mac-grasshopper.dat $::test::src/mac-magma.dat .
 } 0 ""
 
 test "Вычисление HMAC(md_gost12_512)" {

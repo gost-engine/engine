@@ -2,13 +2,13 @@
 lappend auto_path [file dirname [info script]] 
 package require ossltest
 set plain0 [getFile plain.enc]
-file copy -force cfb0.enc $::test::dir
-file copy -force cnt0.enc $::test::dir
-file copy -force cbc0.enc $::test::dir
-file copy -force aes0.enc $::test::dir
-file copy -force plain.enc $::test::dir
-file copy -force magma_plain.enc $::test::dir
-file copy -force magma_acpkm_plain.enc $::test::dir
+file copy -force $::test::src/cfb0.enc $::test::dir
+file copy -force $::test::src/cnt0.enc $::test::dir
+file copy -force $::test::src/cbc0.enc $::test::dir
+file copy -force $::test::src/aes0.enc $::test::dir
+file copy -force $::test::src/plain.enc $::test::dir
+file copy -force $::test::src/magma_plain.enc $::test::dir
+file copy -force $::test::src/magma_acpkm_plain.enc $::test::dir
 set cfb1 [getFile cfb1.enc]
 set cbc1 [getFile cbc1.enc]
 set cnt1 [getFile cnt1.enc]
