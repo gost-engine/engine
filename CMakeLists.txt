@@ -312,7 +312,12 @@ add_custom_target(tags
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 add_custom_target(tcl_tests
-    COMMAND ENGINE_DIR=${OUTPUT_DIRECTORY} sh ./runtest.sh
+    COMMAND OPENSSL_LIBCRYPTO=${OPENSSL_CRYPTO_LIBRARY}
+            OPENSSL_APP=${OPENSSL_PROGRAM}
+            TESTSRC=${CMAKE_SOURCE_DIR}/tcl_tests
+            TESTDIR=${CMAKE_BINARY_DIR}/tcl_tests
+            ENGINE_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+            sh ./runtest.sh
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
 
 add_executable(test_tlstree test_tlstree.c)

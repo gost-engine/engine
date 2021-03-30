@@ -25,7 +25,7 @@ test -createsfiles {dgst.dat dgst0.dat dgst2.dat dgst8.dat dgst63.dat dgst_CF.da
 	makeFile dgst.dat [string repeat "Test data to digest.\n" 100] binary
 	makeFile dgst0.dat "" binary
 	makeFile dgst63.dat "012345678901234567890123456789012345678901234567890123456789012" binary
-	file copy -force ../dgst_CF.dat ../dgst_ex1.dat ../dgst_ex2.dat .
+	file copy -force $::test::src/dgst_CF.dat $::test::src/dgst_ex1.dat $::test::src/dgst_ex2.dat .
 } 0 ""
 
 test "Вычисление дайджеста алгоритмом md_gost12_256" {
