@@ -53,6 +53,10 @@ void gost_param_free(void);
 
 /* method registration */
 
+/* Provider implementation data */
+extern const OSSL_ALGORITHM GOST_prov_macs[];
+void GOST_prov_deinit_mac_digests(void);
+
 int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                         const char *pemstr, const char *info);
 int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
