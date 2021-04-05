@@ -91,6 +91,8 @@ static const OSSL_ALGORITHM *gost_operation(void *vprovctx,
         return GOST_prov_ciphers;
     case OSSL_OP_DIGEST:
         return GOST_prov_digests;
+    case OSSL_OP_MAC:
+        return GOST_prov_macs;
     }
     return NULL;
 }
@@ -113,6 +115,7 @@ static void gost_teardown(void *vprovctx)
 {
     GOST_prov_deinit_ciphers();
     GOST_prov_deinit_digests();
+    GOST_prov_deinit_mac_digests();
     provider_ctx_free(vprovctx);
 }
 
