@@ -183,15 +183,23 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_eng.c
         )
 
+set(TEST_ENVIRONMENT
+        CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+        PERL5LIB=${CMAKE_CURRENT_SOURCE_DIR}/test
+        OPENSSL_ENGINES=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+        OPENSSL_PROGRAM=${OPENSSL_PROGRAM}
+        OPENSSL_CRYPTO_LIBRARY=${OPENSSL_CRYPTO_LIBRARY}
+        OPENSSL_CONF=${CMAKE_CURRENT_SOURCE_DIR}/test/engine.cnf
+        )
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME digest
-	COMMAND test_digest)
+target_link_libraries(test_digest ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME digest COMMAND test_digest)
+set_tests_properties(digest PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_ciphers test_ciphers.c)
-target_link_libraries(test_ciphers gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME ciphers
-	COMMAND test_ciphers)
+target_link_libraries(test_ciphers ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME ciphers COMMAND test_ciphers)
+set_tests_properties(ciphers PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_curves test_curves.c)
 target_link_libraries(test_curves gost_core ${OPENSSL_CRYPTO_LIBRARY})
@@ -199,29 +207,29 @@ add_test(NAME curves
 	COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME parameters
-	COMMAND test_params)
+target_link_libraries(test_params ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME parameters COMMAND test_params)
+set_tests_properties(parameters PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_derive test_derive.c)
-target_link_libraries(test_derive gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME derive
-	COMMAND test_derive)
+target_link_libraries(test_derive ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME derive COMMAND test_derive)
+set_tests_properties(derive PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME sign/verify
-	COMMAND test_sign)
+target_link_libraries(test_sign ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME sign/verify COMMAND test_sign)
+set_tests_properties(sign/verify PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls gost_core ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
-add_test(NAME TLS
-	COMMAND test_tls)
+target_link_libraries(test_tls ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+add_test(NAME TLS COMMAND test_tls)
+set_tests_properties(TLS PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME context
-	COMMAND test_context)
+target_link_libraries(test_context ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME context COMMAND test_context)
+set_tests_properties(context PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
@@ -238,14 +246,6 @@ if(NOT SKIP_PERL_TESTS)
     execute_process(COMMAND perl -MTest2::V0 -e ""
 	ERROR_QUIET RESULT_VARIABLE HAVE_TEST2_V0)
     if(NOT HAVE_TEST2_V0)
-        set(TEST_ENVIRONMENT
-          CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-          PERL5LIB=${CMAKE_CURRENT_SOURCE_DIR}/test
-          OPENSSL_ENGINES=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-          OPENSSL_PROGRAM=${OPENSSL_PROGRAM}
-          OPENSSL_CRYPTO_LIBRARY=${OPENSSL_CRYPTO_LIBRARY}
-          OPENSSL_CONF=${CMAKE_CURRENT_SOURCE_DIR}/test/empty.cnf
-          )
 	add_test(NAME engine
 	    COMMAND prove --merge -PWrapOpenSSL ${CMAKE_CURRENT_SOURCE_DIR}/test)
 	set_tests_properties(engine PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
