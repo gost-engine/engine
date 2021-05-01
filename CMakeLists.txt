@@ -231,16 +231,16 @@ target_link_libraries(test_context ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME context COMMAND test_context)
 set_tests_properties(context PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
+# test_keyexpimp is an internals testing program, it doesn't need a test env
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
 target_link_libraries(test_keyexpimp gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME keyexpimp
-	COMMAND test_keyexpimp)
+add_test(NAME keyexpimp COMMAND test_keyexpimp)
 
+# test_gost89 is an internals testing program, it doesn't need a test env
 add_executable(test_gost89 test_gost89.c)
 target_link_libraries(test_gost89 gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME gost89
-	COMMAND test_gost89)
+add_test(NAME gost89 COMMAND test_gost89)
 
 if(NOT SKIP_PERL_TESTS)
     execute_process(COMMAND perl -MTest2::V0 -e ""
