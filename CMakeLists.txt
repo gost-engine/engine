@@ -201,10 +201,10 @@ target_link_libraries(test_ciphers ${OPENSSL_CRYPTO_LIBRARY})
 add_test(NAME ciphers COMMAND test_ciphers)
 set_tests_properties(ciphers PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
+# test_curves is an internals testing program, it doesn't need a test env
 add_executable(test_curves test_curves.c)
 target_link_libraries(test_curves gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME curves
-	COMMAND test_curves)
+add_test(NAME curves COMMAND test_curves)
 
 add_executable(test_params test_params.c)
 target_link_libraries(test_params ${OPENSSL_CRYPTO_LIBRARY})
