@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 use Test2::V0;
+skip_all('This test is only suitable for the engine')
+    unless $ARGV[0] eq 'engine';
 plan(7);
 use Cwd 'abs_path';
 

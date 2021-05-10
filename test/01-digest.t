@@ -1,5 +1,7 @@
 #!/usr/bin/perl 
 use Test2::V0;
+skip_all('TODO: add digest support in provider')
+    unless $ARGV[0] eq 'engine';
 plan(16);
 
 # Set engine name from environment to allow testing of different engines
