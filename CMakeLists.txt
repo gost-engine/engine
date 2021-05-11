@@ -228,6 +228,9 @@ target_link_libraries(test_digest OpenSSL::Crypto)
 add_test(NAME digest-with-engine COMMAND test_digest)
 set_tests_properties(digest-with-engine
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+add_test(NAME digest-with-provider COMMAND test_digest)
+set_tests_properties(digest-with-provider
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
 add_executable(test_ciphers test_ciphers.c)
 target_link_libraries(test_ciphers OpenSSL::Crypto)
