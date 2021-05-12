@@ -6,6 +6,7 @@
  */
 
 #include <openssl/engine.h>
+#include <openssl/provider.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
@@ -170,7 +171,7 @@ static const unsigned char iv_128bit[]	= { 0x12,0x34,0x56,0x78,0x90,0xab,0xce,0x
 static const unsigned char iv_acpkm_m[]	= { 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff };
 
 static struct testcase {
-    int nid;
+    const char *algname;
     int block; /* Actual underlying block size (bytes). */
     int stream; /* Stream cipher. */
     const unsigned char *plaintext;
@@ -182,7 +183,7 @@ static struct testcase {
     int acpkm;
 } testcases[] = {
     {
-	.nid = NID_grasshopper_ecb,
+	.algname = SN_grasshopper_ecb,
 	.block = 16,
 	.plaintext = P,
 	.key = K,
@@ -190,7 +191,7 @@ static struct testcase {
 	.size = sizeof(P),
     },
     {
-	.nid = NID_grasshopper_ctr,
+	.algname = SN_grasshopper_ctr,
 	.block = 16,
 	.stream = 1,
 	.plaintext = P,
@@ -201,7 +202,7 @@ static struct testcase {
 	.iv_size = sizeof(iv_ctr),
     },
     {
-	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
+	.algname = SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
 	.block = 16,
 	.stream = 1,
 	.plaintext = P,
@@ -213,7 +214,7 @@ static struct testcase {
 	/* no acpkm works same as ctr */
     },
     {
-	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
+	.algname = SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
 	.block = 16,
 	.stream = 1,
 	.plaintext = P_acpkm,
@@ -225,7 +226,7 @@ static struct testcase {
 	.acpkm = 256 / 8,
     },
     {
-	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
+	.algname = SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm,
 	.block = 16,
 	.plaintext = P_acpkm_master,
 	.key = K,
@@ -236,7 +237,7 @@ static struct testcase {
 	.acpkm = 768 / 8
     },
     {
-	.nid = NID_grasshopper_ofb,
+	.algname = SN_grasshopper_ofb,
 	.block = 16,
 	.stream = 1,
 	.plaintext = P,
@@ -247,7 +248,7 @@ static struct testcase {
 	.iv_size = sizeof(iv_128bit),
     },
     {
-	.nid = NID_grasshopper_cbc,
+	.algname = SN_grasshopper_cbc,
 	.block = 16,
 	.plaintext = P,
 	.key = K,
@@ -257,7 +258,7 @@ static struct testcase {
 	.iv_size = sizeof(iv_128bit),
     },
     {
-	.nid = NID_grasshopper_cfb,
+	.algname = SN_grasshopper_cfb,
 	.block = 16,
 	.plaintext = P,
 	.key = K,
@@ -267,7 +268,7 @@ static struct testcase {
 	.iv_size = sizeof(iv_128bit),
     },
     {
-	.nid = NID_magma_ctr,
+	.algname = SN_magma_ctr,
 	.block = 8,
 	.plaintext = Pm,
 	.key = Km,
@@ -277,7 +278,7 @@ static struct testcase {
 	.iv_size = sizeof(iv_ctr) / 2,
     },
     {
-	.nid = NID_magma_cbc,
+	.algname = SN_magma_cbc,
 	.block = 8,
 	.plaintext = Pm,
 	.key = Km,
@@ -332,8 +333,17 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
 	memcpy(c, pt, size);
     else
 	memset(c, 0, sizeof(c));
-    if (acpkm)
-	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+    if (acpkm) {
+	if (EVP_CIPHER_get0_provider(type) != NULL) {
+	    OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END };
+	    size_t v = (size_t)acpkm;
+
+	    params[0] = OSSL_PARAM_construct_size_t("key-mesh", &v);
+	    T(EVP_CIPHER_CTX_set_params(ctx, params));
+	} else {
+	    T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+	}
+    }
     T(EVP_CipherUpdate(ctx, c, &outlen, inplace? c : pt, size));
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(ctx);
@@ -357,8 +367,17 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
 	memcpy(c, pt, size);
     else
 	memset(c, 0, sizeof(c));
-    if (acpkm)
-	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+    if (acpkm) {
+	if (EVP_CIPHER_get0_provider(type) != NULL) {
+	    OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END };
+	    size_t v = (size_t)acpkm;
+
+	    params[0] = OSSL_PARAM_construct_size_t("key-mesh", &v);
+	    T(EVP_CIPHER_CTX_set_params(ctx, params));
+	} else {
+	    T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+	}
+    }
     for (z = 0; z < blocks; z++) {
 	int offset = z * block_size;
 	int sz = block_size;
@@ -386,8 +405,17 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
 	memcpy(c, exp, size);
     else
 	memset(c, 0, sizeof(c));
-    if (acpkm)
-	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+    if (acpkm) {
+	if (EVP_CIPHER_get0_provider(type) != NULL) {
+	    OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END };
+	    size_t v = (size_t)acpkm;
+
+	    params[0] = OSSL_PARAM_construct_size_t("key-mesh", &v);
+	    T(EVP_CIPHER_CTX_set_params(ctx, params));
+	} else {
+	    T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+	}
+    }
     T(EVP_CipherUpdate(ctx, c, &outlen, inplace ? c : exp, size));
     T(EVP_CipherFinal_ex(ctx, c + outlen, &tmplen));
     EVP_CIPHER_CTX_cleanup(ctx);
@@ -429,8 +457,17 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
 	T(EVP_CipherInit_ex(ctx, type, NULL, key, iv, 1));
 	T(EVP_CIPHER_CTX_set_padding(ctx, 0));
 	memset(c, 0xff, sizeof(c));
-	if (acpkm)
-	    T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+	if (acpkm) {
+	    if (EVP_CIPHER_get0_provider(type) != NULL) {
+		OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END };
+		size_t v = (size_t)acpkm;
+
+		params[0] = OSSL_PARAM_construct_size_t("key-mesh", &v);
+		T(EVP_CIPHER_CTX_set_params(ctx, params));
+	    } else {
+		T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+	    }
+	}
 	for (i = 0; i < size; i += z) {
 	    if (i + z > size)
 		sz = size - i;
@@ -454,6 +491,64 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
     return ret;
 }
 
+int engine_is_available(const char *name)
+{
+    ENGINE *e = ENGINE_get_first();
+
+    while (e != NULL) {
+        if (strcmp(ENGINE_get_id(e), name) == 0)
+            break;
+        e = ENGINE_get_next(e);
+    }
+    ENGINE_free(e);
+    return 0;
+}
+
+void warn_if_untested(const EVP_CIPHER *ciph, void *provider)
+{
+    const struct testcase *t;
+
+    /* ENGINE provided EVP_MDs have a NULL provider */
+    if (provider != EVP_CIPHER_get0_provider(ciph))
+        return;
+
+    for (t = testcases; t->algname; t++)
+        if (EVP_CIPHER_is_a(ciph, t->algname))
+            break;
+    if (!t->algname)
+        printf(cMAGENT "Cipher %s is untested!" cNORM "\n", EVP_CIPHER_name(ciph));
+}
+
+void warn_all_untested(void)
+{
+    if (engine_is_available("gost")) {
+        ENGINE *eng;
+
+        T(eng = ENGINE_by_id("gost"));
+        T(ENGINE_init(eng));
+
+        ENGINE_CIPHERS_PTR fn_c;
+        T(fn_c = ENGINE_get_ciphers(eng));
+        const int *nids;
+        int n, k;
+        n = fn_c(eng, NULL, &nids, 0);
+        for (k = 0; k < n; ++k)
+            warn_if_untested(ENGINE_get_cipher(eng, nids[k]), NULL);
+        ENGINE_finish(eng);
+        ENGINE_free(eng);
+    }
+    if (OSSL_PROVIDER_available(NULL, "gostprov")) {
+        OSSL_PROVIDER *prov;
+
+        T(prov = OSSL_PROVIDER_load(NULL, "gostprov"));
+        EVP_CIPHER_do_all_provided(NULL,
+                                   (void (*)(EVP_CIPHER *, void *))warn_if_untested,
+                                   prov);
+
+        OSSL_PROVIDER_unload(prov);
+    }
+}
+
 int main(int argc, char **argv)
 {
     int ret = 0;
@@ -465,39 +560,31 @@ int main(int argc, char **argv)
 #endif
     OPENSSL_add_all_algorithms_conf();
 
-    for (t = testcases; t->nid; t++) {
+    for (t = testcases; t->algname; t++) {
 	int inplace;
 	const char *standard = t->acpkm? "R 23565.1.017-2018" : "GOST R 34.13-2015";
 
-	const EVP_CIPHER *type = EVP_get_cipherbynid(t->nid);
-	const char *name = EVP_CIPHER_name(type);
+	EVP_CIPHER *ciph;
 
-	printf(cBLUE "# Tests for %s [%s]" cNORM "\n", name, standard);
+	ERR_set_mark();
+	T((ciph = (EVP_CIPHER *)EVP_get_cipherbyname(t->algname))
+	  || (ciph = EVP_CIPHER_fetch(NULL, t->algname, NULL)));
+	ERR_pop_to_mark();
+
+	printf(cBLUE "# Tests for %s [%s]" cNORM "\n", t->algname, standard);
 	for (inplace = 0; inplace <= 1; inplace++)
-	    ret |= test_block(type, name, t->block,
+	    ret |= test_block(ciph, t->algname, t->block,
 		t->plaintext, t->key, t->expected, t->size,
 		t->iv, t->iv_size, t->acpkm, inplace);
 	if (t->stream)
-	    ret |= test_stream(type, name,
+	    ret |= test_stream(ciph, t->algname,
 		t->plaintext, t->key, t->expected, t->size,
 		t->iv, t->iv_size, t->acpkm);
+
+	EVP_CIPHER_free(ciph);
     }
 
-    ENGINE *eng;
-    ENGINE_CIPHERS_PTR fn_c;
-    T(eng = ENGINE_by_id("gost"));
-    T(fn_c = ENGINE_get_ciphers(eng));
-    const int *nids;
-    int n, k;
-    n = fn_c(eng, NULL, &nids, 0);
-    for (k = 0; k < n; ++k) {
-	for (t = testcases; t->nid; t++)
-	    if (t->nid == nids[k])
-		break;
-	if (!t->nid)
-	    printf(cMAGENT "Cipher %s is untested!" cNORM "\n", OBJ_nid2sn(nids[k]));
-    }
-    ENGINE_free(eng);
+    warn_all_untested();
 
     if (ret)
 	printf(cDRED "= Some tests FAILED!" cNORM "\n");
