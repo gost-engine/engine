@@ -237,6 +237,9 @@ target_link_libraries(test_ciphers OpenSSL::Crypto)
 add_test(NAME ciphers-with-engine COMMAND test_ciphers)
 set_tests_properties(ciphers-with-engine
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+add_test(NAME ciphers-with-provider COMMAND test_ciphers)
+set_tests_properties(ciphers-with-provider
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
 # test_curves is an internals testing program, it doesn't need a test env
 add_executable(test_curves test_curves.c)
