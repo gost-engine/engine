@@ -275,6 +275,9 @@ target_link_libraries(test_context OpenSSL::Crypto)
 add_test(NAME context-with-engine COMMAND test_context)
 set_tests_properties(context-with-engine
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+add_test(NAME context-with-provider COMMAND test_context)
+set_tests_properties(context-with-provider
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
 # test_keyexpimp is an internals testing program, it doesn't need a test env
 add_executable(test_keyexpimp test_keyexpimp.c)
