@@ -62,6 +62,16 @@ set test::suffix ""
 package require base64
 
 #
+# set  up test::src variable
+#
+
+if {[info exists env(TESTSRC)]} {
+	set ::test::src [file normalize $env(TESTSRC)]
+} else {
+	set ::test::src [pwd]
+}	
+
+#
 # set  up test::dir variable
 #
 

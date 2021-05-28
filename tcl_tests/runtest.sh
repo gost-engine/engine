@@ -23,6 +23,15 @@
 
 CRYPTOPACK_MAIN_VERSION=3
 
+if [ -n "$OPENSSL_LIBCRYPTO" ]; then
+    libdir=`dirname $OPENSSL_LIBCRYPTO`
+    # Linux, ELF HP-UX
+    LD_LIBRARY_PATH=${libdir}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+    export LD_LIBRARY_PATH
+    # MacOS X
+    DYLD_LIBRARY_PATH=${libdir}${DYLD_LIBRARY_PATH:+:${DYLD_LIBRARY_PATH}}
+    export DYLD_LIBRARY_PATH
+fi
 : ${OPENSSL_APP:=$(which openssl 2>/dev/null)}
 if [ -z "$OPENSSL_APP" ]; then
 	if [ "$OS" != "Windows NT" -a "$OS" != "Windows_NT" ]; then
@@ -79,10 +88,11 @@ APP_SUFFIX=`basename $OPENSSL_APP .exe|sed s/openssl//`
 [ -n "$OPENSSL_APP" ]&& export OPENSSL_APP
 ENGINE_NAME=`$TCLSH getengine.tcl`
 export ENGINE_NAME
-TESTDIR=`hostname`-$ENGINE_NAME
+[ -z "$TESTDIR" ] && TESTDIR=`pwd`
+TESTDIR=${TESTDIR}/`hostname`-$ENGINE_NAME
 [ -n "$APP_SUFFIX" ] && TESTDIR=${TESTDIR}-${APP_SUFFIX}
 [ -d ${TESTDIR} ] && rm -rf ${TESTDIR}
-mkdir ${TESTDIR}
+mkdir -p ${TESTDIR}
 cp oidfile ${TESTDIR}
 export TESTDIR
 

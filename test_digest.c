@@ -821,13 +821,7 @@ int main(int argc, char **argv)
     /* Trigger SIGBUS for unaligned access. */
     sysmips(MIPS_FIXADE, 0);
 #endif
-    setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();
-    ERR_load_crypto_strings();
-    ENGINE *eng;
-    T(eng = ENGINE_by_id("gost"));
-    T(ENGINE_init(eng));
-    T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
 
     const struct hash_testvec *tv;
     for (tv = testvecs; tv->nid; tv++) {
@@ -837,7 +831,9 @@ int main(int argc, char **argv)
 	    ret |= do_synthetic_test(tv);
     }
 
+    ENGINE *eng;
     ENGINE_DIGESTS_PTR fn_c;
+    T(eng = ENGINE_by_id("gost"));
     T(fn_c = ENGINE_get_digests(eng));
     const int *nids;
     int n, k;
@@ -849,8 +845,6 @@ int main(int argc, char **argv)
 	if (!tv->nid)
 	    printf(cMAGENT "Digest %s is untested!" cNORM "\n", OBJ_nid2sn(nids[k]));
     }
-
-    ENGINE_finish(eng);
     ENGINE_free(eng);
 
     if (ret)

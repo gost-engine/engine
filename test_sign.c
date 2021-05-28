@@ -7,7 +7,6 @@
  * See https://www.openssl.org/source/license.html for details
  */
 
-#include "e_gost_err.h"
 #include "gost_lcl.h"
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -17,6 +16,7 @@
 #include <openssl/ec.h>
 #include <openssl/bn.h>
 #include <openssl/store.h>
+#include <openssl/engine.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -177,7 +177,7 @@ static int test_sign(struct test_sign *t)
     fflush(stdout);
     pkey = NULL;
     OSSL_STORE_CTX *cts;
-    T(cts = OSSL_STORE_attach(bp, "file", NULL, NULL, NULL, NULL, NULL, NULL));
+    T(cts = OSSL_STORE_attach(bp, "file", NULL, NULL, NULL, NULL, NULL, NULL, NULL));
     for (;;) {
 	OSSL_STORE_INFO *info = OSSL_STORE_load(cts);
 	if (!info) {
@@ -318,20 +318,11 @@ int main(int argc, char **argv)
 {
     int ret = 0;
 
-    setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();
-    ERR_load_crypto_strings();
-    ENGINE *eng;
-    T(eng = ENGINE_by_id("gost"));
-    T(ENGINE_init(eng));
-    T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
 
     struct test_sign *sp;
     for (sp = test_signs; sp->name; sp++)
 	ret |= test_sign(sp);
-
-    ENGINE_finish(eng);
-    ENGINE_free(eng);
 
     if (ret)
 	printf(cDRED "= Some tests FAILED!" cNORM "\n");

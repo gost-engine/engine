@@ -15,14 +15,20 @@ message("-- Found OpenSSL application: ${OPENSSL_PROGRAM}")
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
- add_compile_options(-O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb -Qunused-arguments -Wno-deprecated-declarations)
+  set(CMAKE_C_FLAGS_RELEASE -O2)
+  set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -ggdb")
+  add_compile_options(-Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -Qunused-arguments -Wno-deprecated-declarations)
 elseif(CMAKE_C_COMPILER_ID MATCHES "GNU")
- add_compile_options(-O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb -Wno-error=unknown-pragmas -Wno-error=pragmas -Wno-deprecated-declarations)
+  set(CMAKE_C_FLAGS_RELEASE -O2)
+  set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -ggdb")
+  add_compile_options(-Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -Wno-error=unknown-pragmas -Wno-error=pragmas -Wno-deprecated-declarations)
 elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
- add_definitions(-D_CRT_SECURE_NO_WARNINGS)
- add_definitions(-D_CRT_DEPRECATED_NO_WARNINGS)
- add_definitions(-D_CRT_NONSTDC_NO_WARNINGS)
- add_compile_options(/MP /WX /W4 /wd4100 /wd4267 /wd4206 /wd4706 /wd4244 /wd4115)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_definitions(-D_CRT_DEPRECATED_NO_WARNINGS)
+  add_definitions(-D_CRT_NONSTDC_NO_WARNINGS)
+  add_compile_options(/MP /WX /W4 /wd4100 /wd4267 /wd4206 /wd4706 /wd4244 /wd4115)
 endif()
 
 if (ASAN)
@@ -183,69 +189,69 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_eng.c
         )
 
+set(TEST_ENVIRONMENT
+        CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+        PERL5LIB=${CMAKE_CURRENT_SOURCE_DIR}/test
+        OPENSSL_ENGINES=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+        OPENSSL_PROGRAM=${OPENSSL_PROGRAM}
+        OPENSSL_CRYPTO_LIBRARY=${OPENSSL_CRYPTO_LIBRARY}
+        OPENSSL_CONF=${CMAKE_CURRENT_SOURCE_DIR}/test/engine.cnf
+        )
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME digest
-	COMMAND test_digest)
+target_link_libraries(test_digest ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME digest COMMAND test_digest)
+set_tests_properties(digest PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_ciphers test_ciphers.c)
-target_link_libraries(test_ciphers gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME ciphers
-	COMMAND test_ciphers)
+target_link_libraries(test_ciphers ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME ciphers COMMAND test_ciphers)
+set_tests_properties(ciphers PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
+# test_curves is an internals testing program, it doesn't need a test env
 add_executable(test_curves test_curves.c)
 target_link_libraries(test_curves gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME curves
-	COMMAND test_curves)
+add_test(NAME curves COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME parameters
-	COMMAND test_params)
+target_link_libraries(test_params ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME parameters COMMAND test_params)
+set_tests_properties(parameters PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_derive test_derive.c)
-target_link_libraries(test_derive gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME derive
-	COMMAND test_derive)
+target_link_libraries(test_derive ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME derive COMMAND test_derive)
+set_tests_properties(derive PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME sign/verify
-	COMMAND test_sign)
+target_link_libraries(test_sign ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME sign/verify COMMAND test_sign)
+set_tests_properties(sign/verify PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls gost_core ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
-add_test(NAME TLS
-	COMMAND test_tls)
+target_link_libraries(test_tls ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+add_test(NAME TLS COMMAND test_tls)
+set_tests_properties(TLS PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME context
-	COMMAND test_context)
+target_link_libraries(test_context ${OPENSSL_CRYPTO_LIBRARY})
+add_test(NAME context COMMAND test_context)
+set_tests_properties(context PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
+# test_keyexpimp is an internals testing program, it doesn't need a test env
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
 target_link_libraries(test_keyexpimp gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME keyexpimp
-	COMMAND test_keyexpimp)
+add_test(NAME keyexpimp COMMAND test_keyexpimp)
 
+# test_gost89 is an internals testing program, it doesn't need a test env
 add_executable(test_gost89 test_gost89.c)
 target_link_libraries(test_gost89 gost_core ${OPENSSL_CRYPTO_LIBRARY})
-add_test(NAME gost89
-	COMMAND test_gost89)
+add_test(NAME gost89 COMMAND test_gost89)
 
 if(NOT SKIP_PERL_TESTS)
     execute_process(COMMAND perl -MTest2::V0 -e ""
 	ERROR_QUIET RESULT_VARIABLE HAVE_TEST2_V0)
     if(NOT HAVE_TEST2_V0)
-        set(TEST_ENVIRONMENT
-          CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-          PERL5LIB=${CMAKE_CURRENT_SOURCE_DIR}/test
-          OPENSSL_ENGINES=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-          OPENSSL_PROGRAM=${OPENSSL_PROGRAM}
-          OPENSSL_CRYPTO_LIBRARY=${OPENSSL_CRYPTO_LIBRARY}
-          OPENSSL_CONF=${CMAKE_CURRENT_SOURCE_DIR}/test/empty.cnf
-          )
 	add_test(NAME engine
 	    COMMAND prove --merge -PWrapOpenSSL ${CMAKE_CURRENT_SOURCE_DIR}/test)
 	set_tests_properties(engine PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
@@ -312,18 +318,23 @@ add_custom_target(tags
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 add_custom_target(tcl_tests
-    COMMAND ENGINE_DIR=${OUTPUT_DIRECTORY} sh ./runtest.sh
+    COMMAND OPENSSL_LIBCRYPTO=${OPENSSL_CRYPTO_LIBRARY}
+            OPENSSL_APP=${OPENSSL_PROGRAM}
+            TESTSRC=${CMAKE_SOURCE_DIR}/tcl_tests
+            TESTDIR=${CMAKE_BINARY_DIR}/tcl_tests
+            ENGINE_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+            sh ./runtest.sh
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
 
 add_executable(test_tlstree test_tlstree.c)
 target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
 
 # install programs and manuals
-install(TARGETS gostsum gost12sum)
-install(FILES gostsum.1 gost12sum.1 DESTINATION ${CMAKE_INSTALL_DIR}/man1)
+install(TARGETS gostsum gost12sum RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES gostsum.1 gost12sum.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
 # install engine in library and module form
-install(TARGETS lib_gost_engine EXPORT GostEngineConfig)
+install(TARGETS lib_gost_engine EXPORT GostEngineConfig LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(TARGETS gost_engine EXPORT GostEngineConfig
         LIBRARY  DESTINATION ${OPENSSL_ENGINES_DIR}
         RUNTIME  DESTINATION ${OPENSSL_ENGINES_DIR})
