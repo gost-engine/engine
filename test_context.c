@@ -47,7 +47,7 @@ static void hexdump(const void *ptr, size_t len)
 #define TEST_SIZE 256
 #define STEP_SIZE 16
 
-static int test_contexts_cipher(int nid, const int enc, int acpkm)
+static int test_contexts_cipher(const char *name, const int enc, int acpkm)
 {
     EVP_CIPHER_CTX *ctx, *save;
     unsigned char pt[TEST_SIZE] = {1};
@@ -58,18 +58,30 @@ static int test_contexts_cipher(int nid, const int enc, int acpkm)
     int outlen, tmplen;
     int ret = 0, test = 0;
 
-    const EVP_CIPHER *type = EVP_get_cipherbynid(nid);
-    const char *name = EVP_CIPHER_name(type);
+    EVP_CIPHER *type;
+    ERR_set_mark();
+    T((type = (EVP_CIPHER *)EVP_get_cipherbyname(name))
+      || (type = EVP_CIPHER_fetch(NULL, name, NULL)));
+    ERR_pop_to_mark();
 
-    printf(cBLUE "%s test for %s (nid %d)" cNORM "\n",
-	enc ? "Encryption" : "Decryption", name, nid);
+    printf(cBLUE "%s test for %s" cNORM "\n",
+           enc ? "Encryption" : "Decryption", name);
 
     /* produce base encryption */
     ctx = EVP_CIPHER_CTX_new();
     T(ctx);
     T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, enc));
-    if (acpkm)
-	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+    if (acpkm) {
+	if (EVP_CIPHER_provider(type) != NULL) {
+	    OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END };
+	    size_t v = (size_t)acpkm;
+
+	    params[0] = OSSL_PARAM_construct_size_t("key-mesh", &v);
+	    T(EVP_CIPHER_CTX_set_params(ctx, params));
+	} else {
+	    T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+	}
+    }
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
     T(EVP_CipherUpdate(ctx, b, &outlen, pt, sizeof(b)));
     T(EVP_CipherFinal_ex(ctx, b + outlen, &tmplen));
@@ -79,8 +91,17 @@ static int test_contexts_cipher(int nid, const int enc, int acpkm)
     EVP_CIPHER_CTX_reset(ctx); /* double call is intentional */
     T(EVP_CipherInit_ex(ctx, type, NULL, K, iv, enc));
     T(EVP_CIPHER_CTX_set_padding(ctx, 0));
-    if (acpkm)
-	T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+    if (acpkm) {
+	if (EVP_CIPHER_provider(type) != NULL) {
+	    OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END };
+	    size_t v = (size_t)acpkm;
+
+	    params[0] = OSSL_PARAM_construct_size_t("key-mesh", &v);
+	    T(EVP_CIPHER_CTX_set_params(ctx, params));
+	} else {
+	    T(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, acpkm, NULL));
+	}
+    }
     save = ctx;
 
     printf(" cloned contexts: ");
@@ -95,7 +116,7 @@ static int test_contexts_cipher(int nid, const int enc, int acpkm)
 	ctx = copy;
 
 	T(EVP_CipherUpdate(ctx, c + STEP_SIZE * i, &outlen,
-	       	pt + STEP_SIZE * i, STEP_SIZE));
+			   pt + STEP_SIZE * i, STEP_SIZE));
     }
 
     outlen = i * STEP_SIZE;
@@ -119,6 +140,7 @@ static int test_contexts_cipher(int nid, const int enc, int acpkm)
     EVP_CIPHER_CTX_cleanup(save); /* multiple calls are intentional */
     EVP_CIPHER_CTX_cleanup(save);
     EVP_CIPHER_CTX_free(save);
+    EVP_CIPHER_free(type);
     if (test) {
 	printf("  b[%d] = ", outlen);
 	hexdump(b, outlen);
@@ -130,14 +152,10 @@ static int test_contexts_cipher(int nid, const int enc, int acpkm)
     return ret;
 }
 
-static int test_contexts_digest(int nid, int mac)
+static int test_contexts_digest_or_legacy_mac(const EVP_MD *type, int mac)
 {
     int ret = 0, test = 0;
     unsigned char K[32] = {1};
-    const EVP_MD *type = EVP_get_digestbynid(nid);
-    const char *name = EVP_MD_name(type);
-
-    printf(cBLUE "Digest test for %s (nid %d)" cNORM "\n", name, nid);
 
     /* produce base digest */
     EVP_MD_CTX *ctx, *save;
@@ -208,37 +226,105 @@ static int test_contexts_digest(int nid, int mac)
     return ret;
 }
 
+static int test_contexts_digest(const char *name)
+{
+    EVP_MD *type;
+    ERR_set_mark();
+    T((type = (EVP_MD *)EVP_get_digestbyname(name))
+      || (type = EVP_MD_fetch(NULL, name, NULL)));
+    ERR_pop_to_mark();
+
+    printf(cBLUE "Digest test for %s" cNORM "\n", name);
+    int ret = test_contexts_digest_or_legacy_mac(type, 0);
+    EVP_MD_free(type);
+    return ret;
+}
+
+static int test_contexts_mac(const char *name)
+{
+    int ret = 0, test = 0;
+    unsigned char K[32] = {1};
+    const EVP_MD *type = EVP_get_digestbyname(name);
+    EVP_MAC *mac;
+
+    if (type) {
+        printf(cBLUE "Mac via EVP_MD test for %s" cNORM "\n", name);
+        return test_contexts_digest_or_legacy_mac(type, 1);
+    }
+
+    T(mac = EVP_MAC_fetch(NULL, name, NULL));
+    printf(cBLUE "Mac test for %s" cNORM "\n", name);
+
+    /* produce base mac */
+    EVP_MAC_CTX *ctx;
+    unsigned char pt[TEST_SIZE] = {1};
+    unsigned char b[EVP_MAX_MD_SIZE] = {0};
+    unsigned char c[EVP_MAX_MD_SIZE] = {0};
+    size_t outlen, tmplen;
+
+    /* Simply mac whole input. */
+    T(ctx = EVP_MAC_CTX_new(mac));
+    T(EVP_MAC_init(ctx, K, sizeof(K), NULL));
+    T(EVP_MAC_update(ctx, pt, sizeof(pt)));
+    T(EVP_MAC_final(ctx, b, &tmplen, sizeof(b)));
+
+    /* cloned mac */
+    printf(" cloned contexts: ");
+    T(ctx = EVP_MAC_CTX_new(mac));
+    T(EVP_MAC_init(ctx, K, sizeof(K), NULL));
+    int i;
+    for (i = 0; i < TEST_SIZE / STEP_SIZE; i++) {
+	/* Clone and continue updating with the next part of the input. */
+	T(ctx = EVP_MAC_CTX_dup(ctx));
+	T(EVP_MAC_update(ctx, pt + STEP_SIZE * i, STEP_SIZE));
+    }
+    outlen = i * STEP_SIZE;
+    T(EVP_MAC_final(ctx, c, &tmplen, sizeof(c)));
+    /* Should be same as the simple mac. */
+    TEST_ASSERT(outlen != TEST_SIZE || memcmp(c, b, EVP_MAX_MD_SIZE));
+    EVP_MAC_CTX_free(ctx);
+    if (test) {
+        printf("  b[%d] = ", (int)outlen);
+	hexdump(b, outlen);
+        printf("  c[%d] = ", (int)outlen);
+	hexdump(c, outlen);
+    }
+    ret |= test;
+
+    return ret;
+}
+
 static struct testcase_cipher {
-    int nid;
+    const char *name;
     int acpkm;
 } testcases_ciphers[] = {
-    { NID_id_Gost28147_89, },
-    { NID_gost89_cnt, },
-    { NID_gost89_cnt_12, },
-    { NID_gost89_cbc, },
-    { NID_grasshopper_ecb, },
-    { NID_grasshopper_cbc, },
-    { NID_grasshopper_cfb, },
-    { NID_grasshopper_ofb, },
-    { NID_grasshopper_ctr, },
-    { NID_magma_cbc, },
-    { NID_magma_ctr, },
-    { NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm, 256 / 8 },
+    { SN_id_Gost28147_89, },
+    { SN_gost89_cnt, },
+    { SN_gost89_cnt_12, },
+    { SN_gost89_cbc, },
+    { SN_grasshopper_ecb, },
+    { SN_grasshopper_cbc, },
+    { SN_grasshopper_cfb, },
+    { SN_grasshopper_ofb, },
+    { SN_grasshopper_ctr, },
+    { SN_magma_cbc, },
+    { SN_magma_ctr, },
+    { SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm, 256 / 8 },
     { 0 },
 };
 
 static struct testcase_digest {
-    int nid;
+    const char *name;
     int mac;
 } testcases_digests[] = {
-    { NID_id_GostR3411_94, },
-    { NID_id_Gost28147_89_MAC, 1 },
-    { NID_id_GostR3411_2012_256, },
-    { NID_id_GostR3411_2012_512, },
-    { NID_gost_mac_12, 1 },
-    { NID_magma_mac, 1 },
-    { NID_grasshopper_mac, 1 },
-    { NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac, 1 },
+    { SN_id_GostR3411_94, },
+    { SN_id_Gost28147_89_MAC, 1 },
+    { SN_id_GostR3411_2012_256, },
+    { SN_id_GostR3411_2012_512, },
+    { SN_gost_mac_12, 1 },
+    { SN_magma_mac, 1 },
+    { SN_grasshopper_mac, 1 },
+    { SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac, 1 },
     { 0 },
 };
 int main(int argc, char **argv)
@@ -248,13 +334,16 @@ int main(int argc, char **argv)
     OPENSSL_add_all_algorithms_conf();
 
     const struct testcase_cipher *tc;
-    for (tc = testcases_ciphers; tc->nid; tc++) {
-	ret |= test_contexts_cipher(tc->nid, 1, tc->acpkm);
-	ret |= test_contexts_cipher(tc->nid, 0, tc->acpkm);
+    for (tc = testcases_ciphers; tc->name; tc++) {
+	ret |= test_contexts_cipher(tc->name, 1, tc->acpkm);
+	ret |= test_contexts_cipher(tc->name, 0, tc->acpkm);
     }
     const struct testcase_digest *td;
-    for (td = testcases_digests; td->nid; td++) {
-	ret |= test_contexts_digest(td->nid, td->mac);
+    for (td = testcases_digests; td->name; td++) {
+        if (td->mac)
+            ret |= test_contexts_mac(td->name);
+        else
+            ret |= test_contexts_digest(td->name);
     }
 
     if (ret)

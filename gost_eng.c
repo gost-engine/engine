@@ -310,7 +310,9 @@ static int gost_engine_destroy(ENGINE* e) {
         *minfo->ameth = NULL;
     }
 
+# ifndef BUILDING_GOST_PROVIDER
     ERR_unload_GOST_strings();
+# endif
 
     return 1;
 }
@@ -320,7 +322,10 @@ static int gost_engine_destroy(ENGINE* e) {
  * binds it to OpenSSL libraries
  */
 
-static int populate_gost_engine(ENGINE* e) {
+# ifndef BUILDING_GOST_PROVIDER
+static
+# endif
+int populate_gost_engine(ENGINE* e) {
     int ret = 0;
 
     if (e == NULL)
@@ -389,6 +394,7 @@ static int populate_gost_engine(ENGINE* e) {
     return ret;
 }
 
+#ifndef BUILDING_GOST_PROVIDER
 static int bind_gost_engine(ENGINE* e) {
     int ret = 0;
 
@@ -452,7 +458,6 @@ IMPLEMENT_DYNAMIC_CHECK_FN()
  * it must manually call ENGINE_load_gost() for it to bind itself into the
  * libcrypto libraries.
  */
-
 void ENGINE_load_gost(void) {
     ENGINE* toadd;
     int ret = 0;
@@ -464,6 +469,6 @@ void ENGINE_load_gost(void) {
     if (ret > 0)
         ERR_clear_error();
 }
-
+#endif
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */

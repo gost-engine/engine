@@ -19,7 +19,7 @@
 typedef struct omac_ctx {
     CMAC_CTX *cmac_ctx;
     size_t dgst_size;
-    int cipher_nid;
+    const char *cipher_name;
     int key_set;
 /* 
  * Here begins stuff related to TLSTREE processing
@@ -38,14 +38,14 @@ typedef struct omac_ctx {
 
 #define MAX_GOST_OMAC_SIZE 16
 
-static int omac_init(EVP_MD_CTX *ctx, int cipher_nid)
+static int omac_init(EVP_MD_CTX *ctx, const char *cipher_name)
 {
     OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
     memset(c, 0, sizeof(OMAC_CTX));
-    c->cipher_nid = cipher_nid;
+    c->cipher_name = cipher_name;
     c->key_set = 0;
 
-    switch (cipher_nid) {
+    switch (OBJ_txt2nid(cipher_name)) {
     case NID_magma_cbc:
         c->dgst_size = 8;
         break;
@@ -60,12 +60,12 @@ static int omac_init(EVP_MD_CTX *ctx, int cipher_nid)
 
 static int magma_imit_init(EVP_MD_CTX *ctx)
 {
-    return omac_init(ctx, NID_magma_cbc);
+    return omac_init(ctx, SN_magma_cbc);
 }
 
 static int grasshopper_imit_init(EVP_MD_CTX *ctx)
 {
-    return omac_init(ctx, NID_grasshopper_cbc);
+    return omac_init(ctx, SN_grasshopper_cbc);
 }
 
 static int omac_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
@@ -103,7 +103,7 @@ static int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 
     if (c_from && c_to) {
         c_to->dgst_size = c_from->dgst_size;
-        c_to->cipher_nid = c_from->cipher_nid;
+        c_to->cipher_name = c_from->cipher_name;
         c_to->key_set = c_from->key_set;
         memcpy(c_to->key, c_from->key, 32);
     } else {
@@ -164,35 +164,32 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
         {
             OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
             const EVP_MD *md = EVP_MD_CTX_md(ctx);
-            const EVP_CIPHER *cipher = NULL;
+            EVP_CIPHER *cipher = NULL;
             int ret = 0;
 
-            if (c->cipher_nid == NID_undef) {
-                switch (EVP_MD_nid(md)) {
-                case NID_magma_mac:
-                    c->cipher_nid = NID_magma_cbc;
-                    break;
-
-                case NID_grasshopper_mac:
-                    c->cipher_nid = NID_grasshopper_cbc;
-                    break;
-                }
+            if (c->cipher_name == NULL) {
+                if (EVP_MD_is_a(md, SN_magma_mac))
+                    c->cipher_name = SN_magma_cbc;
+                else if (EVP_MD_is_a(md, SN_grasshopper_mac))
+                    c->cipher_name = SN_grasshopper_cbc;
             }
-            cipher = EVP_get_cipherbynid(c->cipher_nid);
-
-            if (cipher == NULL) {
+            if ((cipher =
+                 (EVP_CIPHER *)EVP_get_cipherbyname(c->cipher_name)) == NULL
+                && (cipher =
+                    EVP_CIPHER_fetch(NULL, c->cipher_name, NULL)) == NULL) {
                 GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_CIPHER_NOT_FOUND);
+                goto set_key_end;
             }
 
             if (EVP_MD_meth_get_init(EVP_MD_CTX_md(ctx)) (ctx) <= 0) {
                 GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
-                return 0;
+                goto set_key_end;
             }
             EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NO_INIT);
 
             if (c->key_set) {
                 GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_BAD_ORDER);
-                return 0;
+                goto set_key_end;
             }
 
             if (arg == 0) {
@@ -200,20 +197,24 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
                 ret = omac_key(c, cipher, key->key, 32);
                 if (ret > 0)
                     memcpy(c->key, key->key, 32);
-                return ret;
+                goto set_key_end;
             } else if (arg == 32) {
                 ret = omac_key(c, cipher, ptr, 32);
                 if (ret > 0)
                     memcpy(c->key, ptr, 32);
-                return ret;
+                goto set_key_end;
             }
             GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
+          set_key_end:
+            EVP_CIPHER_free(cipher);
+            if (ret > 0)
+                return ret;
             return 0;
         }
     case EVP_MD_CTRL_XOF_LEN:   /* Supported in OpenSSL */
         {
             OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
-            switch (c->cipher_nid) {
+            switch (OBJ_txt2nid(c->cipher_name)) {
             case NID_magma_cbc:
                 if (arg < 1 || arg > 8) {
                     GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
@@ -239,10 +240,17 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
             if (c->key_set) {
                 unsigned char diversed_key[32];
-                return gost_tlstree(c->cipher_nid, c->key, diversed_key,
-                                    (const unsigned char *)ptr) ?
-                    omac_key(c, EVP_get_cipherbynid(c->cipher_nid),
-                             diversed_key, 32) : 0;
+                int ret = 0;
+                if (gost_tlstree(OBJ_txt2nid(c->cipher_name),
+                                 c->key, diversed_key,
+                                 (const unsigned char *)ptr)) {
+                    EVP_CIPHER *cipher;
+                    if ((cipher = (EVP_CIPHER *)EVP_get_cipherbyname(c->cipher_name))
+                        || (cipher = EVP_CIPHER_fetch(NULL, c->cipher_name, NULL)))
+                        ret = omac_key(c, cipher, diversed_key, 32);
+                    EVP_CIPHER_free(cipher);
+                }
+                return ret;
             }
             GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_BAD_ORDER);
             return 0;

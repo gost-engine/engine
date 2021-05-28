@@ -176,6 +176,7 @@ static ERR_STRING_DATA GOST_str_reasons[] = {
 
 #endif
 
+#ifndef GOST_PROV
 static int lib_code = 0;
 static int error_loaded = 0;
 
@@ -220,3 +221,4 @@ void ERR_GOST_error(int function, int reason, char *file, int line)
     ERR_set_debug(file, line, NULL);
 #endif
 }
+#endif

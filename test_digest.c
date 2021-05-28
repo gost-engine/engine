@@ -7,8 +7,9 @@
  * See https://www.openssl.org/source/license.html for details
  */
 
-#include <openssl/engine.h>
 #include <openssl/opensslv.h>
+#include <openssl/engine.h>
+#include <openssl/provider.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
@@ -172,14 +173,14 @@ static const char ff[] = {
 };
 
 struct hash_testvec {
-    int nid;		   /* OpenSSL algorithm numeric id. */
+    const char *algname;   /* Algorithm name */
     const char *name;	   /* Test name and source. */
     const char *plaintext; /* Input (of psize), NULL for synthetic test. */
     const char *digest;	   /* Expected output (of EVP_MD_size or truncate). */
     const char *hmac;	   /* Expected output for HMAC tests. */
     const char *key;	   /* MAC key.*/
     int psize;		   /* Input (plaintext) size. */
-    int mdsize;		   /* Compare to EVP_MD_size() if non-zero. */
+    int outsize;	   /* Compare to EVP_MD_size() /  EVP_MAC_size() if non-zero. */
     int truncate;	   /* Truncated output (digest) size. */
     int key_size;	   /* MAC key size. */
     int block_size;	   /* Internal block size. */
@@ -191,7 +192,7 @@ struct hash_testvec {
 
 static const struct hash_testvec testvecs[] = {
     { /* Test vectors from standards. */
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "M1 from RFC 6986 (10.1.1) and GOST R 34.11-2012 (А.1.1)",
 	.plaintext =
 	    "012345678901234567890123456789012345678901234567890123456789012",
@@ -201,11 +202,11 @@ static const struct hash_testvec testvecs[] = {
 	    "\xb1\x9a\xbc\x24\x75\x22\x2f\x35\xc0\x85\x12\x2b\xe4\xba\x1f\xfa"
 	    "\x00\xad\x30\xf8\x76\x7b\x3a\x82\x38\x4c\x65\x74\xf0\x24\xc3\x11"
 	    "\xe2\xa4\x81\x33\x2b\x08\xef\x7f\x41\x79\x78\x91\xc1\x64\x6f\x48",
-	.mdsize = 512 / 8,
+	.outsize = 512 / 8,
 	.block_size = 512 / 8,
     },
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "M1 from RFC 6986 (10.1.2) and GOST R 34.11-2012 (А.1.2)",
 	.plaintext =
 	    "012345678901234567890123456789012345678901234567890123456789012",
@@ -213,11 +214,11 @@ static const struct hash_testvec testvecs[] = {
 	.digest =
 	    "\x9d\x15\x1e\xef\xd8\x59\x0b\x89\xda\xa6\xba\x6c\xb7\x4a\xf9\x27"
 	    "\x5d\xd0\x51\x02\x6b\xb1\x49\xa4\x52\xfd\x84\xe5\xe5\x7b\x55\x00",
-	.mdsize = 256 / 8,
+	.outsize = 256 / 8,
 	.block_size = 512 / 8,
     },
     {
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "M2 from RFC 6986 (10.2.1) and GOST R 34.11-2012 (А.2.1)",
 	.plaintext =
 	    "\xd1\xe5\x20\xe2\xe5\xf2\xf0\xe8\x2c\x20\xd1\xf2\xf0\xe8\xe1\xee"
@@ -233,7 +234,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\x3f\x0c\xb9\xdd\xdc\x2b\x64\x60\x14\x3b\x03\xda\xba\xc9\xfb\x28",
     },
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "M2 from RFC 6986 (10.2.2) and GOST R 34.11-2012 (А.2.2)",
 	.plaintext =
 	    "\xd1\xe5\x20\xe2\xe5\xf2\xf0\xe8\x2c\x20\xd1\xf2\xf0\xe8\xe1\xee"
@@ -248,29 +249,29 @@ static const struct hash_testvec testvecs[] = {
     },
     /* OMAC tests */
     {
-	.nid = NID_grasshopper_mac,
+	.algname = SN_grasshopper_mac,
 	.name = "P from GOST R 34.13-2015 (А.1.6)",
 	.plaintext = P,
 	.psize = sizeof(P),
 	.key = K,
 	.key_size = sizeof(K),
 	.digest = MAC_omac,
-	.mdsize = 128 / 8,
+	.outsize = 128 / 8,
 	.truncate = sizeof(MAC_omac),
     },
     {
-	.nid = NID_magma_mac,
+	.algname = SN_magma_mac,
 	.name = "P from GOST R 34.13-2015 (А.2.6)",
 	.plaintext = Pm,
 	.psize = sizeof(Pm),
 	.key = Km,
 	.key_size = sizeof(Km),
 	.digest = MAC_magma_omac,
-	.mdsize = 64 / 8,
+	.outsize = 64 / 8,
 	.truncate = sizeof(MAC_magma_omac),
     },
     {
-	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,
+	.algname = SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,
 	.name = "M from R 1323565.1.017-2018 (A.4.1)",
 	.plaintext = P_omac_acpkm1,
 	.psize = sizeof(P_omac_acpkm1),
@@ -279,10 +280,10 @@ static const struct hash_testvec testvecs[] = {
 	.acpkm = 32,
 	.acpkm_t = 768 / 8,
 	.digest = MAC_omac_acpkm1,
-	.mdsize = sizeof(MAC_omac_acpkm1),
+	.outsize = sizeof(MAC_omac_acpkm1),
     },
     {
-	.nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,
+	.algname = SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,
 	.name = "M from R 1323565.1.017-2018 (A.4.2)",
 	.plaintext = P_omac_acpkm2,
 	.psize = sizeof(P_omac_acpkm2),
@@ -291,10 +292,10 @@ static const struct hash_testvec testvecs[] = {
 	.acpkm = 32,
 	.acpkm_t = 768 / 8,
 	.digest = MAC_omac_acpkm2,
-	.mdsize = sizeof(MAC_omac_acpkm2),
+	.outsize = sizeof(MAC_omac_acpkm2),
     },
     { /* HMAC tests. */
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "HMAC_GOSTR3411_2012_512 from RFC 7836 (B) and R 50.1.113-2016 (A)",
 	.plaintext =
 	    "\x01\x26\xbd\xb8\x78\x00\xaf\x21\x43\x41\x45\x65\x63\x78\x01\x00",
@@ -310,7 +311,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\x3a\xfe\x93\xb2\x81\x4f\x79\xf5\x00\x0f\xfc\x03\x66\xc2\x51\xe6",
     },
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "HMAC_GOSTR3411_2012_256 from RFC 7836 (B) and R 50.1.113-2016 (A)",
 	.plaintext =
 	    "\x01\x26\xbd\xb8\x78\x00\xaf\x21\x43\x41\x45\x65\x63\x78\x01\x00",
@@ -325,7 +326,7 @@ static const struct hash_testvec testvecs[] = {
     },
     /* Other KATs. */
     {
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "Zero length string (M3)",
 	.plaintext = "",
 	.psize = 0,
@@ -334,20 +335,20 @@ static const struct hash_testvec testvecs[] = {
 	    "\x79\xe9\x87\x3a\xb7\x07\xb5\x53\x15\xf5\x6c\xeb\x98\xbe\xf0\xa7"
 	    "\x36\x2f\x71\x55\x28\x35\x6e\xe8\x3c\xda\x5f\x2a\xac\x4c\x6a\xd2"
 	    "\xba\x3a\x71\x5c\x1b\xcd\x81\xcb\x8e\x9f\x90\xbf\x4c\x1c\x1a\x8a",
-	.mdsize = 512 / 8,
+	.outsize = 512 / 8,
     },
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "Zero length string (M3)",
 	.plaintext = "",
 	.psize = 0,
 	.digest =
 	    "\x3f\x53\x9a\x21\x3e\x97\xc8\x02\xcc\x22\x9d\x47\x4c\x6a\xa3\x2a"
 	    "\x82\x5a\x36\x0b\x2a\x93\x3a\x94\x9f\xd9\x25\x20\x8d\x9c\xe1\xbb",
-	.mdsize = 256 / 8,
+	.outsize = 256 / 8,
     },
     { /* M4 */
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "64 bytes of zero (M4)",
 	.plaintext = etalon_M4,
 	.psize = sizeof(etalon_M4),
@@ -358,7 +359,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\xd7\xb4\xad\xe9\xae\x56\x6b\xf2\x61\x14\x02\xc5\x52\xd2\x0d\xb7"
     },
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "64 bytes of zero (M4)",
 	.plaintext = etalon_M4,
 	.psize = sizeof(etalon_M4),
@@ -367,7 +368,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\xa6\xaa\x54\xcd\x0e\xda\x24\x1d\xc1\x07\x10\x5e\x13\x63\x6b\x95"
     },
     { /* M5 */
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "64 bytes of (M5)",
 	.plaintext = etalon_M5,
 	.psize = sizeof(etalon_M5),
@@ -378,7 +379,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\xa2\xaa\xbc\x1d\x65\x28\xe8\xe7\x75\xae\xc7\xb3\x45\x7a\xc6\x75"
     },
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "64 bytes of (M5)",
 	.plaintext = etalon_M5,
 	.psize = sizeof(etalon_M5),
@@ -387,7 +388,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\x16\x3b\x74\x03\x7c\x6c\xf5\x9f\x52\x44\x4a\x37\xf4\x8e\x11\xd8"
     },
     { /* M6 */
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "(M6)",
 	.plaintext = etalon_M6,
 	.psize = sizeof(etalon_M6),
@@ -398,7 +399,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\x45\x43\xb0\xce\xd9\xb2\x0e\x55\x3a\xe6\x64\x25\xec\x90\x9c\xfd"
     },
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "(M6)",
 	.plaintext = etalon_M6,
 	.psize = sizeof(etalon_M6),
@@ -407,7 +408,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\x39\x68\x89\x35\x58\xef\x00\xa3\x10\xc2\x3e\x7d\x19\x23\xba\x0c"
     },
     { /* Carry */
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "(carry)",
 	.plaintext = etalon_carry,
 	.psize = sizeof(etalon_carry),
@@ -418,7 +419,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\xc4\xaa\xca\x67\x32\xbf\x35\x68\xa2\x3a\x21\x0d\xd5\x20\xfd\x41"
     },
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "(carry)",
 	.plaintext = etalon_carry,
 	.psize = sizeof(etalon_carry),
@@ -427,7 +428,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\x9b\xed\x83\xf5\x0d\x3a\x1b\x2c\xe7\x27\x1a\xb0\x2d\x25\xba\xbb"
     },
     { /* ff (Better carry test). */
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "64 bytes of FF",
 	.plaintext = ff,
 	.psize = sizeof(ff),
@@ -438,7 +439,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\xad\xbf\xd1\xb8\x5f\x9d\xda\xe3\xde\x96\x56\xc0\xe9\x5a\xff\xc7"
     },
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "64 bytes of FF",
 	.plaintext = ff,
 	.psize = sizeof(ff),
@@ -447,7 +448,7 @@ static const struct hash_testvec testvecs[] = {
 	    "\x16\x08\x98\xca\x1b\xd5\x35\xe8\x31\xaa\x50\x0c\xfe\x34\xd7\xe8"
     },
     {
-	.nid = NID_id_GostR3411_94,
+	.algname = SN_id_GostR3411_94,
 	.name = "64 bytes of FF",
 	.plaintext = ff,
 	.psize = sizeof(ff),
@@ -457,18 +458,18 @@ static const struct hash_testvec testvecs[] = {
     },
     /* Synthetic tests. */
     {
-	.nid = NID_id_GostR3411_2012_256,
+	.algname = SN_id_GostR3411_2012_256,
 	.name = "streebog256 synthetic test",
-	.mdsize = 32,
+	.outsize = 32,
 	.block_size = 64,
 	.digest =
 	    "\xa2\xf3\x6d\x9c\x42\xa1\x1e\xad\xe3\xc1\xfe\x99\xf9\x99\xc3\x84"
 	    "\xe7\x98\xae\x24\x50\x75\x73\xd7\xfc\x99\x81\xa0\x45\x85\x41\xf6"
     },
     {
-	.nid = NID_id_GostR3411_2012_512,
+	.algname = SN_id_GostR3411_2012_512,
 	.name = "streebog512 synthetic test",
-	.mdsize = 64,
+	.outsize = 64,
 	.block_size = 64,
 	.digest =
 	    "\x1d\x14\x4d\xd8\xb8\x27\xfb\x55\x1a\x5a\x7d\x03\xbb\xdb\xfa\xcb"
@@ -506,10 +507,10 @@ static int do_hmac_old(int iter, const EVP_MD *type, const char *plaintext,
     T(HMAC_Final(ctx, md, &len));
     HMAC_CTX_free(ctx);
 
-    if (t->mdsize)
-	T(len == t->mdsize);
+    if (t->outsize)
+	T(len == t->outsize);
     if (memcmp(md, t->hmac, len) != 0) {
-	printf(cRED "hmac mismatch" cNORM "\n");
+	printf(cRED "hmac mismatch (iter %d)" cNORM "\n", iter);
 	hexdump(t->hmac, len);
 	hexdump(md, len);
 	return 1;
@@ -518,13 +519,13 @@ static int do_hmac_old(int iter, const EVP_MD *type, const char *plaintext,
 }
 
 #if OPENSSL_VERSION_MAJOR >= 3
-static int do_hmac_prov(int iter, const EVP_MD *type, const char *plaintext,
+static int do_hmac_prov(int iter, const EVP_MD *md, const char *plaintext,
     const struct hash_testvec *t)
 {
     size_t len;
-    unsigned char md[EVP_MAX_MD_SIZE];
+    unsigned char out[EVP_MAX_MD_SIZE];
     if (!iter)
-	printf("[EVP_MAC] ");
+	printf("[HMAC by EVP_MAC] ");
 
     EVP_MAC *hmac;
     T(hmac = EVP_MAC_fetch(NULL, "HMAC", NULL));
@@ -532,21 +533,21 @@ static int do_hmac_prov(int iter, const EVP_MD *type, const char *plaintext,
     T(ctx = EVP_MAC_CTX_new(hmac));
     OSSL_PARAM params[] = {
 	OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_DIGEST,
-	    (char *)EVP_MD_name(type), 0),
+	    (char *)EVP_MD_name(md), 0),
 	OSSL_PARAM_END
     };
     T(EVP_MAC_init(ctx, (const unsigned char *)t->key, t->key_size, params));
     T(EVP_MAC_update(ctx, (unsigned char *)plaintext, t->psize));
-    T(EVP_MAC_final(ctx, md, &len, EVP_MAX_MD_SIZE));
+    T(EVP_MAC_final(ctx, out, &len, sizeof(out)));
     EVP_MAC_CTX_free(ctx);
     EVP_MAC_free(hmac);
 
-    if (t->mdsize)
-	T(len == t->mdsize);
-    if (memcmp(md, t->hmac, len) != 0) {
-	printf(cRED "hmac mismatch" cNORM "\n");
+    if (t->outsize)
+	T(len == t->outsize);
+    if (memcmp(out, t->hmac, len) != 0) {
+	printf(cRED "hmac mismatch (iter %d)" cNORM "\n", iter);
 	hexdump(t->hmac, len);
-	hexdump(md, len);
+	hexdump(out, len);
 	return 1;
     }
     return 0;
@@ -575,71 +576,125 @@ static int do_cmac_prov(int iter, const char *plaintext,
     const struct hash_testvec *t)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
-    char *mdname = NULL;
+    char *ciphername = NULL;
     /*
      * CMAC needs CBC.
      * Convert 'mac' digest to the underlying CBC cipher.
      */
-    switch (t->nid) {
-	case NID_grasshopper_mac:
-	    mdname = "kuznyechik-cbc";
-	    break;
-	case NID_magma_mac:
-	    mdname = "magma-cbc";
-	    break;
-	default:
-	    return 0;
+    switch (OBJ_sn2nid(t->algname)) {
+    case NID_grasshopper_mac:
+        ciphername = "kuznyechik-cbc";
+        break;
+    case NID_magma_mac:
+        ciphername = "magma-cbc";
+        break;
+    default:
+        return 0;
     }
 
     if (!iter)
-	printf("[CMAC(%s)] ", mdname);
+	printf("[CMAC(%s)] ", ciphername);
 
     size_t len;
-    unsigned char md[EVP_MAX_MD_SIZE];
-    size_t mdsize = t->mdsize;
+    unsigned char out[EVP_MAX_MD_SIZE];
+    size_t outsize = t->outsize;
     if (t->truncate)
-	mdsize = t->truncate;
+	outsize = t->truncate;
 
     EVP_MAC *cmac;
     T(cmac = EVP_MAC_fetch(NULL, "CMAC", NULL));
     EVP_MAC_CTX *ctx;
     T(ctx = EVP_MAC_CTX_new(cmac));
     OSSL_PARAM params[] = {
-	OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_CIPHER, mdname, 0),
+	OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_CIPHER, ciphername, 0),
 	OSSL_PARAM_END
     };
     T(EVP_MAC_CTX_set_params(ctx, params));
     T(EVP_MAC_init(ctx, (const unsigned char *)t->key, t->key_size, params));
     T(EVP_MAC_update(ctx, (unsigned char *)plaintext, t->psize));
-    T(EVP_MAC_final(ctx, md, &len, EVP_MAX_MD_SIZE));
+    T(EVP_MAC_final(ctx, out, &len, sizeof(out)));
     EVP_MAC_CTX_free(ctx);
     EVP_MAC_free(cmac);
 
     /* CMAC provider will not respect outsize, and will output full block.
      * So, just compare until what we need. */
-    T(mdsize <= len);
-    if (memcmp(md, t->digest, mdsize) != 0) {
-	printf(cRED "cmac mismatch" cNORM "\n");
-	hexdump(t->digest, mdsize);
-	hexdump(md, len);
+    T(outsize <= len);
+    if (memcmp(out, t->digest, outsize) != 0) {
+	printf(cRED "cmac mismatch (iter %d)" cNORM "\n", iter);
+	hexdump(t->digest, outsize);
+	hexdump(out, len);
 	return 1;
     }
 #endif
     return 0;
 }
 
-static int do_digest(int iter, const EVP_MD *type, const char *plaintext,
-    const struct hash_testvec *t)
+static int do_mac(int iter, EVP_MAC *mac, const char *plaintext,
+                  const struct hash_testvec *t)
 {
     if (!iter)
-	printf("[MD] ");
-    if (t->mdsize)
-	T(EVP_MD_size(type) == t->mdsize);
-    size_t mdsize;
+        printf("[MAC %d] ", t->outsize);
+
+    size_t acpkm = (size_t)t->acpkm;
+    size_t acpkm_t = (size_t)t->acpkm_t;
+    OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END };
+    OSSL_PARAM *p = params;
+    if (acpkm) {
+        *p++ = OSSL_PARAM_construct_size_t("key-mesh", &acpkm);
+        if (acpkm_t)
+            *p++ = OSSL_PARAM_construct_size_t("cipher-key-mesh", &acpkm_t);
+    }
+
+    EVP_MAC_CTX *ctx;
+    T(ctx = EVP_MAC_CTX_new(mac));
+    if (t->outsize)
+        T(EVP_MAC_CTX_get_mac_size(ctx) == t->outsize);
+    size_t outsize;
     if (t->truncate)
-	mdsize = t->truncate;
+        outsize = t->truncate;
     else
-	mdsize = EVP_MD_size(type);
+        outsize = EVP_MAC_CTX_get_mac_size(ctx);
+
+    T(EVP_MAC_init(ctx, (const unsigned char *)t->key, t->key_size, NULL));
+    T(EVP_MAC_CTX_set_params(ctx, params));
+    T(EVP_MAC_update(ctx, (unsigned char *)plaintext, t->psize));
+
+    size_t len = 0;
+    unsigned char out[256];
+    if (t->truncate) {
+        T(outsize <= sizeof(out));
+        T(EVP_MAC_finalXOF(ctx, out, outsize));
+        len = outsize;
+    } else {
+        T(EVP_MAC_CTX_get_mac_size(ctx) == outsize);
+        T(EVP_MAC_final(ctx, out, &len, sizeof(out)));
+    }
+
+    EVP_MAC_CTX_free(ctx);
+    T(len == outsize);
+    if (memcmp(out, t->digest, outsize) != 0) {
+        printf(cRED "mac mismatch (iter %d, outsize %d)" cNORM "\n",
+               iter, (int)outsize);
+        hexdump(t->digest, outsize);
+        hexdump(out, outsize);
+        return 1;
+    }
+
+    return 0;
+}
+
+static int do_digest(int iter, const EVP_MD *type, const char *plaintext,
+                     const struct hash_testvec *t)
+{
+    if (!iter)
+	printf("[MD %d] ", t->outsize);
+    if (t->outsize)
+	T(EVP_MD_size(type) == t->outsize);
+    size_t outsize;
+    if (t->truncate)
+	outsize = t->truncate;
+    else
+	outsize = EVP_MD_size(type);
 
     if (t->block_size)
 	T(EVP_MD_block_size(type) == t->block_size);
@@ -649,29 +704,29 @@ static int do_digest(int iter, const EVP_MD *type, const char *plaintext,
     T(EVP_DigestInit_ex(ctx, type, NULL));
     if (t->key)
 	T(EVP_MD_CTX_ctrl(ctx, EVP_MD_CTRL_SET_KEY, t->key_size,
-		(void *)t->key));
+			  (void *)t->key));
     if (t->acpkm)
-	T(EVP_MD_CTX_ctrl(ctx,
-		EVP_CTRL_KEY_MESH, t->acpkm,
-		t->acpkm_t? (void *)&t->acpkm_t : NULL));
+	T(EVP_MD_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, t->acpkm,
+			  t->acpkm_t? (void *)&t->acpkm_t : NULL));
     T(EVP_DigestUpdate(ctx, plaintext, t->psize));
 
     unsigned int len;
-    unsigned char md[EVP_MAX_MD_SIZE];
+    unsigned char out[EVP_MAX_MD_SIZE];
     if (EVP_MD_flags(EVP_MD_CTX_md(ctx)) & EVP_MD_FLAG_XOF) {
-	T(EVP_DigestFinalXOF(ctx, md, mdsize));
-	len = mdsize;
+	T(EVP_DigestFinalXOF(ctx, out, outsize));
+	len = outsize;
     } else {
-	T(EVP_MD_CTX_size(ctx) == mdsize);
-	T(EVP_DigestFinal_ex(ctx, md, &len));
+	T(EVP_MD_CTX_size(ctx) == outsize);
+	T(EVP_DigestFinal_ex(ctx, out, &len));
     }
 
     EVP_MD_CTX_free(ctx);
-    T(len == mdsize);
-    if (memcmp(md, t->digest, mdsize) != 0) {
-	printf(cRED "digest mismatch" cNORM "\n");
-	hexdump(t->digest, mdsize);
-	hexdump(md, mdsize);
+    T(len == outsize);
+    if (memcmp(out, t->digest, outsize) != 0) {
+	printf(cRED "digest mismatch (iter %d, outsize %d)" cNORM "\n",
+	       iter, (int)outsize);
+	hexdump(t->digest, outsize);
+	hexdump(out, outsize);
 	return 1;
     }
 
@@ -681,11 +736,16 @@ static int do_digest(int iter, const EVP_MD *type, const char *plaintext,
 static int do_test(const struct hash_testvec *tv)
 {
     int ret = 0;
+    EVP_MD *md = NULL;
+    EVP_MAC *mac = NULL;
 
-    const EVP_MD *type;
-    T(type = EVP_get_digestbynid(tv->nid));
-    const char *name = EVP_MD_name(type);
-    printf(cBLUE "Test %s: %s: " cNORM, name, tv->name);
+    ERR_set_mark();
+    T((md = (EVP_MD *)EVP_get_digestbyname(tv->algname))
+      || (md = EVP_MD_fetch(NULL, tv->algname, NULL))
+      || (mac = EVP_MAC_fetch(NULL, tv->algname, NULL)));
+    ERR_pop_to_mark();
+
+    printf(cBLUE "Test %s: %s: " cNORM, tv->algname, tv->name);
 
     /* Test alignment problems. */
     int shifts = 32;
@@ -694,17 +754,26 @@ static int do_test(const struct hash_testvec *tv)
     T(buf = OPENSSL_malloc(tv->psize + shifts));
     for (i = 0; i < shifts; i++) {
 	memcpy(buf + i, tv->plaintext, tv->psize);
-	if (tv->hmac)
-	    ret |= do_hmac(i, type, buf + i, tv);
-	else
-	    ret |= do_digest(i, type, buf + i, tv);
-	/* Test CMAC provider. */
+	if (mac) {
+	    ret |= do_mac(i, mac, buf + i, tv);
+	}
+	if (md) {
+	    if (tv->hmac)
+		ret |= do_hmac(i, md, buf + i, tv);
+	    else
+		ret |= do_digest(i, md, buf + i, tv);
+	
+	}
+	/* Test CMAC provider for applicable entries. */
 	ret |= do_cmac_prov(i, buf + i, tv);
+	
 	/* No need to continue loop on failure. */
 	if (ret)
 	    break;
     }
     OPENSSL_free(buf);
+    EVP_MAC_free(mac);
+    EVP_MD_free(md);
 
     if (!ret)
 	printf(cGREEN "success" cNORM "\n");
@@ -730,27 +799,28 @@ static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
     for (len = 0; len < SUPER_SIZE; len++)
 	    ibuf[shifts + len] = len & 0xff;
 
-    const EVP_MD *mdtype;
-    T(mdtype = EVP_get_digestbynid(tv->nid));
-    OPENSSL_assert(tv->nid == EVP_MD_type(mdtype));
+    EVP_MD *dgst;
+    T((dgst = (EVP_MD *)EVP_get_digestbyname(tv->algname))
+      || (dgst = EVP_MD_fetch(NULL, tv->algname, NULL)));
+    OPENSSL_assert(EVP_MD_is_a(dgst, tv->algname));
     EVP_MD_CTX *ctx, *ctx2;
     T(ctx  = EVP_MD_CTX_new());
     T(ctx2 = EVP_MD_CTX_new());
-    T(EVP_DigestInit(ctx2, mdtype));
-    OPENSSL_assert(tv->nid == EVP_MD_CTX_type(ctx2));
-    OPENSSL_assert(EVP_MD_block_size(mdtype) == tv->block_size);
-    OPENSSL_assert(EVP_MD_CTX_size(ctx2) == tv->mdsize);
+    T(EVP_DigestInit(ctx2, dgst));
+    OPENSSL_assert(EVP_MD_is_a(EVP_MD_CTX_md(ctx2), tv->algname));
+    OPENSSL_assert(EVP_MD_block_size(dgst) == tv->block_size);
+    OPENSSL_assert(EVP_MD_CTX_size(ctx2) == tv->outsize);
     OPENSSL_assert(EVP_MD_CTX_block_size(ctx2) == tv->block_size);
 
-    const unsigned int mdlen = EVP_MD_size(mdtype);
-    OPENSSL_assert(mdlen == tv->mdsize);
+    const unsigned int mdlen = EVP_MD_size(dgst);
+    OPENSSL_assert(mdlen == tv->outsize);
     T(md = OPENSSL_zalloc(mdlen + shifts));
     md += shifts; /* test for output digest alignment problems */
 
     /* digest cycles */
     for (len = 0; len < SUPER_SIZE; len++) {
 	/* for each len digest len bytes from the end of buf */
-	T(EVP_DigestInit(ctx, mdtype));
+	T(EVP_DigestInit(ctx, dgst));
 	T(EVP_DigestUpdate(ctx, ibuf + shifts + SUPER_SIZE - len, len));
 	T(EVP_DigestFinal(ctx, md, NULL));
 	T(EVP_DigestUpdate(ctx2, md, mdlen));
@@ -758,7 +828,7 @@ static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
 
     for (len = 0; len < SUPER_SIZE; len++) {
 	/* for each len digest len bytes from the beginning of buf */
-	T(EVP_DigestInit(ctx, mdtype));
+	T(EVP_DigestInit(ctx, dgst));
 	T(EVP_DigestUpdate(ctx, ibuf + shifts, len));
 	T(EVP_DigestFinal(ctx, md, NULL));
 	T(EVP_DigestUpdate(ctx2, md, mdlen));
@@ -791,6 +861,7 @@ static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
     return 0;
 err:
     OPENSSL_free(md - shifts);
+    EVP_MD_free(dgst);
     return 1;
 }
 
@@ -813,6 +884,63 @@ static int do_synthetic_test(const struct hash_testvec *tv)
     return 0;
 }
 
+int engine_is_available(const char *name)
+{
+    ENGINE *e = ENGINE_get_first();
+
+    while (e != NULL) {
+        if (strcmp(ENGINE_get_id(e), name) == 0)
+            return 1;
+        e = ENGINE_get_next(e);
+    }
+    return 0;
+}
+
+void warn_if_untested(const EVP_MD *dgst, void *provider)
+{
+    const struct hash_testvec *tv;
+
+    /* ENGINE provided EVP_MDs have a NULL provider */
+    if (provider != EVP_MD_provider(dgst))
+        return;
+
+    for (tv = testvecs; tv->algname; tv++)
+        if (EVP_MD_is_a(dgst, tv->algname))
+            break;
+    if (!tv->algname)
+        printf(cMAGENT "Digest %s is untested!" cNORM "\n", EVP_MD_name(dgst));
+}
+
+void warn_all_untested(void)
+{
+    if (engine_is_available("gost")) {
+        ENGINE *eng;
+
+        T(eng = ENGINE_by_id("gost"));
+        T(ENGINE_init(eng));
+
+        ENGINE_DIGESTS_PTR fn_c;
+        T(fn_c = ENGINE_get_digests(eng));
+        const int *nids;
+        int n, k;
+        n = fn_c(eng, NULL, &nids, 0);
+        for (k = 0; k < n; ++k)
+            warn_if_untested(ENGINE_get_digest(eng, nids[k]), NULL);
+        ENGINE_finish(eng);
+        ENGINE_free(eng);
+    }
+    if (OSSL_PROVIDER_available(NULL, "gostprov")) {
+        OSSL_PROVIDER *prov;
+
+        T(prov = OSSL_PROVIDER_load(NULL, "gostprov"));
+        EVP_MD_do_all_provided(NULL,
+                               (void (*)(EVP_MD *, void *))warn_if_untested,
+                               prov);
+
+        OSSL_PROVIDER_unload(prov);
+    }
+}
+
 int main(int argc, char **argv)
 {
     int ret = 0;
@@ -824,28 +952,14 @@ int main(int argc, char **argv)
     OPENSSL_add_all_algorithms_conf();
 
     const struct hash_testvec *tv;
-    for (tv = testvecs; tv->nid; tv++) {
+    for (tv = testvecs; tv->algname; tv++) {
 	if (tv->plaintext)
 	    ret |= do_test(tv);
 	else
 	    ret |= do_synthetic_test(tv);
     }
 
-    ENGINE *eng;
-    ENGINE_DIGESTS_PTR fn_c;
-    T(eng = ENGINE_by_id("gost"));
-    T(fn_c = ENGINE_get_digests(eng));
-    const int *nids;
-    int n, k;
-    n = fn_c(eng, NULL, &nids, 0);
-    for (k = 0; k < n; ++k) {
-	for (tv = testvecs; tv->nid; tv++)
-	    if (tv->nid == nids[k])
-		break;
-	if (!tv->nid)
-	    printf(cMAGENT "Digest %s is untested!" cNORM "\n", OBJ_nid2sn(nids[k]));
-    }
-    ENGINE_free(eng);
+    warn_all_untested();
 
     if (ret)
 	printf(cDRED "= Some tests FAILED!" cNORM "\n");

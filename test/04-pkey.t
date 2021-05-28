@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 use Test2::V0;
+skip_all('TODO: add pkey support in provider')
+    unless $ARGV[0] eq 'engine';
 plan(2);
 use Cwd 'abs_path';
 
