@@ -8,7 +8,7 @@ To build and install OpenSSL GOST Engine, you will need
 
 * OpenSSL 3.0 development version
 * an ANSI C compiler
-* CMake (3.0 or newer)
+* CMake (3.0 or newer, 3.18 recommended)
 
 Here is a quick build guide:
 
@@ -27,6 +27,10 @@ variable `OPENSSL_ROOT_DIR` to specify absolute path of the desirable OpenSSL
 instance:
 
     $ cmake -DOPENSSL_ROOT_DIR=/PATH/TO/OPENSSL/ ..
+
+Building against OpenSSL 3.0 requires openssl detection module
+(FindOpenSSL.cmake) from CMake 3.18 or higher. More earlier versions may have
+problems with it.
 
 If you use Visual Studio, you can also set `CMAKE_INSTALL_PREFIX` variable
 to set install path, like this:
