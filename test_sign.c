@@ -170,6 +170,7 @@ static int test_sign(struct test_sign *t)
     EVP_PKEY_free(pkey);
 #endif
 
+#if OPENSSL_VERSION_MAJOR >= 3
     /* Convert to DER and back, using OSSL_STORE API. */
     T(BIO_reset(bp));
     T(i2d_PrivateKey_bio(bp, priv_key));
@@ -199,6 +200,10 @@ static int test_sign(struct test_sign *t)
     } else
 	printf(cCYAN "skipped\n" cNORM);
     BIO_free(bp);
+#else
+    T(BIO_reset(bp));
+    BIO_free(bp);
+#endif
 
     /* Convert to DER and back, using memory API. */
     unsigned char *kptr = NULL;
