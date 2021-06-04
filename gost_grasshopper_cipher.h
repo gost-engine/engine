@@ -12,6 +12,7 @@ extern "C" {
 
 #include "gost_grasshopper_defines.h"
 
+#include "gost_lcl.h"
 #include <openssl/evp.h>
 
 // not thread safe
@@ -60,6 +61,9 @@ static int gost_grasshopper_cipher_init_ctracpkm(EVP_CIPHER_CTX* ctx,
 static int gost_grasshopper_cipher_init_ctracpkm_omac(EVP_CIPHER_CTX* ctx,
     const unsigned char* key, const unsigned char* iv, int enc);
 
+static int gost_grasshopper_cipher_init_mgm(EVP_CIPHER_CTX* ctx, 
+    const unsigned char* key, const unsigned char* iv, int enc);
+
 static int gost_grasshopper_cipher_init(EVP_CIPHER_CTX* ctx, const unsigned char* key,
     const unsigned char* iv, int enc);
 
@@ -87,13 +91,20 @@ static int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX* ctx, unsigned cha
 static int gost_grasshopper_cipher_do_ctracpkm_omac(EVP_CIPHER_CTX* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
+static int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX* ctx, unsigned char* out,
+    const unsigned char* in, size_t inl);
+
 static int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX* ctx);
+
+static int gost_grasshopper_mgm_cleanup(EVP_CIPHER_CTX *c);
 
 static int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX* ctx, ASN1_TYPE* params);
 
 static int gost_grasshopper_get_asn1_parameters(EVP_CIPHER_CTX* ctx, ASN1_TYPE* params);
 
 static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX* ctx, int type, int arg, void* ptr);
+
+static int gost_grasshopper_mgm_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
 
 const EVP_CIPHER* cipher_gost_grasshopper_ctracpkm();
 
