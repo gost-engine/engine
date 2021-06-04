@@ -30,7 +30,7 @@ int VKO_compute_key(unsigned char *shared_key,
                     const int vko_dgst_nid)
 {
     unsigned char *databuf = NULL;
-    BIGNUM *scalar = NULL, *X = NULL, *Y = NULL;
+    BIGNUM *scalar = NULL, *X = NULL, *Y = NULL, *order = NULL;
     const EC_GROUP *grp = NULL;
     EC_POINT *pnt = NULL;
     BN_CTX *ctx = NULL;
@@ -51,9 +51,11 @@ int VKO_compute_key(unsigned char *shared_key,
         goto err;
     }
 
+    order = BN_CTX_get(ctx);
     grp = EC_KEY_get0_group(priv_key);
     scalar = BN_CTX_get(ctx);
     X = BN_CTX_get(ctx);
+    EC_GROUP_get_order(grp, order, ctx);
 
     if ((Y = BN_CTX_get(ctx)) == NULL
         || (pnt = EC_POINT_new(grp)) == NULL
@@ -80,7 +82,7 @@ int VKO_compute_key(unsigned char *shared_key,
         goto err;
     }
 
-    half_len = BN_num_bytes(EC_GROUP_get0_field(grp));
+    half_len = BN_num_bytes(order);
     buf_len = 2 * half_len;
     if ((databuf = OPENSSL_malloc(buf_len)) == NULL) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
