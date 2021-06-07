@@ -68,12 +68,12 @@ test -skip {![file exists cms_sign_$alg_fn.pem]} "Checking oids in cms struct" {
 
 test -skip {![file exists cms_sign_$alg_fn.msg]} "Verifying a message signed with $alg without ca " {
 	grep Veri [openssl "cms -verify -text -in cms_sign_$alg_fn.msg -out cms_verified.txt -noverify -certfile $username/cert.pem"]
-} 0 "CMS Verification successful
+} 0 "Verification successful
 "
 
 test -skip {![file exists cms_sign_$alg_fn.msg]}  "Verifying a message signed with $alg with ca" {
 	grep Veri [openssl "cms -verify -text -in cms_sign_$alg_fn.msg -out cms_verified.txt -certfile $username/cert.pem -CAfile $::test::ca/cacert.pem"]
-} 0 "CMS Verification successful
+} 0 "Verification successful
 "
 
 test -skip {![file exists cms_sign_$alg_fn.msg]} -createsfiles [list cms_bad_$alg_fn.msg cms_verified.txt] "Verifying corrupted messages signed with $alg" {
@@ -95,12 +95,12 @@ test -skip {![file exist cms_sign_c_$alg_fn.msg]} "Checking micalg param in sign
 
 test -skip {![file exists cms_sign_c_$alg_fn.msg]} "Verifying a message signed with $alg having cert inside without ca" {
 	grep Veri [openssl "cms -verify -text -in cms_sign_c_$alg_fn.msg -out cms_verified.txt -noverify"]
-} 0 "CMS Verification successful
+} 0 "Verification successful
 "
 
 test -skip {![file exists cms_sign_c_$alg_fn.msg]} "Verifying a message signed with $alg having cert with ca" {
 	grep Veri [openssl "cms -verify -text -in cms_sign_c_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
-} 0 "CMS Verification successful
+} 0 "Verification successful
 "
 
 test -skip {![file exists $username/cert.pem]} -createsfiles {cms_sign.dat cms_sign_op_$alg_fn.msg} "Signing a message by $alg with cert using opaque signing" {
@@ -111,12 +111,12 @@ test -skip {![file exists $username/cert.pem]} -createsfiles {cms_sign.dat cms_s
 
 test -createsfiles cms_verified.txt -skip {![file exists cms_sign_op_$alg_fn.msg]} "Verifying a message signed by $alg having cert inside without ca" {
 	grep Veri [openssl "cms -verify -text -in cms_sign_op_$alg_fn.msg -out cms_verified.txt -noverify"]
-} 0 "CMS Verification successful
+} 0 "Verification successful
 "
 
 test -createsfiles cms_verified.txt -skip {![file exists cms_sign_op_$alg_fn.msg]} "Verifying a $alg opaque  message with ca" {
 	grep Veri [openssl "cms -verify -text -in cms_sign_op_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
-} 0 "CMS Verification successful
+} 0 "Verification successful
 "
 
 test -createsfiles cms_broken_op_$alg_fn.msg  -skip {![file exists cms_sign_op_$alg_fn.msg]} "Verifying broken $alg opaque message" {
@@ -159,7 +159,7 @@ test -skip {![file exists cms_sign_$alg_fn.pem]} "Checking oids in cms struct" {
 
 test -skip {![file exists cms_sign_det_$alg_fn.pem]} "Verifying detached $alg cms_signature" {
 	grep Veri [openssl "cms -verify -binary -content cms_sign.dat -inform PEM -in cms_sign_det_$alg_fn.pem -out cms_verified.txt -noverify"]
-} 0 "CMS Verification successful
+} 0 "Verification successful
 "
 
 test -skip {![file exists cms_sign_det_$alg_fn.msg]} -createsfiles {bad.dat} "Verifying corrupted $alg detached cms_signature" {

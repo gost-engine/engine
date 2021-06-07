@@ -14,12 +14,12 @@ start_tests "CMS tests, TC26 examples"
 
 test "Signed data, 512 bits, signed attributes" {
 	grep "Verification successful" [openssl "cms -verify -in tc26_cms/signed_a111.pem -inform PEM -noverify"]
-} 0 "CMS Verification successful
+} 0 "Verification successful
 "
 
 test "Signed data, 256 bits, no signed attributes" {
 	grep "Verification successful" [openssl "cms -verify -in tc26_cms/signed_a121.pem -inform PEM -noverify"]
-} 0 "CMS Verification successful
+} 0 "Verification successful
 "
 
 test "Digested data, 256 bits" {

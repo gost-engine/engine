@@ -30,7 +30,7 @@ test -createsfiles cms_signed2_2_$length.asn "Signing in DER format with 2nd sig
 
 test -createsfiles {was_signed.dat signer.certs} "Verifying signature in DER format" {
 	grep "Verif" [openssl "cms -verify -inform der -in cms_signed2_2_$length.asn -noverify -signer signer.certs -out was_signed.dat"]
-} 0 {CMS Verification successful
+} 0 {Verification successful
 }
 
 test "Signed data is extracted correctly" {
@@ -64,7 +64,7 @@ test -createsfiles cms_signed2_2_$length\_op.msg "Signing opaque in S/MIME forma
 
 test -createsfiles {was_signed.dat signer.certs} "Verifying opaque signature in S/MIME format" {
 	grep "Verif" [openssl "cms -verify -in cms_signed2_2_$length\_op.msg -noverify -signer signer.certs -out was_signed.dat"]
-} 0 {CMS Verification successful
+} 0 {Verification successful
 }
 
 test "Signed data is extracted correctly" {
@@ -98,7 +98,7 @@ test -createsfiles cms_signed2_2_$length\_det.asn "Signing detached in DER forma
 
 test -createsfiles {was_signed.dat signer.certs} "Verifying detached signature in DER format" {
 	grep "Verif" [openssl "cms -verify -in cms_signed2_2_$length\_det.asn -noverify -signer signer.certs -out was_signed.dat -content signed2.dat -inform der"]
-} 0 {CMS Verification successful
+} 0 {Verification successful
 }
 
 test "Signed data is extracted correctly" {
@@ -131,7 +131,7 @@ test -createsfiles cms_signed2_2_$length.msg "Signing in S/MIME format with 2nd 
 
 test -createsfiles {was_signed.dat  signer.certs} "Verifying signature in S/MIME format" {
 	grep "Verif" [openssl "cms -verify -in cms_signed2_2_$length.msg -noverify -signer signer.certs -out was_signed.dat -inform smime"]
-} 0 {CMS Verification successful
+} 0 {Verification successful
 }
 
 test "Signed data is extracted correctly" {
