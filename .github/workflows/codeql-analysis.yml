@@ -1,7 +1,7 @@
 name: "CodeQL"
 
 env:
-  OPENSSL_BRANCH: openssl-3.0.0-alpha17
+  OPENSSL_BRANCH: OpenSSL_1_1_1g
   #RPATH: "-Wl,-rpath=${PREFIX}/lib"
   #PREFIX: ${HOME}/opt
   #PATH: ${PREFIX}/bin:${PATH}
@@ -36,13 +36,13 @@ jobs:
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
-      # languages: cpp
       # Override language selection by uncommenting this and choosing your languages
       # with:
+      #   languages: go, javascript, csharp, python, cpp, java
 
     # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
-    #- name: Autobuild
+    # - name: Autobuild
     #  uses: github/codeql-action/autobuild@v1
 
     # ℹ️ Command-line programs to run using the OS shell.
@@ -60,6 +60,8 @@ jobs:
        export PREFIX=`pwd`/opt
        export RPATH="-Wl,-rpath=${PREFIX}/lib"
        cd openssl
+       patch -p0 < ../patches/openssl_111g.diff
+       patch -p0 < ../patches/openssl_111g_obj.diff
        git describe --always --long
        ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} ${RPATH}
        make -s build_libs
