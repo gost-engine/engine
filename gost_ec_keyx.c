@@ -62,7 +62,12 @@ int VKO_compute_key(unsigned char *shared_key,
                        EC_GROUP_get0_order(grp), ctx))
         goto err;
 
-    /* these two curves have cofactor 4; the rest have cofactor 1 */
+#if 0
+    /*-
+     * These two curves have cofactor 4; the rest have cofactor 1.
+     * But currently gost_ec_point_mul takes care of the cofactor clearing,
+     * hence this code is not needed.
+     */
     switch (EC_GROUP_get_curve_name(grp)) {
         case NID_id_tc26_gost_3410_2012_256_paramSetA:
         case NID_id_tc26_gost_3410_2012_512_paramSetC:
@@ -70,6 +75,7 @@ int VKO_compute_key(unsigned char *shared_key,
                 goto err;
             break;
     }
+#endif
 
     if (!gost_ec_point_mul(grp, pnt, NULL, pub_key, scalar, ctx)) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_ERROR_POINT_MUL);
