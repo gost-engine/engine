@@ -292,9 +292,29 @@ MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEAiCNNQAMnur4EG8eSDpr5WjJaoHquSsK3wydCr
 '2df0dfa8d437689d41fad965f13ea28ce27c29dd84514b376ea6ad9f0c7e3ece',
 '-----BEGIN PUBLIC KEY-----
 MIGgMBcGCCqFAwcBAQECMAsGCSqFAwcBAgECAwOBhAAEgYCPdAER26Ym73DSUXBamTLJcntdV3oZ7RRx/+Ijf13GnF36o36i8tEC13uJqOOmujEkAGPtui6yE4iJNVU0uM6yHmIEM5H0c81Sd/VQD8yXW1hyGAZvTMc+U/6oa30YU9YY7+t759d1CIVznPmq9C+VbAApyDCMFjuYnKD/nChsGA==
------END PUBLIC KEY-----']
+-----END PUBLIC KEY-----'],
+'id-tc26-gost-3410-2012-256-paramSetA-rangetest'=>
+['-----BEGIN PRIVATE KEY-----
+MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEBBCD5+u2ebYwQ9iDYWHmif4XeGgj2OijJuq4YsbTNoH3+Bw==
+-----END PRIVATE KEY-----',
+'a04b252bedc05f69fc92d8e985b52f0f984bccf3ef9f980ac7aca85f5ef11987',
+'-----BEGIN PRIVATE KEY-----
+MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEBBCBmDDZsVa8VwTVme8jfzdgPAAAAAAAAAAAAAAAAAAAAQA==
+-----END PRIVATE KEY-----',
+'29132b8efb7b21a15133e51c70599031ea813cca86edb0985e86f331493b3d73',
+'7206480037eb130595c0ed350046af8c96b0fc5bfb4030be65dbf3e207a25de2'],
+'id-tc26-gost-3410-2012-512-paramSetC-rangetest'=>
+['-----BEGIN PRIVATE KEY-----
+MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEA79FKW7MqF4pQJJvpAhKd9YkwsFXBzcaUhYt3N1KuJV6n5aJ4+kaJfuT3YbhtwWWzNIsIdXUZRaBEGO2cEwysa
+-----END PRIVATE KEY-----',
+'fa92c3898642b419b320b15a8285d6d01ae3a22cadc791b9ba52d12919e7008d',
+'-----BEGIN PRIVATE KEY-----
+MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEDsI/BH7zxilCahaafnqe3ILFBHUf+pM0wAqwZlpNuMyf////////////////////////////////////////8/
+-----END PRIVATE KEY-----',
+'fbcd6e72572335d291be497b7bfb264138ab7b2ecca00bc7a9fd90ad7557c0cc',
+'8e5b7bd8b3680d3dc33627c5bed85fdeb4e1ba67307714eb260412ddbb4bb87e']
 );
-    plan(54);
+    plan(64);
     while(my($id, $v) = each %derives) {
         my ($alice,$alicehash,$bob,$bobhash,$secrethash,$malice) = @$v;
         # Alice: keygen
@@ -311,17 +331,18 @@ MIGgMBcGCCqFAwcBAQECMAsGCSqFAwcBAgECAwOBhAAEgYCPdAER26Ym73DSUXBamTLJcntdV3oZ7RRx
         like(`openssl dgst -sha256 -r bob.pub.der`, qr/^$bobhash/, "Compute public key:$id:Bob");
         # Alice: derive
         system("openssl pkeyutl -derive -inkey alice.prv -keyform PEM -peerkey bob.pub.der -peerform DER -pkeyopt ukmhex:0100000000000000 -out secret_a.bin");
-        like(`openssl dgst -sha256 -r secret_a.bin`, qr/^$secrethash/, "Compute shared key:$id:Alice");
+        like(`openssl dgst -sha256 -r secret_a.bin`, qr/^$secrethash/, "Compute shared key:$id:Alice:Bob");
         # Bob: derive
         system("openssl pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey alice.pub.der -peerform DER -pkeyopt ukmhex:0100000000000000 -out secret_b.bin");
-        like(`openssl dgst -sha256 -r secret_b.bin`, qr/^$secrethash/, "Compute shared key:$id:Bob");
+        like(`openssl dgst -sha256 -r secret_b.bin`, qr/^$secrethash/, "Compute shared key:$id:Bob:Alice");
         if (defined $malice && $malice ne "") {
             # Malice: negative test -- this PEM is in the small subgroup
             open $F,">",'malice.pub';
             print $F $malice;
             close $F;
             # NB system should return true on failure, so this is a negative test
-            ok(system("openssl pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey malice.pub -peerform PEM -pkeyopt ukmhex:0100000000000000 -out secret_m.bin"), "Compute shared key:$id:Malice");
+            ok(system("openssl pkeyutl -derive -inkey alice.prv -keyform PEM -peerkey malice.pub -peerform PEM -pkeyopt ukmhex:0100000000000000 -out secret_m.bin"), "Compute shared key:$id:Alice:Malice");
+            ok(system("openssl pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey malice.pub -peerform PEM -pkeyopt ukmhex:0100000000000000 -out secret_m.bin"), "Compute shared key:$id:Bob:Malice");
         }
     }
     unlink "alice.prv";
