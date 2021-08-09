@@ -3674,6 +3674,9 @@ static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[32],
     fiat_id_tc26_gost_3410_2012_256_paramSetA_selectznz(Q.Z, scalar[0] & 1,
                                                         lut.Z, Q.Z);
 
+    point_double(&Q, &Q);
+    point_double(&Q, &Q);
+
     /* move from Edwards projective to legacy projective */
     point_edwards2legacy(&Q, &Q);
     /* convert to affine -- NB depends on coordinate system */
@@ -8880,6 +8883,9 @@ static void var_smul_rwnaf(pt_aff_t *out, const unsigned char scalar[32],
                                                         lut.T, Q.T);
     fiat_id_tc26_gost_3410_2012_256_paramSetA_selectznz(Q.Z, scalar[0] & 1,
                                                         lut.Z, Q.Z);
+
+    point_double(&Q, &Q);
+    point_double(&Q, &Q);
 
     /* move from Edwards projective to legacy projective */
     point_edwards2legacy(&Q, &Q);
