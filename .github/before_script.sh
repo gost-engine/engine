@@ -13,7 +13,7 @@ git describe --always --long
 
 PREFIX=$HOME/opt
 
-${SETARCH-} ./config shared -d --prefix=$PREFIX --openssldir=$PREFIX -Wl,-rpath=$PREFIX/lib
+${SETARCH-} ./config shared -d --prefix=$PREFIX --libdir=lib --openssldir=$PREFIX -Wl,-rpath=$PREFIX/lib
 ${SETARCH-} make -s -j$(nproc) build_libs
 ${SETARCH-} make -s -j$(nproc) build_programs
 make -s install_sw
