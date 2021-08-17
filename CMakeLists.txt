@@ -183,32 +183,32 @@ set(GOST_ENGINE_SOURCE_FILES
         )
 
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
+target_link_libraries(test_digest ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME digest
 	COMMAND test_digest)
 
 add_executable(test_curves test_curves.c)
-target_link_libraries(test_curves gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
+target_link_libraries(test_curves gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME curves
 	COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params gost_engine gost_core dl z pthread)
+target_link_libraries(test_params ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME parameters
 	COMMAND test_params)
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
+target_link_libraries(test_sign ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME sign/verify
 	COMMAND test_sign)
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY} dl z pthread gost_engine gost_core)
+target_link_libraries(test_tls ${OPENSSL_SSL_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME TLS
 	COMMAND test_tls)
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
+target_link_libraries(test_context ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME context
 	COMMAND test_context)
 
@@ -219,12 +219,12 @@ add_test(NAME grasshopper
 
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
+target_link_libraries(test_keyexpimp gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME keyexpimp
 	COMMAND test_keyexpimp)
 
 add_executable(test_gost89 test_gost89.c)
-target_link_libraries(test_gost89 gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
+target_link_libraries(test_gost89 gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME gost89
 	COMMAND test_gost89)
 
@@ -243,7 +243,7 @@ if(NOT SKIP_PERL_TESTS)
 endif()
 
 add_executable(sign benchmark/sign.c)
-target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB} dl z pthread)
+target_link_libraries(sign gost_core ${OPENSSL_CRYPTO_LIBRARIES} ${CLOCK_GETTIME_LIB})
 
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
@@ -265,11 +265,11 @@ set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_library(gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
 set_target_properties(gost_engine PROPERTIES VERSION ${GOST_SOVERSION} SOVERSION ${GOST_SOVERSION})
-target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(gost_engine PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 
 add_library(gost_engine_static STATIC ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine_static PROPERTIES PREFIX "lib" PUBLIC_HEADER gost-engine.h OUTPUT_NAME "gost")
-target_link_libraries(gost_engine_static gost_core ${OPENSSL_CRYPTO_LIBRARY} dl pthread z)
+target_link_libraries(gost_engine_static PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 
 
 set(GOST_SUM_SOURCE_FILES
@@ -277,7 +277,7 @@ set(GOST_SUM_SOURCE_FILES
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
-target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
+target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
@@ -296,7 +296,7 @@ add_custom_target(tcl_tests
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
 
 add_executable(test_tlstree test_tlstree.c)
-target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARIES})
 
 # install
 set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
