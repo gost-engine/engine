@@ -138,11 +138,8 @@ set(GOST_CORE_SOURCE_FILES
         gost_crypt.c
         gost_ctl.c
         gost_eng.c
-        gost_keywrap.c
-        gost_keywrap.h
         gost_lcl.h
         gost_params.c
-        gost_keyexpimp.c
         )
 
 set(GOST_EC_SOURCE_FILES
@@ -170,6 +167,9 @@ set(GOST_LIB_SOURCE_FILES
         ${GOST_GRASSHOPPER_SOURCE_FILES}
         ${GOST_EC_SOURCE_FILES}
         ${GOST_OMAC_SOURCE_FILES}
+        gost_keyexpimp.c
+        gost_keywrap.c
+        gost_keywrap.h
         )
 
 set(GOST_ENGINE_SOURCE_FILES
@@ -183,48 +183,48 @@ set(GOST_ENGINE_SOURCE_FILES
         )
 
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_digest gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
 add_test(NAME digest
 	COMMAND test_digest)
 
 add_executable(test_curves test_curves.c)
-target_link_libraries(test_curves gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_curves gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
 add_test(NAME curves
 	COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_params gost_engine gost_core dl z pthread)
 add_test(NAME parameters
 	COMMAND test_params)
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
 add_test(NAME sign/verify
 	COMMAND test_sign)
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+target_link_libraries(test_tls ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY} dl z pthread gost_engine gost_core)
 add_test(NAME TLS
 	COMMAND test_tls)
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
 add_test(NAME context
 	COMMAND test_context)
 
 add_executable(test_grasshopper test_grasshopper.c)
-target_link_libraries(test_grasshopper gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_grasshopper gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
 add_test(NAME grasshopper
 	COMMAND test_grasshopper)
 
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_keyexpimp gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
 add_test(NAME keyexpimp
 	COMMAND test_keyexpimp)
 
 add_executable(test_gost89 test_gost89.c)
-target_link_libraries(test_gost89 gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_gost89 gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
 add_test(NAME gost89
 	COMMAND test_gost89)
 
@@ -243,7 +243,7 @@ if(NOT SKIP_PERL_TESTS)
 endif()
 
 add_executable(sign benchmark/sign.c)
-target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
+target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB} dl z pthread)
 
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
@@ -267,12 +267,17 @@ set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
 set_target_properties(gost_engine PROPERTIES VERSION ${GOST_SOVERSION} SOVERSION ${GOST_SOVERSION})
 target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
 
+add_library(gost_engine_static STATIC ${GOST_ENGINE_SOURCE_FILES})
+set_target_properties(gost_engine_static PROPERTIES PREFIX "lib" PUBLIC_HEADER gost-engine.h OUTPUT_NAME "gost")
+target_link_libraries(gost_engine_static gost_core ${OPENSSL_CRYPTO_LIBRARY} dl pthread z)
+
+
 set(GOST_SUM_SOURCE_FILES
         gostsum.c
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
-target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
