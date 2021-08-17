@@ -203,54 +203,54 @@ set(TEST_ENVIRONMENT
         OPENSSL_CONF=${CMAKE_CURRENT_SOURCE_DIR}/test/engine.cnf
         )
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_digest ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME digest COMMAND test_digest)
 set_tests_properties(digest PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_ciphers test_ciphers.c)
-target_link_libraries(test_ciphers ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_ciphers ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME ciphers COMMAND test_ciphers)
 set_tests_properties(ciphers PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 # test_curves is an internals testing program, it doesn't need a test env
 add_executable(test_curves test_curves.c)
-target_link_libraries(test_curves gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_curves gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME curves COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_params ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME parameters COMMAND test_params)
 set_tests_properties(parameters PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_derive test_derive.c)
-target_link_libraries(test_derive ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_derive ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME derive COMMAND test_derive)
 set_tests_properties(derive PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_sign ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME sign/verify COMMAND test_sign)
 set_tests_properties(sign/verify PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+target_link_libraries(test_tls ${OPENSSL_SSL_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME TLS COMMAND test_tls)
 set_tests_properties(TLS PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_context ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME context COMMAND test_context)
 set_tests_properties(context PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 # test_keyexpimp is an internals testing program, it doesn't need a test env
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_keyexpimp gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME keyexpimp COMMAND test_keyexpimp)
 
 # test_gost89 is an internals testing program, it doesn't need a test env
 add_executable(test_gost89 test_gost89.c)
-target_link_libraries(test_gost89 gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_gost89 gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 add_test(NAME gost89 COMMAND test_gost89)
 
 if(NOT SKIP_PERL_TESTS)
@@ -266,7 +266,7 @@ if(NOT SKIP_PERL_TESTS)
 endif()
 
 add_executable(sign benchmark/sign.c)
-target_link_libraries(sign gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
+target_link_libraries(sign gost_core ${OPENSSL_CRYPTO_LIBRARIES} ${CLOCK_GETTIME_LIB})
 
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
@@ -292,7 +292,7 @@ add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
 # module suffix should be
 set_target_properties(gost_engine PROPERTIES
   PREFIX "" OUTPUT_NAME "gost" SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
-target_link_libraries(gost_engine PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(gost_engine PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 
 # The GOST engine in library form
 add_library(lib_gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
@@ -300,7 +300,7 @@ set_target_properties(lib_gost_engine PROPERTIES
   COMPILE_DEFINITIONS "BUILDING_ENGINE_AS_LIBRARY"
   PUBLIC_HEADER gost-engine.h
   OUTPUT_NAME "gost")
-target_link_libraries(lib_gost_engine PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(lib_gost_engine PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 
 
 set(GOST_SUM_SOURCE_FILES
@@ -308,7 +308,7 @@ set(GOST_SUM_SOURCE_FILES
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
-target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARIES})
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
@@ -332,7 +332,7 @@ add_custom_target(tcl_tests
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
 
 add_executable(test_tlstree test_tlstree.c)
-target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARIES})
 
 # install programs and manuals
 install(TARGETS gostsum gost12sum RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
