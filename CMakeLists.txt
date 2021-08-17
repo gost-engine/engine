@@ -214,7 +214,7 @@ set_tests_properties(ciphers PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 # test_curves is an internals testing program, it doesn't need a test env
 add_executable(test_curves test_curves.c)
-target_link_libraries(test_curves gost_core ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_curves gost_core)
 add_test(NAME curves COMMAND test_curves)
 
 add_executable(test_params test_params.c)
@@ -245,12 +245,12 @@ set_tests_properties(context PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 # test_keyexpimp is an internals testing program, it doesn't need a test env
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_core ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_keyexpimp gost_core)
 add_test(NAME keyexpimp COMMAND test_keyexpimp)
 
 # test_gost89 is an internals testing program, it doesn't need a test env
 add_executable(test_gost89 test_gost89.c)
-target_link_libraries(test_gost89 gost_core ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_gost89 gost_core)
 add_test(NAME gost89 COMMAND test_gost89)
 
 if(NOT SKIP_PERL_TESTS)
@@ -266,7 +266,7 @@ if(NOT SKIP_PERL_TESTS)
 endif()
 
 add_executable(sign benchmark/sign.c)
-target_link_libraries(sign gost_core ${OPENSSL_CRYPTO_LIBRARIES} ${CLOCK_GETTIME_LIB})
+target_link_libraries(sign gost_core ${CLOCK_GETTIME_LIB})
 
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
@@ -285,6 +285,7 @@ set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS 
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(gost_core PRIVATE ${OPENSSL_CRYPTO_LIBRARIES})
 
 # The GOST engine in module form
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
@@ -292,7 +293,7 @@ add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
 # module suffix should be
 set_target_properties(gost_engine PROPERTIES
   PREFIX "" OUTPUT_NAME "gost" SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
-target_link_libraries(gost_engine PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(gost_engine PRIVATE gost_core)
 
 # The GOST engine in library form
 add_library(lib_gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
@@ -300,7 +301,7 @@ set_target_properties(lib_gost_engine PROPERTIES
   COMPILE_DEFINITIONS "BUILDING_ENGINE_AS_LIBRARY"
   PUBLIC_HEADER gost-engine.h
   OUTPUT_NAME "gost")
-target_link_libraries(lib_gost_engine PRIVATE gost_core ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(lib_gost_engine PRIVATE gost_core)
 
 
 set(GOST_SUM_SOURCE_FILES
@@ -308,7 +309,7 @@ set(GOST_SUM_SOURCE_FILES
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
-target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(gostsum gost_core)
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
