@@ -203,12 +203,12 @@ set(TEST_ENVIRONMENT
         OPENSSL_CONF=${CMAKE_CURRENT_SOURCE_DIR}/test/engine.cnf
         )
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_digest OpenSSL::Crypto)
 add_test(NAME digest COMMAND test_digest)
 set_tests_properties(digest PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_ciphers test_ciphers.c)
-target_link_libraries(test_ciphers ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_ciphers OpenSSL::Crypto)
 add_test(NAME ciphers COMMAND test_ciphers)
 set_tests_properties(ciphers PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
@@ -218,27 +218,27 @@ target_link_libraries(test_curves gost_core)
 add_test(NAME curves COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_params OpenSSL::Crypto)
 add_test(NAME parameters COMMAND test_params)
 set_tests_properties(parameters PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_derive test_derive.c)
-target_link_libraries(test_derive ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_derive OpenSSL::Crypto)
 add_test(NAME derive COMMAND test_derive)
 set_tests_properties(derive PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_sign OpenSSL::Crypto)
 add_test(NAME sign/verify COMMAND test_sign)
 set_tests_properties(sign/verify PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls ${OPENSSL_SSL_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_tls OpenSSL::SSL)
 add_test(NAME TLS COMMAND test_tls)
 set_tests_properties(TLS PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_context OpenSSL::Crypto)
 add_test(NAME context COMMAND test_context)
 set_tests_properties(context PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}")
 
@@ -285,7 +285,7 @@ set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS 
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(gost_core PRIVATE ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(gost_core PRIVATE OpenSSL::Crypto)
 
 # The GOST engine in module form
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
@@ -333,7 +333,7 @@ add_custom_target(tcl_tests
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
 
 add_executable(test_tlstree test_tlstree.c)
-target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_tlstree PUBLIC OpenSSL::Crypto)
 
 # install programs and manuals
 install(TARGETS gostsum gost12sum RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
