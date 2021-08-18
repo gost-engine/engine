@@ -183,7 +183,7 @@ set(GOST_ENGINE_SOURCE_FILES
         )
 
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_digest OpenSSL::Crypto)
 add_test(NAME digest
 	COMMAND test_digest)
 
@@ -193,27 +193,27 @@ add_test(NAME curves
 	COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_params OpenSSL::Crypto)
 add_test(NAME parameters
 	COMMAND test_params)
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_sign OpenSSL::Crypto)
 add_test(NAME sign/verify
 	COMMAND test_sign)
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls ${OPENSSL_SSL_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_tls OpenSSL::SSL)
 add_test(NAME TLS
 	COMMAND test_tls)
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_context gost_engine gost_core OpenSSL::Crypto)
 add_test(NAME context
 	COMMAND test_context)
 
 add_executable(test_grasshopper test_grasshopper.c)
-target_link_libraries(test_grasshopper gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} dl z pthread)
+target_link_libraries(test_grasshopper gost_engine gost_core OpenSSL::Crypto)
 add_test(NAME grasshopper
 	COMMAND test_grasshopper)
 
@@ -261,7 +261,7 @@ set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS 
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(gost_core PRIVATE ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(gost_core PRIVATE OpenSSL::Crypto)
 
 add_library(gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
@@ -297,7 +297,7 @@ add_custom_target(tcl_tests
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
 
 add_executable(test_tlstree test_tlstree.c)
-target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARIES})
+target_link_libraries(test_tlstree PUBLIC OpenSSL::Crypto)
 
 # install
 set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
