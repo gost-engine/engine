@@ -5,7 +5,7 @@ PATH=$PREFIX/bin:$PATH
 
 mkdir build
 cd build
-cmake -DOPENSSL_ROOT_DIR=$PREFIX -DOPENSSL_LIBRARIES=$PREFIX/lib -DOPENSSL_ENGINES_DIR=$PREFIX/engines ${ASAN-} ..
+cmake -DOPENSSL_ROOT_DIR=$PREFIX -DOPENSSL_ENGINES_DIR=$PREFIX/engines ${ASAN-} ..
 make
 make test CTEST_OUTPUT_ON_FAILURE=1
 if [ -z "${ASAN-}" ]; then
