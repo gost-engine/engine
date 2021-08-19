@@ -188,7 +188,7 @@ add_test(NAME digest
 	COMMAND test_digest)
 
 add_executable(test_curves test_curves.c)
-target_link_libraries(test_curves gost_engine gost_core)
+target_link_libraries(test_curves gost_engine)
 add_test(NAME curves
 	COMMAND test_curves)
 
@@ -208,18 +208,18 @@ add_test(NAME TLS
 	COMMAND test_tls)
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context gost_engine gost_core OpenSSL::Crypto)
+target_link_libraries(test_context gost_engine)
 add_test(NAME context
 	COMMAND test_context)
 
 add_executable(test_grasshopper test_grasshopper.c)
-target_link_libraries(test_grasshopper gost_engine gost_core OpenSSL::Crypto)
+target_link_libraries(test_grasshopper gost_engine)
 add_test(NAME grasshopper
 	COMMAND test_grasshopper)
 
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_engine gost_core)
+target_link_libraries(test_keyexpimp gost_engine)
 add_test(NAME keyexpimp
 	COMMAND test_keyexpimp)
 
