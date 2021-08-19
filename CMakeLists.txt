@@ -178,8 +178,6 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_md.c
         gost_md2012.c
         gost_pmeth.c
-        gost_omac.c
-        gost_omac_acpkm.c
         )
 
 add_executable(test_digest test_digest.c)
