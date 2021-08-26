@@ -49,33 +49,37 @@ else()
  add_definitions(-DL_ENDIAN)
 endif()
 
-check_c_source_runs("
-  #ifdef _MSC_VER
-  # include <intrin.h>
-  #else
-  # include <x86intrin.h>
-  #endif
-  int main(void) {
-    unsigned long long x = -1, y = 1, r;
-    unsigned char cf;
-    cf = _addcarry_u64(1, x, y, &r);
-    return !(cf == 1 && r == 1);
-  }
-  " ADDCARRY_U64)
-if (ADDCARRY_U64)
-  add_definitions(-DHAVE_ADDCARRY_U64)
+if (NOT CMAKE_CROSSCOMPILING)
+  check_c_source_runs("
+    #ifdef _MSC_VER
+    # include <intrin.h>
+    #else
+    # include <x86intrin.h>
+    #endif
+    int main(void) {
+      unsigned long long x = -1, y = 1, r;
+      unsigned char cf;
+      cf = _addcarry_u64(1, x, y, &r);
+      return !(cf == 1 && r == 1);
+    }
+    " ADDCARRY_U64)
+  if (ADDCARRY_U64)
+    add_definitions(-DHAVE_ADDCARRY_U64)
+  endif()
 endif()
 
-check_c_source_runs("
-  int main(void) {
-    char buf[16] = { 0, 1, 2 };
-    int *p = (int *)(buf + 1);
-    int *q = (int *)(buf + 2);
-    return (*p == *q);
-  }
-  " RELAXED_ALIGNMENT)
-if (NOT RELAXED_ALIGNMENT)
-  add_definitions(-DSTRICT_ALIGNMENT)
+if (NOT CMAKE_CROSSCOMPILING)
+  check_c_source_runs("
+    int main(void) {
+      char buf[16] = { 0, 1, 2 };
+      int *p = (int *)(buf + 1);
+      int *q = (int *)(buf + 2);
+      return (*p == *q);
+    }
+    " RELAXED_ALIGNMENT)
+  if (NOT RELAXED_ALIGNMENT)
+    add_definitions(-DSTRICT_ALIGNMENT)
+  endif()
 endif()
 
 set(BIN_DIRECTORY bin)
