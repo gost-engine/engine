@@ -1,7 +1,7 @@
 name: "CodeQL"
 
 env:
-  OPENSSL_BRANCH: openssl-3.0.0-alpha17
+  OPENSSL_BRANCH: openssl-3.0.0-beta2
   #RPATH: "-Wl,-rpath=${PREFIX}/lib"
   #PREFIX: ${HOME}/opt
   #PATH: ${PREFIX}/bin:${PATH}
@@ -61,7 +61,7 @@ jobs:
        export RPATH="-Wl,-rpath=${PREFIX}/lib"
        cd openssl
        git describe --always --long
-       ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} ${RPATH}
+       ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} --libdir=lib ${RPATH}
        make -s build_libs
        make -s build_programs
        make -s install_sw
