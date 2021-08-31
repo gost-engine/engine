@@ -21,8 +21,24 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
+    macos-openssl-stable:
+        runs-on: macos-11
+        steps:
+            - uses: actions/checkout@v2
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
     gcc-openssl-master:
         runs-on: ubuntu-20.04
+        env:
+            OPENSSL_BRANCH: master
+        steps:
+            - uses: actions/checkout@v2
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    macos-openssl-master:
+        runs-on: macos-11
         env:
             OPENSSL_BRANCH: master
         steps:
