@@ -1,7 +1,11 @@
 #!/bin/bash -efux
 
-curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
-sudo cpanm --notest Test2::V0 > build.log 2>&1 || (cat build.log && exit 1)
+# Download cpanm and make it executable as a standalone script
+curl -L https://cpanmin.us -o cpanm
+chmod 0755 cpanm
+
+sudo ./cpanm --notest Test2::V0 > build.log 2>&1 \
+    || (cat build.log && exit 1)
 
 if [ "${APT_INSTALL-}" ]; then
     sudo apt-get install -y $APT_INSTALL
