@@ -3,6 +3,7 @@ on: [push, pull_request]
 
 env:
     OPENSSL_BRANCH: openssl-3.0.0-beta2
+    USE_RPATH: yes
 
 jobs:
     gcc-openssl-stable:
@@ -23,6 +24,8 @@ jobs:
 
     macos-openssl-stable:
         runs-on: macos-11
+        env:
+            USE_RPATH:
         steps:
             - uses: actions/checkout@v2
             - run: .github/before_script.sh
@@ -41,6 +44,7 @@ jobs:
         runs-on: macos-11
         env:
             OPENSSL_BRANCH: master
+            USE_RPATH:
         steps:
             - uses: actions/checkout@v2
             - run: .github/before_script.sh
@@ -61,6 +65,7 @@ jobs:
         env:
             OPENSSL_BRANCH: master
             ASAN: -DASAN=1
+            USE_RPATH:
         steps:
             - uses: actions/checkout@v2
             - run: .github/before_script.sh
