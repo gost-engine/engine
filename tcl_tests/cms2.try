@@ -45,11 +45,11 @@ test "Extracting signer certificates" {
 	set certs [regexp -all -inline -- {-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----} [getFile signer.certs]]
 	foreach cert $certs {
 		makeFile cert[incr i].pem $cert
-		lappend subjs [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]]
+		lappend subjs [regsub -all " = " [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]] "=" ]
 	}
 	lsort $subjs
-} 0  "{subject=C = RU, O = Cryptocom, OU = OpenSSL Team, CN = USER1_$length, emailAddress = test@cryptocom.ru
-} {subject=C = RU, O = Cryptocom, OU = OpenSSL Team, CN = USER2_$length, emailAddress = test@cryptocom.ru
+} 0  "{subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER1_$length, emailAddress=test@cryptocom.ru
+} {subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER2_$length, emailAddress=test@cryptocom.ru
 }"
 
 test -createsfiles cms_signed2_1_$length\_op.msg "Signing opaque in S/MIME format with 1st signature" {
@@ -79,11 +79,11 @@ test "Extracting signer certificates" {
 	set certs [regexp -all -inline -- {-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----} [getFile signer.certs]]
 	foreach cert $certs {
 		makeFile cert[incr i].pem $cert
-		lappend subjs [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]]
+		lappend subjs [regsub -all " = " [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]] "=" ]
 	}
 	lsort $subjs
-} 0 "{subject=C = RU, O = Cryptocom, OU = OpenSSL Team, CN = USER1_$length, emailAddress = test@cryptocom.ru
-} {subject=C = RU, O = Cryptocom, OU = OpenSSL Team, CN = USER2_$length, emailAddress = test@cryptocom.ru
+} 0 "{subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER1_$length, emailAddress=test@cryptocom.ru
+} {subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER2_$length, emailAddress=test@cryptocom.ru
 }"
 
 test -createsfiles cms_signed2_1_$length\_det.asn "Signing detached in DER format with 1st signature" {
@@ -113,11 +113,11 @@ test "Extracting signer certificates" {
 	set certs [regexp -all -inline -- {-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----} [getFile signer.certs]]
 	foreach cert $certs {
 		makeFile cert_asn[incr i].pem $cert
-		lappend subjs [grep subject [openssl "x509 -in cert_asn$i.pem -subject -noout"]]
+		lappend subjs [regsub -all " = " [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]] "=" ]
 	}
 	lsort  $subjs
-} 0  "{subject=C = RU, O = Cryptocom, OU = OpenSSL Team, CN = USER1_$length, emailAddress = test@cryptocom.ru
-} {subject=C = RU, O = Cryptocom, OU = OpenSSL Team, CN = USER2_$length, emailAddress = test@cryptocom.ru
+} 0  "{subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER1_$length, emailAddress=test@cryptocom.ru
+} {subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER2_$length, emailAddress=test@cryptocom.ru
 }"
 
 test -createsfiles cms_signed2_1_$length.msg "Signing in S/MIME format with 1st signature" {
@@ -146,11 +146,11 @@ test "Extracting signer certificates" {
 	set certs [regexp -all -inline -- {-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----} [getFile signer.certs]]
 	foreach cert $certs {
 		makeFile cert_cms[incr i].pem $cert
-		lappend subjs [grep subject [openssl "x509 -in cert_cms$i.pem -subject -noout"]]
+		lappend subjs [regsub -all " = " [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]] "=" ]
 	}
 	lsort $subjs
-} 0  "{subject=C = RU, O = Cryptocom, OU = OpenSSL Team, CN = USER1_$length, emailAddress = test@cryptocom.ru
-} {subject=C = RU, O = Cryptocom, OU = OpenSSL Team, CN = USER2_$length, emailAddress = test@cryptocom.ru
+} 0  "{subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER1_$length, emailAddress=test@cryptocom.ru
+} {subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER2_$length, emailAddress=test@cryptocom.ru
 }"
 
 }
