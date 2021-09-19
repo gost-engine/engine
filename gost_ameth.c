@@ -906,58 +906,59 @@ static int pub_decode_gost_ec(EVP_PKEY *pk, const X509_PUBKEY *pub)
 {
     X509_ALGOR *palg = NULL;
     const unsigned char *pubkey_buf = NULL;
-    unsigned char *databuf;
+    unsigned char *databuf = NULL;
     ASN1_OBJECT *palgobj = NULL;
     int pub_len;
-    EC_POINT *pub_key;
-    BIGNUM *X, *Y;
+    EC_POINT *pub_key = NULL;
+    BIGNUM *X = NULL, *Y = NULL;
     ASN1_OCTET_STRING *octet = NULL;
     size_t len;
     const EC_GROUP *group;
+    int retval = 0;
 
     if (!X509_PUBKEY_get0_param(&palgobj, &pubkey_buf, &pub_len, &palg, pub))
-        return 0;
+        goto ret;
     EVP_PKEY_assign(pk, OBJ_obj2nid(palgobj), NULL);
     if (!decode_gost_algor_params(pk, palg))
-        return 0;
+        goto ret;
     group = EC_KEY_get0_group(EVP_PKEY_get0(pk));
     octet = d2i_ASN1_OCTET_STRING(NULL, &pubkey_buf, pub_len);
     if (!octet) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_MALLOC_FAILURE);
-        return 0;
+        goto ret;
     }
     databuf = OPENSSL_malloc(octet->length);
-    if (databuf == NULL) {
+    if (!databuf) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_MALLOC_FAILURE);
-        ASN1_OCTET_STRING_free(octet);
-        return 0;
+        goto ret;
     }
 
     BUF_reverse(databuf, octet->data, octet->length);
     len = octet->length / 2;
-    ASN1_OCTET_STRING_free(octet);
 
     Y = BN_bin2bn(databuf, len, NULL);
     X = BN_bin2bn(databuf + len, len, NULL);
-    OPENSSL_free(databuf);
+    if (!X || !Y) {
+        GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_BN_LIB);
+        goto ret;
+    }
     pub_key = EC_POINT_new(group);
     if (!EC_POINT_set_affine_coordinates(group, pub_key, X, Y, NULL)) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_EC_LIB);
-        EC_POINT_free(pub_key);
-        BN_free(X);
-        BN_free(Y);
-        return 0;
+        goto ret;
     }
+
+    retval = EC_KEY_set_public_key(EVP_PKEY_get0(pk), pub_key);
+    if (!retval)
+        GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_EC_LIB);
+
+ret:
+    EC_POINT_free(pub_key);
     BN_free(X);
     BN_free(Y);
-    if (!EC_KEY_set_public_key(EVP_PKEY_get0(pk), pub_key)) {
-        GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_EC_LIB);
-        EC_POINT_free(pub_key);
-        return 0;
-    }
-    EC_POINT_free(pub_key);
-    return 1;
-
+    OPENSSL_free(databuf);
+    ASN1_OCTET_STRING_free(octet);
+    return retval;
 }
 
 static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
