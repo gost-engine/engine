@@ -240,7 +240,7 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             if (c->key_set) {
                 unsigned char diversed_key[32];
                 return gost_tlstree(c->cipher_nid, c->key, diversed_key,
-                                    (const unsigned char *)ptr) ?
+                                    (const unsigned char *)ptr, TLSTREE_MODE_NONE) ?
                     omac_key(c, EVP_get_cipherbynid(c->cipher_nid),
                              diversed_key, 32) : 0;
             }

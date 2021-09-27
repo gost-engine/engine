@@ -251,7 +251,7 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
 }
 
 int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
-                 const unsigned char *tlsseq)
+                 const unsigned char *tlsseq, int mode)
 {
     uint64_t gh_c1 = 0x00000000FFFFFFFF, gh_c2 = 0x0000F8FFFFFFFFFF,
         gh_c3 = 0xC0FFFFFFFFFFFFFF;
@@ -272,6 +272,37 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
         c1 = gh_c1;
         c2 = gh_c2;
         c3 = gh_c3;
+        break;
+    case NID_magma_mgm:
+        switch (mode) {
+        case TLSTREE_MODE_S:    // TLS_GOSTR341112_256_WITH_MAGMA_MGM_S
+            c1 = 0x000000fcffffffff;
+            c2 = 0x00e0ffffffffffff;
+            c3 = 0xffffffffffffffff;
+            break;
+        case TLSTREE_MODE_L:    // TLS_GOSTR341112_256_WITH_MAGMA_MGM_L
+            c1 = 0x000000000000e0ff;
+            c2 = 0x000000c0ffffffff;
+            c3 = 0x80ffffffffffffff;
+            break;
+        default:
+            return 0;
+        }
+        break;
+    case NID_kuznyechik_mgm: 
+        switch (mode) {
+        case TLSTREE_MODE_S:    // TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S
+            c1 = 0x000000e0ffffffff;
+            c2 = 0x0000ffffffffffff;
+            c3 = 0xf8ffffffffffffff;
+            break;
+        case TLSTREE_MODE_L:    // TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L
+            c1 = 0x00000000000000f8;
+            c2 = 0x00000000f0ffffff;
+            c3 = 0x00e0ffffffffffff;
+        default:
+            return 0;
+        }
         break;
     default:
         return 0;

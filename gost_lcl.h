@@ -66,6 +66,9 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
 # define EVP_PKEY_CTRL_GOST_MAC_HEXKEY (EVP_PKEY_ALG_CTRL+3)
 # define EVP_PKEY_CTRL_MAC_LEN (EVP_PKEY_ALG_CTRL+5)
 # define EVP_PKEY_CTRL_SET_VKO (EVP_PKEY_ALG_CTRL+11)
+# define TLSTREE_MODE_NONE                                  0
+# define TLSTREE_MODE_S                                     1
+# define TLSTREE_MODE_L                                     2
 /* Pmeth internal representation */
 struct gost_pmeth_data {
     int sign_param_nid;         /* Should be set whenever parameters are
@@ -76,6 +79,7 @@ struct gost_pmeth_data {
     int peer_key_used;
     int cipher_nid;             /* KExp15/KImp15 algs */
     int vko_dgst_nid;
+    char derive_mode;
 };
 
 struct gost_mac_pmeth_data {
@@ -283,7 +287,7 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
                          const size_t representation);
 
 int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
-                 const unsigned char *tlsseq);
+                 const unsigned char *tlsseq, int mode);
 /* KExp/KImp */
 int gost_kexp15(const unsigned char *shared_key, const int shared_len,
                 int cipher_nid, const unsigned char *cipher_key,

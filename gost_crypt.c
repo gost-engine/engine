@@ -476,8 +476,10 @@ static int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
         }
     }
 
-    if (key)
+    if (key) {
         magma_key(&(c->cctx), key);
+        magma_master_key(&(c->cctx), key);
+    }
     if (iv) {
         memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx), iv,
                EVP_CIPHER_CTX_iv_length(ctx));
@@ -599,6 +601,7 @@ static int gost_magma_cipher_init_mgm(EVP_CIPHER_CTX *ctx, const unsigned char *
         if (!gost_cipher_set_param(&mctx->ks.g_ks, NID_id_tc26_gost_28147_param_Z))
             return 0;
         magma_key(&(mctx->ks.g_ks.cctx), key);
+        magma_master_key(&(mctx->ks.g_ks.cctx), key);
         gost_mgm128_init(&mctx->mgm, &mctx->ks, 
                          (block128_f) gost_magma_encrypt_wrap, gf64_mul, bl);
 
@@ -1069,6 +1072,7 @@ static int gost_magma_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void *ptr)
         mctx->ivlen = ivlen;
         mctx->iv = iv;
         mctx->taglen = -1;
+        mctx->tlstree_mode = TLSTREE_MODE_NONE;
         return 1;
     
     case EVP_CTRL_GET_IVLEN:
@@ -1106,6 +1110,30 @@ static int gost_magma_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void *ptr)
             return 0;
         }
         memcpy(ptr, buf, arg);
+        return 1;
+
+    case EVP_CTRL_SET_TLSTREE_PARAMS:
+        if (strcmp((char *)ptr, "short") == 0)
+            mctx->tlstree_mode = TLSTREE_MODE_S;
+        else if (strcmp((char *)ptr, "long") == 0)
+            mctx->tlstree_mode = TLSTREE_MODE_L;
+        else {
+            // TODO: set err
+            return 0;
+        }
+        return 1;
+
+    case EVP_CTRL_TLSTREE:
+        {
+            unsigned char newkey[32];
+            if (gost_tlstree(NID_magma_mgm, 
+                    (const unsigned char *)mctx->ks.g_ks.cctx.master_key, 
+                    newkey, (const unsigned char *)ptr, mctx->tlstree_mode) 
+                  > 0) {
+                magma_key(&mctx->ks.g_ks.cctx, newkey);
+                memset(newkey, 0, sizeof(newkey));
+            }
+        }
         return 1;
 
     default:
