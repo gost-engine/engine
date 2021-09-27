@@ -531,6 +531,12 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
         *(int *)arg2 = md_nid;
         return 2;
+
+    case ASN1_PKEY_CTRL_SET1_TLS_ENCPT:
+        return gost_ec_oct2key((EC_KEY *)EVP_PKEY_get0(pkey), arg2, arg1);
+
+    case ASN1_PKEY_CTRL_GET1_TLS_ENCPT:
+        return gost_ec_key2buf((EC_KEY *)EVP_PKEY_get0(pkey), arg2);
     }
 
     return -2;
