@@ -613,3 +613,174 @@ int gost_ec_keygen(EC_KEY *ec)
 
     return (ok) ? gost_ec_compute_public(ec) : 0;
 }
+
+int gost_ec_oct2point(const EC_GROUP *group, EC_POINT *point,
+                      const unsigned char *buf, size_t len)
+{
+    BN_CTX *ctx = NULL;
+    BIGNUM *x, *y, *p;
+    size_t field_len, enc_len;
+    int ret = 0;
+    
+    if (len == 0) {
+        GOSTerr(GOST_F_GOST_EC_OCT2POINT, EC_R_BUFFER_TOO_SMALL);
+        return 0;
+    }
+
+    field_len = (EC_GROUP_get_degree(group) + 7) / 8;
+    enc_len = 2 * field_len;
+
+    if (len != enc_len) {
+        GOSTerr(GOST_F_GOST_EC_OCT2POINT, EC_R_INVALID_ENCODING);
+        return 0;
+    }
+
+    ctx = BN_CTX_new();
+    if (ctx == NULL)
+        return 0;
+
+    BN_CTX_start(ctx);
+    x = BN_CTX_get(ctx);
+    y = BN_CTX_get(ctx);
+    p = BN_CTX_get(ctx);
+    if (y == NULL)
+        goto err;
+
+    if (!EC_GROUP_get_curve(group, p, NULL, NULL, NULL))
+        goto err;
+
+    if (!BN_lebin2bn(buf, field_len, x))
+        goto err;
+    if (BN_ucmp(x, p) >= 0) {
+        GOSTerr(GOST_F_GOST_EC_OCT2POINT, EC_R_INVALID_ENCODING);
+        goto err;
+    }
+
+    if (!BN_lebin2bn(buf + field_len, field_len, y))
+        goto err;
+    if (BN_ucmp(y, p) >= 0) {
+        GOSTerr(GOST_F_GOST_EC_OCT2POINT, EC_R_INVALID_ENCODING);
+        goto err;
+    }
+
+    /*
+    * EC_POINT_set_affine_coordinates is responsible for checking that
+    * the point is on the curve.
+    */
+    if (!EC_POINT_set_affine_coordinates(group, point, x, y, ctx))
+        goto err;
+
+    ret = 1;
+
+ err:
+    BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
+    return ret;
+}
+
+
+size_t gost_ec_point2oct(const EC_GROUP *group, const EC_POINT *point,
+                         unsigned char *buf, size_t len)
+{
+    size_t ret;
+    BN_CTX *ctx = NULL;
+    int used_ctx = 0;
+    BIGNUM *x, *y;
+    size_t field_len;
+
+    field_len = (EC_GROUP_get_degree(group) + 7) / 8;
+    ret = 2 * field_len;
+
+    if (buf != NULL) {
+        if (len < ret) {
+            GOSTerr(GOST_F_GOST_EC_POINT2OCT, EC_R_BUFFER_TOO_SMALL);
+            goto err;
+        }
+
+        ctx = BN_CTX_new();
+        if (ctx == NULL)
+            return 0;
+
+        BN_CTX_start(ctx);
+        used_ctx = 1;
+        x = BN_CTX_get(ctx);
+        y = BN_CTX_get(ctx);
+        if (y == NULL)
+            goto err;
+
+        if (!EC_POINT_get_affine_coordinates(group, point, x, y, ctx))
+            goto err;
+
+        if (BN_bn2lebinpad(x, buf, field_len) != field_len
+            || BN_bn2lebinpad(y, buf + field_len, field_len) != field_len)
+        goto err;
+    }
+
+    if (used_ctx)
+        BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
+    return ret;
+    
+  err:
+    if (used_ctx)
+        BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
+    return 0;
+}
+
+size_t gost_ec_key2buf(const EC_KEY *key, unsigned char **pbuf)
+{
+    size_t len;
+    unsigned char *buf;
+    const EC_GROUP *grp = NULL;
+    const EC_POINT *pkey = NULL;
+    
+    pkey = EC_KEY_get0_public_key(key);
+    grp = EC_KEY_get0_group(key);
+
+    if(pkey == NULL || grp == NULL)
+        return 0;
+
+    len = gost_ec_point2oct(grp, pkey, NULL, 0);
+    if (len == 0)
+        return 0;
+    if ((buf = OPENSSL_malloc(len)) == NULL) {
+        GOSTerr(GOST_F_GOST_EC_KEY2BUF, ERR_R_MALLOC_FAILURE); 
+        return 0;
+    }
+    len = gost_ec_point2oct(grp, pkey, buf, len);
+    if (len == 0) {
+        OPENSSL_free(buf);
+        return 0;
+    }
+    *pbuf = buf;
+    return len;
+}
+
+int gost_ec_oct2key(EC_KEY *key, const unsigned char *buf, size_t len)
+{
+    const EC_GROUP *group = NULL;
+    const EC_POINT *pub_key = NULL;
+    EC_POINT *point = NULL;
+    int ok = 0;
+    
+    if (key == NULL || (group = EC_KEY_get0_group(key)) == NULL)
+        return 0;
+
+    if ((pub_key = EC_KEY_get0_public_key(key)) == NULL) {
+        if((point = EC_POINT_new(group)) == NULL ||
+           !EC_KEY_set_public_key(key, point))
+           goto err;
+        pub_key = EC_KEY_get0_public_key(key);
+    }
+        
+    if (gost_ec_oct2point(group, (EC_POINT *)pub_key, buf, len) == 0)
+        goto err;
+
+    ok = 1;
+
+ err:
+    if (point)
+        EC_POINT_free(point);
+    return ok;
+}

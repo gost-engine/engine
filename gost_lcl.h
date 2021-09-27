@@ -252,6 +252,8 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
 int gost_ec_compute_public(EC_KEY *ec);
 int gost_ec_point_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n,
                       const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);
+size_t gost_ec_key2buf(const EC_KEY *key, unsigned char **pbuf);
+int gost_ec_oct2key(EC_KEY *key, const unsigned char *buf, size_t len);
 
 #define CURVEDEF(a) \
 int point_mul_##a(const EC_GROUP *group, EC_POINT *r, const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);\

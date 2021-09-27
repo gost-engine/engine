@@ -42,7 +42,10 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_CMS_SET_KTRI_SHARED_INFO             157
 # define GOST_F_GOST_CMS_SET_SHARED_INFO                  155
 # define GOST_F_GOST_EC_COMPUTE_PUBLIC                    107
+# define GOST_F_GOST_EC_KEY2BUF                           174
 # define GOST_F_GOST_EC_KEYGEN                            108
+# define GOST_F_GOST_EC_OCT2POINT                         175
+# define GOST_F_GOST_EC_POINT2OCT                         176
 # define GOST_F_GOST_EC_SIGN                              109
 # define GOST_F_GOST_EC_VERIFY                            110
 # define GOST_F_GOST_ENCODE_CMS_PARAMS                    161
@@ -84,6 +87,8 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_PKEY_GOST_DECRYPT                         153
 # define GOST_F_PKEY_GOST_ECCP_DECRYPT                    123
 # define GOST_F_PKEY_GOST_ECCP_ENCRYPT                    124
+# define GOST_F_PKEY_GOST_EC_2020_DERIVE                  177
+# define GOST_F_PKEY_GOST_EC_COMPUTE_KEY                  178
 # define GOST_F_PKEY_GOST_EC_CTRL_STR_256                 125
 # define GOST_F_PKEY_GOST_EC_CTRL_STR_512                 126
 # define GOST_F_PKEY_GOST_EC_CTRL_STR_COMMON              154
