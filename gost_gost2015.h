@@ -54,6 +54,7 @@ typedef struct {
     unsigned char *iv;
     int ivlen;
     int taglen;
+    int tlstree_mode;
 } gost_mgm_ctx;
 
 int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx, size_t mac_size,

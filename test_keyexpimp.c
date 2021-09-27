@@ -161,7 +161,7 @@ int main(void)
         }
     }
 
-    ret = gost_tlstree(NID_grasshopper_cbc, kroot, out, tlsseq);
+    ret = gost_tlstree(NID_grasshopper_cbc, kroot, out, tlsseq, TLSTREE_MODE_NONE);
     if (ret <= 0) {
         ERR_print_errors_fp(stderr);
         err = 7;

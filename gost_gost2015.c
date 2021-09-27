@@ -227,6 +227,8 @@ int gost_mgm128_setiv(mgm128_context *ctx, const unsigned char *iv,
 
     ctx->ACi.u[0] = 0;
     ctx->ACi.u[1] = 0;
+    ctx->sum.u[0] = 0;
+    ctx->sum.u[1] = 0;
 
     memcpy(ctx->nonce.c, iv, ctx->blocklen);
     ctx->nonce.c[0] &= 0x7f;    /* IV - random vector, but 1st bit should be 0 */
@@ -315,6 +317,10 @@ int gost_mgm128_encrypt(mgm128_context *ctx, const unsigned char *in,
     int bl = ctx->blocklen;
 
     if (mlen == 0) {
+        if (alen == 0) {
+            ctx->nonce.c[0] |= 0x80;
+            (*block) (ctx->nonce.c, ctx->Zi.c, key);    // Z_1 = E_K(1 || nonce)
+        }
         ctx->nonce.c[0] &= 0x7f;
         (*block) (ctx->nonce.c, ctx->Yi.c, key);    // Y_1 = E_K(0 || nonce)
     }
@@ -345,7 +351,7 @@ int gost_mgm128_encrypt(mgm128_context *ctx, const unsigned char *in,
     }
 
     n = mres % bl;
-    // TODO: full blocks
+    // TODO: replace with full blocks processing
     for (i = 0; i < len; ++i) {
         if (n == 0) {
             (*block) (ctx->Yi.c, ctx->EKi.c, key);          // E_K(Y_i)
@@ -408,7 +414,7 @@ int gost_mgm128_decrypt(mgm128_context *ctx, const unsigned char *in,
     }
 
     n = mres % bl;
-    // TODO: full blocks
+    // TODO: replace with full blocks processing
     for (i = 0; i < len; ++i) {
         uint8_t c;
         if (n == 0) {
