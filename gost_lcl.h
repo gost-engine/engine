@@ -36,10 +36,13 @@ typedef struct R3410_ec {
     char *x;
     char *y;
     char *cofactor;
+    EC_GROUP *group;
 } R3410_ec_params;
 
 extern R3410_ec_params R3410_2001_paramset[],
     *R3410_2012_256_paramset, R3410_2012_512_paramset[];
+
+void free_cached_groups(void);
 
 extern const ENGINE_CMD_DEFN gost_cmds[];
 int gost_control_func(ENGINE *e, int cmd, long i, void *p, void (*f) (void));

@@ -58,6 +58,27 @@ static R3410_ec_params *gost_nid2params(int nid)
     return NULL;
 }
 
+void free_cached_groups()
+{
+    R3410_ec_params *params;
+
+    /* Search nid in 2012 paramset */
+    params = R3410_2012_512_paramset;
+    while (params->nid != NID_undef) {
+	EC_GROUP_free(params->group);
+	params->group = NULL;
+        params++;
+    }
+
+    /* Search nid in 2001 paramset */
+    params = R3410_2001_paramset;
+    while (params->nid != NID_undef) {
+	EC_GROUP_free(params->group);
+	params->group = NULL;
+        params++;
+    }
+}
+
 /*
  * Fills EC_KEY structure hidden in the app_data field of DSA structure
  * with parameter information, extracted from parameter array in
@@ -79,6 +100,15 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
     if (!eckey || !params) {
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, GOST_R_UNSUPPORTED_PARAMETER_SET);
         return 0;
+    }
+
+    if (params->group) {
+        EC_GROUP_set_curve_name(params->group, nid);
+        if (!EC_KEY_set_group(eckey, params->group)) {
+            GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_INTERNAL_ERROR);
+            goto end;
+        }
+        return 1;
     }
 
     if (!(ctx = BN_CTX_new())) {
@@ -132,6 +162,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
         goto end;
     }
     EC_GROUP_set_curve_name(grp, nid);
+    params->group = grp;
     if (!EC_KEY_set_group(eckey, grp)) {
         GOSTerr(GOST_F_FILL_GOST_EC_PARAMS, ERR_R_INTERNAL_ERROR);
         goto end;
@@ -140,8 +171,10 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
  end:
     if (P)
         EC_POINT_free(P);
+#if 0
     if (grp)
         EC_GROUP_free(grp);
+#endif
     BN_CTX_end(ctx);
     BN_CTX_free(ctx);
     return ok;
