@@ -310,6 +310,8 @@ static int gost_engine_destroy(ENGINE* e) {
         *minfo->ameth = NULL;
     }
 
+    free_cached_groups();
+
     ERR_unload_GOST_strings();
 
     return 1;
