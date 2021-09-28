@@ -94,7 +94,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
     EC_POINT *P = NULL;
     BIGNUM *p = NULL, *q = NULL, *a = NULL, *b = NULL, *x = NULL, *y =
         NULL, *cofactor = NULL;
-    BN_CTX *ctx;
+    BN_CTX *ctx = NULL;
     int ok = 0;
 
     if (!eckey || !params) {
@@ -169,12 +169,7 @@ int fill_GOST_EC_params(EC_KEY *eckey, int nid)
     }
     ok = 1;
  end:
-    if (P)
-        EC_POINT_free(P);
-#if 0
-    if (grp)
-        EC_GROUP_free(grp);
-#endif
+    EC_POINT_free(P);
     BN_CTX_end(ctx);
     BN_CTX_free(ctx);
     return ok;
