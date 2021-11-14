@@ -637,7 +637,7 @@ static int do_mac(int iter, EVP_MAC *mac, const char *plaintext,
 
     size_t acpkm = (size_t)t->acpkm;
     size_t acpkm_t = (size_t)t->acpkm_t;
-    OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END };
+    OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END };
     OSSL_PARAM *p = params;
     if (acpkm) {
         *p++ = OSSL_PARAM_construct_size_t("key-mesh", &acpkm);
@@ -650,8 +650,10 @@ static int do_mac(int iter, EVP_MAC *mac, const char *plaintext,
     if (t->outsize)
         T(EVP_MAC_CTX_get_mac_size(ctx) == t->outsize);
     size_t outsize;
-    if (t->truncate)
+    if (t->truncate) {
         outsize = t->truncate;
+	*p++ = OSSL_PARAM_construct_size_t("size", &outsize);
+    }
     else
         outsize = EVP_MAC_CTX_get_mac_size(ctx);
 
