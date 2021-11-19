@@ -1,0 +1,225 @@
+#!/usr/bin/tclsh
+# -*- coding: cp1251 -*-
+lappend auto_path [file dirname [info script]]
+package require ossltest
+
+array set protos {
+	TLSv1.3 -tls1_3
+}
+
+array set groups {
+GC256A gost2012_256
+GC512A gost2012_512
+}
+
+cd $::test::dir
+
+start_tests "TLS 1.3 tests"
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"open" {set alg_list {gost2012_256:XA gost2012_256:TCA gost2012_512:A gost2012_512:C}}
+		"other" {set alg_list {rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A}}
+	}
+}
+
+array set suites {
+gost2012_256:XA {TLS_GOSTR341112_256_WITH_MAGMA_MGM_L TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L TLS_GOSTR341112_256_WITH_MAGMA_MGM_S TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S}
+gost2012_256:TCA {TLS_GOSTR341112_256_WITH_MAGMA_MGM_L TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L TLS_GOSTR341112_256_WITH_MAGMA_MGM_S TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S}
+gost2012_512:A {TLS_GOSTR341112_256_WITH_MAGMA_MGM_L TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L TLS_GOSTR341112_256_WITH_MAGMA_MGM_S TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S}
+gost2012_512:C {TLS_GOSTR341112_256_WITH_MAGMA_MGM_L TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L TLS_GOSTR341112_256_WITH_MAGMA_MGM_S TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S}
+}
+
+set proto_list {"TLSv1.3"}
+set expected_proto "TLSv1.3"
+
+if {![file exists sslCA/cacert.pem]} {
+	makeCA sslCA gost2012_256:A
+} else {
+	set ::test::ca sslCA
+}
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+
+	test -skip {[file exist localhost_$alg_fn/cert.pem]} \
+		"Создаем серверный сертификат $alg" {
+		makeRegisteredUser localhost_$alg_fn $alg CN localhost OU $alg_fn
+	} 0 1
+
+	test -skip {[file exists ssl_user_$alg_fn/cert.pem]} \
+		"Создаем клиентский сертификат $alg" {
+		makeRegisteredUser ssl_user_$alg_fn $alg CN ssl_user OU $alg_fn
+	} 0 1
+}
+
+foreach alg {gost2012_256:B gost2012_512:B} {
+	set alg_fn [string map {":" "_"} $alg]
+	test -skip {[file exists ssl_user_$alg_fn/cert.pem]} \
+		"Создаем клиентский сертификат $alg" {
+		makeRegisteredUser ssl_user_$alg_fn $alg CN ssl_user OU $alg_fn
+	} 0 1
+}
+
+
+foreach proto $proto_list {
+ foreach group [array names groups] {
+	foreach alg $alg_list {
+		set alg_fn [string map {":" "_"} $alg]
+
+		foreach suite $suites($alg) {
+			set raw_name [lindex [split $suite @] 0]
+
+			test "Handshake $group $suite $proto" {
+				set list [client_server [list -connect localhost:4433 \
+					-CAfile $::test::ca/cacert.pem -verify_return_error \
+					-verify 1 -state -ciphersuites $suite -curves $group] \
+					[list -www -cert localhost_$alg_fn/cert.pem \
+					-key localhost_$alg_fn/seckey.pem \
+					-ciphersuites $suite $protos($proto)] {}]
+				if {[regexp -lineanchor \
+				{^Server Temp Key: (\S+),.*^\s*New,\s+(\S+),\s+Cipher\s+is\s+(\S+)\s*$} \
+				[lindex $list 0] -> group_name result_proto result_cipher]} {
+					list [lindex $list 2] $group_name $result_proto $result_cipher
+				} else {
+					lindex $list 1
+				}
+			} 0 [list 0 $groups($group) $proto $raw_name]
+
+
+#			test "Несовпадающий шиферсьют DHE-RSA-AES256-SHA $proto" {
+#				set list [client_server [list -connect localhost:4433 \
+#					-CAfile $::test::ca/cacert.pem -verify_return_error \
+#					-verify 1 -state -ciphersuites $suite] \
+#					[list -www -cert localhost_$alg_fn/cert.pem \
+#					-key localhost_$alg_fn/seckey.pem \
+#					-ciphersuites DHE-RSA-AES256-SHA $protos($proto)] {}]
+#				list [lindex $list 2] [grep ":fatal:" [lindex $list 1]]
+#			} 0 [list 1 "SSL3 alert read:fatal:handshake failure
+#"]
+#
+			test "Get page $group $suite $proto" {
+				set list [client_server [list -connect localhost:4433 \
+					-CAfile $::test::ca/cacert.pem -verify_return_error \
+					-verify 1 -state -ciphersuites $suite -ign_eof -curves $group] \
+					[list -www -cert localhost_$alg_fn/cert.pem \
+					-key localhost_$alg_fn/seckey.pem -ciphersuites $suite \
+					$protos($proto)] "GET /\n\n"]
+				grep "^New," [lindex $list 0]
+			} 0 "New, $expected_proto, Cipher is $raw_name\nNew, $expected_proto, Cipher is $raw_name\n"
+
+				test "Multi-ciphersuites server $proto, $group client" {
+					set list [client_server [list -connect localhost:4433 \
+						-CAfile $::test::ca/cacert.pem -verify_return_error \
+						-verify 1 -state -ciphersuites $suite -curves $group] \
+						[list -www -cert localhost_$alg_fn/cert.pem \
+						-key localhost_$alg_fn/seckey.pem -ciphersuites $suite:TLS_AES_256_GCM_SHA384] {}]
+					if {[regexp -lineanchor \
+				  {^Server Temp Key: (\S+),.*^\s*New,\s+(\S+),\s+Cipher\s+is\s+(\S+)\s*$} \
+					[lindex $list 0] -> group_name result_proto result_cipher]} {
+						list [lindex $list 2] $group_name $result_proto $result_cipher
+					} else {
+						lindex $list 1
+					}
+				} 0 [list 0 $groups($group) $proto $suite]
+
+
+#				test "Сервер c несколькими алгоритмами, клиент $suite $proto" {
+#					set list [client_server [list -connect localhost:4433 \
+#						-CAfile $::test::ca/cacert.pem -verify_return_error \
+#						-verify 1 -state -ciphersuites $suite] \
+#						[list -www
+#						-dcert localhost_$alg_fn/cert.pem \
+#						-dkey localhost_$alg_fn/seckey.pem $protos($proto)] {}]
+#					if {[regexp -lineanchor \
+#					{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
+#					[lindex $list 0] -> result_proto result_cipher]} {
+#						list [lindex $list 2] $result_proto $result_cipher
+#					} else {
+#						lindex $list 1
+#					}
+#				} 0 [list 0 $proto $suite]
+
+#			test "Сервер c несколькими алгоритмами, клиент AES256-SHA $proto" {
+#				set list [client_server [list -connect localhost:4433 \
+#					-CAfile $::test::ca/cacert.pem -verify_return_error \
+#					-verify 1 -state -ciphersuites AES256-SHA] \
+#					[list -www -cert localhost_rsa/cert.pem \
+#					-key localhost_rsa/seckey.pem \
+#					-dcert localhost_$alg_fn/cert.pem \
+#					-dkey localhost_$alg_fn/seckey.pem $protos($proto)] {}]
+#				if {[regexp -lineanchor \
+#				{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
+#				[lindex $list 0] -> result_proto result_cipher]} {
+#					list [lindex $list 2] $result_proto $result_cipher
+#				} else {
+#					lindex $list 1
+#				}
+#			} 0 [list 0 $proto AES256-SHA]
+
+
+
+			if {[string match *gost* $alg]} {
+				set alg_cli_list [list $alg gost2012_256:B gost2012_512:B]
+			} else {
+				set alg_cli_list $alg
+			}
+
+			foreach alg_cli $alg_cli_list {
+				set alg_cli_fn [string map {":" "_"} $alg_cli]
+
+				test "Server $alg, client certificate $alg_cli $proto $group" {
+					set list [client_server [list -connect localhost:4433\
+						-CAfile $::test::ca/cacert.pem -verify_return_error \
+						-verify 1 -state -cert ssl_user_$alg_cli_fn/cert.pem \
+						-key ssl_user_$alg_cli_fn/seckey.pem -ciphersuites $suite \
+						-ign_eof -curves $group]\
+						[list -cert localhost_$alg_fn/cert.pem \
+						-key localhost_$alg_fn/seckey.pem -verify_return_error\
+						-Verify 3 -www -CAfile $::test::ca/cacert.pem \
+						-ciphersuites $suite $protos($proto)] "GET /\n"]
+					list [lindex $list 2] [grep "^New," [lindex $list 0]]
+				} 0 [list 0 [string repeat "New, $expected_proto, Cipher is $raw_name\n" 2]]
+
+			}
+
+		}
+
+		#set etalon $defsuite($alg)
+#		set etalon "TLS_GOSTR341112_256_WITH_MAGMA_MGM_L"
+
+#Эти тесты закомментированы, так как нет связки между ключами и шифронаборами для TLS 1.3
+#		test "Умолчательный хендшейк с ключами $alg $proto" {
+#			set list [client_server [list -connect localhost:4433\
+#				-CAfile $::test::ca/cacert.pem -verify_return_error -verify 1\
+#				-state -ign_eof]\
+#				[list -www -cert localhost_$alg_fn/cert.pem\
+#				-key localhost_$alg_fn/seckey.pem $protos($proto)] "GET /\n"]
+#			if {[regexp -lineanchor \
+#		  {^\s*New,\s+(\S+),\s+Cipher\s+is\s+(\S+)\s*$} \
+#			[lindex $list 0] -> result_proto result_cipher]} {
+#				list [lindex $list 2] $result_proto $result_cipher
+#			} else {
+#				lindex $list 1
+#			}
+#		} 0 [list 0 $proto $etalon]
+#
+#		test "Умолчательный хендшейк с клиентской аутентификацией $alg $proto" {
+#			set list [client_server [list -connect localhost:4433\
+#				-CAfile $::test::ca/cacert.pem -verify_return_error \
+#				-verify 1 -state -cert ssl_user_$alg_fn/cert.pem \
+#				-key ssl_user_$alg_fn/seckey.pem -ign_eof]\
+#				[list -cert localhost_$alg_fn/cert.pem \
+#				-key localhost_$alg_fn/seckey.pem -verify_return_error\
+#				-Verify 3 -www -CAfile $::test::ca/cacert.pem $protos($proto)] \
+#				"GET /\n"]
+#			list [lindex $list 2] [grep "^New," [lindex $list 0]]
+#		} 0 [list 0 [string repeat "New, $expected_proto, Cipher is $etalon\n" 2]]
+
+	}
+ }
+}
+
+end_tests
