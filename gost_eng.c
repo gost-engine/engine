@@ -333,27 +333,27 @@ int populate_gost_engine(ENGINE* e) {
     if (e == NULL)
         goto end;
     if (!ENGINE_set_id(e, engine_gost_id)) {
-        printf("ENGINE_set_id failed\n");
+        fprintf(stderr, "ENGINE_set_id failed\n");
         goto end;
     }
     if (!ENGINE_set_name(e, engine_gost_name)) {
-        printf("ENGINE_set_name failed\n");
+        fprintf(stderr, "ENGINE_set_name failed\n");
         goto end;
     }
     if (!ENGINE_set_digests(e, gost_digests)) {
-        printf("ENGINE_set_digests failed\n");
+        fprintf(stderr, "ENGINE_set_digests failed\n");
         goto end;
     }
     if (!ENGINE_set_ciphers(e, gost_ciphers)) {
-        printf("ENGINE_set_ciphers failed\n");
+        fprintf(stderr, "ENGINE_set_ciphers failed\n");
         goto end;
     }
     if (!ENGINE_set_pkey_meths(e, gost_pkey_meths)) {
-        printf("ENGINE_set_pkey_meths failed\n");
+        fprintf(stderr, "ENGINE_set_pkey_meths failed\n");
         goto end;
     }
     if (!ENGINE_set_pkey_asn1_meths(e, gost_pkey_asn1_meths)) {
-        printf("ENGINE_set_pkey_asn1_meths failed\n");
+        fprintf(stderr, "ENGINE_set_pkey_asn1_meths failed\n");
         goto end;
     }
     /* Control function and commands */
