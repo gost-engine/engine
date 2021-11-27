@@ -11,8 +11,7 @@ FreeBSD_task:
   script:
     - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
     - cd openssl
-    - patch -p0 < ../patches/openssl_111g.diff
-    - patch -p0 < ../patches/openssl_111g_obj.diff
+    - patch -p0 < ../patches/010-gost-engine-ossl_patched.patch
     - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib && make all install_sw > build.log 2>&1 || (cat build.log && exit 1)
     - cd ..
     - mkdir build
