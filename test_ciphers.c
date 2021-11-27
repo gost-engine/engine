@@ -11,6 +11,9 @@
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <string.h>
+#if MIPSEL
+# include <sys/sysmips.h>
+#endif
 
 #define T(e) ({ \
     if (!(e)) {\
@@ -33,7 +36,7 @@
 		 printf(cGREEN "Test passed\n" cNORM);}
 
 /* Pragma to allow commenting out some tests. */
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
+/*#pragma GCC diagnostic ignored "-Wunused-const-variable"*/
 
 /*
  * Test keys from both GOST R 34.12-2015 and GOST R 34.13-2015,
@@ -461,7 +464,7 @@ int main(int argc, char **argv)
 
 #if MIPSEL
     /* Trigger SIGBUS for unaligned access. */
-    sysmips(MIPS_FIXADE, 0);
+    sysmips(MIPS_FIXADE, 0, 0, 0);
 #endif
     setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();

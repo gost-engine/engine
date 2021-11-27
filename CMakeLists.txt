@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(gost-engine LANGUAGES C)
 
 include(GNUInstallDirs)
@@ -12,9 +12,9 @@ find_package(OpenSSL 1.1.1 REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
- add_compile_options(-O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb -Qunused-arguments -Wno-deprecated-declarations)
+ add_compile_options(-O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb -Qunused-arguments)
 elseif(CMAKE_C_COMPILER_ID MATCHES "GNU")
- add_compile_options(-O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb -Wno-error=unknown-pragmas -Wno-deprecated-declarations)
+ add_compile_options(-O2 -Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -ggdb -Wno-error=unknown-pragmas)
 elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
  add_definitions(-D_CRT_DEPRECATED_NO_WARNINGS)
@@ -49,34 +49,38 @@ else()
  add_definitions(-DL_ENDIAN)
 endif()
 
-check_c_source_runs("
-  #ifdef _MSC_VER
-  # include <intrin.h>
-  #else
-  # include <x86intrin.h>
-  #endif
-  int main(void) {
-    unsigned long long x = -1, y = 1, r;
-    unsigned char cf;
-    cf = _addcarry_u64(1, x, y, &r);
-    return !(cf == 1 && r == 1);
-  }
-  " ADDCARRY_U64)
-if (ADDCARRY_U64)
-  add_definitions(-DHAVE_ADDCARRY_U64)
-endif()
+if (NOT CMAKE_CROSSCOMPILING)
+  check_c_source_runs("
+    #ifdef _MSC_VER
+    # include <intrin.h>
+    #else
+    # include <x86intrin.h>
+    #endif
+    int main(void) {
+      unsigned long long x = -1, y = 1, r;
+      unsigned char cf;
+      cf = _addcarry_u64(1, x, y, &r);
+      return !(cf == 1 && r == 1);
+    }
+    " ADDCARRY_U64)
+  if (ADDCARRY_U64)
+    add_definitions(-DHAVE_ADDCARRY_U64)
+  endif()
+endif(NOT CMAKE_CROSSCOMPILING)
 
-check_c_source_runs("
-  int main(void) {
-    char buf[16] = { 0, 1, 2 };
-    int *p = buf + 1;
-    int *q = buf + 2;
-    return (*p == *q);
-  }
-  " RELAXED_ALIGNMENT)
-if (NOT RELAXED_ALIGNMENT)
-  add_definitions(-DSTRICT_ALIGNMENT)
-endif()
+if (NOT CMAKE_CROSSCOMPILING)
+  check_c_source_runs("
+    int main(void) {
+      char buf[16] = { 0, 1, 2 };
+      int *p = (int *)(buf + 1);
+      int *q = (int *)(buf + 2);
+      return (*p == *q);
+    }
+    " RELAXED_ALIGNMENT)
+  if (NOT RELAXED_ALIGNMENT)
+    add_definitions(-DSTRICT_ALIGNMENT)
+  endif()
+endif(NOT CMAKE_CROSSCOMPILING)
 
 set(BIN_DIRECTORY bin)
 
@@ -138,11 +142,8 @@ set(GOST_CORE_SOURCE_FILES
         gost_crypt.c
         gost_ctl.c
         gost_eng.c
-        gost_keywrap.c
-        gost_keywrap.h
         gost_lcl.h
         gost_params.c
-        gost_keyexpimp.c
         )
 
 set(GOST_EC_SOURCE_FILES
@@ -170,6 +171,9 @@ set(GOST_LIB_SOURCE_FILES
         ${GOST_GRASSHOPPER_SOURCE_FILES}
         ${GOST_EC_SOURCE_FILES}
         ${GOST_OMAC_SOURCE_FILES}
+        gost_keyexpimp.c
+        gost_keywrap.c
+        gost_keywrap.h
         )
 
 set(GOST_ENGINE_SOURCE_FILES
@@ -178,64 +182,62 @@ set(GOST_ENGINE_SOURCE_FILES
         gost_md.c
         gost_md2012.c
         gost_pmeth.c
-        gost_omac.c
-        gost_omac_acpkm.c
         gost_gost2015.c
         )
 
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_digest OpenSSL::Crypto)
 add_test(NAME digest
 	COMMAND test_digest)
 
 add_executable(test_ciphers test_ciphers.c)
-target_link_libraries(test_ciphers gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_ciphers OpenSSL::Crypto)
 add_test(NAME ciphers
 	COMMAND test_ciphers)
 
 add_executable(test_curves test_curves.c)
-target_link_libraries(test_curves gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_curves gost_engine OpenSSL::Crypto)
 add_test(NAME curves
 	COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_params OpenSSL::Crypto)
 add_test(NAME parameters
 	COMMAND test_params)
 
 add_executable(test_derive test_derive.c)
-target_link_libraries(test_derive gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_derive OpenSSL::Crypto)
 add_test(NAME derive
 	COMMAND test_derive)
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_sign OpenSSL::Crypto)
 add_test(NAME sign/verify
 	COMMAND test_sign)
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+target_link_libraries(test_tls OpenSSL::SSL)
 add_test(NAME TLS
 	COMMAND test_tls)
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_context gost_engine OpenSSL::Crypto)
 add_test(NAME context
 	COMMAND test_context)
 
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_keyexpimp gost_engine OpenSSL::Crypto)
 add_test(NAME keyexpimp
 	COMMAND test_keyexpimp)
 
 add_executable(test_gost89 test_gost89.c)
-target_link_libraries(test_gost89 gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_gost89 gost_core)
 add_test(NAME gost89
 	COMMAND test_gost89)
 
 add_executable(test_mgm test_mgm.c)
-target_link_libraries(test_mgm gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_mgm gost_engine OpenSSL::Crypto)
 add_test(NAME mgm
         COMMAND test_mgm)
 
@@ -254,7 +256,7 @@ if(NOT SKIP_PERL_TESTS)
 endif()
 
 add_executable(sign benchmark/sign.c)
-target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
+target_link_libraries(sign gost_core ${CLOCK_GETTIME_LIB})
 
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
@@ -274,18 +276,23 @@ set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS 
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(gost_core PRIVATE OpenSSL::Crypto)
 
 add_library(gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
 set_target_properties(gost_engine PROPERTIES VERSION ${GOST_SOVERSION} SOVERSION ${GOST_SOVERSION})
-target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(gost_engine PRIVATE gost_core)
+
+add_library(gost_engine_static STATIC ${GOST_ENGINE_SOURCE_FILES})
+set_target_properties(gost_engine_static PROPERTIES PREFIX "lib" PUBLIC_HEADER gost-engine.h OUTPUT_NAME "gost")
+target_link_libraries(gost_engine_static PRIVATE gost_core)
 
 set(GOST_SUM_SOURCE_FILES
         gostsum.c
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
-target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(gostsum gost_core)
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
@@ -304,16 +311,18 @@ add_custom_target(tcl_tests
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
 
 add_executable(test_tlstree test_tlstree.c)
-target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_tlstree PUBLIC OpenSSL::Crypto)
 
 # install
-set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
-
-install(TARGETS gost_engine gostsum gost12sum EXPORT GostEngineConfig
-        LIBRARY  DESTINATION ${OPENSSL_ENGINES_DIR}
-        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES gostsum.1 gost12sum.1 DESTINATION ${OPENSSL_MAN_INSTALL_DIR})
-if (MSVC)
- install(FILES $<TARGET_PDB_FILE:gost_engine> DESTINATION ${OPENSSL_ENGINES_DIR} OPTIONAL)
- install(FILES $<TARGET_PDB_FILE:gostsum> $<TARGET_PDB_FILE:gost12sum> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+if (NOT CMAKE_SKIP_INSTALL_RULES)
+  set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
+  
+  install(TARGETS gost_engine gostsum gost12sum EXPORT GostEngineConfig
+          LIBRARY  DESTINATION ${OPENSSL_ENGINES_DIR}
+          RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(FILES gostsum.1 gost12sum.1 DESTINATION ${OPENSSL_MAN_INSTALL_DIR})
+  if (MSVC)
+   install(FILES $<TARGET_PDB_FILE:gost_engine> DESTINATION ${OPENSSL_ENGINES_DIR} OPTIONAL)
+   install(FILES $<TARGET_PDB_FILE:gostsum> $<TARGET_PDB_FILE:gost12sum> DESTINATION   ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+  endif()
 endif()
