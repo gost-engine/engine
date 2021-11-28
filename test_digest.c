@@ -823,7 +823,7 @@ int main(int argc, char **argv)
 
 #if MIPSEL
     /* Trigger SIGBUS for unaligned access. */
-    sysmips(MIPS_FIXADE, 0);
+    sysmips(MIPS_FIXADE, 0, 0, 0);
 #endif
     setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();
