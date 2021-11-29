@@ -8,11 +8,8 @@
  *
  */
 
-#ifdef __GOST3411_HAS_SSE2__
-# error "GOST R 34.11-2012: portable implementation disabled in config.h"
-#endif
-
-# pragma message "Use regular implementation"
+#include "gosthash2012.h"
+#ifdef __GOST3411_HAS_REF__
 
 #define X(x, y, z) { \
     z->QWORD[0] = x->QWORD[0] ^ y->QWORD[0]; \
@@ -70,3 +67,27 @@
     XLPS(Ki, (&C[i]), Ki); \
     XLPS(Ki, data, data); \
 }
+
+void g_ref(union uint512_u *h, const union uint512_u * RESTRICT N,
+              const union uint512_u * RESTRICT m)
+{
+    union uint512_u Ki, data;
+    unsigned int i;
+
+    XLPS(h, N, (&data));
+
+    /* Starting E() */
+    Ki = data;
+    XLPS((&Ki), ((const union uint512_u *)&m[0]), (&data));
+
+    for (i = 0; i < 11; i++)
+        ROUND(i, (&Ki), (&data));
+
+    XLPS((&Ki), (&C[11]), (&Ki));
+    X((&Ki), (&data), (&data));
+    /* E() done */
+
+    X((&data), h, (&data));
+    X((&data), m, h);
+}
+#endif /* __GOST3411_HAS_REF__ */

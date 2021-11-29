@@ -110,55 +110,16 @@ static INLINE void add512(union uint512_u * RESTRICT x,
 #endif /* __GOST3411_BIG_ENDIAN__ */
 }
 
-static void g(union uint512_u *h, const union uint512_u * RESTRICT N,
-              const union uint512_u * RESTRICT m)
+_internal
+void g(union uint512_u *h, const union uint512_u * RESTRICT N,
+    const union uint512_u * RESTRICT m)
 {
-#ifdef __GOST3411_HAS_SSE2__
-    __m128i xmm0, xmm2, xmm4, xmm6; /* XMMR0-quadruple */
-    __m128i xmm1, xmm3, xmm5, xmm7; /* XMMR1-quadruple */
-    unsigned int i;
-
-    LOAD(N, xmm0, xmm2, xmm4, xmm6);
-    XLPS128M(h, xmm0, xmm2, xmm4, xmm6);
-
-    ULOAD(m, xmm1, xmm3, xmm5, xmm7);
-    XLPS128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
-
-    for (i = 0; i < 11; i++)
-        ROUND128(i, xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
-
-    XLPS128M((&C[11]), xmm0, xmm2, xmm4, xmm6);
-    X128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
-
-    X128M(h, xmm0, xmm2, xmm4, xmm6);
-    ULOAD(m, xmm1, xmm3, xmm5, xmm7);
-    X128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
-
-    STORE(h, xmm0, xmm2, xmm4, xmm6);
-# ifdef __i386__
-    /* Restore the Floating-point status on the CPU */
-    /* This is only required on MMX, but EXTRACT32 is using MMX */
-    _mm_empty();
-# endif
+#if defined __GOST3411_HAS_SSE2__
+    g_sse2(h, N, m);
+#elif defined  __GOST3411_HAS_REF__
+    g_ref(h, N, m);
 #else
-    union uint512_u Ki, data;
-    unsigned int i;
-
-    XLPS(h, N, (&data));
-
-    /* Starting E() */
-    Ki = data;
-    XLPS((&Ki), ((const union uint512_u *)&m[0]), (&data));
-
-    for (i = 0; i < 11; i++)
-        ROUND(i, (&Ki), (&data));
-
-    XLPS((&Ki), (&C[11]), (&Ki));
-    X((&Ki), (&data), (&data));
-    /* E() done */
-
-    X((&data), h, (&data));
-    X((&data), m, h);
+#  error "No implementation of g() is selected."
 #endif
 }
 
