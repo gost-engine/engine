@@ -8,11 +8,8 @@
  *
  */
 
-#ifndef __GOST3411_HAS_SSE2__
-# error "GOST R 34.11-2012: SSE2 not enabled"
-#endif
-
-# pragma message "Use SIMD implementation"
+#include "gosthash2012.h"
+#ifdef __GOST3411_HAS_SSE2__
 
 #include <mmintrin.h>
 #include <emmintrin.h>
@@ -34,7 +31,13 @@
 # define _mm_cvtm64_si64(v) (long long) v
 #endif
 
-#ifdef __SSE3__
+/*
+ * We cannot just use SSE3 instructions in SSE2 implementation if dynamic
+ * dispatch is used. SSE3 belongs to different microarchitecture level
+ * (x86_64-v2) than SSE2 (x86_64 baseline). If there is x86_64-v2 CPU then
+ * SSE4.1 implementation should be used.
+ */
+#if defined __SSE3__ && !defined __GOST3411_DISPATCH__
 /*
  * "This intrinsic may perform better than _mm_loadu_si128 when
  * the data crosses a cache line boundary."
@@ -212,3 +215,35 @@
     XLPS128M((&C[i]), xmm0, xmm2, xmm4, xmm6); \
     XLPS128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7); \
 }
+
+void g_sse2(union uint512_u *h, const union uint512_u * RESTRICT N,
+              const union uint512_u * RESTRICT m)
+{
+    __m128i xmm0, xmm2, xmm4, xmm6; /* XMMR0-quadruple */
+    __m128i xmm1, xmm3, xmm5, xmm7; /* XMMR1-quadruple */
+    unsigned int i;
+
+    LOAD(N, xmm0, xmm2, xmm4, xmm6);
+    XLPS128M(h, xmm0, xmm2, xmm4, xmm6);
+
+    ULOAD(m, xmm1, xmm3, xmm5, xmm7);
+    XLPS128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
+
+    for (i = 0; i < 11; i++)
+        ROUND128(i, xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
+
+    XLPS128M((&C[11]), xmm0, xmm2, xmm4, xmm6);
+    X128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
+
+    X128M(h, xmm0, xmm2, xmm4, xmm6);
+    ULOAD(m, xmm1, xmm3, xmm5, xmm7);
+    X128R(xmm0, xmm2, xmm4, xmm6, xmm1, xmm3, xmm5, xmm7);
+
+    STORE(h, xmm0, xmm2, xmm4, xmm6);
+# ifdef __i386__
+    /* Restore the Floating-point status on the CPU */
+    /* This is only required on MMX, but EXTRACT32 is using MMX */
+    _mm_empty();
+# endif
+}
+#endif /* __GOST3411_HAS_SSE2__ */

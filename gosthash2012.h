@@ -10,9 +10,16 @@
 
 #include <string.h>
 
-#ifdef __SSE2__
+/* Can be undef'd to disable ref impl. */
+#define __GOST3411_HAS_REF__
+
+#if defined __x86_64__ || defined __i386__
+# define __GOST3411_HAS_MMX__
 # define __GOST3411_HAS_SSE2__
-# if !defined(__x86_64__) && !defined(__e2k__)
+# define __GOST3411_HAS_SSE41__
+#elif defined __SSE2__
+# define __GOST3411_HAS_SSE2__
+# if !defined __e2k__
 /*
  * x86-64 bit Linux and Windows ABIs provide malloc function that returns
  * 16-byte alignment memory buffers required by SSE load/store instructions.
@@ -29,16 +36,19 @@
 # if (__GNUC__ < 4) || (__GNUC__ == 4 && __GNUC_MINOR__ < 2)
 #  undef __GOST3411_HAS_SSE2__
 # endif
+# ifdef __x86_64__
+/*
+ * On x86_64 there is always SSE2, so no need to even build reference
+ * implementation. But only if SSE2 is actually compiled, since it could
+ * be disabled with -mno-sse2.
+ */
+#  undef __GOST3411_HAS_REF__
+#  undef __GOST3411_HAS_MMX__
+# endif
 #endif
 
 #ifndef L_ENDIAN
 # define __GOST3411_BIG_ENDIAN__
-#endif
-
-#if defined __GOST3411_HAS_SSE2__
-# include "gosthash2012_sse2.h"
-#else
-# include "gosthash2012_ref.h"
 #endif
 
 # if defined(__GNUC__) || defined(__clang__)
@@ -51,6 +61,23 @@
 # define ALIGN(x) __declspec(align(x))
 #else
 # define ALIGN(x) __attribute__ ((__aligned__(x)))
+#endif
+
+#ifdef __GNUC__
+#  define _target(x) __attribute__((target(x)))
+#  define _internal __attribute__ ((visibility ("internal")))
+#else
+#  define _target(x)
+#  define _internal
+#endif
+
+/* '__has_builtin is supported on gcc >= 10, clang >= 3 and icc >= 21.' */
+#ifndef __has_builtin
+#  define __has_builtin(x) 0
+#else
+#  if __has_builtin(__builtin_cpu_supports)
+#    define __GOST3411_DISPATCH__
+#  endif
 #endif
 
 ALIGN(16)
@@ -77,3 +104,24 @@ void init_gost2012_hash_ctx(gost2012_hash_ctx * CTX,
 void gost2012_hash_block(gost2012_hash_ctx * CTX,
                          const unsigned char *data, size_t len);
 void gost2012_finish_hash(gost2012_hash_ctx * CTX, unsigned char *digest);
+
+#ifdef __GOST3411_HAS_REF__
+_internal
+void g_ref(union uint512_u *h, const union uint512_u * RESTRICT N,
+    const union uint512_u * RESTRICT m);
+#endif
+#ifdef __GOST3411_HAS_MMX__
+_internal _target("mmx")
+void g_mmx(union uint512_u *h, const union uint512_u * RESTRICT N,
+    const union uint512_u * RESTRICT m);
+#endif
+#ifdef __GOST3411_HAS_SSE2__
+_internal _target("sse2")
+void g_sse2(union uint512_u *h, const union uint512_u * RESTRICT N,
+    const union uint512_u * RESTRICT m);
+#endif
+#ifdef __GOST3411_HAS_SSE41__
+_internal _target("sse4.1")
+void g_sse41(union uint512_u *h, const union uint512_u * RESTRICT N,
+    const union uint512_u * RESTRICT m);
+#endif
