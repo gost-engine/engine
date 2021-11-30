@@ -115,13 +115,21 @@ void g(union uint512_u *h, const union uint512_u * RESTRICT N,
     const union uint512_u * RESTRICT m)
 {
 #ifdef __GOST3411_DISPATCH__
+# if defined __GOST3411_HAS_SSE41__
+    if (__builtin_cpu_supports("sse4.1"))
+	return g_sse41(h, N, m);
+# endif
 # if defined __GOST3411_HAS_SSE2__
     if (__builtin_cpu_supports("sse2"))
         return g_sse2(h, N, m);
-# elif defined  __GOST3411_HAS_REF__
+# endif
+# if defined  __GOST3411_HAS_REF__
     g_ref(h, N, m);
-# else
-#  error "No implementation of g() is selected."
+# endif
+# if !defined __GOST3411_HAS_SSE41__ && \
+     !defined __GOST3411_HAS_SSE2__ && \
+     !defined __GOST3411_HAS_REF__
+#  error "No dynamic implementation of g() is selected."
 # endif
 #else /* !__GOST3411_DISPATCH__ */
 # if defined __GOST3411_HAS_SSE2__ && defined __SSE2__

@@ -15,6 +15,7 @@
 
 #if defined __x86_64__ || defined __i386__
 # define __GOST3411_HAS_SSE2__
+# define __GOST3411_HAS_SSE41__
 #elif defined __SSE2__
 # define __GOST3411_HAS_SSE2__
 # if !defined __e2k__
@@ -110,5 +111,10 @@ void g_ref(union uint512_u *h, const union uint512_u * RESTRICT N,
 #ifdef __GOST3411_HAS_SSE2__
 _internal _target("sse2")
 void g_sse2(union uint512_u *h, const union uint512_u * RESTRICT N,
+    const union uint512_u * RESTRICT m);
+#endif
+#ifdef __GOST3411_HAS_SSE41__
+_internal _target("sse4.1")
+void g_sse41(union uint512_u *h, const union uint512_u * RESTRICT N,
     const union uint512_u * RESTRICT m);
 #endif

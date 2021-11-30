@@ -128,6 +128,7 @@ set(GOST_HASH_2012_SOURCE_FILES
         gosthash2012_precalc.h
         gosthash2012_ref.c
         gosthash2012_sse2.c
+        gosthash2012_sse41.c
         )
 
 set(GOST_GRASSHOPPER_SOURCE_FILES
