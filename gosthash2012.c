@@ -123,11 +123,16 @@ void g(union uint512_u *h, const union uint512_u * RESTRICT N,
     if (__builtin_cpu_supports("sse2"))
         return g_sse2(h, N, m);
 # endif
+# if defined __GOST3411_HAS_MMX__
+    if (__builtin_cpu_supports("mmx"))
+        return g_mmx(h, N, m);
+# endif
 # if defined  __GOST3411_HAS_REF__
     g_ref(h, N, m);
 # endif
 # if !defined __GOST3411_HAS_SSE41__ && \
      !defined __GOST3411_HAS_SSE2__ && \
+     !defined __GOST3411_HAS_MMX__ && \
      !defined __GOST3411_HAS_REF__
 #  error "No dynamic implementation of g() is selected."
 # endif

@@ -14,6 +14,7 @@
 #define __GOST3411_HAS_REF__
 
 #if defined __x86_64__ || defined __i386__
+# define __GOST3411_HAS_MMX__
 # define __GOST3411_HAS_SSE2__
 # define __GOST3411_HAS_SSE41__
 #elif defined __SSE2__
@@ -42,6 +43,7 @@
  * be disabled with -mno-sse2.
  */
 #  undef __GOST3411_HAS_REF__
+#  undef __GOST3411_HAS_MMX__
 # endif
 #endif
 
@@ -106,6 +108,11 @@ void gost2012_finish_hash(gost2012_hash_ctx * CTX, unsigned char *digest);
 #ifdef __GOST3411_HAS_REF__
 _internal
 void g_ref(union uint512_u *h, const union uint512_u * RESTRICT N,
+    const union uint512_u * RESTRICT m);
+#endif
+#ifdef __GOST3411_HAS_MMX__
+_internal _target("mmx")
+void g_mmx(union uint512_u *h, const union uint512_u * RESTRICT N,
     const union uint512_u * RESTRICT m);
 #endif
 #ifdef __GOST3411_HAS_SSE2__
