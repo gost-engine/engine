@@ -31,7 +31,13 @@
 # define _mm_cvtm64_si64(v) (long long) v
 #endif
 
-#ifdef __SSE3__
+/*
+ * We cannot just use SSE3 instructions in SSE2 implementation if dynamic
+ * dispatch is used. SSE3 belongs to different microarchitecture level
+ * (x86_64-v2) than SSE2 (x86_64 baseline). If there is x86_64-v2 CPU then
+ * SSE4.1 implementation should be used.
+ */
+#if defined __SSE3__ && !defined __GOST3411_DISPATCH__
 /*
  * "This intrinsic may perform better than _mm_loadu_si128 when
  * the data crosses a cache line boundary."

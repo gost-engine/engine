@@ -114,13 +114,24 @@ _internal
 void g(union uint512_u *h, const union uint512_u * RESTRICT N,
     const union uint512_u * RESTRICT m)
 {
-#if defined __GOST3411_HAS_SSE2__
-    g_sse2(h, N, m);
-#elif defined  __GOST3411_HAS_REF__
+#ifdef __GOST3411_DISPATCH__
+# if defined __GOST3411_HAS_SSE2__
+    if (__builtin_cpu_supports("sse2"))
+        return g_sse2(h, N, m);
+# elif defined  __GOST3411_HAS_REF__
     g_ref(h, N, m);
-#else
+# else
 #  error "No implementation of g() is selected."
-#endif
+# endif
+#else /* !__GOST3411_DISPATCH__ */
+# if defined __GOST3411_HAS_SSE2__ && defined __SSE2__
+    g_sse2(h, N, m);
+# elif defined  __GOST3411_HAS_REF__
+    g_ref(h, N, m);
+# else
+#  error "No implementation of g() is selected."
+# endif
+#endif /* !__GOST3411_DISPATCH__ */
 }
 
 static INLINE void stage2(gost2012_hash_ctx * CTX, const union uint512_u *data)
