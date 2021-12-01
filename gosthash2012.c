@@ -69,7 +69,7 @@ static INLINE void add512(union uint512_u * RESTRICT x,
 
 # ifdef HAVE_ADDCARRY_U64
     for (i = 0; i < 8; i++)
-    CF = _addcarry_u64(CF, x->QWORD[i] , y->QWORD[i], &(x->QWORD[i]));
+        CF = _addcarry_u64(CF, x->QWORD[i] , y->QWORD[i], &(x->QWORD[i]));
 # else
     for (i = 0; i < 8; i++) {
         const unsigned long long left = x->QWORD[i];
