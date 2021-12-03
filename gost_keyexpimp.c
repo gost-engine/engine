@@ -364,7 +364,6 @@ static int magma_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
 		return gost_kimp15(cctx->wrapped, cctx->wrap_count, NID_magma_ctr,
 		cctx->key+GOSTKEYLEN, NID_magma_mac, cctx->key, cctx->iv, 4, out) > 0 ? GOSTKEYLEN : 0;
 	}
-	return 1;
 }
 
 static int kuznyechik_wrap_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,

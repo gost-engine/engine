@@ -185,7 +185,6 @@ static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
             pctx->cipher_nid = p1;
             return 1;
         }
-        return 1;
     case EVP_PKEY_CTRL_PEER_KEY:
         if (p1 == 0 || p1 == 1) /* call from EVP_PKEY_derive_set_peer */
             return 1;
