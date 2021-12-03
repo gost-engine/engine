@@ -5,11 +5,7 @@
  * Contents licensed under the terms of the OpenSSL license
  * See https://www.openssl.org/source/license.html for details
  */
-#ifdef _WIN32
-#include <winsock.h>
-#else
-#include <arpa/inet.h>
-#endif
+
 #include <string.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -17,6 +13,18 @@
 
 #include "gost_lcl.h"
 #include "e_gost_err.h"
+
+static uint32_t be32(uint32_t host)
+{
+#ifdef L_ENDIAN
+    return (host & 0xff000000) >> 24 |
+           (host & 0x00ff0000) >> 8  |
+           (host & 0x0000ff00) << 8  |
+           (host & 0x000000ff) << 24;
+#else
+    return host;
+#endif
+}
 
 int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr);
 /*
@@ -201,7 +209,7 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
     unsigned char *ptr = keyout;
     HMAC_CTX *ctx;
     unsigned char *len_ptr = NULL;
-    uint32_t len_repr = htonl(keyout_len * 8);
+    uint32_t len_repr = be32(keyout_len * 8);
     size_t len_repr_len = 4;
 
     ctx = HMAC_CTX_new();
@@ -223,7 +231,7 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
     }
 
     for (i = 1; i <= iters; i++) {
-        uint32_t iter_net = htonl(i);
+        uint32_t iter_net = be32(i);
         unsigned char *rep_ptr =
             ((unsigned char *)&iter_net) + (4 - representation);
 
