@@ -37,7 +37,7 @@ GOST_digest GostR3411_94_digest = {
  * Note: that you cannot template 0 value.
  */
 #define TPL(st,field) ( \
-    ((st)->field) ?: TPL_VAL(st,field) \
+    ((st)->field) ? ((st)->field) : TPL_VAL(st,field) \
 )
 
 #define TPL_VAL(st,field) ( \
