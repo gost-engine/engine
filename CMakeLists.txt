@@ -34,7 +34,7 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
   add_definitions(-D_CRT_DEPRECATED_NO_WARNINGS)
   add_definitions(-D_CRT_NONSTDC_NO_WARNINGS)
-  add_compile_options(/MP /WX /W4 /wd4100 /wd4267 /wd4206 /wd4706 /wd4244 /wd4115)
+  add_compile_options(/MP /WX /W4 /wd4100 /wd4267 /wd4206 /wd4706 /wd4244 /wd4115 /wd4996)
 endif()
 
 if (ASAN)
