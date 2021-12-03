@@ -649,7 +649,7 @@ static void ctr64_inc(unsigned char *counter)
 static inline void apply_acpkm_magma(struct ossl_gost_cipher_ctx *
                                            ctx, unsigned int *num)
 {
-    if (!ctx->key_meshing || (*num < ctx->key_meshing))
+    if (!ctx->key_meshing || (*num < (unsigned int)ctx->key_meshing))
         return;
     acpkm_magma_key_meshing(&ctx->cctx);
     *num &= MAGMA_BLOCK_MASK;
