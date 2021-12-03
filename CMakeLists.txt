@@ -43,11 +43,6 @@ if (ASAN)
   set(SKIP_PERL_TESTS 1)
 endif()
 
-# DEPRECATEDIN_3_0 CMAC
-set_source_files_properties(gost_omac.c PROPERTIES COMPILE_FLAGS -Wno-error=deprecated-declarations)
-# DEPRECATEDIN_3_0 HMAC
-set_source_files_properties(gost_keyexpimp.c PROPERTIES COMPILE_FLAGS -Wno-error=deprecated-declarations)
-
 set(CMAKE_C_STANDARD 90)
 CHECK_FUNCTION_EXISTS(clock_gettime HAVE_CLOCK_GETTIME_C)
 CHECK_LIBRARY_EXISTS(rt clock_gettime "" HAVE_CLOCK_GETTIME_RT)
