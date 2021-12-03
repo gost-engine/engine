@@ -234,21 +234,21 @@ static int cipher_final(void *vgctx,
     return res > 0;
 }
 
-static const OSSL_PARAM known_Gost28147_89_cipher_params[] = {};
-static const OSSL_PARAM known_Gost28147_89_cbc_cipher_params[] = {};
-static const OSSL_PARAM known_Gost28147_89_cnt_cipher_params[] = {};
-static const OSSL_PARAM known_Gost28147_89_cnt_12_cipher_params[] = {};
-static const OSSL_PARAM known_grasshopper_ecb_cipher_params[] = {};
-static const OSSL_PARAM known_grasshopper_cbc_cipher_params[] = {};
-static const OSSL_PARAM known_grasshopper_cfb_cipher_params[] = {};
-static const OSSL_PARAM known_grasshopper_ofb_cipher_params[] = {};
-static const OSSL_PARAM known_grasshopper_ctr_cipher_params[] = {};
-static const OSSL_PARAM known_magma_ctr_cipher_params[] = {};
-static const OSSL_PARAM known_magma_ctr_acpkm_cipher_params[] = {};
-static const OSSL_PARAM known_magma_ctr_acpkm_omac_cipher_params[] = {};
-static const OSSL_PARAM known_magma_cbc_cipher_params[] = {};
-static const OSSL_PARAM known_grasshopper_ctr_acpkm_cipher_params[] = {};
-static const OSSL_PARAM known_grasshopper_ctr_acpkm_omac_cipher_params[] = {};
+static const OSSL_PARAM *known_Gost28147_89_cipher_params;
+static const OSSL_PARAM *known_Gost28147_89_cbc_cipher_params;
+static const OSSL_PARAM *known_Gost28147_89_cnt_cipher_params;
+static const OSSL_PARAM *known_Gost28147_89_cnt_12_cipher_params;
+static const OSSL_PARAM *known_grasshopper_ecb_cipher_params;
+static const OSSL_PARAM *known_grasshopper_cbc_cipher_params;
+static const OSSL_PARAM *known_grasshopper_cfb_cipher_params;
+static const OSSL_PARAM *known_grasshopper_ofb_cipher_params;
+static const OSSL_PARAM *known_grasshopper_ctr_cipher_params;
+static const OSSL_PARAM *known_magma_ctr_cipher_params;
+static const OSSL_PARAM *known_magma_ctr_acpkm_cipher_params;
+static const OSSL_PARAM *known_magma_ctr_acpkm_omac_cipher_params;
+static const OSSL_PARAM *known_magma_cbc_cipher_params;
+static const OSSL_PARAM *known_grasshopper_ctr_acpkm_cipher_params;
+static const OSSL_PARAM *known_grasshopper_ctr_acpkm_omac_cipher_params;
 /*
  * These are named like the EVP_CIPHER templates in gost_crypt.c, with the
  * added suffix "_functions".  Hopefully, that makes it easy to find the

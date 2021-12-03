@@ -131,9 +131,9 @@ static int digest_final(void *vgctx,
     return res > 0;
 }
 
-static const OSSL_PARAM known_GostR3411_94_digest_params[] = {};
-static const OSSL_PARAM known_GostR3411_2012_256_digest_params[] = {};
-static const OSSL_PARAM known_GostR3411_2012_512_digest_params[] = {};
+static const OSSL_PARAM *known_GostR3411_94_digest_params;
+static const OSSL_PARAM *known_GostR3411_2012_256_digest_params;
+static const OSSL_PARAM *known_GostR3411_2012_512_digest_params;
 
 /*
  * These are named like the EVP_MD templates in gost_md.c etc, with the
