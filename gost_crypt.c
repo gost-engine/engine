@@ -74,7 +74,7 @@ static int magma_cipher_ctl_acpkm_omac(EVP_CIPHER_CTX *ctx, int type, int arg, v
  * Note: that you cannot template 0 value.
  */
 #define TPL(st,field) ( \
-    ((st)->field) ?: TPL_VAL(st,field) \
+    ((st)->field) ? ((st)->field) : TPL_VAL(st,field) \
 )
 
 #define TPL_VAL(st,field) ( \
