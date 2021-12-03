@@ -255,7 +255,6 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_BAD_ORDER);
             return 0;
         }
-        return 0;
 #endif
     default:
         return 0;

@@ -906,7 +906,6 @@ static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, v
 
       return gost2015_process_unprotected_attributes(x, arg, KUZNYECHIK_MAC_MAX_SIZE, c->tag);
     }
-    return 1;
     case EVP_CTRL_COPY: {
         EVP_CIPHER_CTX *out = ptr;
 
