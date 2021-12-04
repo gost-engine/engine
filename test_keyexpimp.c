@@ -6,6 +6,7 @@
  */
 #ifdef _MSC_VER
 # include <Winsock2.h>
+# include <stdlib.h>
 #else
 # include <arpa/inet.h>
 #endif
@@ -108,7 +109,11 @@ int main(void)
     unsigned char tlsseq[8];
     unsigned char out[32];
 
+#ifdef _MSC_VER
+    _putenv_s("OPENSSL_ENGINES", ENGINE_DIR);
+#else
     setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
+#endif
     OPENSSL_add_all_algorithms_conf();
     ERR_load_crypto_strings();
     ENGINE *eng;
