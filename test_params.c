@@ -1127,7 +1127,7 @@ static int test_param(struct test_param *t)
 	T(mdtype = EVP_get_digestbynid(hash_nid));
 	T(EVP_VerifyInit(md_ctx, mdtype));
 	/* Feed byte-by-byte. */
-	int i;
+	size_t i;
 	for (i = 0; i < t->data_len; i++)
 	    T(EVP_VerifyUpdate(md_ctx, &t->data[i], 1));
 	err = EVP_VerifyFinal(md_ctx, sig, siglen, pkey);
