@@ -33,8 +33,10 @@
 	     else \
 		 printf(cGREEN "Test passed" cNORM "\n");}
 
+#ifdef __GNUC__
 /* Pragma to allow commenting out some tests. */
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
+# pragma GCC diagnostic ignored "-Wunused-const-variable"
+#endif
 
 /*
  * Test keys from both GOST R 34.12-2015 and GOST R 34.13-2015,
