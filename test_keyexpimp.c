@@ -15,9 +15,10 @@
 #include "e_gost_err.h"
 #include "gost_grasshopper_cipher.h"
 
-#define T(e) if (!(e)) {\
-        ERR_print_errors_fp(stderr);\
-        OpenSSLDie(__FILE__, __LINE__, #e);\
+#define T(e) \
+    if (!(e)) { \
+        ERR_print_errors_fp(stderr); \
+        OpenSSLDie(__FILE__, __LINE__, #e); \
     }
 
 static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
