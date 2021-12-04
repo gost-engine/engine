@@ -54,8 +54,10 @@
 	     else \
 		 printf(cGREEN "  Test passed" cNORM "\n");}
 
+#ifdef __GNUC__
 /* To test older APIs. */
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 /*
  * Test keys from both GOST R 34.12-2015 and GOST R 34.13-2015,

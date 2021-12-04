@@ -30,8 +30,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#ifdef __GNUC__
 /* For X509_NAME_add_entry_by_txt */
-#pragma GCC diagnostic ignored "-Wpointer-sign"
+# pragma GCC diagnostic ignored "-Wpointer-sign"
+#endif
 
 #define T(e) ({ if (!(e)) { \
 		ERR_print_errors_fp(stderr); \
