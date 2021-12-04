@@ -15,12 +15,11 @@
 #include <string.h>
 #include "gost_lcl.h"
 
-#define T(e) ({ \
+#define T(e) \
     if (!(e)) { \
         ERR_print_errors_fp(stderr); \
         OpenSSLDie(__FILE__, __LINE__, #e); \
-    } \
-})
+    }
 
 #define cRED    "\033[1;31m"
 #define cDRED   "\033[0;31m"

@@ -20,17 +20,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define T(e) ({ if (!(e)) { \
-		ERR_print_errors_fp(stderr); \
-		OpenSSLDie(__FILE__, __LINE__, #e); \
-	    } \
-        })
-#define TE(e) ({ if (!(e)) { \
-		ERR_print_errors_fp(stderr); \
-		fprintf(stderr, "Error at %s:%d %s\n", __FILE__, __LINE__, #e); \
-		return -1; \
-	    } \
-        })
+#define T(e) \
+    if (!(e)) { \
+        ERR_print_errors_fp(stderr); \
+        OpenSSLDie(__FILE__, __LINE__, #e); \
+    }
+#define TE(e) \
+    if (!(e)) { \
+        ERR_print_errors_fp(stderr); \
+        fprintf(stderr, "Error at %s:%d %s\n", __FILE__, __LINE__, #e); \
+        return -1; \
+    }
 
 #define cRED	"\033[1;31m"
 #define cDRED	"\033[0;31m"
