@@ -182,7 +182,7 @@ struct hash_testvec {
     const char *hmac;	   /* Expected output for HMAC tests. */
     const char *key;	   /* MAC key.*/
     int psize;		   /* Input (plaintext) size. */
-    int outsize;	   /* Compare to EVP_MD_size() /  EVP_MAC_size() if non-zero. */
+    size_t outsize;	   /* Compare to EVP_MD_size() / EVP_MAC_size() if non-zero. */
     int truncate;	   /* Truncated output (digest) size. */
     int key_size;	   /* MAC key size. */
     int block_size;	   /* Internal block size. */
@@ -635,7 +635,7 @@ static int do_mac(int iter, EVP_MAC *mac, const char *plaintext,
                   const struct hash_testvec *t)
 {
     if (!iter)
-        printf("[MAC %d] ", t->outsize);
+        printf("[MAC %zu] ", t->outsize);
 
     size_t acpkm = (size_t)t->acpkm;
     size_t acpkm_t = (size_t)t->acpkm_t;
@@ -691,7 +691,7 @@ static int do_digest(int iter, const EVP_MD *type, const char *plaintext,
                      const struct hash_testvec *t)
 {
     if (!iter)
-	printf("[MD %d] ", t->outsize);
+	printf("[MD %zu] ", t->outsize);
     if (t->outsize)
 	T(EVP_MD_size(type) == t->outsize);
     size_t outsize;
