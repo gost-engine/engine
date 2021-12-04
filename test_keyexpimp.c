@@ -4,7 +4,11 @@
  * Contents licensed under the terms of the OpenSSL license
  * See https://www.openssl.org/source/license.html for details
  */
-#include <arpa/inet.h>
+#ifdef _MSC_VER
+# include <Winsock2.h>
+#else
+# include <arpa/inet.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <string.h>
