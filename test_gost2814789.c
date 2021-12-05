@@ -7,6 +7,11 @@
  * This file is distributed under the same license as OpenSSL
  * ====================================================================
  */
+#ifdef _MSC_VER
+# pragma warning(push, 3)
+# include <openssl/applink.c>
+# pragma warning(pop)
+#endif
 #include <stdio.h>
 
 #include <stdlib.h>

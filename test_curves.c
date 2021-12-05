@@ -5,6 +5,11 @@
  * See https://www.openssl.org/source/license.html for details
  */
 
+#ifdef _MSC_VER
+# pragma warning(push, 3)
+# include <openssl/applink.c>
+# pragma warning(pop)
+#endif
 #include "gost_lcl.h"
 #include <openssl/evp.h>
 #include <openssl/rand.h>

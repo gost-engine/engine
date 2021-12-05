@@ -7,6 +7,11 @@
  *            No OpenSSL libraries required to compile and use        *
  *                              this code                             *
  **********************************************************************/
+#ifdef _MSC_VER
+# pragma warning(push, 3)
+# include <openssl/applink.c>
+# pragma warning(pop)
+#endif
 #include <string.h>
 #include "gost89.h"
 #include <stdio.h>
