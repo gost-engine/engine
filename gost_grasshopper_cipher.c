@@ -510,10 +510,10 @@ static int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
                                                size_t inl)
 {
     gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
-    unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     unsigned int num = EVP_CIPHER_CTX_num(ctx);
     size_t blocks, i, lasted = inl;
-    grasshopper_w128_t tmp;
+    grasshopper_w128_t ivb, inb, outb;
+    memcpy(&ivb, EVP_CIPHER_CTX_iv_noconst(ctx), sizeof(ivb));
 
     while ((num & GRASSHOPPER_BLOCK_MASK) && lasted) {
         *out++ = *in++ ^ c->partial_buffer.b[num & GRASSHOPPER_BLOCK_MASK];
@@ -526,13 +526,13 @@ static int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     for (i = 0; i < blocks; i++) {
         apply_acpkm_grasshopper(c, &num);
         grasshopper_encrypt_block(&c->c.encrypt_round_keys,
-                                  (grasshopper_w128_t *) iv,
-                                  (grasshopper_w128_t *) & c->partial_buffer,
+                                  &ivb,
+                                  &c->partial_buffer,
                                   &c->c.buffer);
-        grasshopper_plus128(&tmp, &c->partial_buffer,
-                            (grasshopper_w128_t *) in);
-        grasshopper_copy128((grasshopper_w128_t *) out, &tmp);
-        ctr128_inc(iv);
+        memcpy(&inb, in, GRASSHOPPER_BLOCK_SIZE);
+        grasshopper_plus128(&outb, &c->partial_buffer, &inb);
+        memcpy(out, &outb, GRASSHOPPER_BLOCK_SIZE);
+        ctr128_inc(ivb.b);
         in += GRASSHOPPER_BLOCK_SIZE;
         out += GRASSHOPPER_BLOCK_SIZE;
         num += GRASSHOPPER_BLOCK_SIZE;
@@ -542,14 +542,14 @@ static int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     // last part
     if (lasted > 0) {
         apply_acpkm_grasshopper(c, &num);
-        grasshopper_encrypt_block(&c->c.encrypt_round_keys,
-                                  (grasshopper_w128_t *) iv,
+        grasshopper_encrypt_block(&c->c.encrypt_round_keys, &ivb,
                                   &c->partial_buffer, &c->c.buffer);
         for (i = 0; i < lasted; i++)
             out[i] = c->partial_buffer.b[i] ^ in[i];
-        ctr128_inc(iv);
+        ctr128_inc(ivb.b);
         num += lasted;
     }
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), &ivb, sizeof(ivb));
     EVP_CIPHER_CTX_set_num(ctx, num);
 
     return inl;
