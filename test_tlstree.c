@@ -4,6 +4,11 @@
  * Contents licensed under the terms of the OpenSSL license
  * See https://www.openssl.org/source/license.html for details
  */
+#ifdef _MSC_VER
+# pragma warning(push, 3)
+# include <openssl/applink.c>
+# pragma warning(pop)
+#endif
 # include <stdio.h>
 # include <string.h>
 # include <openssl/err.h>

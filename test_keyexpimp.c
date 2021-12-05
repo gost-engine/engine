@@ -5,6 +5,9 @@
  * See https://www.openssl.org/source/license.html for details
  */
 #ifdef _MSC_VER
+# pragma warning(push, 3)
+# include <openssl/applink.c>
+# pragma warning(pop)
 # include <Winsock2.h>
 # include <stdlib.h>
 #else
