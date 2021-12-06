@@ -340,6 +340,7 @@ set_target_properties(gost_engine PROPERTIES
   PREFIX "" OUTPUT_NAME "gost" SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
 target_link_libraries(gost_engine PRIVATE gost_core gost_err)
 
+if (NOT MSVC)
 # The GOST engine in library form
 add_library(lib_gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(lib_gost_engine PROPERTIES
@@ -347,7 +348,7 @@ set_target_properties(lib_gost_engine PROPERTIES
   PUBLIC_HEADER gost-engine.h
   OUTPUT_NAME "gost")
 target_link_libraries(lib_gost_engine PRIVATE gost_core gost_err)
-
+endif()
 
 # The GOST provider uses this
 add_subdirectory(libprov)
@@ -362,6 +363,7 @@ set_target_properties(gost_prov PROPERTIES
   )
 target_link_libraries(gost_prov PRIVATE gost_core libprov)
 
+if (NOT MSVC)
 # The GOST provider in library form
 add_library(lib_gost_prov SHARED
   ${GOST_PROV_SOURCE_FILES} ${GOST_ENGINE_SOURCE_FILES}
@@ -371,6 +373,7 @@ set_target_properties(lib_gost_prov PROPERTIES
   COMPILE_DEFINITIONS "BUILDING_GOST_PROVIDER;BUILDING_PROVIDER_AS_LIBRARY;OPENSSL_NO_DYNAMIC_ENGINE"
   )
 target_link_libraries(lib_gost_prov PRIVATE gost_core libprov)
+endif()
 
 set(GOST_SUM_SOURCE_FILES
         gostsum.c
@@ -407,26 +410,26 @@ target_link_libraries(test_tlstree PUBLIC OpenSSL::Crypto)
 install(TARGETS gostsum gost12sum RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES gostsum.1 gost12sum.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
-# install engine in library and module form
-install(TARGETS lib_gost_engine EXPORT GostEngineConfig LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+# install engine and provider in module form
 install(TARGETS gost_engine EXPORT GostEngineConfig
         LIBRARY  DESTINATION ${OPENSSL_ENGINES_DIR}
         RUNTIME  DESTINATION ${OPENSSL_ENGINES_DIR})
-# install provider in library and module form
-install(TARGETS lib_gost_prov EXPORT GostProviderConfig
-        LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(TARGETS gost_prov EXPORT GostProviderConfig
         LIBRARY  DESTINATION ${OPENSSL_MODULES_DIR}
         RUNTIME  DESTINATION ${OPENSSL_MODULES_DIR})
+if (NOT MSVC)
+# install engine and provider in library form
+install(TARGETS lib_gost_engine EXPORT GostEngineConfig
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(TARGETS lib_gost_prov EXPORT GostProviderConfig
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
+
 if (MSVC)
-  install(FILES $<TARGET_PDB_FILE:lib_gost_engine>
-    EXPORT GostEngineConfig DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
   install(FILES $<TARGET_PDB_FILE:gostsum> $<TARGET_PDB_FILE:gost12sum>
     EXPORT GostEngineConfig DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
   install(FILES $<TARGET_PDB_FILE:gost_engine>
     EXPORT GostEngineConfig DESTINATION ${OPENSSL_ENGINES_DIR} OPTIONAL)
-  install(FILES $<TARGET_PDB_FILE:lib_gost_prov>
-    EXPORT GostProviderConfig DESTINATION ${CMAKE_INSTALL_LIBDIR} OPTIONAL)
   install(FILES $<TARGET_PDB_FILE:gost_prov>
     EXPORT GostProviderConfig DESTINATION ${OPENSSL_MODULES_DIR} OPTIONAL)
 endif()
