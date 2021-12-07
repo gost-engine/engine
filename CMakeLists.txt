@@ -88,7 +88,11 @@ if (NOT RELAXED_ALIGNMENT)
   add_definitions(-DSTRICT_ALIGNMENT)
 endif()
 
-set(BIN_DIRECTORY bin)
+if(MSVC)
+  set(BIN_DIRECTORY bin/$<CONFIG>/)
+else()
+  set(BIN_DIRECTORY bin)
+endif()
 
 set(OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${BIN_DIRECTORY})
 
