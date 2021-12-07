@@ -290,8 +290,9 @@ add_test(NAME gost89 COMMAND test_gost89)
 
 if(NOT SKIP_PERL_TESTS)
     execute_process(COMMAND perl -MTest2::V0 -e ""
-	ERROR_QUIET RESULT_VARIABLE HAVE_TEST2_V0)
-    if(NOT HAVE_TEST2_V0)
+       ERROR_QUIET RESULT_VARIABLE MISSING_TEST2_V0)
+    find_program(HAVE_PROVE NAMES prove)
+    if(NOT MISSING_TEST2_V0 AND HAVE_PROVE)
 	add_test(NAME engine
 	    COMMAND prove --merge -PWrapOpenSSL ${CMAKE_CURRENT_SOURCE_DIR}/test :: engine)
 	set_tests_properties(engine PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
