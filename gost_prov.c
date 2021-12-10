@@ -143,6 +143,7 @@ struct prov_ctx_st {
 # define OSSL_provider_init GOST_provider_init
 #endif
 
+OPENSSL_EXPORT
 int OSSL_provider_init(const OSSL_CORE_HANDLE *core,
                        const OSSL_DISPATCH *in,
                        const OSSL_DISPATCH **out,
