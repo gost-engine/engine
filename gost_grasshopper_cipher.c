@@ -164,11 +164,7 @@ gost_grasshopper_cipher_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 static GRASSHOPPER_INLINE void
 gost_grasshopper_master_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 {
-    int i;
-    for (i = 0; i < 2; i++) {
-        grasshopper_copy128(&c->master_key.k.k[i],
-                            (const grasshopper_w128_t *)(k + i * 16));
-    }
+    memcpy(&c->master_key, k, sizeof(c->master_key));
 }
 
 /* Cleans up key from context */
