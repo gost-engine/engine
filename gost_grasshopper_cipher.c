@@ -350,17 +350,16 @@ static int gost_grasshopper_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *ou
     for (i = 0; i < blocks;
          i++, current_in += GRASSHOPPER_BLOCK_SIZE, current_out +=
          GRASSHOPPER_BLOCK_SIZE) {
+        grasshopper_w128_t inb, outb;
+        memcpy(&inb, current_in, GRASSHOPPER_BLOCK_SIZE);
         if (encrypting) {
             grasshopper_encrypt_block(&c->encrypt_round_keys,
-                                      (grasshopper_w128_t *) current_in,
-                                      (grasshopper_w128_t *) current_out,
-                                      &c->buffer);
+                                      &inb, &outb, &c->buffer);
         } else {
             grasshopper_decrypt_block(&c->decrypt_round_keys,
-                                      (grasshopper_w128_t *) current_in,
-                                      (grasshopper_w128_t *) current_out,
-                                      &c->buffer);
+                                      &inb, &outb, &c->buffer);
         }
+        memcpy(current_out, &outb, GRASSHOPPER_BLOCK_SIZE);
     }
 
     return 1;
