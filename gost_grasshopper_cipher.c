@@ -370,38 +370,40 @@ static int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *ou
 {
     gost_grasshopper_cipher_ctx *c =
         (gost_grasshopper_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
-    unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     bool encrypting = (bool) EVP_CIPHER_CTX_encrypting(ctx);
     const unsigned char *current_in = in;
     unsigned char *current_out = out;
     size_t blocks = inl / GRASSHOPPER_BLOCK_SIZE;
     size_t i;
-    grasshopper_w128_t *currentBlock;
+    grasshopper_w128_t currentBlock;
 
-    currentBlock = (grasshopper_w128_t *) iv;
+    memcpy(&currentBlock, EVP_CIPHER_CTX_iv_noconst(ctx),
+           sizeof (currentBlock));
 
     for (i = 0; i < blocks;
-         i++, current_in += GRASSHOPPER_BLOCK_SIZE, current_out +=
-         GRASSHOPPER_BLOCK_SIZE) {
-        grasshopper_w128_t *currentInputBlock = (grasshopper_w128_t *) current_in;
-        grasshopper_w128_t *currentOutputBlock = (grasshopper_w128_t *) current_out;
+         i++, current_in += GRASSHOPPER_BLOCK_SIZE,
+              current_out += GRASSHOPPER_BLOCK_SIZE) {
+        grasshopper_w128_t inb, outb;
+        memcpy(&inb, current_in, GRASSHOPPER_BLOCK_SIZE);
         if (encrypting) {
-            grasshopper_append128(currentBlock, currentInputBlock);
-            grasshopper_encrypt_block(&c->encrypt_round_keys, currentBlock,
-                                      currentOutputBlock, &c->buffer);
-            grasshopper_copy128(currentBlock, currentOutputBlock);
+            grasshopper_append128(&currentBlock, &inb);
+            grasshopper_encrypt_block(&c->encrypt_round_keys, &currentBlock,
+                                      &outb, &c->buffer);
+            grasshopper_copy128(&currentBlock, &outb);
         } else {
             grasshopper_w128_t tmp;
 
-            grasshopper_copy128(&tmp, currentInputBlock);
+            grasshopper_copy128(&tmp, &inb);
             grasshopper_decrypt_block(&c->decrypt_round_keys,
-                                      currentInputBlock, currentOutputBlock,
+                                      &inb, &outb,
                                       &c->buffer);
-            grasshopper_append128(currentOutputBlock, currentBlock);
-            grasshopper_copy128(currentBlock, &tmp);
+            grasshopper_append128(&outb, &currentBlock);
+            grasshopper_copy128(&currentBlock, &tmp);
         }
+        memcpy(current_out, &outb, GRASSHOPPER_BLOCK_SIZE);
     }
-
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), &currentBlock,
+           sizeof (currentBlock));
     return 1;
 }
 
