@@ -154,11 +154,7 @@ static void acpkm_next(gost_grasshopper_cipher_ctx * c)
 static GRASSHOPPER_INLINE void
 gost_grasshopper_cipher_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 {
-    int i;
-    for (i = 0; i < 2; i++) {
-        grasshopper_copy128(&c->key.k.k[i],
-                            (const grasshopper_w128_t *)(k + i * 16));
-    }
+    memcpy(&c->key, k, sizeof(c->key));
 
     grasshopper_set_encrypt_key(&c->encrypt_round_keys, &c->key);
     grasshopper_set_decrypt_key(&c->decrypt_round_keys, &c->key);
