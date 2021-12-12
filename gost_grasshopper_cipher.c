@@ -124,30 +124,28 @@ GOST_cipher grasshopper_ctr_acpkm_omac_cipher = {
     .ctx_size = sizeof(gost_grasshopper_cipher_ctx_ctr),
 };
 
-/* first 256 bit of D from draft-irtf-cfrg-re-keying-12 */
-static const unsigned char ACPKM_D_2018[] = {
-    0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, /*  64 bit */
-    0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f, /* 128 bit */
-    0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97,
-    0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f, /* 256 bit */
-};
-
 static void acpkm_next(gost_grasshopper_cipher_ctx * c)
 {
-    unsigned char newkey[GRASSHOPPER_KEY_SIZE];
+/* first 256 bit of D from draft-irtf-cfrg-re-keying-12 */
+static const grasshopper_w128_t D[GRASSHOPPER_KEY_SIZE / GRASSHOPPER_BLOCK_SIZE] =
+    {
+        { .b={0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,   /*  64 bit */
+              0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f} },/* 128 bit */
+        { .b={0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97,
+              0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f} },/* 256 bit */
+    };
+
+    grasshopper_key_t newkey;
     const int J = GRASSHOPPER_KEY_SIZE / GRASSHOPPER_BLOCK_SIZE;
     int n;
 
     for (n = 0; n < J; n++) {
-        const unsigned char *D_n = &ACPKM_D_2018[n * GRASSHOPPER_BLOCK_SIZE];
-
         grasshopper_encrypt_block(&c->encrypt_round_keys,
-                                  (grasshopper_w128_t *) D_n,
-                                  (grasshopper_w128_t *) & newkey[n *
-                                                                  GRASSHOPPER_BLOCK_SIZE],
+                                  (grasshopper_w128_t *)&D[n],
+                                  &newkey.k.k[n],
                                   &c->buffer);
     }
-    gost_grasshopper_cipher_key(c, newkey);
+    gost_grasshopper_cipher_key(c, newkey.k.b);
 }
 
 /* Set 256 bit  key into context */
