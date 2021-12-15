@@ -27,13 +27,7 @@
 #include <openssl/bn.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
 #include <sys/types.h>
-#include <signal.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 #ifdef __GNUC__
 /* For X509_NAME_add_entry_by_txt */
@@ -72,9 +66,6 @@ struct certkey {
 static int verbose;
 static const char *cipher_list;
 
-/* How much K to transfer between client and server. */
-#define KTRANSFER (1 * 1024)
-
 static void err(int eval, const char *fmt, ...)
 {
     va_list ap;
@@ -84,122 +75,6 @@ static void err(int eval, const char *fmt, ...)
     va_end(ap);
     printf(": %s\n", strerror(errno));
     exit(eval);
-}
-
-/*
- * Simple TLS Server code is based on
- * https://wiki.openssl.org/index.php/Simple_TLS_Server
- */
-static int s_server(EVP_PKEY *pkey, X509 *cert, int client)
-{
-    SSL_CTX *ctx;
-    T(ctx = SSL_CTX_new(TLS_server_method()));
-    T(SSL_CTX_use_certificate(ctx, cert));
-    T(SSL_CTX_use_PrivateKey(ctx, pkey));
-    T(SSL_CTX_check_private_key(ctx));
-
-    SSL *ssl;
-    T(ssl = SSL_new(ctx));
-    T(SSL_set_fd(ssl, client));
-    if (cipher_list)
-	T(SSL_set_cipher_list(ssl, cipher_list));
-    T(SSL_accept(ssl) == 1);
-
-    /* Receive data from client */
-    char buf[1024];
-    int i;
-    for (i = 0; i < KTRANSFER; i++) {
-	int k;
-
-	T(SSL_read(ssl, buf, sizeof(buf)) == sizeof(buf));
-	for (k = 0; k < sizeof(buf); k++)
-	    if (buf[k] != 'c')
-		err(1, "corruption from client");
-    }
-    /* Send data to client. */
-    memset(buf, 's', sizeof(buf));
-    for (i = 0; i < KTRANSFER; i++) {
-	T(SSL_write(ssl, buf, sizeof(buf)) == sizeof(buf));
-    }
-    SSL_shutdown(ssl);
-    SSL_free(ssl);
-    close(client);
-
-    SSL_CTX_free(ctx);
-    return 0;
-}
-
-/*
- * Simple TLC Client code is based on man BIO_f_ssl and
- * https://wiki.openssl.org/index.php/SSL/TLS_Client
- */
-static int s_client(int server)
-{
-    SSL_CTX *ctx;
-    T(ctx = SSL_CTX_new(TLS_client_method()));
-
-    BIO *sbio;
-    T(sbio = BIO_new_ssl_connect(ctx));
-    SSL *ssl;
-    T(BIO_get_ssl(sbio, &ssl));
-    T(SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY));
-    if (cipher_list)
-	T(SSL_set_cipher_list(ssl, cipher_list));
-#if 0
-    /* Does not work with reneg. */
-    BIO_set_ssl_renegotiate_bytes(sbio, 100 * 1024);
-#endif
-    T(SSL_set_fd(ssl, server));
-    T(BIO_do_handshake(sbio) == 1);
-
-    printf("Protocol: %s\n", SSL_get_version(ssl));
-    printf("Cipher:   %s\n", SSL_get_cipher_name(ssl));
-    if (verbose) {
-	SSL_SESSION *sess = SSL_get0_session(ssl);
-	SSL_SESSION_print_fp(stdout, sess);
-    }
-
-    X509 *cert;
-    T(cert = SSL_get_peer_certificate(ssl));
-    X509_free(cert);
-    int verify = SSL_get_verify_result(ssl);
-    printf("Verify:   %s\n", X509_verify_cert_error_string(verify));
-    if (verify != X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
-	err(1, "invalid SSL_get_verify_result");
-
-    /* Send data to server. */
-    char buf[1024];
-    int i;
-    memset(buf, 'c', sizeof(buf));
-    for (i = 0; i < KTRANSFER; i++) {
-	T(BIO_write(sbio, buf, sizeof(buf)) == sizeof(buf));
-    }
-    (void)BIO_shutdown_wr(sbio);
-
-    /* Receive data from server. */
-    for (i = 0; i < KTRANSFER; i++) {
-	int k;
-	int n = BIO_read(sbio, buf, sizeof(buf));
-
-	if (n != sizeof(buf)) {
-	    printf("i:%d BIO_read:%d SSL_get_error:%d\n", i, n,
-		SSL_get_error(ssl, n));
-	    ERR_print_errors_fp(stderr);
-	    err(1, "BIO_read");
-	}
-
-	for (k = 0; k < sizeof(buf); k++)
-	    if (buf[k] != 's')
-		err(1, "corruption from server");
-    }
-
-    i = BIO_get_num_renegotiates(sbio);
-    if (i)
-	printf("Renegs:   %d\n", i);
-    BIO_free_all(sbio);
-    SSL_CTX_free(ctx);
-
-    return 0;
 }
 
 /* Generate simple cert+key pair. Based on req.c */
@@ -278,6 +153,7 @@ static struct certkey certgen(const char *algname, const char *paramset)
     return (struct certkey){ .pkey = pkey, .cert = x509ss };
 }
 
+/* Non-blocking BIO test mechanic is based on sslapitest.c */
 int test(const char *algname, const char *paramset)
 {
     int ret = 0;
@@ -290,71 +166,105 @@ int test(const char *algname, const char *paramset)
     struct certkey ck;
     ck = certgen(algname, paramset);
 
-    int sockfd[2];
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd) == -1)
-	err(1, "socketpair");
+    SSL_CTX *cctx, *sctx;
 
-    setpgid(0, 0);
+    T(sctx = SSL_CTX_new(TLS_server_method()));
+    T(SSL_CTX_use_certificate(sctx, ck.cert));
+    T(SSL_CTX_use_PrivateKey(sctx, ck.pkey));
+    T(SSL_CTX_check_private_key(sctx));
 
-    /* Run server in separate process. */
-    pid_t server_pid = fork();
-    if (server_pid < 0)
-	err(1, "fork server");
-    if (server_pid == 0) {
-	ret = s_server(ck.pkey, ck.cert, sockfd[1]);
-	X509_free(ck.cert);
-	EVP_PKEY_free(ck.pkey);
-	exit(ret);
+    T(cctx = SSL_CTX_new(TLS_client_method()));
+
+    /* create_ssl_objects */
+    SSL *serverssl, *clientssl;
+    T(serverssl = SSL_new(sctx));
+    T(clientssl = SSL_new(cctx));
+    BIO *s_to_c_bio, *c_to_s_bio;
+    T(s_to_c_bio = BIO_new(BIO_s_mem()));
+    T(c_to_s_bio = BIO_new(BIO_s_mem()));
+    /* Non-blocking IO. */
+    BIO_set_mem_eof_return(s_to_c_bio, -1);
+    BIO_set_mem_eof_return(c_to_s_bio, -1);
+    /* Transfer BIOs to SSL objects. */
+    SSL_set_bio(serverssl, c_to_s_bio, s_to_c_bio);
+    BIO_up_ref(s_to_c_bio);
+    BIO_up_ref(c_to_s_bio);
+    SSL_set_bio(clientssl, s_to_c_bio, c_to_s_bio);
+    c_to_s_bio = NULL;
+    c_to_s_bio = NULL;
+
+    /* create_ssl_connection */
+    int retc = -1, rets = -1, err;
+    do {
+        err = SSL_ERROR_WANT_WRITE;
+        while (retc <= 0 && err == SSL_ERROR_WANT_WRITE) {
+            retc = SSL_connect(clientssl);
+            if (retc <= 0)
+                err = SSL_get_error(clientssl, retc);
+            if (verbose)
+                printf("SSL_connect: %d %d\n", retc, err);
+        }
+        if (retc <= 0 && err != SSL_ERROR_WANT_READ) {
+            ERR_print_errors_fp(stderr);
+            OpenSSLDie(__FILE__, __LINE__, "SSL_connect");
+        }
+        err = SSL_ERROR_WANT_WRITE;
+        while (rets <= 0 && err == SSL_ERROR_WANT_WRITE) {
+            rets = SSL_accept(serverssl);
+            if (rets <= 0)
+                err = SSL_get_error(serverssl, rets);
+            if (verbose)
+                printf("SSL_accept: %d %d\n", rets, err);
+        }
+        if (rets <= 0 && err != SSL_ERROR_WANT_READ &&
+            err != SSL_ERROR_WANT_X509_LOOKUP) {
+            ERR_print_errors_fp(stderr);
+            OpenSSLDie(__FILE__, __LINE__, "SSL_accept");
+        }
+    } while (retc <=0 || rets <= 0);
+
+    /* Two SSL_read_ex should fail. */
+    unsigned char buf;
+    size_t readbytes;
+    T(!SSL_read_ex(clientssl, &buf, sizeof(buf), &readbytes));
+    T(!SSL_read_ex(clientssl, &buf, sizeof(buf), &readbytes));
+
+    /* Connect client to the server. */
+    T(SSL_do_handshake(clientssl) == 1);
+    printf("Protocol: %s\n", SSL_get_version(clientssl));
+    printf("Cipher:   %s\n", SSL_get_cipher_name(clientssl));
+    if (verbose) {
+        SSL_SESSION *sess = SSL_get0_session(clientssl);
+        SSL_SESSION_print_fp(stdout, sess);
     }
 
-    /* Run client in separate process. */
-    pid_t client_pid = fork();
-    if (client_pid < 0)
-	err(1, "fork client");
-    if (client_pid == 0) {
-	ret = s_client(sockfd[0]);
-	X509_free(ck.cert);
-	EVP_PKEY_free(ck.pkey);
-	exit(ret);
+    /* Transfer some data. */
+    int i;
+    for (i = 0; i < 16; i++) {
+        char pbuf[512], lbuf[512];
+
+        memset(pbuf, 'c' + i, sizeof(pbuf));
+        T(SSL_write(serverssl, pbuf, sizeof(pbuf)) == sizeof(pbuf));
+        T(SSL_read(clientssl, lbuf, sizeof(lbuf)) == sizeof(lbuf));
+        T(memcmp(pbuf, lbuf, sizeof(pbuf)) == 0);
+
+        memset(lbuf, 's' + i, sizeof(lbuf));
+        T(SSL_write(clientssl, lbuf, sizeof(lbuf)) == sizeof(lbuf));
+        T(SSL_read(serverssl, pbuf, sizeof(pbuf)) == sizeof(pbuf));
+        T(memcmp(pbuf, lbuf, sizeof(pbuf)) == 0);
     }
 
-    /* Wait for first child to exit. */
-    int status;
-    pid_t exited_pid = wait(&status);
-    ret = (WIFEXITED(status) && WEXITSTATUS(status)) ||
-	(WIFSIGNALED(status) && WTERMSIG(status));
-    if (ret) {
-	fprintf(stderr, cRED "%s child %s with %d %s" cNORM,
-	    exited_pid == server_pid? "server" : "client",
-	    WIFSIGNALED(status)? "killed" : "exited",
-	    WIFSIGNALED(status)? WTERMSIG(status) : WEXITSTATUS(status),
-	    WIFSIGNALED(status)? strsignal(WTERMSIG(status)) : "");
+    SSL_shutdown(clientssl);
+    SSL_shutdown(serverssl);
 
-	/* If first child exited with error, kill other. */
-	fprintf(stderr, "terminating %s by force",
-	    exited_pid == server_pid? "client" : "server");
-	kill(exited_pid == server_pid? client_pid : server_pid, SIGTERM);
-    }
-
-    exited_pid = wait(&status);
-    /* Report error unless we killed it. */
-    if (!ret && (!WIFEXITED(status) || WEXITSTATUS(status)))
-	fprintf(stderr, cRED "%s child %s with %d %s" cNORM,
-	    exited_pid == server_pid? "server" : "client",
-	    WIFSIGNALED(status)? "killed" : "exited",
-	    WIFSIGNALED(status)? WTERMSIG(status) : WEXITSTATUS(status),
-	    WIFSIGNALED(status)? strsignal(WTERMSIG(status)) : "");
-    ret |= (WIFEXITED(status) && WEXITSTATUS(status)) ||
-	(WIFSIGNALED(status) && WTERMSIG(status));
+    SSL_free(serverssl);
+    SSL_free(clientssl);
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
 
     /* Every responsible process should free this. */
     X509_free(ck.cert);
     EVP_PKEY_free(ck.pkey);
-#ifdef __SANITIZE_ADDRESS__
-    /* Abort on the first (hopefully) ASan error. */
-    if (ret)
-	_exit(ret);
-#endif
     return ret;
 }
 
