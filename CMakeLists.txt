@@ -269,13 +269,11 @@ add_test(NAME sign/verify-with-engine COMMAND test_sign)
 set_tests_properties(sign/verify-with-engine
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
 
-if(NOT MSVC)
-  add_executable(test_tls test_tls.c)
-  target_link_libraries(test_tls OpenSSL::SSL)
-  add_test(NAME TLS-with-engine COMMAND test_tls)
-  set_tests_properties(TLS-with-engine
-    PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
-endif()
+add_executable(test_tls test_tls.c)
+target_link_libraries(test_tls OpenSSL::SSL)
+add_test(NAME TLS-with-engine COMMAND test_tls)
+set_tests_properties(TLS-with-engine
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
 
 add_executable(test_context test_context.c)
 target_link_libraries(test_context OpenSSL::Crypto)
@@ -329,10 +327,8 @@ set(BINARY_TESTS_TARGETS
         test_context
         test_keyexpimp
         test_gost89
+        test_tls
         )
-if(NOT MSVC)
-  list(APPEND BINARY_TESTS_TARGETS test_tls)
-endif()
 set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
