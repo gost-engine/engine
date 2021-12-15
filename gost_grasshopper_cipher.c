@@ -589,17 +589,19 @@ static int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *ou
         EVP_CIPHER_CTX_get_cipher_data(ctx);
     const unsigned char *in_ptr = in;
     unsigned char *out_ptr = out;
-    unsigned char *buf = EVP_CIPHER_CTX_buf_noconst(ctx);
-    unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
+    grasshopper_w128_t ivb, buf;
     int num = EVP_CIPHER_CTX_num(ctx);
     size_t i = 0;
     size_t j;
+
+    memcpy(&buf, EVP_CIPHER_CTX_buf_noconst(ctx), sizeof (buf));
+    memcpy(&ivb, EVP_CIPHER_CTX_iv_noconst(ctx), sizeof (ivb));
 
     /* process partial block if any */
     if (num > 0) {
         for (j = (size_t)num, i = 0; j < GRASSHOPPER_BLOCK_SIZE && i < inl;
              j++, i++, in_ptr++, out_ptr++) {
-            *out_ptr = buf[j] ^ (*in_ptr);
+            *out_ptr = buf.b[j] ^ (*in_ptr);
         }
         if (j == GRASSHOPPER_BLOCK_SIZE) {
             EVP_CIPHER_CTX_set_num(ctx, 0);
@@ -617,8 +619,7 @@ static int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *ou
          * block cipher current iv
          */
         /* Encrypt */
-        gost_grasshopper_cnt_next(c, (grasshopper_w128_t *) iv,
-                                  (grasshopper_w128_t *) buf);
+        gost_grasshopper_cnt_next(c, &ivb, &buf);
 
         /*
          * xor next block of input text with it and output it
@@ -627,22 +628,23 @@ static int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *ou
          * output this block
          */
         for (j = 0; j < GRASSHOPPER_BLOCK_SIZE; j++) {
-            out_ptr[j] = buf[j] ^ in_ptr[j];
+            out_ptr[j] = buf.b[j] ^ in_ptr[j];
         }
     }
 
     /* Process rest of buffer */
     if (i < inl) {
-        gost_grasshopper_cnt_next(c, (grasshopper_w128_t *) iv,
-                                  (grasshopper_w128_t *) buf);
+        gost_grasshopper_cnt_next(c, &ivb, &buf);
         for (j = 0; i < inl; j++, i++) {
-            out_ptr[j] = buf[j] ^ in_ptr[j];
+            out_ptr[j] = buf.b[j] ^ in_ptr[j];
         }
         EVP_CIPHER_CTX_set_num(ctx, (int)j);
     } else {
         EVP_CIPHER_CTX_set_num(ctx, 0);
     }
 
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), &ivb, sizeof (ivb));
+    memcpy(EVP_CIPHER_CTX_buf_noconst(ctx), &buf, sizeof (buf));
     return 1;
 }
 
