@@ -10,6 +10,11 @@ enable_testing()
 
 find_package(OpenSSL 3.0 REQUIRED)
 
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'RelWithDebInfo' as none was specified.")
+  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
+endif()
+
 if (NOT DEFINED OPENSSL_ROOT_DIR)
   get_filename_component(OPENSSL_ROOT_DIR ${OPENSSL_INCLUDE_DIR} DIRECTORY)
   message(STATUS "Setting OpenSSL root: ${OPENSSL_ROOT_DIR}")
