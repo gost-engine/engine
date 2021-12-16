@@ -86,6 +86,49 @@ static void pkey_gost_cleanup(EVP_PKEY_CTX *ctx)
     OPENSSL_free(data);
 }
 
+/*
+* signature schemes(hex)        NamedGroup(hex) Curve Identifier                            param_nid                                       paramset
+*  (draft-smyshlyaev-tls13)                                                                 (gost-engine)
+* --------------------------------------------------------------------------------------------------------------------------------------------------
+* gostr34102012_256a(0x0709)    GC256A(0x22)    id-tc26-gost-3410-2012-256-paramSetA        NID_id_tc26_gost_3410_2012_256_paramSetA        TCA
+* gostr34102012_256b(0x070A)    GC256B(0x23)    id-GostR3410-2001-CryptoPro-A-ParamSet      NID_id_GostR3410_2001_CryptoPro_A_ParamSet      A
+*                                              *id-GostR3410_2001-CryptoPro-XchA-ParamSet   NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet   XA
+*                                              *id-tc26-gost-3410-2012-256-paramSetB        NID_id_tc26_gost_3410_2012_256_paramSetB        TCB
+* gostr34102012_256c(0x070B)    GC256C(0x24)    id-GostR3410-2001-CryptoPro-B-ParamSet      NID_id_GostR3410_2001_CryptoPro_B_ParamSet      B
+*                                              *id-tc26-gost-3410-2012-256-paramSetC        NID_id_tc26_gost_3410_2012_256_paramSetC        TCC
+* gostr34102012_256d(0x070C)    GC256D(0x25)    id-GostR3410-2001-CryptoPro-C-ParamSet      NID_id_GostR3410_2001_CryptoPro_C_ParamSet      C
+*                                              *id-GostR3410-2001-CryptoPro-XchB-ParamSet   NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet   XB
+*                                              *id-tc26-gost-3410-2012-256-paramSetD        NID_id_tc26_gost_3410_2012_256_paramSetD        TCD
+* gostr34102012_512a(0x070D)    GC512A(0x26)    id-tc26-gost-3410-12-512-paramSetA          NID_id_tc26_gost_3410_2012_512_paramSetA        A
+* gostr34102012_512b(0x070E)    GC512B(0x27)    id-tc26-gost-3410-12-512-paramSetB          NID_id_tc26_gost_3410_2012_512_paramSetB        B
+* gostr34102012_512c(0x070F)    GC512C(0x28)    id-tc26-gost-3410-2012-512-paramSetC        NID_id_tc26_gost_3410_2012_512_paramSetC        C
+*
+* */
+
+typedef struct paramset_match_tbl_st {
+    int lookup_id;  // SIGALG_LOOKUP.curve
+    int param_nid;
+} PARAMSET_MATCH_TBL;
+
+static PARAMSET_MATCH_TBL paramset_matches[] = {
+    { NID_id_tc26_gost_3410_2012_256_paramSetA, NID_id_tc26_gost_3410_2012_256_paramSetA },
+    { NID_id_tc26_gost_3410_2012_256_paramSetB, NID_id_GostR3410_2001_CryptoPro_A_ParamSet },
+    { NID_id_tc26_gost_3410_2012_256_paramSetB, NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet },
+    { NID_id_tc26_gost_3410_2012_256_paramSetB, NID_id_tc26_gost_3410_2012_256_paramSetB },
+    { NID_id_tc26_gost_3410_2012_256_paramSetC, NID_id_GostR3410_2001_CryptoPro_B_ParamSet },
+    { NID_id_tc26_gost_3410_2012_256_paramSetC, NID_id_tc26_gost_3410_2012_256_paramSetC },
+    { NID_id_tc26_gost_3410_2012_256_paramSetD, NID_id_GostR3410_2001_CryptoPro_C_ParamSet },
+    { NID_id_tc26_gost_3410_2012_256_paramSetD, NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet },
+    { NID_id_tc26_gost_3410_2012_256_paramSetD, NID_id_tc26_gost_3410_2012_256_paramSetD },
+    { NID_id_tc26_gost_3410_2012_512_paramSetA, NID_id_tc26_gost_3410_2012_512_paramSetA },
+    { NID_id_tc26_gost_3410_2012_512_paramSetB, NID_id_tc26_gost_3410_2012_512_paramSetB },
+    { NID_id_tc26_gost_3410_2012_512_paramSetC, NID_id_tc26_gost_3410_2012_512_paramSetC }
+};
+
+#ifndef OSSL_NELEM
+# define OSSL_NELEM(x) (sizeof(x)/sizeof((x)[0]))
+#endif
+
 /* --------------------- control functions  ------------------------------*/
 static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
 {
@@ -95,6 +138,23 @@ static int pkey_gost_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
         return 0;
 
     switch (type) {
+    case EVP_PKEY_CTRL_PARAMS_MATCH:
+        {
+            int param_nid = pctx->sign_param_nid;
+            int i;
+
+            // key is incomparable by 'params' or there is no matches
+            if (param_nid == 0 || p1 == 0)
+                return 0;
+
+            for (i = 0; i < OSSL_NELEM(paramset_matches); i++) {
+                if (paramset_matches[i].lookup_id == p1 
+                    && paramset_matches[i].param_nid == param_nid)
+                return 1; 
+            }
+            return 0;
+        }
+
     case EVP_PKEY_CTRL_MD:
         {
             EVP_PKEY *key = EVP_PKEY_CTX_get0_pkey(ctx);
