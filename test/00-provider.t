@@ -9,6 +9,8 @@ my $provider = 'gostprov';
 my $provider_info = <<EOINF;
 Providers:
   gostprov
+    name: OpenSSL GOST Provider
+    status: active
 EOINF
 
 # Normally, this test recipe tests the default GOST provider.  However, it's

@@ -8,6 +8,7 @@
  **********************************************************************/
 
 #include <openssl/core_dispatch.h>
+#include <openssl/core_names.h>
 #include "gost_prov.h"
 #include "gost_lcl.h"
 #include "prov/err.h"           /* libprov err functions */
@@ -99,6 +100,15 @@ static const OSSL_ALGORITHM *gost_operation(void *vprovctx,
 
 static int gost_get_params(void *provctx, OSSL_PARAM *params)
 {
+    OSSL_PARAM *p;
+
+    p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_NAME);
+    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, "OpenSSL GOST Provider"))
+        return 0;
+    p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_STATUS);
+    if (p != NULL && !OSSL_PARAM_set_int(p, 1)) /* We never fail. */
+        return 0;
+
     return 1;
 }
 
