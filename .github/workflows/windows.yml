@@ -22,7 +22,7 @@ jobs:
             - name: Build OpenSSL
               if: steps.cache.outputs.cache-hit != 'true'
               run: |
-                  perl Configure no-makedepend no-tests no-asm
+                  perl Configure no-makedepend no-tests no-asm VC-WIN64A
                   perl configdata.pm --dump
                   nmake /S build_libs build_programs
                   nmake /S install_sw DESTDIR=_dest
