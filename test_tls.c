@@ -225,8 +225,8 @@ static struct certkey certgen(const char *algname, const char *paramset)
     T(X509_REQ_set_version(req, 0L));
     X509_NAME *name;
     T(name = X509_NAME_new());
-    T(X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, "Test CA", -1, -1, 0));
-    T(X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, "Test Key", -1, -1, 0));
+    T(X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, (unsigned char *)"Test CA", -1, -1, 0));
+    T(X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (unsigned char *)"Test Key", -1, -1, 0));
     T(X509_REQ_set_subject_name(req, name));
     T(X509_REQ_set_pubkey(req, pkey));
     X509_NAME_free(name);
