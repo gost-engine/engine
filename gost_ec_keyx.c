@@ -174,6 +174,137 @@ static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
     }
 }
 
+int pkey_gost_ec_compute_key(void *out, size_t outlen, const EC_POINT *pub_key,
+                             const EC_KEY *eckey)
+{
+    BN_CTX *ctx;
+    EC_POINT *tmp = NULL;
+    BIGNUM *x = NULL;
+    const BIGNUM *priv_key;
+    const EC_GROUP *group;
+    int ret = 0;
+    size_t buflen,len;
+    unsigned char *buf = NULL;
+    int nid;
+
+    if (outlen > INT_MAX) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, EC_R_INVALID_OUTPUT_LENGTH);
+        return 0;
+    }
+
+    if ((ctx = BN_CTX_new()) == NULL)
+        goto err;
+    BN_CTX_start(ctx);
+    x = BN_CTX_get(ctx);
+    if (x == NULL) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
+        goto err;
+    }
+
+    priv_key = EC_KEY_get0_private_key(eckey);
+    if (priv_key == NULL) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, EC_R_MISSING_PRIVATE_KEY);
+        goto err;
+    }
+
+    group = EC_KEY_get0_group(eckey);
+
+    nid = EC_GROUP_get_curve_name(group);
+    if (nid == NID_id_tc26_gost_3410_2012_256_paramSetA 
+        || nid == NID_id_tc26_gost_3410_2012_512_paramSetC) {
+        if (!EC_GROUP_get_cofactor(group, x, NULL) ||
+            // or use BN_mul(...)
+            !BN_mod_mul(x, x, priv_key, EC_GROUP_get0_order(group), ctx)) {
+            GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, ERR_R_INTERNAL_ERROR);
+            goto err;
+        }
+        priv_key = x;
+    }
+
+    if ((tmp = EC_POINT_new(group)) == NULL) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
+        goto err;
+    }
+
+    if (!gost_ec_point_mul(group, tmp, NULL, pub_key, priv_key, ctx)) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, EC_R_POINT_ARITHMETIC_FAILURE);
+        goto err;
+    }
+
+    if (!EC_POINT_get_affine_coordinates(group, tmp, x, NULL, ctx)) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, EC_R_POINT_ARITHMETIC_FAILURE);
+        goto err;
+    }
+
+    buflen = (EC_GROUP_get_degree(group) + 7) / 8;
+    len = BN_num_bytes(x);
+    if (len > buflen) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+    if ((buf = OPENSSL_malloc(buflen)) == NULL) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, ERR_R_MALLOC_FAILURE);
+        goto err;
+    }
+    
+    if (buflen != BN_bn2lebinpad(x, buf, buflen)) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_COMPUTE_KEY, ERR_R_BN_LIB);
+        goto err;
+    }
+
+    if (outlen > buflen)
+        outlen = buflen;
+    memcpy(out, buf, outlen);
+    OPENSSL_clear_free(buf, buflen);
+
+    ret = outlen;
+
+ err:
+    EC_POINT_clear_free(tmp);
+    BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
+    return ret;
+}
+
+int pkey_gost_ec_2020_derive(EVP_PKEY_CTX *ctx, unsigned char *key, 
+                             size_t *keylen)
+{
+    int ret;
+    size_t outlen;
+    const EC_POINT *pubkey = NULL;
+    EC_KEY *eckey;
+    EVP_PKEY *my_key = EVP_PKEY_CTX_get0_pkey(ctx);
+    EVP_PKEY *peer_key = EVP_PKEY_CTX_get0_peerkey(ctx);
+
+    if (!my_key || !peer_key) {
+        GOSTerr(GOST_F_PKEY_GOST_EC_2020_DERIVE, EC_R_KEYS_NOT_SET);
+        return 0;
+    }
+
+    eckey = EVP_PKEY_get0(my_key);
+
+    if (!key) {
+        const EC_GROUP *group;
+        group = EC_KEY_get0_group(eckey);
+        *keylen = (EC_GROUP_get_degree(group) + 7) / 8;
+        return 1;
+    }
+    pubkey = EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key));
+
+    /*
+     * if *outlen is less than maximum size, the result is truncated. 
+     * (is it error or not?)
+     */
+    
+    outlen = *keylen;
+
+    ret = pkey_gost_ec_compute_key(key, outlen, pubkey, eckey);
+    if (ret <= 0)
+        return 0;
+    *keylen = ret;
+    return 1;
+}
+
 /*
  * EVP_PKEY_METHOD callback derive.
  * Implements VKO R 34.10-2001/2012 algorithms
@@ -195,8 +326,7 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
     int dgst_nid = NID_undef;
 
     if (!data || data->shared_ukm_size == 0) {
-        GOSTerr(GOST_F_PKEY_GOST_EC_DERIVE, GOST_R_UKM_NOT_SET);
-        return 0;
+        return pkey_gost_ec_2020_derive(ctx, key, keylen);
     }
 
     /* VKO */
