@@ -2,17 +2,17 @@ name: CI
 on: [push, pull_request]
 
 env:
-    OPENSSL_BRANCH: OpenSSL_1_1_1g
+    OPENSSL_BRANCH: OpenSSL_1_1_1m
 
 jobs:
-    gcc-openssl-111g:
+    gcc-openssl-111m:
         runs-on: ubuntu-20.04
         steps:
             - uses: actions/checkout@v2
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    clang-openssl-111g:
+    clang-openssl-111m:
         runs-on: ubuntu-20.04
         env:
             CC: clang
@@ -21,17 +21,17 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    gcc-asan-openssl-111g:
+    gcc-asan-openssl-111m:
         runs-on: ubuntu-20.04
         env:
-            OPENSSL_BRANCH: OpenSSL_1_1_1g
+            OPENSSL_BRANCH: OpenSSL_1_1_1m
             ASAN: -DASAN=1
         steps:
             - uses: actions/checkout@v2
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    gcc-openssl-111g-x86:
+    gcc-openssl-111m-x86:
         runs-on: ubuntu-20.04
         env:
             CFLAGS: -m32

@@ -9,8 +9,9 @@ fi
 
 git clone --depth 1 -b $OPENSSL_BRANCH https://github.com/openssl/openssl.git
 cd openssl
-patch -p0 < ../patches/openssl_111g.diff
-patch -p0 < ../patches/openssl_111g_obj.diff
+patch -p0 < ../patches/openssl_111m.diff
+patch -p0 < ../patches/openssl_111m_obj.diff
+patch -p0 < ../patches/openssl_111m_tls13.diff
 git describe --always --long
 
 PREFIX=$HOME/opt
