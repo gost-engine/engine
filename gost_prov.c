@@ -58,7 +58,7 @@ static PROV_CTX *provider_ctx_new(const OSSL_CORE_HANDLE *core,
 {
     PROV_CTX *ctx;
 
-    if ((ctx = malloc(sizeof(*ctx))) != NULL
+    if ((ctx = OPENSSL_zalloc(sizeof(*ctx))) != NULL
         && (ctx->proverr_handle = proverr_new_handle(core, in)) != NULL
         && (ctx->libctx = OSSL_LIB_CTX_new()) != NULL
         && (ctx->e = ENGINE_new()) != NULL
