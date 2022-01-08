@@ -630,15 +630,23 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
                           size_t in_len)
 {
     const unsigned char *p = in;
-    struct gost_pmeth_data *data = EVP_PKEY_CTX_get_data(pctx);
-    EVP_PKEY *priv = EVP_PKEY_CTX_get0_pkey(pctx);
+    struct gost_pmeth_data *data;
+    EVP_PKEY *priv;
     PSKeyTransport_gost *pst = NULL;
     int ret = 0;
     unsigned char expkeys[64];
     EVP_PKEY *eph_key = NULL;
-    int pkey_nid = EVP_PKEY_base_id(priv);
+    int pkey_nid;
     int mac_nid = NID_undef;
     int iv_len = 0;
+
+    if (!(data = EVP_PKEY_CTX_get_data(pctx)) ||
+        !(priv = EVP_PKEY_CTX_get0_pkey(pctx))) {
+       GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT, GOST_R_ERROR_COMPUTING_EXPORT_KEYS);
+       ret = 0;
+       goto err;
+    }
+    pkey_nid = EVP_PKEY_base_id(priv);
 
     switch (data->cipher_nid) {
     case NID_magma_ctr:
@@ -678,7 +686,7 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
 
    o  q * Q_eph is not equal to zero point.
 */
-    if (eph_key == NULL || priv == NULL || data == NULL) {
+    if (eph_key == NULL) {
        GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT,
                GOST_R_ERROR_COMPUTING_EXPORT_KEYS);
        ret = 0;
