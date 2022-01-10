@@ -49,7 +49,7 @@ static void provider_ctx_free(PROV_CTX *ctx)
         proverr_free_handle(ctx->proverr_handle);
         OSSL_LIB_CTX_free(ctx->libctx);
     }
-    free(ctx);
+    OPENSSL_free(ctx);
 }
 
 extern int populate_gost_engine(ENGINE *e);
