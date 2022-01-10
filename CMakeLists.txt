@@ -248,7 +248,7 @@ set_tests_properties(ciphers-with-provider
 
 # test_curves is an internals testing program, it doesn't need a test env
 add_executable(test_curves test_curves.c)
-target_link_libraries(test_curves gost_core gost_err)
+target_link_libraries(test_curves gost_core gost_err OpenSSL::Crypto)
 add_test(NAME curves COMMAND test_curves)
 
 add_executable(test_params test_params.c)
@@ -287,12 +287,12 @@ set_tests_properties(context-with-provider
 # test_keyexpimp is an internals testing program, it doesn't need a test env
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_core gost_err)
+target_link_libraries(test_keyexpimp gost_core gost_err OpenSSL::Crypto)
 add_test(NAME keyexpimp COMMAND test_keyexpimp)
 
 # test_gost89 is an internals testing program, it doesn't need a test env
 add_executable(test_gost89 test_gost89.c)
-target_link_libraries(test_gost89 gost_core gost_err)
+target_link_libraries(test_gost89 gost_core gost_err OpenSSL::Crypto)
 add_test(NAME gost89 COMMAND test_gost89)
 
 if(NOT SKIP_PERL_TESTS)
@@ -313,7 +313,7 @@ endif()
 
 if(NOT MSVC)
   add_executable(sign benchmark/sign.c)
-  target_link_libraries(sign gost_core gost_err ${CLOCK_GETTIME_LIB})
+  target_link_libraries(sign gost_core gost_err ${CLOCK_GETTIME_LIB} OpenSSL::Crypto)
 endif()
 
 # All that may need to load just built engine will have path to it defined.
@@ -333,10 +333,15 @@ set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS 
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(gost_core PRIVATE OpenSSL::Crypto)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR MSVC)
+    target_link_libraries(gost_core PRIVATE OpenSSL::Crypto)
+endif()
+
 add_library(gost_err STATIC ${GOST_ERR_SOURCE_FILES})
 set_target_properties(gost_err PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(gost_err PRIVATE OpenSSL::Crypto)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR MSVC)
+    target_link_libraries(gost_err PRIVATE OpenSSL::Crypto)
+endif()
 
 # The GOST engine in module form
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
@@ -353,7 +358,7 @@ set_target_properties(lib_gost_engine PROPERTIES
   COMPILE_DEFINITIONS "BUILDING_ENGINE_AS_LIBRARY"
   PUBLIC_HEADER gost-engine.h
   OUTPUT_NAME "gost")
-target_link_libraries(lib_gost_engine PRIVATE gost_core gost_err)
+target_link_libraries(lib_gost_engine PRIVATE gost_core gost_err OpenSSL::Crypto)
 endif()
 
 # The GOST provider uses this
@@ -386,14 +391,14 @@ set(GOST_SUM_SOURCE_FILES
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
-target_link_libraries(gostsum gost_core gost_err)
+target_link_libraries(gostsum gost_core gost_err OpenSSL::Crypto)
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
         )
 
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
-target_link_libraries(gost12sum gost_core gost_err)
+target_link_libraries(gost12sum gost_core gost_err OpenSSL::Crypto)
 
 set_source_files_properties(tags PROPERTIES GENERATED true)
 add_custom_target(tags
