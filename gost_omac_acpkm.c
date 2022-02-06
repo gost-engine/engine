@@ -372,7 +372,7 @@ static int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
         }
         return 1;
     }
-    if (c_to->cmac_ctx == c_from->cmac_ctx) {
+    if ((c_to->cmac_ctx == c_from->cmac_ctx) || (c_to->cmac_ctx == NULL))  {
         c_to->cmac_ctx = CMAC_ACPKM_CTX_new();
     }
     return CMAC_ACPKM_CTX_copy(c_to->cmac_ctx, c_from->cmac_ctx);
