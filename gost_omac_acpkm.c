@@ -98,7 +98,7 @@ static void CMAC_ACPKM_CTX_free(CMAC_ACPKM_CTX *ctx)
     OPENSSL_free(ctx);
 }
 
-int CMAC_ACPKM_CTX_copy(CMAC_ACPKM_CTX *out, const CMAC_ACPKM_CTX *in)
+static int CMAC_ACPKM_CTX_copy(CMAC_ACPKM_CTX *out, const CMAC_ACPKM_CTX *in)
 {
     int bl;
     if (in->nlast_block == -1)
@@ -375,7 +375,8 @@ static int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
     if ((c_to->cmac_ctx == c_from->cmac_ctx) || (c_to->cmac_ctx == NULL))  {
         c_to->cmac_ctx = CMAC_ACPKM_CTX_new();
     }
-    return CMAC_ACPKM_CTX_copy(c_to->cmac_ctx, c_from->cmac_ctx);
+
+    return (c_to->cmac_ctx) ? CMAC_ACPKM_CTX_copy(c_to->cmac_ctx, c_from->cmac_ctx) : 0;
 }
 
 /* Clean up imit ctx */
