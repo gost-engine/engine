@@ -121,6 +121,9 @@ static int test_sign(struct test_sign *t)
 	case 512:
 	    type = NID_id_GostR3410_2012_512;
 	    algname = "gost2012_512";
+	    break;
+	default:
+	    return -1;
     }
 
     /* Keygen. */
