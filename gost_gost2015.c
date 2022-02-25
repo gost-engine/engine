@@ -258,7 +258,7 @@ int gost_mgm128_aad(mgm128_context *ctx, const unsigned char *aad,
     }
     
     alen += len;
-    if (alen > (U64(1) << (bl * 4 - 3)) ||      // < 2^(n/2)  (len stores in bytes)
+    if (alen > ((ossl_uintmax_t)(1) << (bl * 4 - 3)) ||      // < 2^(n/2)  (len stores in bytes)
         (sizeof(len) == 8 && alen < len)) {
             GOSTerr(GOST_F_GOST_MGM128_AAD,
                     GOST_R_DATA_TOO_LARGE);
@@ -327,9 +327,9 @@ int gost_mgm128_encrypt(mgm128_context *ctx, const unsigned char *in,
 
     mlen += len;
     
-    if (mlen > (U64(1) << (bl * 4 - 3)) ||     // < 2^(n/2)  (len stores in bytes)
+    if (mlen > ((ossl_uintmax_t)(1) << (bl * 4 - 3)) ||     // < 2^(n/2)  (len stores in bytes)
         (sizeof(len) == 8 && mlen < len) ||
-        (mlen + alen) > (U64(1) << (bl * 4 - 3))) {
+        (mlen + alen) > ((ossl_uintmax_t)(1) << (bl * 4 - 3))) {
             GOSTerr(GOST_F_GOST_MGM128_ENCRYPT,
                     GOST_R_DATA_TOO_LARGE);
             return -1;
@@ -390,9 +390,9 @@ int gost_mgm128_decrypt(mgm128_context *ctx, const unsigned char *in,
     }
 
     mlen += len;
-    if (mlen > (U64(1) << (bl * 4 - 3)) ||     // < 2^(n/2)  (len stores in bytes)
+    if (mlen > ((ossl_uintmax_t)(1) << (bl * 4 - 3)) ||     // < 2^(n/2)  (len stores in bytes)
         (sizeof(len) == 8 && mlen < len) ||
-        (mlen + alen) > (U64(1) << (bl * 4 - 3))) {
+        (mlen + alen) > ((ossl_uintmax_t)(1) << (bl * 4 - 3))) {
             GOSTerr(GOST_F_GOST_MGM128_DECRYPT,
                     GOST_R_DATA_TOO_LARGE);
             return -1;
