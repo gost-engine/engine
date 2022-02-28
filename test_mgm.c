@@ -64,7 +64,7 @@ const unsigned char gh_e_tag[16] = {
     0xCF, 0x5D, 0x65, 0x6F, 0x40, 0xC3, 0x4F, 0x5C, 0x46, 0xE8, 0xBB, 0x0E, 0x29, 0xFC, 0xDB, 0x4C
 };
 
-const unsigned char mg_key[32] = { 
+const unsigned char mg_key[32] = {
     0xFF, 0xee, 0xDD, 0xcc, 0xbb, 0xaa, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00,
     0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xff
 };
@@ -102,6 +102,7 @@ const unsigned char mg_e_tag[8] = {
 
 static struct testcase {
     int nid;
+    const char *algname;
     const unsigned char *key;
     const unsigned char *nonce;
     size_t nonce_len;
@@ -111,9 +112,10 @@ static struct testcase {
     size_t ptext_len;
     const unsigned char *expected;
     const unsigned char *expected_tag;
-} testcases[] = {     
+} testcases[] = {
     {
         .nid = NID_kuznyechik_mgm,
+        .algname = SN_kuznyechik_mgm,
         .key = gh_key,
         .nonce = gh_nonce,
         .nonce_len = sizeof(gh_nonce),
@@ -126,6 +128,7 @@ static struct testcase {
     },
     {
         .nid = NID_magma_mgm,
+        .algname = SN_magma_mgm,
         .key = mg_key,
         .nonce = mg_nonce,
         .nonce_len = sizeof(mg_nonce),
@@ -139,9 +142,12 @@ static struct testcase {
     { 0 }
 };
 
-static int test_block(const EVP_CIPHER *ciph, const char *name, const unsigned char *nonce, size_t nlen,
-                      const unsigned char *aad, size_t alen, const unsigned char *ptext, size_t plen,
-                      const unsigned char *exp_ctext, const unsigned char *exp_tag,
+static int test_block(const EVP_CIPHER *ciph, const char *name,
+                      const unsigned char *nonce, size_t nlen,
+                      const unsigned char *aad, size_t alen,
+                      const unsigned char *ptext, size_t plen,
+                      const unsigned char *exp_ctext,
+                      const unsigned char *exp_tag,
                       const unsigned char * key, int small)
 {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
@@ -156,14 +162,14 @@ static int test_block(const EVP_CIPHER *ciph, const char *name, const unsigned c
 
     // test encrypt
     EVP_CIPHER_CTX_init(ctx);
-    EVP_EncryptInit_ex(ctx, ciph, NULL, NULL, NULL);                    // Set cipher type and mode
-    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, nlen, NULL);      // Set IV length
-    EVP_EncryptInit_ex(ctx, NULL, NULL, key, nonce);                    // Initialise key and IV
+    EVP_EncryptInit_ex(ctx, ciph, NULL, NULL, NULL);
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, nlen, NULL);
+    EVP_EncryptInit_ex(ctx, NULL, NULL, key, nonce);
     memset(c, 0, sizeof(c));
     if (!small) {
         // test big chunks
-        EVP_EncryptUpdate(ctx, NULL, &outlen1, aad, alen);              // Zero or more calls to specify any AAD
-        EVP_EncryptUpdate(ctx, c, &outlen2, ptext, plen);               // Encrypt plaintext
+        EVP_EncryptUpdate(ctx, NULL, &outlen1, aad, alen);
+        EVP_EncryptUpdate(ctx, c, &outlen2, ptext, plen);
     } else {
         // test small chunks
         outlen1 = outlen2 = 0;
@@ -182,8 +188,8 @@ static int test_block(const EVP_CIPHER *ciph, const char *name, const unsigned c
     EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, tag_len, t);
     EVP_CIPHER_CTX_cleanup(ctx);
 
-    TEST_ASSERT(outlen1 != alen || outlen2 != plen || 
-                memcmp(c, exp_ctext, plen) || 
+    TEST_ASSERT(outlen1 != alen || outlen2 != plen ||
+                memcmp(c, exp_ctext, plen) ||
                 memcmp(t, exp_tag, tag_len));
     ret |= test;
 
@@ -218,7 +224,7 @@ static int test_block(const EVP_CIPHER *ciph, const char *name, const unsigned c
     EVP_CIPHER_CTX_cleanup(ctx);
     EVP_CIPHER_CTX_free(ctx);
 
-    TEST_ASSERT(outlen1 != alen || outlen2 != plen || 
+    TEST_ASSERT(outlen1 != alen || outlen2 != plen ||
                 memcmp(c, ptext, plen) || rv != 1);
     ret |= test;
 
@@ -230,28 +236,25 @@ int main(void)
     int ret = 0;
     const struct testcase *t;
 
-    setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();
-    ERR_load_crypto_strings();
-    ENGINE *eng;
-    T(eng = ENGINE_by_id("gost"));
-    T(ENGINE_init(eng));
-    T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
 
     for (t = testcases; t->nid; t++) {
         int small;
-        const EVP_CIPHER *ciph = EVP_get_cipherbynid(t->nid);
-	    const char *name = EVP_CIPHER_name(ciph);
-        
-        printf("Tests for %s\n", name);
+
+        EVP_CIPHER *ciph;
+
+        ERR_set_mark();
+        T((ciph = (EVP_CIPHER *)EVP_get_cipherbyname(t->algname))
+            || (ciph = EVP_CIPHER_fetch(NULL, t->algname, NULL)));
+        ERR_pop_to_mark();
+
+
+        printf("Tests for %s\n", t->algname);
         for (small = 0; small <= 1; small++)
-            ret |= test_block(ciph, name, t->nonce, t->nonce_len,
+            ret |= test_block(ciph, t->algname, t->nonce, t->nonce_len,
                               t->aad, t->aad_len, t->plaintext, t->ptext_len,
                               t->expected, t->expected_tag, t->key, small);
     }
-
-    ENGINE_finish(eng);
-    ENGINE_free(eng);
 
     if (ret) {
 	    printf("Some tests FAILED!\n");
