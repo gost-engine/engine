@@ -13,6 +13,8 @@
 #include <openssl/x509.h>
 #include <openssl/modes.h>
 
+#include "gost_prov.h"
+
 #define MAGMA_MAC_MAX_SIZE 8
 #define KUZNYECHIK_MAC_MAX_SIZE 16
 #define OID_GOST_CMS_MAC "1.2.643.7.1.0.6.1.1"

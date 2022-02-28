@@ -246,6 +246,15 @@ add_test(NAME ciphers-with-provider COMMAND test_ciphers)
 set_tests_properties(ciphers-with-provider
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
+add_executable(test_mgm test_mgm.c)
+target_link_libraries(test_mgm OpenSSL::Crypto)
+# add_test(NAME mgm-with-engine COMMAND test_mgm)
+# set_tests_properties(mgm-with-engine
+#   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+add_test(NAME mgm-with-provider COMMAND test_mgm)
+set_tests_properties(mgm-with-provider
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
+
 # test_curves is an internals testing program, it doesn't need a test env
 add_executable(test_curves test_curves.c)
 target_link_libraries(test_curves gost_core gost_err)
@@ -294,10 +303,6 @@ add_test(NAME keyexpimp COMMAND test_keyexpimp)
 add_executable(test_gost89 test_gost89.c)
 target_link_libraries(test_gost89 gost_core gost_err)
 add_test(NAME gost89 COMMAND test_gost89)
-
-add_executable(test_mgm test_mgm.c)
-target_link_libraries(test_mgm gost_core gost_err)
-add_test(NAME mgm COMMAND test_mgm)
 
 if(NOT SKIP_PERL_TESTS)
     execute_process(COMMAND perl -MTest2::V0 -e ""
