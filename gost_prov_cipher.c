@@ -140,6 +140,15 @@ static int cipher_get_ctx_params(void *vgctx, OSSL_PARAM params[])
             && !OSSL_PARAM_set_octet_string(p, iv, ivlen))
             return 0;
     }
+    if ((p = OSSL_PARAM_locate(params, "tag")) != NULL) {
+        unsigned char *tag = NULL;
+        size_t taglen = 0;
+
+        if (!OSSL_PARAM_get_octet_string_ptr(p, (const void **)&tag, &taglen)
+            || EVP_CIPHER_CTX_ctrl(gctx->cctx, EVP_CTRL_AEAD_GET_TAG, taglen, 
+                                   tag) <= 0)
+            return 0;
+    }
     return 1;
 }
 
@@ -174,6 +183,23 @@ static int cipher_set_ctx_params(void *vgctx, const OSSL_PARAM params[])
         if (!OSSL_PARAM_get_size_t(p, &key_mesh)
             || EVP_CIPHER_CTX_ctrl(gctx->cctx, EVP_CTRL_KEY_MESH,
                                    key_mesh, NULL) <= 0)
+            return 0;
+    }
+    if ((p = OSSL_PARAM_locate_const(params, "ivlen")) != NULL) {
+        size_t iv_len = 0;
+
+        if (!OSSL_PARAM_get_size_t(p, &iv_len)
+            || EVP_CIPHER_CTX_ctrl(gctx->cctx, EVP_CTRL_AEAD_SET_IVLEN,
+                                   iv_len, NULL) <= 0)
+            return 0;
+    }
+    if ((p = OSSL_PARAM_locate_const(params, "tag")) != NULL) {
+        unsigned char *tag = NULL;
+        size_t taglen = 0;
+
+        if (!OSSL_PARAM_get_octet_string_ptr(p, (const void **)&tag, &taglen)
+            || EVP_CIPHER_CTX_ctrl(gctx->cctx, EVP_CTRL_AEAD_SET_TAG, taglen, 
+                                    tag) <= 0)
             return 0;
     }
     return 1;
@@ -249,6 +275,8 @@ static const OSSL_PARAM *known_magma_ctr_acpkm_omac_cipher_params;
 static const OSSL_PARAM *known_magma_cbc_cipher_params;
 static const OSSL_PARAM *known_grasshopper_ctr_acpkm_cipher_params;
 static const OSSL_PARAM *known_grasshopper_ctr_acpkm_omac_cipher_params;
+static const OSSL_PARAM *known_grasshopper_mgm_cipher_params;
+static const OSSL_PARAM *known_magma_mgm_cipher_params;
 /*
  * These are named like the EVP_CIPHER templates in gost_crypt.c, with the
  * added suffix "_functions".  Hopefully, that makes it easy to find the
@@ -294,6 +322,8 @@ MAKE_FUNCTIONS(magma_ctr_acpkm_cipher);
 MAKE_FUNCTIONS(magma_ctr_acpkm_omac_cipher);
 MAKE_FUNCTIONS(grasshopper_ctr_acpkm_cipher);
 MAKE_FUNCTIONS(grasshopper_ctr_acpkm_omac_cipher);
+MAKE_FUNCTIONS(grasshopper_mgm_cipher);
+MAKE_FUNCTIONS(magma_mgm_cipher);
 
 /* The OSSL_ALGORITHM for the provider's operation query function */
 const OSSL_ALGORITHM GOST_prov_ciphers[] = {
@@ -317,6 +347,8 @@ const OSSL_ALGORITHM GOST_prov_ciphers[] = {
       grasshopper_ctr_acpkm_cipher_functions },
     { SN_kuznyechik_ctr_acpkm_omac ":1.2.643.7.1.1.5.2.2", NULL,
       grasshopper_ctr_acpkm_omac_cipher_functions },
+    { SN_kuznyechik_mgm, NULL, grasshopper_mgm_cipher_functions },
+    { SN_magma_mgm, NULL, magma_mgm_cipher_functions},
 #if 0                           /* Not yet implemented */
     { SN_magma_kexp15 ":1.2.643.7.1.1.7.1.1", NULL,
       magma_kexp15_cipher_functions },
@@ -343,6 +375,8 @@ void GOST_prov_deinit_ciphers(void) {
         &magma_ctr_acpkm_omac_cipher,
         &grasshopper_ctr_acpkm_cipher,
         &grasshopper_ctr_acpkm_omac_cipher,
+        &grasshopper_mgm_cipher,
+        &magma_mgm_cipher
     };
     size_t i;
 #define elems(l) (sizeof(l) / sizeof(l[0]))
