@@ -365,10 +365,10 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
     ECDSA_SIG_get0(sig, &sig_r, &sig_s);
 
     if (BN_is_zero(sig_s) || BN_is_zero(sig_r) ||
-        (BN_cmp(sig_s, order) >= 1) || (BN_cmp(sig_r, order) >= 1)) {
+        BN_is_negative(sig_s) || BN_is_negative(sig_r) ||
+        BN_ucmp(sig_s, order) >= 0 || BN_ucmp(sig_r, order) >= 0) {
         GOSTerr(GOST_F_GOST_EC_VERIFY, GOST_R_SIGNATURE_PARTS_GREATER_THAN_Q);
         goto err;
-
     }
 
     OPENSSL_assert(dgst_len == 32 || dgst_len == 64);
