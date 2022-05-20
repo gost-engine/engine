@@ -96,7 +96,6 @@ And section which describes configuration of the engine should contain
     engine_id = gost
     dynamic_path = /usr/lib/ssl/engines/libgost.so
     default_algorithms = ALL
-    CRYPT_PARAMS = id-Gost28147-89-CryptoPro-A-ParamSet
 
 BouncyCastle cryptoprovider has some problems with private key parsing from
 PrivateKeyInfo, so if you want to use old private key representation format,
