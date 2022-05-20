@@ -141,6 +141,7 @@ static ERR_STRING_DATA GOST_str_reasons[] = {
     {ERR_PACK(0, 0, GOST_R_ERROR_SETTING_PEER_KEY), "error setting peer key"},
     {ERR_PACK(0, 0, GOST_R_INCOMPATIBLE_ALGORITHMS), "incompatible algorithms"},
     {ERR_PACK(0, 0, GOST_R_INCOMPATIBLE_PEER_KEY), "incompatible peer key"},
+    {ERR_PACK(0, 0, GOST_R_INVALID_BUFFER_SIZE), "invalid buffer size"},
     {ERR_PACK(0, 0, GOST_R_INVALID_CIPHER), "invalid cipher"},
     {ERR_PACK(0, 0, GOST_R_INVALID_CIPHER_PARAMS), "invalid cipher params"},
     {ERR_PACK(0, 0, GOST_R_INVALID_CIPHER_PARAM_OID),

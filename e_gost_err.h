@@ -115,6 +115,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_R_ERROR_SETTING_PEER_KEY                    139
 # define GOST_R_INCOMPATIBLE_ALGORITHMS                   108
 # define GOST_R_INCOMPATIBLE_PEER_KEY                     109
+# define GOST_R_INVALID_BUFFER_SIZE                       140
 # define GOST_R_INVALID_CIPHER                            134
 # define GOST_R_INVALID_CIPHER_PARAMS                     110
 # define GOST_R_INVALID_CIPHER_PARAM_OID                  111
