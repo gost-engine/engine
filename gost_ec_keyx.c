@@ -532,6 +532,7 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     int exp_len = 0, iv_len = 0;
     unsigned char *exp_buf = NULL;
     int key_is_ephemeral = 0;
+    int res_len = 0;
 
     switch (data->cipher_nid) {
     case NID_magma_ctr:
@@ -625,8 +626,26 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         goto err;
     }
 
-    if ((*out_len = i2d_PSKeyTransport_gost(pst, out ? &out : NULL)) > 0)
+    res_len = i2d_PSKeyTransport_gost(pst, NULL);
+    if (res_len <= 0) {
+        GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, ERR_R_ASN1_LIB);
+        goto err;
+    }
+
+    if (out == NULL) {
+        *out_len = res_len;
         ret = 1;
+    } else {
+        if ((size_t)res_len > *out_len) {
+            GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, GOST_R_INVALID_BUFFER_SIZE);
+            goto err;
+        }
+        if ((*out_len = i2d_PSKeyTransport_gost(pst, &out)) > 0)
+            ret = 1;
+        else
+            GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, ERR_R_ASN1_LIB);
+    }
+
  err:
     OPENSSL_cleanse(expkeys, sizeof(expkeys));
     if (key_is_ephemeral)
