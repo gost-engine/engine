@@ -292,6 +292,8 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     int key_is_ephemeral = 1;
     gost_ctx cctx;
     EVP_PKEY *sec_key = EVP_PKEY_CTX_get0_peerkey(pctx);
+    int res_len = 0;
+
     if (data->shared_ukm_size) {
         memcpy(ukm, data->shared_ukm, 8);
     } else {
@@ -373,8 +375,26 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
             goto err;
         }
     }
-    if ((*out_len = i2d_GOST_KEY_TRANSPORT(gkt, out ? &out : NULL)) > 0)
+    res_len = i2d_GOST_KEY_TRANSPORT(gkt, NULL);
+    if (res_len <= 0) {
+        GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT, ERR_R_ASN1_LIB);
+        goto err;
+    }
+
+    if (out == NULL) {
+        *out_len = res_len;
         ret = 1;
+    } else {
+        if ((size_t)res_len > *out_len) {
+            GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT, GOST_R_INVALID_BUFFER_SIZE);
+            goto err;
+        }
+        if ((*out_len = i2d_GOST_KEY_TRANSPORT(gkt, &out)) > 0)
+            ret = 1;
+        else
+            GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT, ERR_R_ASN1_LIB);
+    }
+
     OPENSSL_cleanse(shared_key, sizeof(shared_key));
     GOST_KEY_TRANSPORT_free(gkt);
     return ret;
