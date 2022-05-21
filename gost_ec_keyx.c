@@ -589,10 +589,6 @@ static int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     EVP_PKEY *eph_key = NULL, *peerkey = NULL;
     int dgst_nid = NID_undef;
 
-    if (!key) {
-        *key_len = 32;
-        return 1;
-    }
     gkt = d2i_GOST_KEY_TRANSPORT(NULL, (const unsigned char **)&p, in_len);
     if (!gkt) {
         GOSTerr(GOST_F_PKEY_GOST_ECCP_DECRYPT,
@@ -652,6 +648,7 @@ static int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
         goto err;
     }
 
+    *key_len = 32;
     ret = 1;
  err:
     OPENSSL_cleanse(sharedKey, sizeof(sharedKey));
@@ -701,10 +698,6 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
         return -1;
         break;
     }
-    if (!key) {
-        *key_len = 32;
-        return 1;
-    }
 
     pst = d2i_PSKeyTransport_gost(NULL, (const unsigned char **)&p, in_len);
     if (!pst) {
@@ -731,7 +724,7 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
        ret = 0;
        goto err;
     }
-  
+
     if (data->shared_ukm_size == 0 && pst->ukm != NULL) {
         if (EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_CTRL_SET_IV,
         ASN1_STRING_length(pst->ukm), (void *)ASN1_STRING_get0_data(pst->ukm)) < 0) {
@@ -756,6 +749,7 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
         goto err;
     }
 
+    *key_len = 32;
     ret = 1;
  err:
     OPENSSL_cleanse(expkeys, sizeof(expkeys));
@@ -768,6 +762,17 @@ int pkey_gost_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
                       size_t *key_len, const unsigned char *in, size_t in_len)
 {
     struct gost_pmeth_data *gctx = EVP_PKEY_CTX_get_data(pctx);
+
+    if (key == NULL) {
+        *key_len = 32;
+        return 1;
+    }
+
+    if (key != NULL && *key_len < 32) {
+        GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, GOST_R_INVALID_BUFFER_SIZE);
+        return 0;
+    }
+
     switch (gctx->cipher_nid)
     {
         case NID_id_Gost28147_89:
