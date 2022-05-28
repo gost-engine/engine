@@ -226,7 +226,7 @@ add_test(NAME keyexpimp
 	COMMAND test_keyexpimp)
 
 add_executable(test_gost89 test_gost89.c)
-target_link_libraries(test_gost89 gost_core)
+target_link_libraries(test_gost89 gost_core OpenSSL::Crypto)
 add_test(NAME gost89
 	COMMAND test_gost89)
 
@@ -245,7 +245,7 @@ if(NOT SKIP_PERL_TESTS)
 endif()
 
 add_executable(sign benchmark/sign.c)
-target_link_libraries(sign gost_core ${CLOCK_GETTIME_LIB})
+target_link_libraries(sign gost_core ${CLOCK_GETTIME_LIB} OpenSSL::Crypto)
 
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
@@ -263,7 +263,9 @@ set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS 
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(gost_core PRIVATE OpenSSL::Crypto)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR MSVC)
+    target_link_libraries(gost_core PRIVATE OpenSSL::Crypto)
+endif()
 
 add_library(gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
@@ -272,7 +274,7 @@ target_link_libraries(gost_engine PRIVATE gost_core)
 
 add_library(gost_engine_static STATIC ${GOST_ENGINE_SOURCE_FILES})
 set_target_properties(gost_engine_static PROPERTIES PREFIX "lib" PUBLIC_HEADER gost-engine.h OUTPUT_NAME "gost")
-target_link_libraries(gost_engine_static PRIVATE gost_core)
+target_link_libraries(gost_engine_static PRIVATE gost_core OpenSSL::Crypto)
 
 
 set(GOST_SUM_SOURCE_FILES
@@ -280,14 +282,14 @@ set(GOST_SUM_SOURCE_FILES
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
-target_link_libraries(gostsum gost_core)
+target_link_libraries(gostsum gost_core OpenSSL::Crypto)
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
         )
 
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
-target_link_libraries(gost12sum gost_core)
+target_link_libraries(gost12sum gost_core OpenSSL::Crypto)
 
 set_source_files_properties(tags PROPERTIES GENERATED true)
 add_custom_target(tags
