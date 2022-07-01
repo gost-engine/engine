@@ -328,6 +328,60 @@ void gostcrypt(gost_ctx * c, const byte * in, byte * out)
     out[7] = (byte) (n1 >> 24);
 }
 
+/* Low-level encryption routine - encrypts one 64 bit block*/
+void magmacrypt(gost_ctx * c, const byte * in, byte * out)
+{
+    register word32 n1, n2;     /* As named in the GOST */
+    n1 = in[7-0] | (in[7-1] << 8) | (in[7-2] << 16) | ((word32) in[7-3] << 24);
+    n2 = in[7-4] | (in[7-5] << 8) | (in[7-6] << 16) | ((word32) in[7-7] << 24);
+    /* Instead of swapping halves, swap names each round */
+
+    n2 ^= f(c, n1 + c->key[0] + c->mask[0]);
+    n1 ^= f(c, n2 + c->key[1] + c->mask[1]);
+    n2 ^= f(c, n1 + c->key[2] + c->mask[2]);
+    n1 ^= f(c, n2 + c->key[3] + c->mask[3]);
+    n2 ^= f(c, n1 + c->key[4] + c->mask[4]);
+    n1 ^= f(c, n2 + c->key[5] + c->mask[5]);
+    n2 ^= f(c, n1 + c->key[6] + c->mask[6]);
+    n1 ^= f(c, n2 + c->key[7] + c->mask[7]);
+
+    n2 ^= f(c, n1 + c->key[0] + c->mask[0]);
+    n1 ^= f(c, n2 + c->key[1] + c->mask[1]);
+    n2 ^= f(c, n1 + c->key[2] + c->mask[2]);
+    n1 ^= f(c, n2 + c->key[3] + c->mask[3]);
+    n2 ^= f(c, n1 + c->key[4] + c->mask[4]);
+    n1 ^= f(c, n2 + c->key[5] + c->mask[5]);
+    n2 ^= f(c, n1 + c->key[6] + c->mask[6]);
+    n1 ^= f(c, n2 + c->key[7] + c->mask[7]);
+
+    n2 ^= f(c, n1 + c->key[0] + c->mask[0]);
+    n1 ^= f(c, n2 + c->key[1] + c->mask[1]);
+    n2 ^= f(c, n1 + c->key[2] + c->mask[2]);
+    n1 ^= f(c, n2 + c->key[3] + c->mask[3]);
+    n2 ^= f(c, n1 + c->key[4] + c->mask[4]);
+    n1 ^= f(c, n2 + c->key[5] + c->mask[5]);
+    n2 ^= f(c, n1 + c->key[6] + c->mask[6]);
+    n1 ^= f(c, n2 + c->key[7] + c->mask[7]);
+
+    n2 ^= f(c, n1 + c->key[7] + c->mask[7]);
+    n1 ^= f(c, n2 + c->key[6] + c->mask[6]);
+    n2 ^= f(c, n1 + c->key[5] + c->mask[5]);
+    n1 ^= f(c, n2 + c->key[4] + c->mask[4]);
+    n2 ^= f(c, n1 + c->key[3] + c->mask[3]);
+    n1 ^= f(c, n2 + c->key[2] + c->mask[2]);
+    n2 ^= f(c, n1 + c->key[1] + c->mask[1]);
+    n1 ^= f(c, n2 + c->key[0] + c->mask[0]);
+
+    out[7-0] = (byte) (n2 & 0xff);
+    out[7-1] = (byte) ((n2 >> 8) & 0xff);
+    out[7-2] = (byte) ((n2 >> 16) & 0xff);
+    out[7-3] = (byte) (n2 >> 24);
+    out[7-4] = (byte) (n1 & 0xff);
+    out[7-5] = (byte) ((n1 >> 8) & 0xff);
+    out[7-6] = (byte) ((n1 >> 16) & 0xff);
+    out[7-7] = (byte) (n1 >> 24);
+}
+
 /* Low-level decryption routine. Decrypts one 64-bit block */
 void gostdecrypt(gost_ctx * c, const byte * in, byte * out)
 {
@@ -379,6 +433,59 @@ void gostdecrypt(gost_ctx * c, const byte * in, byte * out)
     out[5] = (byte) ((n1 >> 8) & 0xff);
     out[6] = (byte) ((n1 >> 16) & 0xff);
     out[7] = (byte) (n1 >> 24);
+}
+
+/* Low-level decryption routine. Decrypts one 64-bit block */
+void magmadecrypt(gost_ctx * c, const byte * in, byte * out)
+{
+    register word32 n1, n2;     /* As named in the GOST */
+    n1 = in[7-0] | (in[7-1] << 8) | (in[7-2] << 16) | ((word32) in[7-3] << 24);
+    n2 = in[7-4] | (in[7-5] << 8) | (in[7-6] << 16) | ((word32) in[7-7] << 24);
+
+    n2 ^= f(c, n1 + c->key[0] + c->mask[0]);
+    n1 ^= f(c, n2 + c->key[1] + c->mask[1]);
+    n2 ^= f(c, n1 + c->key[2] + c->mask[2]);
+    n1 ^= f(c, n2 + c->key[3] + c->mask[3]);
+    n2 ^= f(c, n1 + c->key[4] + c->mask[4]);
+    n1 ^= f(c, n2 + c->key[5] + c->mask[5]);
+    n2 ^= f(c, n1 + c->key[6] + c->mask[6]);
+    n1 ^= f(c, n2 + c->key[7] + c->mask[7]);
+
+    n2 ^= f(c, n1 + c->key[7] + c->mask[7]);
+    n1 ^= f(c, n2 + c->key[6] + c->mask[6]);
+    n2 ^= f(c, n1 + c->key[5] + c->mask[5]);
+    n1 ^= f(c, n2 + c->key[4] + c->mask[4]);
+    n2 ^= f(c, n1 + c->key[3] + c->mask[3]);
+    n1 ^= f(c, n2 + c->key[2] + c->mask[2]);
+    n2 ^= f(c, n1 + c->key[1] + c->mask[1]);
+    n1 ^= f(c, n2 + c->key[0] + c->mask[0]);
+
+    n2 ^= f(c, n1 + c->key[7] + c->mask[7]);
+    n1 ^= f(c, n2 + c->key[6] + c->mask[6]);
+    n2 ^= f(c, n1 + c->key[5] + c->mask[5]);
+    n1 ^= f(c, n2 + c->key[4] + c->mask[4]);
+    n2 ^= f(c, n1 + c->key[3] + c->mask[3]);
+    n1 ^= f(c, n2 + c->key[2] + c->mask[2]);
+    n2 ^= f(c, n1 + c->key[1] + c->mask[1]);
+    n1 ^= f(c, n2 + c->key[0] + c->mask[0]);
+
+    n2 ^= f(c, n1 + c->key[7] + c->mask[7]);
+    n1 ^= f(c, n2 + c->key[6] + c->mask[6]);
+    n2 ^= f(c, n1 + c->key[5] + c->mask[5]);
+    n1 ^= f(c, n2 + c->key[4] + c->mask[4]);
+    n2 ^= f(c, n1 + c->key[3] + c->mask[3]);
+    n1 ^= f(c, n2 + c->key[2] + c->mask[2]);
+    n2 ^= f(c, n1 + c->key[1] + c->mask[1]);
+    n1 ^= f(c, n2 + c->key[0] + c->mask[0]);
+
+    out[7-0] = (byte) (n2 & 0xff);
+    out[7-1] = (byte) ((n2 >> 8) & 0xff);
+    out[7-2] = (byte) ((n2 >> 16) & 0xff);
+    out[7-3] = (byte) (n2 >> 24);
+    out[7-4] = (byte) (n1 & 0xff);
+    out[7-5] = (byte) ((n1 >> 8) & 0xff);
+    out[7-6] = (byte) ((n1 >> 16) & 0xff);
+    out[7-7] = (byte) (n1 >> 24);
 }
 
 

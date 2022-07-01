@@ -607,13 +607,9 @@ static int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
         while (inl > 0) {
 
             for (i = 0; i < 8; i++) {
-                b[7 - i] = iv[i] ^ in_ptr[i];
+                out_ptr[i] = iv[i] ^ in_ptr[i];
             }
-            gostcrypt(&(c->cctx), b, d);
-
-            for (i = 0; i < 8; i++) {
-                out_ptr[7 - i] = d[i];
-            }
+            magmacrypt(&(c->cctx), out_ptr, out_ptr);
             memcpy(iv, out_ptr, 8);
             out_ptr += 8;
             in_ptr += 8;
@@ -621,13 +617,10 @@ static int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
         }
     } else {
         while (inl > 0) {
-            for (i = 0; i < 8; i++) {
-                d[7 - i] = in_ptr[i];
-            }
-            gostdecrypt(&(c->cctx), d, b);
+            magmadecrypt(&(c->cctx), in_ptr, b);
             memcpy(d, in_ptr, 8);
             for (i = 0; i < 8; i++) {
-                out_ptr[i] = iv[i] ^ b[7 - i];
+                out_ptr[i] = iv[i] ^ b[i];
             }
             memcpy(iv, d, 8);
             out_ptr += 8;
@@ -667,10 +660,9 @@ static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
     unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     unsigned int num = EVP_CIPHER_CTX_num(ctx);
     size_t blocks, i, lasted = inl;
-    unsigned char b[8];
 /* Process partial blocks */
     while ((num & MAGMA_BLOCK_MASK) && lasted) {
-        *out_ptr++ = *in_ptr++ ^ buf[7 - (num & MAGMA_BLOCK_MASK)];
+        *out_ptr++ = *in_ptr++ ^ buf[num & MAGMA_BLOCK_MASK];
         --lasted;
         num++;
     }
@@ -679,12 +671,9 @@ static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
 /* Process full blocks */
     for (i = 0; i < blocks; i++) {
         apply_acpkm_magma(c, &num);
+        magmacrypt(&(c->cctx), iv, buf);
         for (j = 0; j < 8; j++) {
-            b[7 - j] = iv[j];
-        }
-        gostcrypt(&(c->cctx), b, buf);
-        for (j = 0; j < 8; j++) {
-            out_ptr[j] = buf[7 - j] ^ in_ptr[j];
+            out_ptr[j] = buf[j] ^ in_ptr[j];
         }
         ctr64_inc(iv);
         c->count += MAGMA_BLOCK_SIZE;
@@ -697,15 +686,12 @@ static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
 /* Process the rest of plaintext */
     if (lasted > 0) {
         apply_acpkm_magma(c, &num);
-        for (j = 0; j < 8; j++) {
-            b[7 - j] = iv[j];
-        }
-        gostcrypt(&(c->cctx), b, buf);
+        magmacrypt(&(c->cctx), iv, buf);
 
         for (i = 0; i < lasted; i++)
-            out_ptr[i] = buf[7 - i] ^ in_ptr[i];
+            out_ptr[i] = buf[i] ^ in_ptr[i];
         ctr64_inc(iv);
-        c->count += j;
+        c->count += 8;
         num += lasted;
     }
     EVP_CIPHER_CTX_set_num(ctx, num);
