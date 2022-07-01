@@ -59,6 +59,10 @@ void gost_dec_cfb(gost_ctx * ctx, const byte * iv, const byte * cipher,
 void gostcrypt(gost_ctx * c, const byte * in, byte * out);
 /* Decrypt one  block */
 void gostdecrypt(gost_ctx * c, const byte * in, byte * out);
+/* Encrypt one  block */
+void magmacrypt(gost_ctx * c, const byte * in, byte * out);
+/* Decrypt one  block */
+void magmadecrypt(gost_ctx * c, const byte * in, byte * out);
 /* Set key into context */
 void gost_key(gost_ctx * c, const byte * k);
 /* Set key into context without key mask */
