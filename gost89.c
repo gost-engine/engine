@@ -768,20 +768,11 @@ void cryptopro_key_meshing(gost_ctx * ctx, unsigned char *iv)
 void acpkm_magma_key_meshing(gost_ctx * ctx)
 {
     unsigned char newkey[32];
-    int i, j;
-
+    int i;
     for (i = 0; i < 4; i++) {
-        unsigned char buf[8], keybuf[8];
-        for (j = 0; j < 8; j++) {
-            buf[j] = ACPKM_D_const[8 * i + 7 - j];
-        }
-        gostcrypt(ctx, buf, keybuf);
-        memcpy(newkey + 8 * i, keybuf + 4, 4);
-        memcpy(newkey + 8 * i + 4, keybuf, 4);
-        OPENSSL_cleanse(keybuf, sizeof(keybuf));
-        OPENSSL_cleanse(buf, sizeof(buf));
+        magmacrypt(ctx, ACPKM_D_const + 8 * i, newkey + 8 * i);
     }
     /* set new key */
-    gost_key(ctx, newkey);
+    magma_key(ctx, newkey);
     OPENSSL_cleanse(newkey, sizeof(newkey));
 }
