@@ -773,6 +773,6 @@ void acpkm_magma_key_meshing(gost_ctx * ctx)
         magmacrypt(ctx, ACPKM_D_const + 8 * i, newkey + 8 * i);
     }
     /* set new key */
-    magma_key(ctx, newkey);
+    gost_key(ctx, newkey);
     OPENSSL_cleanse(newkey, sizeof(newkey));
 }
