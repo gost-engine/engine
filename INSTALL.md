@@ -12,6 +12,9 @@ To build and install OpenSSL GOST Engine, you will need
 
 Here is a quick build guide:
 
+    $ git clone https://github.com/gost-engine/engine
+    $ cd engine
+    $ git submodule update --init
     $ mkdir build
     $ cd build
     $ cmake -DCMAKE_BUILD_TYPE=Release ..
