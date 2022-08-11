@@ -349,6 +349,7 @@ extern GOST_cipher Gost28147_89_cnt_12_cipher;
 extern GOST_cipher magma_ctr_cipher;
 extern GOST_cipher magma_ctr_acpkm_cipher;
 extern GOST_cipher magma_ctr_acpkm_omac_cipher;
+extern GOST_cipher magma_ecb_cipher;
 extern GOST_cipher magma_cbc_cipher;
 extern GOST_cipher grasshopper_ecb_cipher;
 extern GOST_cipher grasshopper_cbc_cipher;

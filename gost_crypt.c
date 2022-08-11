@@ -54,6 +54,8 @@ static int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 static int magma_cipher_init_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                              const unsigned char *iv, int enc);
 /* Handles block of data in CBC mode */
+static int magma_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                               const unsigned char *in, size_t inl);
 static int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                const unsigned char *in, size_t inl);
 static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
@@ -187,8 +189,7 @@ GOST_cipher Gost28147_89_cnt_12_cipher = {
 static GOST_cipher magma_template_cipher = {
     .block_size = 8,
     .key_len = 32,
-    .iv_len = 8,
-    .flags = EVP_CIPH_CUSTOM_IV |
+    .flags =
         EVP_CIPH_RAND_KEY |
         EVP_CIPH_ALWAYS_CALL_INIT,
     .cleanup = gost_cipher_cleanup,
@@ -205,6 +206,7 @@ GOST_cipher magma_ctr_cipher = {
     .block_size = 1,
     .iv_len = 4,
     .flags = EVP_CIPH_CTR_MODE |
+        EVP_CIPH_CUSTOM_IV |
         EVP_CIPH_NO_PADDING,
     .init = magma_cipher_init,
 };
@@ -215,6 +217,7 @@ GOST_cipher magma_ctr_acpkm_cipher = {
     .block_size = 1,
     .iv_len = 4,
     .flags = EVP_CIPH_CTR_MODE |
+        EVP_CIPH_CUSTOM_IV |
         EVP_CIPH_NO_PADDING,
     .init = magma_cipher_init,
 };
@@ -225,6 +228,7 @@ GOST_cipher magma_ctr_acpkm_omac_cipher = {
     .block_size = 1,
     .iv_len = 4,
     .flags = EVP_CIPH_CTR_MODE |
+        EVP_CIPH_CUSTOM_IV |
         EVP_CIPH_NO_PADDING |
         EVP_CIPH_CUSTOM_COPY |
         EVP_CIPH_FLAG_CUSTOM_CIPHER |
@@ -234,10 +238,20 @@ GOST_cipher magma_ctr_acpkm_omac_cipher = {
     .ctrl = magma_cipher_ctl_acpkm_omac,
 };
 
+GOST_cipher magma_ecb_cipher = {
+    .nid = NID_magma_ecb,
+    .template = &magma_template_cipher,
+    .flags = EVP_CIPH_ECB_MODE,
+    .init = magma_cipher_init,
+    .do_cipher = magma_cipher_do_ecb,
+};
+
 GOST_cipher magma_cbc_cipher = {
     .nid = NID_magma_cbc,
     .template = &gost_template_cipher,
-    .flags = EVP_CIPH_CBC_MODE,
+    .iv_len = 8,
+    .flags = EVP_CIPH_CBC_MODE |
+        EVP_CIPH_CUSTOM_IV,
     .init = magma_cipher_init,
     .do_cipher = magma_cipher_do_cbc,
 };
@@ -586,6 +600,29 @@ static int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
             memcpy(iv, tmpiv, 8);
             out_ptr += 8;
             in_ptr += 8;
+            inl -= 8;
+        }
+    }
+    return 1;
+}
+
+/* MAGMA encryption in ECB mode */
+static int magma_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                        const unsigned char *in, size_t inl)
+{
+    struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
+    if (EVP_CIPHER_CTX_encrypting(ctx)) {
+        while (inl > 0) {
+            magmacrypt(&(c->cctx), in, out);
+            out += 8;
+            in += 8;
+            inl -= 8;
+        }
+    } else {
+        while (inl > 0) {
+            magmadecrypt(&(c->cctx), in, out);
+            out += 8;
+            in += 8;
             inl -= 8;
         }
     }

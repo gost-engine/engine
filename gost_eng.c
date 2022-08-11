@@ -92,6 +92,7 @@ GOST_cipher *gost_cipher_array[] = {
     &grasshopper_cfb_cipher,
     &grasshopper_ofb_cipher,
     &grasshopper_ctr_cipher,
+    &magma_ecb_cipher,
     &magma_cbc_cipher,
     &magma_ctr_cipher,
     &magma_ctr_acpkm_cipher,
