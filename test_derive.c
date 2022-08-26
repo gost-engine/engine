@@ -122,6 +122,15 @@ struct test_derive {
     },
 };
 
+static unsigned int
+charbuf_to_uint(const char *b)
+{
+    return (b[3] << 24) +
+           (b[2] << 16) +
+           (b[1] << 8) +
+            b[0];
+}
+
 static EVP_PKEY *load_private_key(int key_nid, int param_nid, const char *pk,
                                   const char *pub)
 {
@@ -187,7 +196,7 @@ static EVP_PKEY *load_private_key(int key_nid, int param_nid, const char *pk,
         BN_free(y);
         if (EC_POINT_cmp(group, pkey, xy, bc) == 0)
             printf("Public key %08x matches private key %08x\n",
-                   *(int *)pub, *(int *)pk);
+                   charbuf_to_uint(pub), charbuf_to_uint(pk));
         else {
             printf(cRED "Public key mismatch!" cNORM "\n");
             exit(1);

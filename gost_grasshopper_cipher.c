@@ -124,41 +124,35 @@ GOST_cipher grasshopper_ctr_acpkm_omac_cipher = {
     .ctx_size = sizeof(gost_grasshopper_cipher_ctx_ctr),
 };
 
-/* first 256 bit of D from draft-irtf-cfrg-re-keying-12 */
-static const unsigned char ACPKM_D_2018[] = {
-    0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, /*  64 bit */
-    0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f, /* 128 bit */
-    0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97,
-    0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f, /* 256 bit */
-};
-
 static void acpkm_next(gost_grasshopper_cipher_ctx * c)
 {
-    unsigned char newkey[GRASSHOPPER_KEY_SIZE];
+/* first 256 bit of D from draft-irtf-cfrg-re-keying-12 */
+static const grasshopper_w128_t D[GRASSHOPPER_KEY_SIZE / GRASSHOPPER_BLOCK_SIZE] =
+    {
+        { .b={0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,   /*  64 bit */
+              0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f} },/* 128 bit */
+        { .b={0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97,
+              0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f} },/* 256 bit */
+    };
+
+    grasshopper_key_t newkey;
     const int J = GRASSHOPPER_KEY_SIZE / GRASSHOPPER_BLOCK_SIZE;
     int n;
 
     for (n = 0; n < J; n++) {
-        const unsigned char *D_n = &ACPKM_D_2018[n * GRASSHOPPER_BLOCK_SIZE];
-
         grasshopper_encrypt_block(&c->encrypt_round_keys,
-                                  (grasshopper_w128_t *) D_n,
-                                  (grasshopper_w128_t *) & newkey[n *
-                                                                  GRASSHOPPER_BLOCK_SIZE],
+                                  (grasshopper_w128_t *)&D[n],
+                                  &newkey.k.k[n],
                                   &c->buffer);
     }
-    gost_grasshopper_cipher_key(c, newkey);
+    gost_grasshopper_cipher_key(c, newkey.k.b);
 }
 
 /* Set 256 bit  key into context */
 static GRASSHOPPER_INLINE void
 gost_grasshopper_cipher_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 {
-    int i;
-    for (i = 0; i < 2; i++) {
-        grasshopper_copy128(&c->key.k.k[i],
-                            (const grasshopper_w128_t *)(k + i * 16));
-    }
+    memcpy(&c->key, k, sizeof(c->key));
 
     grasshopper_set_encrypt_key(&c->encrypt_round_keys, &c->key);
     grasshopper_set_decrypt_key(&c->decrypt_round_keys, &c->key);
@@ -168,11 +162,7 @@ gost_grasshopper_cipher_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 static GRASSHOPPER_INLINE void
 gost_grasshopper_master_key(gost_grasshopper_cipher_ctx * c, const uint8_t *k)
 {
-    int i;
-    for (i = 0; i < 2; i++) {
-        grasshopper_copy128(&c->master_key.k.k[i],
-                            (const grasshopper_w128_t *)(k + i * 16));
-    }
+    memcpy(&c->master_key, k, sizeof(c->master_key));
 }
 
 /* Cleans up key from context */
@@ -358,17 +348,16 @@ static int gost_grasshopper_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *ou
     for (i = 0; i < blocks;
          i++, current_in += GRASSHOPPER_BLOCK_SIZE, current_out +=
          GRASSHOPPER_BLOCK_SIZE) {
+        grasshopper_w128_t inb, outb;
+        memcpy(&inb, current_in, GRASSHOPPER_BLOCK_SIZE);
         if (encrypting) {
             grasshopper_encrypt_block(&c->encrypt_round_keys,
-                                      (grasshopper_w128_t *) current_in,
-                                      (grasshopper_w128_t *) current_out,
-                                      &c->buffer);
+                                      &inb, &outb, &c->buffer);
         } else {
             grasshopper_decrypt_block(&c->decrypt_round_keys,
-                                      (grasshopper_w128_t *) current_in,
-                                      (grasshopper_w128_t *) current_out,
-                                      &c->buffer);
+                                      &inb, &outb, &c->buffer);
         }
+        memcpy(current_out, &outb, GRASSHOPPER_BLOCK_SIZE);
     }
 
     return 1;
@@ -379,38 +368,40 @@ static int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *ou
 {
     gost_grasshopper_cipher_ctx *c =
         (gost_grasshopper_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
-    unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     bool encrypting = (bool) EVP_CIPHER_CTX_encrypting(ctx);
     const unsigned char *current_in = in;
     unsigned char *current_out = out;
     size_t blocks = inl / GRASSHOPPER_BLOCK_SIZE;
     size_t i;
-    grasshopper_w128_t *currentBlock;
+    grasshopper_w128_t currentBlock;
 
-    currentBlock = (grasshopper_w128_t *) iv;
+    memcpy(&currentBlock, EVP_CIPHER_CTX_iv_noconst(ctx),
+           sizeof (currentBlock));
 
     for (i = 0; i < blocks;
-         i++, current_in += GRASSHOPPER_BLOCK_SIZE, current_out +=
-         GRASSHOPPER_BLOCK_SIZE) {
-        grasshopper_w128_t *currentInputBlock = (grasshopper_w128_t *) current_in;
-        grasshopper_w128_t *currentOutputBlock = (grasshopper_w128_t *) current_out;
+         i++, current_in += GRASSHOPPER_BLOCK_SIZE,
+              current_out += GRASSHOPPER_BLOCK_SIZE) {
+        grasshopper_w128_t inb, outb;
+        memcpy(&inb, current_in, GRASSHOPPER_BLOCK_SIZE);
         if (encrypting) {
-            grasshopper_append128(currentBlock, currentInputBlock);
-            grasshopper_encrypt_block(&c->encrypt_round_keys, currentBlock,
-                                      currentOutputBlock, &c->buffer);
-            grasshopper_copy128(currentBlock, currentOutputBlock);
+            grasshopper_append128(&currentBlock, &inb);
+            grasshopper_encrypt_block(&c->encrypt_round_keys, &currentBlock,
+                                      &outb, &c->buffer);
+            grasshopper_copy128(&currentBlock, &outb);
         } else {
             grasshopper_w128_t tmp;
 
-            grasshopper_copy128(&tmp, currentInputBlock);
+            grasshopper_copy128(&tmp, &inb);
             grasshopper_decrypt_block(&c->decrypt_round_keys,
-                                      currentInputBlock, currentOutputBlock,
+                                      &inb, &outb,
                                       &c->buffer);
-            grasshopper_append128(currentOutputBlock, currentBlock);
-            grasshopper_copy128(currentBlock, &tmp);
+            grasshopper_append128(&outb, &currentBlock);
+            grasshopper_copy128(&currentBlock, &tmp);
         }
+        memcpy(current_out, &outb, GRASSHOPPER_BLOCK_SIZE);
     }
-
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), &currentBlock,
+           sizeof (currentBlock));
     return 1;
 }
 
@@ -440,17 +431,13 @@ static int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *ou
 {
     gost_grasshopper_cipher_ctx_ctr *c = (gost_grasshopper_cipher_ctx_ctr *)
         EVP_CIPHER_CTX_get_cipher_data(ctx);
-    unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     const unsigned char *current_in = in;
     unsigned char *current_out = out;
-    grasshopper_w128_t *currentInputBlock;
-    grasshopper_w128_t *currentOutputBlock;
     unsigned int n = EVP_CIPHER_CTX_num(ctx);
     size_t lasted = inl;
     size_t i;
     size_t blocks;
-    grasshopper_w128_t *iv_buffer;
-    grasshopper_w128_t tmp;
+    grasshopper_w128_t iv_buffer, currentInputBlock, tmp;
 
     while (n && lasted) {
         *(current_out++) = *(current_in++) ^ c->partial_buffer.b[n];
@@ -460,34 +447,33 @@ static int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *ou
     EVP_CIPHER_CTX_set_num(ctx, n);
     blocks = lasted / GRASSHOPPER_BLOCK_SIZE;
 
-    iv_buffer = (grasshopper_w128_t *) iv;
+    memcpy(&iv_buffer, EVP_CIPHER_CTX_iv_noconst(ctx), sizeof (iv_buffer));
 
     // full parts
     for (i = 0; i < blocks; i++) {
-        currentInputBlock = (grasshopper_w128_t *) current_in;
-        currentOutputBlock = (grasshopper_w128_t *) current_out;
-        grasshopper_encrypt_block(&c->c.encrypt_round_keys, iv_buffer,
+        memcpy(&currentInputBlock, current_in, GRASSHOPPER_BLOCK_SIZE);
+        grasshopper_encrypt_block(&c->c.encrypt_round_keys, &iv_buffer,
                                   &c->partial_buffer, &c->c.buffer);
-        grasshopper_plus128(&tmp, &c->partial_buffer, currentInputBlock);
-        grasshopper_copy128(currentOutputBlock, &tmp);
-        ctr128_inc(iv_buffer->b);
+        grasshopper_plus128(&tmp, &c->partial_buffer, &currentInputBlock);
+        memcpy(current_out, &tmp, GRASSHOPPER_BLOCK_SIZE);
+        ctr128_inc(iv_buffer.b);
         current_in += GRASSHOPPER_BLOCK_SIZE;
         current_out += GRASSHOPPER_BLOCK_SIZE;
         lasted -= GRASSHOPPER_BLOCK_SIZE;
     }
 
     if (lasted > 0) {
-        currentInputBlock = (grasshopper_w128_t *) current_in;
-        currentOutputBlock = (grasshopper_w128_t *) current_out;
-        grasshopper_encrypt_block(&c->c.encrypt_round_keys, iv_buffer,
+        grasshopper_encrypt_block(&c->c.encrypt_round_keys, &iv_buffer,
                                   &c->partial_buffer, &c->c.buffer);
         for (i = 0; i < lasted; i++) {
-            currentOutputBlock->b[i] =
-                c->partial_buffer.b[i] ^ currentInputBlock->b[i];
+            current_out[i] =
+                c->partial_buffer.b[i] ^ current_in[i];
         }
         EVP_CIPHER_CTX_set_num(ctx, i);
-        ctr128_inc(iv_buffer->b);
+        ctr128_inc(iv_buffer.b);
     }
+
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), &iv_buffer, sizeof (iv_buffer));
 
     return inl;
 }
@@ -510,10 +496,10 @@ static int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
                                                size_t inl)
 {
     gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
-    unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     unsigned int num = EVP_CIPHER_CTX_num(ctx);
     size_t blocks, i, lasted = inl;
-    grasshopper_w128_t tmp;
+    grasshopper_w128_t ivb, inb, outb;
+    memcpy(&ivb, EVP_CIPHER_CTX_iv_noconst(ctx), sizeof(ivb));
 
     while ((num & GRASSHOPPER_BLOCK_MASK) && lasted) {
         *out++ = *in++ ^ c->partial_buffer.b[num & GRASSHOPPER_BLOCK_MASK];
@@ -526,13 +512,13 @@ static int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     for (i = 0; i < blocks; i++) {
         apply_acpkm_grasshopper(c, &num);
         grasshopper_encrypt_block(&c->c.encrypt_round_keys,
-                                  (grasshopper_w128_t *) iv,
-                                  (grasshopper_w128_t *) & c->partial_buffer,
+                                  &ivb,
+                                  &c->partial_buffer,
                                   &c->c.buffer);
-        grasshopper_plus128(&tmp, &c->partial_buffer,
-                            (grasshopper_w128_t *) in);
-        grasshopper_copy128((grasshopper_w128_t *) out, &tmp);
-        ctr128_inc(iv);
+        memcpy(&inb, in, GRASSHOPPER_BLOCK_SIZE);
+        grasshopper_plus128(&outb, &c->partial_buffer, &inb);
+        memcpy(out, &outb, GRASSHOPPER_BLOCK_SIZE);
+        ctr128_inc(ivb.b);
         in += GRASSHOPPER_BLOCK_SIZE;
         out += GRASSHOPPER_BLOCK_SIZE;
         num += GRASSHOPPER_BLOCK_SIZE;
@@ -542,14 +528,14 @@ static int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX *ctx,
     // last part
     if (lasted > 0) {
         apply_acpkm_grasshopper(c, &num);
-        grasshopper_encrypt_block(&c->c.encrypt_round_keys,
-                                  (grasshopper_w128_t *) iv,
+        grasshopper_encrypt_block(&c->c.encrypt_round_keys, &ivb,
                                   &c->partial_buffer, &c->c.buffer);
         for (i = 0; i < lasted; i++)
             out[i] = c->partial_buffer.b[i] ^ in[i];
-        ctr128_inc(iv);
+        ctr128_inc(ivb.b);
         num += lasted;
     }
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), &ivb, sizeof(ivb));
     EVP_CIPHER_CTX_set_num(ctx, num);
 
     return inl;
@@ -603,17 +589,19 @@ static int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *ou
         EVP_CIPHER_CTX_get_cipher_data(ctx);
     const unsigned char *in_ptr = in;
     unsigned char *out_ptr = out;
-    unsigned char *buf = EVP_CIPHER_CTX_buf_noconst(ctx);
-    unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
+    grasshopper_w128_t ivb, buf;
     int num = EVP_CIPHER_CTX_num(ctx);
     size_t i = 0;
     size_t j;
+
+    memcpy(&buf, EVP_CIPHER_CTX_buf_noconst(ctx), sizeof (buf));
+    memcpy(&ivb, EVP_CIPHER_CTX_iv_noconst(ctx), sizeof (ivb));
 
     /* process partial block if any */
     if (num > 0) {
         for (j = (size_t)num, i = 0; j < GRASSHOPPER_BLOCK_SIZE && i < inl;
              j++, i++, in_ptr++, out_ptr++) {
-            *out_ptr = buf[j] ^ (*in_ptr);
+            *out_ptr = buf.b[j] ^ (*in_ptr);
         }
         if (j == GRASSHOPPER_BLOCK_SIZE) {
             EVP_CIPHER_CTX_set_num(ctx, 0);
@@ -631,8 +619,7 @@ static int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *ou
          * block cipher current iv
          */
         /* Encrypt */
-        gost_grasshopper_cnt_next(c, (grasshopper_w128_t *) iv,
-                                  (grasshopper_w128_t *) buf);
+        gost_grasshopper_cnt_next(c, &ivb, &buf);
 
         /*
          * xor next block of input text with it and output it
@@ -641,22 +628,23 @@ static int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX *ctx, unsigned char *ou
          * output this block
          */
         for (j = 0; j < GRASSHOPPER_BLOCK_SIZE; j++) {
-            out_ptr[j] = buf[j] ^ in_ptr[j];
+            out_ptr[j] = buf.b[j] ^ in_ptr[j];
         }
     }
 
     /* Process rest of buffer */
     if (i < inl) {
-        gost_grasshopper_cnt_next(c, (grasshopper_w128_t *) iv,
-                                  (grasshopper_w128_t *) buf);
+        gost_grasshopper_cnt_next(c, &ivb, &buf);
         for (j = 0; i < inl; j++, i++) {
-            out_ptr[j] = buf[j] ^ in_ptr[j];
+            out_ptr[j] = buf.b[j] ^ in_ptr[j];
         }
         EVP_CIPHER_CTX_set_num(ctx, (int)j);
     } else {
         EVP_CIPHER_CTX_set_num(ctx, 0);
     }
 
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), &ivb, sizeof (ivb));
+    memcpy(EVP_CIPHER_CTX_buf_noconst(ctx), &buf, sizeof (buf));
     return 1;
 }
 
@@ -667,29 +655,36 @@ static int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *ou
         (gost_grasshopper_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
     const unsigned char *in_ptr = in;
     unsigned char *out_ptr = out;
-    unsigned char *buf = EVP_CIPHER_CTX_buf_noconst(ctx);
-    unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
+    grasshopper_w128_t new_iv, bufb, ivb;
     bool encrypting = (bool) EVP_CIPHER_CTX_encrypting(ctx);
     int num = EVP_CIPHER_CTX_num(ctx);
     size_t i = 0;
     size_t j = 0;
 
+    memcpy(&bufb, EVP_CIPHER_CTX_buf_noconst(ctx), sizeof (bufb));
+    memcpy(&ivb, EVP_CIPHER_CTX_iv_noconst(ctx), sizeof (ivb));
+
     /* process partial block if any */
     if (num > 0) {
+        memcpy(&new_iv,
+               EVP_CIPHER_CTX_buf_noconst(ctx) + GRASSHOPPER_BLOCK_SIZE, num);
+
         for (j = (size_t)num, i = 0; j < GRASSHOPPER_BLOCK_SIZE && i < inl;
              j++, i++, in_ptr++, out_ptr++) {
             if (!encrypting) {
-                buf[j + GRASSHOPPER_BLOCK_SIZE] = *in_ptr;
+                new_iv.b[j] = *in_ptr;
             }
-            *out_ptr = buf[j] ^ (*in_ptr);
+            *out_ptr = bufb.b[j] ^ (*in_ptr);
             if (encrypting) {
-                buf[j + GRASSHOPPER_BLOCK_SIZE] = *out_ptr;
+                new_iv.b[j] = *out_ptr;
             }
         }
         if (j == GRASSHOPPER_BLOCK_SIZE) {
-            memcpy(iv, buf + GRASSHOPPER_BLOCK_SIZE, GRASSHOPPER_BLOCK_SIZE);
+            ivb = new_iv;
             EVP_CIPHER_CTX_set_num(ctx, 0);
         } else {
+            memcpy(EVP_CIPHER_CTX_buf_noconst(ctx) + GRASSHOPPER_BLOCK_SIZE,
+                   &new_iv, j);
             EVP_CIPHER_CTX_set_num(ctx, (int)j);
             return 1;
         }
@@ -702,9 +697,7 @@ static int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *ou
         /*
          * block cipher current iv
          */
-        grasshopper_encrypt_block(&c->encrypt_round_keys,
-                                  (grasshopper_w128_t *) iv,
-                                  (grasshopper_w128_t *) buf, &c->buffer);
+        grasshopper_encrypt_block(&c->encrypt_round_keys, &ivb, &bufb, &c->buffer);
         /*
          * xor next block of input text with it and output it
          */
@@ -712,36 +705,40 @@ static int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *ou
          * output this block
          */
         if (!encrypting) {
-            memcpy(iv, in_ptr, GRASSHOPPER_BLOCK_SIZE);
+            memcpy(&ivb, in_ptr, GRASSHOPPER_BLOCK_SIZE);
         }
         for (j = 0; j < GRASSHOPPER_BLOCK_SIZE; j++) {
-            out_ptr[j] = buf[j] ^ in_ptr[j];
+            out_ptr[j] = bufb.b[j] ^ in_ptr[j];
         }
         /* Encrypt */
         /* Next iv is next block of cipher text */
         if (encrypting) {
-            memcpy(iv, out_ptr, GRASSHOPPER_BLOCK_SIZE);
+            memcpy(&ivb, out_ptr, GRASSHOPPER_BLOCK_SIZE);
         }
     }
 
     /* Process rest of buffer */
     if (i < inl) {
-        grasshopper_encrypt_block(&c->encrypt_round_keys,
-                                  (grasshopper_w128_t *) iv,
-                                  (grasshopper_w128_t *) buf, &c->buffer);
+        grasshopper_encrypt_block(&c->encrypt_round_keys, &ivb, &bufb, &c->buffer);
         if (!encrypting) {
-            memcpy(buf + GRASSHOPPER_BLOCK_SIZE, in_ptr, inl - i);
+            memcpy(EVP_CIPHER_CTX_buf_noconst(ctx) + GRASSHOPPER_BLOCK_SIZE,
+                   in_ptr, inl - i);
         }
         for (j = 0; i < inl; j++, i++) {
-            out_ptr[j] = buf[j] ^ in_ptr[j];
+            out_ptr[j] = bufb.b[j] ^ in_ptr[j];
         }
         EVP_CIPHER_CTX_set_num(ctx, (int)j);
         if (encrypting) {
-            memcpy(buf + GRASSHOPPER_BLOCK_SIZE, out_ptr, j);
+            memcpy(EVP_CIPHER_CTX_buf_noconst(ctx) + GRASSHOPPER_BLOCK_SIZE,
+                   out_ptr, j);
         }
+
     } else {
         EVP_CIPHER_CTX_set_num(ctx, 0);
     }
+
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), &ivb, sizeof (ivb));
+    memcpy(EVP_CIPHER_CTX_buf_noconst(ctx), &bufb, sizeof (bufb));
 
     return 1;
 }

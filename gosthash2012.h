@@ -55,8 +55,8 @@
 
 ALIGN(16)
 typedef union uint512_u {
-    unsigned long long QWORD[8];
-    unsigned char B[64];
+     ALIGN(16) unsigned long long QWORD[8];
+               unsigned char B[64];
 } uint512_u;
 
 #include "gosthash2012_const.h"
