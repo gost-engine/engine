@@ -33,6 +33,7 @@ typedef struct {
     unsigned char kdf_seed[8];
 		unsigned char tag[16];
 		EVP_MD_CTX *omac_ctx;
+    int has_kdf_seed;
 } gost_grasshopper_cipher_ctx_ctr;
 
 static void gost_grasshopper_cipher_key(gost_grasshopper_cipher_ctx* c, const uint8_t* k);
