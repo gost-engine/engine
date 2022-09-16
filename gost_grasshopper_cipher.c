@@ -215,7 +215,7 @@ static int gost_grasshopper_cipher_init(EVP_CIPHER_CTX *ctx,
         EVP_CIPHER_CTX_set_app_data(ctx, EVP_CIPHER_CTX_get_cipher_data(ctx));
         if (enc && c->type == GRASSHOPPER_CIPHER_CTRACPKM) {
             gost_grasshopper_cipher_ctx_ctr *ctr = EVP_CIPHER_CTX_get_cipher_data(ctx);
-            if (!ctr->has_kdf_seed && init_zero_kdf_seed(ctr->kdf_seed) == 0)
+            if (init_zero_kdf_seed(ctr->kdf_seed) == 0)
                 return -1;
         }
     }
