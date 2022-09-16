@@ -213,11 +213,6 @@ static int gost_grasshopper_cipher_init(EVP_CIPHER_CTX *ctx,
 
     if (EVP_CIPHER_CTX_get_app_data(ctx) == NULL) {
         EVP_CIPHER_CTX_set_app_data(ctx, EVP_CIPHER_CTX_get_cipher_data(ctx));
-        if (enc && c->type == GRASSHOPPER_CIPHER_CTRACPKM) {
-            gost_grasshopper_cipher_ctx_ctr *ctr = EVP_CIPHER_CTX_get_cipher_data(ctx);
-            if (init_zero_kdf_seed(ctr->kdf_seed) == 0)
-                return -1;
-        }
     }
 
     if (key != NULL) {
@@ -871,31 +866,37 @@ static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, v
           }
         }
         return -1;
-#if 0
     case EVP_CTRL_AEAD_GET_TAG:
     case EVP_CTRL_AEAD_SET_TAG:
         {
             int taglen = arg;
             unsigned char *tag = ptr;
 
-            gost_grasshopper_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
-            if (c->c.type != GRASSHOPPER_CIPHER_MGM)
+            gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
+            if (c->c.type != GRASSHOPPER_CIPHER_CTRACPKMOMAC)
                 return -1;
 
             if (taglen > KUZNYECHIK_MAC_MAX_SIZE) {
-                CRYPTOCOMerr(CRYPTOCOM_F_GOST_GRASSHOPPER_CIPHER_CTL,
-                        CRYPTOCOM_R_INVALID_TAG_LENGTH);
+                GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_CTL, GOST_R_BAD_MAC);
                 return -1;
             }
 
             if (type == EVP_CTRL_AEAD_GET_TAG)
-                memcpy(tag, c->final_tag, taglen);
+                memcpy(tag, c->tag, taglen);
             else
-                memcpy(c->final_tag, tag, taglen);
+                memcpy(c->tag, tag, taglen);
 
             return 1;
         }
-#endif
+    case EVP_CTRL_AEAD_TLS1_AAD: {
+            gost_grasshopper_cipher_ctx_ctr *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
+            if (!ptr || c->c.type != GRASSHOPPER_CIPHER_CTRACPKMOMAC)
+                return -1;
+            if (arg != 0)
+                return 0;
+            *(int *) ptr = KUZNYECHIK_MAC_MAX_SIZE;
+            return 1;
+    }
     case EVP_CTRL_PROCESS_UNPROTECTED:
     {
       STACK_OF(X509_ATTRIBUTE) *x = ptr;
