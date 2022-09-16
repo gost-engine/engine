@@ -902,6 +902,13 @@ static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, v
             *(int *) ptr = KUZNYECHIK_MAC_MAX_SIZE;
             return 1;
     }
+    case EVP_CTRL_PBE_PRF_NID: {
+            if (ptr) {
+                *((int *)ptr) = NID_id_tc26_hmac_gost_3411_2012_512;
+                return 1;
+            }
+            return 0;
+    }
     case EVP_CTRL_PROCESS_UNPROTECTED:
     {
       STACK_OF(X509_ATTRIBUTE) *x = ptr;
