@@ -502,11 +502,11 @@ index 962a0137..249e4753 100644
 +{
 +     if (cms->d.envelopedData->encryptedContentInfo->cipher)
 +     {
-+          //If cipher is set it's encrypting
++          /* If cipher is set it's encrypting */
 +          return cms_EnvelopedData_Encryption_init_bio(cms);
 +     }
 +
-+     //If cipher is not set it's decrypting
++     /* If cipher is not set it's decrypting */
 +     return cms_EnvelopedData_Decryption_init_bio(cms);
  }
  
@@ -526,7 +526,7 @@ index 962a0137..249e4753 100644
 +               return r;
 +     }
 +
-+     //if ASN1_PKEY_CTRL_CMS_IS_RI_TYPE_SUPPORTED not supported
++     /* if ASN1_PKEY_CTRL_CMS_IS_RI_TYPE_SUPPORTED not supported */
 +
 +     int supportedRiType = cms_pkey_get_ri_type(pk);
 +
@@ -667,7 +667,7 @@ index cafc3040..eb11e428 100644
 +         }
 +
 +         if (flags & CMS_USE_ORIGINATOR_KEYID) {
-+              //kari->originator->issuerAndSerialNumber
++              /* kari->originator->issuerAndSerialNumber */
 +              oik->type = CMS_OIK_KEYIDENTIFIER;
 +              oik->d.subjectKeyIdentifier = ASN1_OCTET_STRING_new();
 +              if (oik->d.subjectKeyIdentifier == NULL)
@@ -1602,8 +1602,8 @@ index a411f3f2..8172316e 100644
  # define ASN1_PKEY_CTRL_SET1_TLS_ENCPT   0x9
  # define ASN1_PKEY_CTRL_GET1_TLS_ENCPT   0xa
  
-+// This control use for decryption 
-+// when algorithm support multiple ri types
++/* This control use for decryption */
++/* when algorithm support multiple ri types */
 +# define ASN1_PKEY_CTRL_CMS_IS_RI_TYPE_SUPPORTED      0xb
 +
  int EVP_PKEY_asn1_get_count(void);
