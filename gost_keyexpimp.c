@@ -5,11 +5,6 @@
  * Contents licensed under the terms of the OpenSSL license
  * See https://www.openssl.org/source/license.html for details
  */
-#ifdef _WIN32
-#include <winsock.h>
-#else
-#include <arpa/inet.h>
-#endif
 #include <string.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -19,6 +14,19 @@
 #include "e_gost_err.h"
 
 int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr);
+
+static uint32_t _htonl(uint32_t n)
+{
+#ifdef L_ENDIAN
+    return ((((n & 0xFF)) << 24) |
+           (((n & 0xFF00)) << 8) |
+           (((n & 0xFF0000)) >> 8) |
+           (((n & 0xFF000000)) >> 24));
+#else
+    return n;
+#endif
+}
+
 /*
  * Function expects that out is a preallocated buffer of length
  * defined as sum of shared_len and mac length defined by mac_nid
@@ -201,7 +209,7 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
     unsigned char *ptr = keyout;
     HMAC_CTX *ctx;
     unsigned char *len_ptr = NULL;
-    uint32_t len_repr = htonl(keyout_len * 8);
+    uint32_t len_repr = _htonl(keyout_len * 8);
     size_t len_repr_len = 4;
 
     ctx = HMAC_CTX_new();
@@ -223,7 +231,7 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
     }
 
     for (i = 1; i <= iters; i++) {
-        uint32_t iter_net = htonl(i);
+        uint32_t iter_net = _htonl(i);
         unsigned char *rep_ptr =
             ((unsigned char *)&iter_net) + (4 - representation);
 
