@@ -93,10 +93,12 @@ GOST_cipher *gost_cipher_array[] = {
     &grasshopper_ofb_cipher,
     &grasshopper_ctr_cipher,
     &magma_ecb_cipher,
+    &grasshopper_mgm_cipher,
     &magma_cbc_cipher,
     &magma_ctr_cipher,
     &magma_ctr_acpkm_cipher,
     &magma_ctr_acpkm_omac_cipher,
+    &magma_mgm_cipher,
     &grasshopper_ctr_acpkm_cipher,
     &grasshopper_ctr_acpkm_omac_cipher,
     &magma_kexp15_cipher,
@@ -329,6 +331,8 @@ static int gost_engine_destroy(ENGINE* e) {
  */
 
 static GOST_NID_JOB *missing_NIDs[] = {
+    &kuznyechik_mgm_NID,
+    &magma_mgm_NID,
 };
 
 static int create_NIDs() {

@@ -295,6 +295,12 @@ add_executable(test_gost89 test_gost89.c)
 target_link_libraries(test_gost89 gost_core gost_err)
 add_test(NAME gost89 COMMAND test_gost89)
 
+add_executable(test_mgm test_mgm.c)
+target_link_libraries(test_mgm gost_core gost_err)
+add_test(NAME mgm COMMAND test_mgm)
+set_tests_properties(mgm
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+
 if(NOT SKIP_PERL_TESTS)
     execute_process(COMMAND perl -MTest2::V0 -e ""
        ERROR_QUIET RESULT_VARIABLE MISSING_TEST2_V0)
@@ -328,6 +334,7 @@ set(BINARY_TESTS_TARGETS
         test_keyexpimp
         test_gost89
         test_tls
+        test_mgm
         )
 set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
 
