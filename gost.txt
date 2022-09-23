@@ -22,9 +22,12 @@ GOST_F_GOST_EC_COMPUTE_PUBLIC:107:gost_ec_compute_public
 GOST_F_GOST_EC_KEYGEN:108:gost_ec_keygen
 GOST_F_GOST_EC_SIGN:109:gost_ec_sign
 GOST_F_GOST_EC_VERIFY:110:gost_ec_verify
+GOST_F_GOST_ENCODE_CMS_PARAMS:161:gost_encode_cms_params
 GOST_F_GOST_GRASSHOPPER_CIPHER_CTL:111:gost_grasshopper_cipher_ctl
 GOST_F_GOST_GRASSHOPPER_CIPHER_DO_CTRACPKM_OMAC:160:\
 	gost_grasshopper_cipher_do_ctracpkm_omac
+GOST_F_GOST_GRASSHOPPER_CIPHER_INIT_CTRACPKM_OMAC:162:\
+	gost_grasshopper_cipher_init_ctracpkm_omac
 GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS:112:\
 	gost_grasshopper_set_asn1_parameters
 GOST_F_GOST_IMIT_CTRL:113:gost_imit_ctrl
@@ -33,6 +36,9 @@ GOST_F_GOST_IMIT_UPDATE:115:gost_imit_update
 GOST_F_GOST_KDFTREE2012_256:149:gost_kdftree2012_256
 GOST_F_GOST_KEXP15:143:gost_kexp15
 GOST_F_GOST_KIMP15:148:gost_kimp15
+GOST_F_MAGMA_CIPHER_CTL:163:magma_cipher_ctl
+GOST_F_MAGMA_CIPHER_CTL_ACPKM_OMAC:164:magma_cipher_ctl_acpkm_omac
+GOST_F_MAGMA_CIPHER_INIT_CTR_ACPKM_OMAC:165:magma_cipher_init_ctr_acpkm_omac
 GOST_F_OMAC_ACPKM_IMIT_CTRL:144:omac_acpkm_imit_ctrl
 GOST_F_OMAC_ACPKM_IMIT_FINAL:145:omac_acpkm_imit_final
 GOST_F_OMAC_ACPKM_IMIT_UPDATE:146:omac_acpkm_imit_update
@@ -88,6 +94,7 @@ GOST_R_ERROR_POINT_MUL:107:error point mul
 GOST_R_ERROR_SETTING_PEER_KEY:139:error setting peer key
 GOST_R_INCOMPATIBLE_ALGORITHMS:108:incompatible algorithms
 GOST_R_INCOMPATIBLE_PEER_KEY:109:incompatible peer key
+GOST_R_INVALID_BUFFER_SIZE:140:invalid buffer size
 GOST_R_INVALID_CIPHER:134:invalid cipher
 GOST_R_INVALID_CIPHER_PARAMS:110:invalid cipher params
 GOST_R_INVALID_CIPHER_PARAM_OID:111:invalid cipher param oid
