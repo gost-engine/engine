@@ -26,6 +26,7 @@ enum GRASSHOPPER_CIPHER_TYPE {
     GRASSHOPPER_CIPHER_CTR,
     GRASSHOPPER_CIPHER_CTRACPKM,
     GRASSHOPPER_CIPHER_CTRACPKMOMAC,
+    GRASSHOPPER_CIPHER_MGM,
 };
 
 static GOST_cipher grasshopper_template_cipher = {
@@ -122,6 +123,32 @@ GOST_cipher grasshopper_ctr_acpkm_omac_cipher = {
     .init = gost_grasshopper_cipher_init_ctracpkm_omac,
     .do_cipher = gost_grasshopper_cipher_do_ctracpkm_omac,
     .ctx_size = sizeof(gost_grasshopper_cipher_ctx_ctr),
+};
+
+GOST_cipher grasshopper_mgm_cipher = {
+    .nid = NID_undef,
+    .template = &grasshopper_template_cipher,
+    .block_size = 1,
+    .iv_len = 16,
+    .flags = EVP_CIPH_NO_PADDING |
+        EVP_CIPH_CUSTOM_IV | EVP_CIPH_FLAG_CUSTOM_CIPHER |
+        EVP_CIPH_CTRL_INIT | EVP_CIPH_FLAG_AEAD_CIPHER,
+    .cleanup = gost_grasshopper_mgm_cleanup,
+    .ctrl = gost_grasshopper_mgm_ctrl,
+    .init = gost_grasshopper_cipher_init_mgm,
+    .do_cipher = gost_grasshopper_cipher_do_mgm,
+    .ctx_size = sizeof(gost_mgm_ctx)
+};
+
+static void kuznyechik_NID_callback (int nid)
+{
+    grasshopper_mgm_cipher.nid = nid;
+}
+
+GOST_NID_JOB kuznyechik_mgm_NID = {
+    .sn = SN_kuznyechik_mgm,
+    .ln = SN_kuznyechik_mgm,
+    .callback = kuznyechik_NID_callback,
 };
 
 /* first 256 bit of D from draft-irtf-cfrg-re-keying-12 */
@@ -342,6 +369,143 @@ gost_grasshopper_cipher_init_ctracpkm_omac(EVP_CIPHER_CTX
     }
 
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
+}
+
+// TODO: const *in, const *c
+void gost_grasshopper_encrypt_wrap(unsigned char *in, unsigned char *out,
+                   gost_grasshopper_cipher_ctx *c) {
+    grasshopper_encrypt_block(&c->encrypt_round_keys,
+                              (grasshopper_w128_t *) in,
+                              (grasshopper_w128_t *) out,
+                              &c->buffer);
+}
+
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует операцию умножения двух элементов конечного поля \f$ \mathbb F_{2^{128}}\f$,
+    порожденного неприводимым многочленом
+    \f$ f(x) = x^{128} + x^7 + x^2 + x + 1 \in \mathbb F_2[x]\f$. Для умножения используется
+    простейшая реализация, основанная на приведении по модулю после каждого шага алгоритма.        */
+/* ----------------------------------------------------------------------------------------------- */
+static void gf128_mul_uint64 (uint64_t *result, uint64_t *arg1, uint64_t *arg2)
+{
+	int i = 0;
+	register uint64_t t, X0, X1;
+	uint64_t Z0 = 0, Z1 = 0;
+
+#ifdef L_ENDIAN
+	X0 = BSWAP64(*(arg1 + 1));
+	X1 = BSWAP64(*arg1);
+#else
+	X0 = *(arg1 + 1);
+	X1 = *arg1;
+#endif
+
+	//first 64 bits of arg1
+#ifdef L_ENDIAN
+	t = BSWAP64(*(arg2 + 1));
+#else
+	t = *(arg2 + 1);
+#endif
+
+	for (i = 0; i < 64; i++) {
+		if (t & 0x1) {
+			Z0 ^= X0;
+			Z1 ^= X1;
+		}
+		t >>= 1;
+		if (X1 & 0x8000000000000000) {
+			X1 <<= 1;
+			X1 ^= X0>>63;
+			X0 <<= 1;
+			X0 ^= 0x87;
+		}
+		else {
+			X1 <<= 1;
+			X1 ^= X0>>63;
+			X0 <<= 1;
+		}
+	}
+
+	//second 64 bits of arg2
+#ifdef L_ENDIAN
+	t = BSWAP64(*arg2);
+#else
+	t = *arg2;
+#endif
+
+	for (i = 0; i < 63; i++) {
+		if (t & 0x1) {
+			Z0 ^= X0;
+			Z1 ^= X1;
+		}
+		t >>= 1;
+		if (X1 & 0x8000000000000000) {
+			X1 <<= 1;
+			X1 ^= X0>>63;
+			X0 <<= 1;
+			X0 ^= 0x87;
+		}
+		else {
+			X1 <<= 1;
+			X1 ^= X0>>63;
+			X0 <<= 1;
+		}
+	}
+
+	if (t & 0x1) {
+		Z0 ^= X0;
+		Z1 ^= X1;
+	}
+
+#ifdef L_ENDIAN
+	result[0] = BSWAP64(Z1);
+	result[1] = BSWAP64(Z0);
+#else
+	result[0] = Z1;
+	result[1] = Z0;
+#endif
+}
+
+static GRASSHOPPER_INLINE int
+gost_grasshopper_cipher_init_mgm(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                                 const unsigned char *iv, int enc)
+{
+    gost_mgm_ctx *mctx =
+        (gost_mgm_ctx *)EVP_CIPHER_CTX_get_cipher_data(ctx);
+    int bl;
+
+    if (!iv && !key)
+        return 1;
+    if (key) {
+        bl = EVP_CIPHER_CTX_iv_length(ctx);
+        gost_grasshopper_cipher_key(&mctx->ks.gh_ks, key);
+        gost_mgm128_init(&mctx->mgm, &mctx->ks,
+                         (block128_f) gost_grasshopper_encrypt_wrap, gf128_mul_uint64, bl);
+
+        /*
+         * If we have an iv can set it directly, otherwise use saved IV.
+         */
+        if (iv == NULL && mctx->iv_set)
+            iv = mctx->iv;
+        if (iv) {
+            if (gost_mgm128_setiv(&mctx->mgm, iv, mctx->ivlen) != 1)
+                return 0;
+            mctx->iv_set = 1;
+        }
+        mctx->key_set = 1;
+    } else {
+        /* If key set use IV, otherwise copy */
+        if (mctx->key_set) {
+            if (gost_mgm128_setiv(&mctx->mgm, iv, mctx->ivlen) != 1)
+                return 0;
+        }
+        else
+            memcpy(mctx->iv, iv, mctx->ivlen);
+        mctx->iv_set = 1;
+    }
+    return 1;
 }
 
 static int gost_grasshopper_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *out,
@@ -582,6 +746,60 @@ static int gost_grasshopper_cipher_do_ctracpkm_omac(EVP_CIPHER_CTX *ctx,
 
     return result;
 }
+
+
+
+static int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                                   const unsigned char *in, size_t len)
+{
+    gost_mgm_ctx *mctx =
+        (gost_mgm_ctx *)EVP_CIPHER_CTX_get_cipher_data(ctx);
+    int enc = EVP_CIPHER_CTX_encrypting(ctx);
+
+    /* If not set up, return error */
+    if (!mctx->key_set) {
+        GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_DO_MGM,
+                GOST_R_BAD_ORDER);
+        return -1;
+    }
+
+    if (!mctx->iv_set) {
+        GOSTerr(GOST_F_GOST_GRASSHOPPER_CIPHER_DO_MGM,
+                GOST_R_BAD_ORDER);
+        return -1;
+    }
+    if (in) {
+        if (out == NULL) {
+            if (gost_mgm128_aad(&mctx->mgm, in, len))
+                return -1;
+        } else if (enc) {
+            if (gost_mgm128_encrypt(&mctx->mgm, in, out, len))
+                return -1;
+        } else {
+            if (gost_mgm128_decrypt(&mctx->mgm, in, out, len))
+                return -1;
+        }
+        return len;
+    } else {
+        if (!enc) {
+            if (mctx->taglen < 0)
+                return -1;
+            if (gost_mgm128_finish(&mctx->mgm,
+                                   EVP_CIPHER_CTX_buf_noconst(ctx),
+                                   mctx->taglen) != 0)
+                return -1;
+            mctx->iv_set = 0;
+            return 0;
+        }
+        gost_mgm128_tag(&mctx->mgm, EVP_CIPHER_CTX_buf_noconst(ctx), 16);
+        mctx->taglen = 16;
+        /* Don't reuse the IV */
+        mctx->iv_set = 0;
+        return 0;
+    }
+
+}
+
 /*
  * Fixed 128-bit IV implementation make shift regiser redundant.
  */
@@ -797,6 +1015,79 @@ gost_grasshopper_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
         return 1;
     }
     return 0;
+}
+
+static int gost_grasshopper_mgm_cleanup(EVP_CIPHER_CTX *c)
+{
+    gost_mgm_ctx *mctx =
+        (gost_mgm_ctx *)EVP_CIPHER_CTX_get_cipher_data(c);
+    if (mctx == NULL)
+        return 0;
+    gost_grasshopper_cipher_destroy(&mctx->ks.gh_ks);
+    OPENSSL_cleanse(&mctx->mgm, sizeof(mctx->mgm));
+    if (mctx->iv != EVP_CIPHER_CTX_iv_noconst(c))
+        OPENSSL_free(mctx->iv);
+    return 1;
+}
+
+static int gost_grasshopper_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void *ptr)
+{
+    gost_mgm_ctx *mctx =
+        (gost_mgm_ctx *)EVP_CIPHER_CTX_get_cipher_data(c);
+    unsigned char *buf, *iv;
+    int ivlen, enc;
+
+    switch (type) {
+    case EVP_CTRL_INIT:
+        ivlen = EVP_CIPHER_iv_length(EVP_CIPHER_CTX_cipher(c));
+        iv = EVP_CIPHER_CTX_iv_noconst(c);
+        mctx->key_set = 0;
+        mctx->iv_set = 0;
+        mctx->ivlen = ivlen;
+        mctx->iv = iv;
+        mctx->taglen = -1;
+        return 1;
+
+    case EVP_CTRL_GET_IVLEN:
+        *(int *)ptr = mctx->ivlen;
+        return 1;
+
+    case EVP_CTRL_AEAD_SET_IVLEN:
+        if (arg <= 0)
+            return 0;
+        if ((arg > EVP_MAX_IV_LENGTH) && (arg > mctx->ivlen)) {
+            // TODO: Allocate memory for IV or set error
+            return 0;
+        }
+        mctx->ivlen = arg;
+        return 1;
+
+    case EVP_CTRL_AEAD_SET_TAG:
+        buf = EVP_CIPHER_CTX_buf_noconst(c);
+        enc = EVP_CIPHER_CTX_encrypting(c);
+        if (arg <= 0 || arg != 16 || enc) {
+            GOSTerr(GOST_F_GOST_GRASSHOPPER_MGM_CTRL,
+                    GOST_R_INVALID_TAG_LENGTH);
+            return 0;
+        }
+        memcpy(buf, ptr, arg);
+        mctx->taglen = arg;
+        return 1;
+
+    case EVP_CTRL_AEAD_GET_TAG:
+        buf = EVP_CIPHER_CTX_buf_noconst(c);
+        enc = EVP_CIPHER_CTX_encrypting(c);
+        if (arg <= 0 || arg > 16 || !enc || mctx->taglen < 0) {
+            GOSTerr(GOST_F_GOST_GRASSHOPPER_MGM_CTRL,
+                    GOST_R_INVALID_TAG_LENGTH);
+            return 0;
+        }
+        memcpy(ptr, buf, arg);
+        return 1;
+
+    default:
+        return -1;
+    }
 }
 
 static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)

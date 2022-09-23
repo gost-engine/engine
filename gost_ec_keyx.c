@@ -769,7 +769,7 @@ int pkey_gost_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     }
 
     if (key != NULL && *key_len < 32) {
-        GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, GOST_R_INVALID_BUFFER_SIZE);
+        GOSTerr(GOST_F_PKEY_GOST_DECRYPT, GOST_R_INVALID_BUFFER_SIZE);
         return 0;
     }
 

@@ -48,7 +48,9 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_ENCODE_CMS_PARAMS                    161
 # define GOST_F_GOST_GRASSHOPPER_CIPHER_CTL               111
 # define GOST_F_GOST_GRASSHOPPER_CIPHER_DO_CTRACPKM_OMAC  160
+# define GOST_F_GOST_GRASSHOPPER_CIPHER_DO_MGM            166
 # define GOST_F_GOST_GRASSHOPPER_CIPHER_INIT_CTRACPKM_OMAC 162
+# define GOST_F_GOST_GRASSHOPPER_MGM_CTRL                 167
 # define GOST_F_GOST_GRASSHOPPER_SET_ASN1_PARAMETERS      112
 # define GOST_F_GOST_IMIT_CTRL                            113
 # define GOST_F_GOST_IMIT_FINAL                           114
@@ -56,6 +58,11 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_KDFTREE2012_256                      149
 # define GOST_F_GOST_KEXP15                               143
 # define GOST_F_GOST_KIMP15                               148
+# define GOST_F_GOST_MAGMA_CIPHER_DO_MGM                  168
+# define GOST_F_GOST_MAGMA_MGM_CTRL                       169
+# define GOST_F_GOST_MGM128_AAD                           170
+# define GOST_F_GOST_MGM128_DECRYPT                       171
+# define GOST_F_GOST_MGM128_ENCRYPT                       172
 # define GOST_F_MAGMA_CIPHER_CTL                          163
 # define GOST_F_MAGMA_CIPHER_CTL_ACPKM_OMAC               164
 # define GOST_F_MAGMA_CIPHER_INIT_CTR_ACPKM_OMAC          165
@@ -107,6 +114,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_R_CANNOT_UNPACK_EPHEMERAL_KEY               136
 # define GOST_R_CIPHER_NOT_FOUND                          103
 # define GOST_R_CTRL_CALL_FAILED                          104
+# define GOST_R_DATA_TOO_LARGE                            141
 # define GOST_R_ERROR_COMPUTING_EXPORT_KEYS               135
 # define GOST_R_ERROR_COMPUTING_SHARED_KEY                105
 # define GOST_R_ERROR_DECODING_PUBLIC_KEY                 138
@@ -126,6 +134,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_R_INVALID_MAC_PARAMS                        116
 # define GOST_R_INVALID_MAC_SIZE                          117
 # define GOST_R_INVALID_PARAMSET                          118
+# define GOST_R_INVALID_TAG_LENGTH                        142
 # define GOST_R_KEY_IS_NOT_INITIALIZED                    119
 # define GOST_R_KEY_PARAMETERS_MISSING                    120
 # define GOST_R_MAC_KEY_NOT_SET                           121
