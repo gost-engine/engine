@@ -296,10 +296,13 @@ target_link_libraries(test_gost89 gost_core gost_err)
 add_test(NAME gost89 COMMAND test_gost89)
 
 add_executable(test_mgm test_mgm.c)
-target_link_libraries(test_mgm gost_core gost_err)
-add_test(NAME mgm COMMAND test_mgm)
-set_tests_properties(mgm
+target_link_libraries(test_mgm OpenSSL::Crypto)
+add_test(NAME mgm-with-engine COMMAND test_mgm)
+set_tests_properties(mgm-with-engine
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+add_test(NAME mgm-with-provider COMMAND test_mgm)
+set_tests_properties(mgm-with-provider
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
 if(NOT SKIP_PERL_TESTS)
     execute_process(COMMAND perl -MTest2::V0 -e ""

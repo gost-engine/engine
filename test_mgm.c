@@ -243,7 +243,9 @@ int main(void)
 
     for (t = testcases; t->sn; t++) {
         int small;
-        const EVP_CIPHER *ciph = EVP_get_cipherbyname(t->sn);
+        const EVP_CIPHER *ciph_eng = EVP_get_cipherbyname(t->sn);
+        EVP_CIPHER *ciph_prov = EVP_CIPHER_fetch(NULL, t->sn, NULL);
+        const EVP_CIPHER *ciph = ciph_eng ? ciph_eng : ciph_prov;
         const char *name;
         if (!ciph) {
             printf("failed to load %s\n", t->sn);
@@ -256,6 +258,7 @@ int main(void)
             ret |= test_block(ciph, name, t->nonce, t->nonce_len,
                               t->aad, t->aad_len, t->plaintext, t->ptext_len,
                               t->expected, t->expected_tag, t->key, small);
+        EVP_CIPHER_free(ciph_prov);
     }
 
     if (ret) {
