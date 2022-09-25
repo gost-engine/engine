@@ -246,14 +246,14 @@ add_test(NAME ciphers-with-provider COMMAND test_ciphers)
 set_tests_properties(ciphers-with-provider
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
-add_executable(test_mgm test_mgm.c)
-target_link_libraries(test_mgm OpenSSL::Crypto)
+# add_executable(test_mgm test_mgm.c)
+# target_link_libraries(test_mgm OpenSSL::Crypto)
 # add_test(NAME mgm-with-engine COMMAND test_mgm)
 # set_tests_properties(mgm-with-engine
 #   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
-add_test(NAME mgm-with-provider COMMAND test_mgm)
-set_tests_properties(mgm-with-provider
-  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
+# add_test(NAME mgm-with-provider COMMAND test_mgm)
+# set_tests_properties(mgm-with-provider
+#   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
 # test_curves is an internals testing program, it doesn't need a test env
 add_executable(test_curves test_curves.c)
@@ -337,7 +337,7 @@ set(BINARY_TESTS_TARGETS
         test_keyexpimp
         test_gost89
         test_tls
-        test_mgm
+        # test_mgm
         )
 set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
 
