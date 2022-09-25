@@ -17,6 +17,7 @@
 # include <openssl/x509.h>
 # include <openssl/engine.h>
 # include <openssl/ec.h>
+# include <openssl/asn1.h>
 # include "gost89.h"
 # include "gosthash.h"
 /* Control commands */
@@ -399,6 +400,16 @@ extern GOST_digest kuznyechik_ctracpkm_omac_digest;
 /* Provider implementation data */
 extern const OSSL_ALGORITHM GOST_prov_digests[];
 void GOST_prov_deinit_digests(void);
+
+/* job to initialize a missing NID */
+struct gost_nid_job {
+    const char *sn;
+    const char *ln;
+    void (*callback)(int nid);
+    ASN1_OBJECT *asn1;
+};
+
+typedef struct gost_nid_job GOST_NID_JOB;
 
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
