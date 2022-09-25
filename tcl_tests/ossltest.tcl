@@ -220,11 +220,33 @@ CN=Test CA $algor_with_par
 O=Cryptocom
 OU=OpenSSL CA
 emailAddress = openssl@cryptocom.ru
+\[ v3_ca \]
+# Extensions for a typical CA
+# PKIX recommendation.
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer
+basicConstraints = critical,CA:true
+
+# Key usage: this is typical for a CA certificate. However since it will
+# prevent it being used as an test self-signed certificate it is best
+# left out by default.
+# keyUsage = cRLSign, keyCertSign
+
+# Include email address in subject alt name: another PKIX recommendation
+# subjectAltName=email:copy
+# Copy issuer details
+# issuerAltName=issuer:copy
+
+# DER hex encoding of an extension: beware experts only!
+# obj=DER:02:03
+# Where 'obj' is a standard or added object
+# You can even override a supported extension:
+# basicConstraints= critical, DER:30:03:01:01:FF
 "
 	file mkdir $CAname/private
 	file mkdir $CAname/newcerts
 	generate_key [keygen_params $algor_with_par] $CAname/private/cakey.pem
-	openssl "req -new  -x509 -key $CAname/private/cakey.pem -nodes -out $CAname/cacert.pem -config $CAname/req.conf -set_serial 0x11E"
+	openssl "req -new  -x509 -key $CAname/private/cakey.pem -nodes -out $CAname/cacert.pem -config $CAname/req.conf -reqexts v3_ca -set_serial 0x11E"
 	makeFile ./$CAname/.rand 1234567890
 	makeFile ./$CAname/serial 011E
 	makeFile ./$CAname/index.txt ""
