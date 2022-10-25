@@ -1,7 +1,7 @@
 name: "CodeQL"
 
 env:
-  OPENSSL_BRANCH: OpenSSL_1_1_1m
+  OPENSSL_BRANCH: OpenSSL_1_1_1r
   #RPATH: "-Wl,-rpath=${PREFIX}/lib"
   #PREFIX: ${HOME}/opt
   #PATH: ${PREFIX}/bin:${PATH}
@@ -60,9 +60,9 @@ jobs:
        export PREFIX=`pwd`/opt
        export RPATH="-Wl,-rpath=${PREFIX}/lib"
        cd openssl
-       patch -p0 < ../patches/openssl_111m.diff
-       patch -p0 < ../patches/openssl_111m_obj.diff
-       patch -p0 < ../patches/openssl_111m_tls13.diff
+       patch -p0 < ../patches/openssl_111r.diff
+       patch -p0 < ../patches/openssl_111r_obj.diff
+       patch -p0 < ../patches/openssl_111r_tls13.diff
        git describe --always --long
        ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} ${RPATH}
        make -s build_libs
