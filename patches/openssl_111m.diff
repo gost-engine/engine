@@ -221,10 +221,10 @@ index 71554037..7fe22a90 100644
              if (to)
                  BIO_printf(out, "To: %s%s", to, mime_eol);
 diff --git apps/s_cb.c apps/s_cb.c
-index d066a423..23575ed1 100644
+index 2f94c133..841fc378 100644
 --- apps/s_cb.c
 +++ apps/s_cb.c
-@@ -684,7 +684,7 @@ static STRINT_PAIR tlsext_types[] = {
+@@ -690,7 +690,7 @@ static STRINT_PAIR tlsext_types[] = {
      {NULL}
  };
  
@@ -233,7 +233,7 @@ index d066a423..23575ed1 100644
  static STRINT_PAIR signature_tls13_scheme_list[] = {
      {"rsa_pkcs1_sha1",         0x0201 /* TLSEXT_SIGALG_rsa_pkcs1_sha1 */},
      {"ecdsa_sha1",             0x0203 /* TLSEXT_SIGALG_ecdsa_sha1 */},
-@@ -696,6 +696,13 @@ static STRINT_PAIR signature_tls13_scheme_list[] = {
+@@ -702,6 +702,13 @@ static STRINT_PAIR signature_tls13_scheme_list[] = {
      {"ecdsa_secp384r1_sha384", 0x0503 /* TLSEXT_SIGALG_ecdsa_secp384r1_sha384 */},
      {"rsa_pkcs1_sha512",       0x0601 /* TLSEXT_SIGALG_rsa_pkcs1_sha512 */},
      {"ecdsa_secp521r1_sha512", 0x0603 /* TLSEXT_SIGALG_ecdsa_secp521r1_sha512 */},
@@ -247,7 +247,7 @@ index d066a423..23575ed1 100644
      {"rsa_pss_rsae_sha256",    0x0804 /* TLSEXT_SIGALG_rsa_pss_rsae_sha256 */},
      {"rsa_pss_rsae_sha384",    0x0805 /* TLSEXT_SIGALG_rsa_pss_rsae_sha384 */},
      {"rsa_pss_rsae_sha512",    0x0806 /* TLSEXT_SIGALG_rsa_pss_rsae_sha512 */},
-@@ -704,9 +711,6 @@ static STRINT_PAIR signature_tls13_scheme_list[] = {
+@@ -710,9 +717,6 @@ static STRINT_PAIR signature_tls13_scheme_list[] = {
      {"rsa_pss_pss_sha256",     0x0809 /* TLSEXT_SIGALG_rsa_pss_pss_sha256 */},
      {"rsa_pss_pss_sha384",     0x080a /* TLSEXT_SIGALG_rsa_pss_pss_sha384 */},
      {"rsa_pss_pss_sha512",     0x080b /* TLSEXT_SIGALG_rsa_pss_pss_sha512 */},
@@ -281,7 +281,7 @@ index ab509b1a..e90b3022 100644
 +    return 0;
 +}
 diff --git crypto/cms/cms_env.c crypto/cms/cms_env.c
-index 962a0137..249e4753 100644
+index 962a0137..4992f674 100644
 --- crypto/cms/cms_env.c
 +++ crypto/cms/cms_env.c
 @@ -20,6 +20,8 @@
@@ -572,7 +572,7 @@ index a211f495..6bc8a3af 100644
       "cms_EnvelopedData_init_bio"},
      {ERR_PACK(ERR_LIB_CMS, CMS_F_CMS_ENVELOPED_DATA_INIT, 0),
 diff --git crypto/cms/cms_kari.c crypto/cms/cms_kari.c
-index cafc3040..eb11e428 100644
+index cafc3040..94dc25ec 100644
 --- crypto/cms/cms_kari.c
 +++ crypto/cms/cms_kari.c
 @@ -152,7 +152,7 @@ int CMS_RecipientEncryptedKey_cert_cmp(CMS_RecipientEncryptedKey *rek,
@@ -1533,7 +1533,7 @@ index 7dbc13dc..9131e075 100644
  #  define CMS_F_CMS_ENVELOPED_DATA_INIT                    126
  #  define CMS_F_CMS_ENV_ASN1_CTRL                          171
 diff --git include/openssl/evp.h include/openssl/evp.h
-index a411f3f2..8172316e 100644
+index a411f3f2..e0ce8482 100644
 --- include/openssl/evp.h
 +++ include/openssl/evp.h
 @@ -20,6 +20,9 @@
@@ -1610,7 +1610,7 @@ index a411f3f2..8172316e 100644
  const EVP_PKEY_ASN1_METHOD *EVP_PKEY_asn1_get0(int idx);
  const EVP_PKEY_ASN1_METHOD *EVP_PKEY_asn1_find(ENGINE **pe, int type);
 diff --git include/openssl/obj_mac.h include/openssl/obj_mac.h
-index eb812ed1..260357b1 100644
+index 53516a06..b66436e5 100644
 --- include/openssl/obj_mac.h
 +++ include/openssl/obj_mac.h
 @@ -4162,6 +4162,26 @@
@@ -1849,7 +1849,7 @@ index eb812ed1..260357b1 100644
 +
 +#endif
 diff --git include/openssl/ssl.h include/openssl/ssl.h
-index fd0c5a99..5ec06487 100644
+index 9af0c899..f94c7131 100644
 --- include/openssl/ssl.h
 +++ include/openssl/ssl.h
 @@ -81,6 +81,7 @@ extern "C" {
@@ -1967,7 +1967,7 @@ index 3b9f7139..48f7a558 100644
  # define X509V3_F_SET_DIST_POINT_NAME                     158
  # define X509V3_F_SXNET_ADD_ID_ASC                        125
 diff --git ssl/record/ssl3_record.c ssl/record/ssl3_record.c
-index f1585447..b4ed24fd 100644
+index 47c7369e..ee737c4c 100644
 --- ssl/record/ssl3_record.c
 +++ ssl/record/ssl3_record.c
 @@ -944,6 +944,8 @@ int tls1_enc(SSL *s, SSL3_RECORD *recs, size_t n_recs, int sending)
@@ -2037,7 +2037,7 @@ index f1585447..b4ed24fd 100644
          unsigned char dtlsseq[8], *p = dtlsseq;
  
 diff --git ssl/record/ssl3_record_tls13.c ssl/record/ssl3_record_tls13.c
-index ab50e376..4f78474e 100644
+index ab50e376..2373c9b3 100644
 --- ssl/record/ssl3_record_tls13.c
 +++ ssl/record/ssl3_record_tls13.c
 @@ -107,6 +107,10 @@ int tls13_enc(SSL *s, SSL3_RECORD *recs, size_t n_recs, int sending)
@@ -2051,11 +2051,12 @@ index ab50e376..4f78474e 100644
      } else {
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS13_ENC,
                   ERR_R_INTERNAL_ERROR);
-@@ -135,6 +139,15 @@ int tls13_enc(SSL *s, SSL3_RECORD *recs, size_t n_recs, int sending)
+@@ -135,6 +139,16 @@ int tls13_enc(SSL *s, SSL3_RECORD *recs, size_t n_recs, int sending)
      for (loop = 0; loop < SEQ_NUM_SIZE; loop++)
          iv[offset + loop] = staticiv[offset + loop] ^ seq[loop];
  
-+    if (s->s3->tmp.new_cipher->algorithm2 & TLS1_TLSTREE) {
++    if (s->s3->tmp.new_cipher != NULL
++        && s->s3->tmp.new_cipher->algorithm2 & TLS1_TLSTREE) {
 +        if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_TLSTREE,
 +                                0, seq) <= 0) {
 +            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS13_ENC,
@@ -2068,7 +2069,7 @@ index ab50e376..4f78474e 100644
      for (loop = SEQ_NUM_SIZE; loop > 0; loop--) {
          ++seq[loop - 1];
 diff --git ssl/s3_lib.c ssl/s3_lib.c
-index b256a4b9..bc9ba357 100644
+index 32f9b257..8fdf208a 100644
 --- ssl/s3_lib.c
 +++ ssl/s3_lib.c
 @@ -111,7 +111,74 @@ static SSL_CIPHER tls13_ciphers[] = {
@@ -2202,7 +2203,7 @@ index b256a4b9..bc9ba357 100644
  #endif                          /* OPENSSL_NO_GOST */
  
  #ifndef OPENSSL_NO_IDEA
-@@ -4339,6 +4454,11 @@ int ssl3_get_req_cert_type(SSL *s, WPACKET *pkt)
+@@ -4351,6 +4466,11 @@ int ssl3_get_req_cert_type(SSL *s, WPACKET *pkt)
      if (s->version >= TLS1_VERSION && (alg_k & SSL_kGOST))
              return WPACKET_put_bytes_u8(pkt, TLS_CT_GOST01_SIGN)
                      && WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_SIGN)
@@ -2214,7 +2215,7 @@ index b256a4b9..bc9ba357 100644
                      && WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_512_SIGN);
  #endif
  
-@@ -4689,6 +4809,52 @@ EVP_PKEY *ssl_generate_pkey(EVP_PKEY *pm)
+@@ -4701,6 +4821,52 @@ EVP_PKEY *ssl_generate_pkey(EVP_PKEY *pm)
      return pkey;
  }
  #ifndef OPENSSL_NO_EC
@@ -2267,7 +2268,7 @@ index b256a4b9..bc9ba357 100644
  /* Generate a private key from a group ID */
  EVP_PKEY *ssl_generate_pkey_group(SSL *s, uint16_t id)
  {
-@@ -4705,8 +4871,13 @@ EVP_PKEY *ssl_generate_pkey_group(SSL *s, uint16_t id)
+@@ -4717,8 +4883,13 @@ EVP_PKEY *ssl_generate_pkey_group(SSL *s, uint16_t id)
      gtype = ginf->flags & TLS_CURVE_TYPE;
      if (gtype == TLS_CURVE_CUSTOM)
          pctx = EVP_PKEY_CTX_new_id(ginf->nid, NULL);
@@ -2281,7 +2282,7 @@ index b256a4b9..bc9ba357 100644
      if (pctx == NULL) {
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_SSL_GENERATE_PKEY_GROUP,
                   ERR_R_MALLOC_FAILURE);
-@@ -4717,7 +4888,7 @@ EVP_PKEY *ssl_generate_pkey_group(SSL *s, uint16_t id)
+@@ -4729,7 +4900,7 @@ EVP_PKEY *ssl_generate_pkey_group(SSL *s, uint16_t id)
                   ERR_R_EVP_LIB);
          goto err;
      }
@@ -2290,7 +2291,7 @@ index b256a4b9..bc9ba357 100644
              && EVP_PKEY_CTX_set_ec_paramgen_curve_nid(pctx, ginf->nid) <= 0) {
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_SSL_GENERATE_PKEY_GROUP,
                   ERR_R_EVP_LIB);
-@@ -4755,13 +4926,21 @@ EVP_PKEY *ssl_generate_param_group(uint16_t id)
+@@ -4767,13 +4938,21 @@ EVP_PKEY *ssl_generate_param_group(uint16_t id)
          return NULL;
      }
  
@@ -2504,10 +2505,10 @@ index 324f2ccb..df16a616 100644
       "tls_process_cke_psk_preamble"},
      {ERR_PACK(ERR_LIB_SSL, SSL_F_TLS_PROCESS_CKE_RSA, 0),
 diff --git ssl/ssl_lib.c ssl/ssl_lib.c
-index 9c411a32..51bd2d3a 100644
+index 47adc321..30e511bf 100644
 --- ssl/ssl_lib.c
 +++ ssl/ssl_lib.c
-@@ -3382,11 +3382,11 @@ void ssl_set_masks(SSL *s)
+@@ -3397,11 +3397,11 @@ void ssl_set_masks(SSL *s)
  
  #ifndef OPENSSL_NO_GOST
      if (ssl_has_cert(s, SSL_PKEY_GOST12_512)) {
@@ -2522,7 +2523,7 @@ index 9c411a32..51bd2d3a 100644
      }
      if (ssl_has_cert(s, SSL_PKEY_GOST01)) {
 diff --git ssl/ssl_local.h ssl/ssl_local.h
-index 9f346e30..b23d3433 100644
+index 5c792154..2a11472b 100644
 --- ssl/ssl_local.h
 +++ ssl/ssl_local.h
 @@ -176,6 +176,8 @@
@@ -2613,7 +2614,7 @@ index 9f346e30..b23d3433 100644
  
  #define TLSEXT_SIGALG_ed25519                                   0x0807
 diff --git ssl/statem/extensions_srvr.c ssl/statem/extensions_srvr.c
-index 04f64f81..25e4e8ec 100644
+index 47541101..18040421 100644
 --- ssl/statem/extensions_srvr.c
 +++ ssl/statem/extensions_srvr.c
 @@ -624,7 +624,7 @@ int tls_parse_ctos_key_share(SSL *s, PACKET *pkt, unsigned int context, X509 *x,
@@ -2625,7 +2626,7 @@ index 04f64f81..25e4e8ec 100644
      /* Sanity check */
      if (s->s3->peer_tmp != NULL) {
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS_PARSE_CTOS_KEY_SHARE,
-@@ -1623,7 +1623,9 @@ EXT_RETURN tls_construct_stoc_etm(SSL *s, WPACKET *pkt, unsigned int context,
+@@ -1622,7 +1622,9 @@ EXT_RETURN tls_construct_stoc_etm(SSL *s, WPACKET *pkt, unsigned int context,
      if (s->s3->tmp.new_cipher->algorithm_mac == SSL_AEAD
          || s->s3->tmp.new_cipher->algorithm_enc == SSL_RC4
          || s->s3->tmp.new_cipher->algorithm_enc == SSL_eGOST2814789CNT
@@ -2636,7 +2637,7 @@ index 04f64f81..25e4e8ec 100644
          s->ext.use_etm = 0;
          return EXT_RETURN_NOT_SENT;
      }
-@@ -1682,6 +1684,7 @@ EXT_RETURN tls_construct_stoc_key_share(SSL *s, WPACKET *pkt,
+@@ -1681,6 +1683,7 @@ EXT_RETURN tls_construct_stoc_key_share(SSL *s, WPACKET *pkt,
                                          unsigned int context, X509 *x,
                                          size_t chainidx)
  {
@@ -2645,10 +2646,10 @@ index 04f64f81..25e4e8ec 100644
      unsigned char *encodedPoint;
      size_t encoded_pt_len = 0;
 diff --git ssl/statem/statem_clnt.c ssl/statem/statem_clnt.c
-index d1a39698..428536b8 100644
+index d19c44e8..d39a18d0 100644
 --- ssl/statem/statem_clnt.c
 +++ ssl/statem/statem_clnt.c
-@@ -3285,6 +3285,144 @@ static int tls_construct_cke_gost(SSL *s, WPACKET *pkt)
+@@ -3290,6 +3290,144 @@ static int tls_construct_cke_gost(SSL *s, WPACKET *pkt)
  #endif
  }
  
@@ -2793,7 +2794,7 @@ index d1a39698..428536b8 100644
  static int tls_construct_cke_srp(SSL *s, WPACKET *pkt)
  {
  #ifndef OPENSSL_NO_SRP
-@@ -3341,6 +3479,9 @@ int tls_construct_client_key_exchange(SSL *s, WPACKET *pkt)
+@@ -3346,6 +3484,9 @@ int tls_construct_client_key_exchange(SSL *s, WPACKET *pkt)
      } else if (alg_k & SSL_kGOST) {
          if (!tls_construct_cke_gost(s, pkt))
              goto err;
@@ -2841,7 +2842,7 @@ index eae88053..50f6bfe4 100644
  /* Extension processing */
  
 diff --git ssl/statem/statem_srvr.c ssl/statem/statem_srvr.c
-index d701c46b..5765c279 100644
+index 43f77a58..4882ab8e 100644
 --- ssl/statem/statem_srvr.c
 +++ ssl/statem/statem_srvr.c
 @@ -3455,6 +3455,93 @@ static int tls_process_cke_gost(SSL *s, PACKET *pkt)
@@ -2951,7 +2952,7 @@ index d701c46b..5765c279 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR,
                   SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
 diff --git ssl/t1_enc.c ssl/t1_enc.c
-index c85c0b03..eb366883 100644
+index f8e53d4e..946c3651 100644
 --- ssl/t1_enc.c
 +++ ssl/t1_enc.c
 @@ -113,6 +113,11 @@ int tls1_change_cipher_state(SSL *s, int which)
@@ -3022,7 +3023,7 @@ index c85c0b03..eb366883 100644
  
  int tls1_generate_master_secret(SSL *s, unsigned char *out, unsigned char *p,
 diff --git ssl/t1_lib.c ssl/t1_lib.c
-index b1d3add1..72cfc450 100644
+index 5f657f88..0ef8dc06 100644
 --- ssl/t1_lib.c
 +++ ssl/t1_lib.c
 @@ -169,6 +169,18 @@ static const TLS_GROUP_INFO nid_list[] = {
@@ -3308,14 +3309,15 @@ index e2c397b7..9d7341da 100644
  
      return !msglen;
 diff --git ssl/tls13_enc.c ssl/tls13_enc.c
-index b8fb07f2..50e9aa3a 100644
+index ff85df44..6ba9d4a4 100644
 --- ssl/tls13_enc.c
 +++ ssl/tls13_enc.c
-@@ -428,6 +428,21 @@ static int derive_secret_key_and_iv(SSL *s, int sending, const EVP_MD *md,
+@@ -429,6 +429,22 @@ static int derive_secret_key_and_iv(SSL *s, int sending, const EVP_MD *md,
          goto err;
      }
  
-+    if (s->s3->tmp.new_cipher->algorithm2 & TLS1_TLSTREE) {
++    if (s->s3->tmp.new_cipher != NULL
++        && s->s3->tmp.new_cipher->algorithm2 & TLS1_TLSTREE) {
 +      int res = 0;
 +      if (s->s3->tmp.new_cipher->algorithm2 & TLS1_TLSTREE_S) {
 +          res = EVP_CIPHER_CTX_ctrl(ciph_ctx, EVP_CTRL_SET_TLSTREE_PARAMS, 0, "short");
