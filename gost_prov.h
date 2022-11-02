@@ -25,3 +25,9 @@ struct provider_ctx_st {
     ENGINE *e;
 };
 typedef struct provider_ctx_st PROV_CTX;
+
+#define SN_kuznyechik_mgm      "kuznyechik-mgm"
+#define NID_kuznyechik_mgm     1248
+
+#define SN_magma_mgm            "magma-mgm"
+#define NID_magma_mgm           1249
