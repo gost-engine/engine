@@ -10,11 +10,11 @@
 extern "C" {
 #endif
 
+#include "gost_grasshopper_cipher.h"
+#include "gost_grasshopper_core.h"
 #include "gost_grasshopper_defines.h"
 #include "gost_grasshopper_math.h"
-#include "gost_grasshopper_cipher.h"
 #include "gost_grasshopper_precompiled.h"
-#include "gost_grasshopper_core.h"
 
 #if defined(__cplusplus)
 }

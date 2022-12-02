@@ -7,15 +7,15 @@
  *       OpenSSL interface to GOST R 34.11-94 hash functions          *
  *          Requires OpenSSL 0.9.9 for compilation                    *
  **********************************************************************/
-#include <string.h>
+#include "e_gost_err.h"
 #include "gost_lcl.h"
 #include "gosthash.h"
-#include "e_gost_err.h"
+
+#include <string.h>
 
 /* implementation of GOST 34.11 hash function See gost_md.c*/
 static int gost_digest_init(EVP_MD_CTX *ctx);
-static int gost_digest_update(EVP_MD_CTX *ctx, const void *data,
-                              size_t count);
+static int gost_digest_update(EVP_MD_CTX *ctx, const void *data, size_t count);
 static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md);
 static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from);
 static int gost_digest_cleanup(EVP_MD_CTX *ctx);
@@ -36,13 +36,9 @@ GOST_digest GostR3411_94_digest = {
  * Single level template accessor.
  * Note: that you cannot template 0 value.
  */
-#define TPL(st,field) ( \
-    ((st)->field) ? ((st)->field) : TPL_VAL(st,field) \
-)
+#define TPL(st, field) (((st)->field) ? ((st)->field) : TPL_VAL(st, field))
 
-#define TPL_VAL(st,field) ( \
-    ((st)->template ? (st)->template->field : 0) \
-)
+#define TPL_VAL(st, field) (((st)->template ? (st)->template->field : 0))
 
 EVP_MD *GOST_init_digest(GOST_digest *d)
 {
@@ -89,20 +85,20 @@ static int gost_digest_init(EVP_MD_CTX *ctx)
 
 static int gost_digest_update(EVP_MD_CTX *ctx, const void *data, size_t count)
 {
-    return hash_block((gost_hash_ctx *) EVP_MD_CTX_md_data(ctx), data, count);
+    return hash_block((gost_hash_ctx *)EVP_MD_CTX_md_data(ctx), data, count);
 }
 
 static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md)
 {
-    return finish_hash((gost_hash_ctx *) EVP_MD_CTX_md_data(ctx), md);
-
+    return finish_hash((gost_hash_ctx *)EVP_MD_CTX_md_data(ctx), md);
 }
 
 static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
     struct ossl_gost_digest_ctx *md_ctx = EVP_MD_CTX_md_data(to);
     if (EVP_MD_CTX_md_data(to) && EVP_MD_CTX_md_data(from)) {
-        memcpy(EVP_MD_CTX_md_data(to), EVP_MD_CTX_md_data(from),
+        memcpy(EVP_MD_CTX_md_data(to),
+               EVP_MD_CTX_md_data(from),
                sizeof(struct ossl_gost_digest_ctx));
         md_ctx->dctx.cipher_ctx = &(md_ctx->cctx);
     }
@@ -112,8 +108,8 @@ static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 static int gost_digest_cleanup(EVP_MD_CTX *ctx)
 {
     if (EVP_MD_CTX_md_data(ctx))
-        memset(EVP_MD_CTX_md_data(ctx), 0,
-               sizeof(struct ossl_gost_digest_ctx));
+        memset(EVP_MD_CTX_md_data(ctx), 0, sizeof(struct ossl_gost_digest_ctx));
     return 1;
 }
+
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */

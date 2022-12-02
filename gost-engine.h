@@ -7,7 +7,7 @@
  *                                                                    *
  **********************************************************************/
 #ifndef GOST_ENGINE_H
-# define GOST_ENGINE_H
+#define GOST_ENGINE_H
 
 void ENGINE_load_gost(void);
 

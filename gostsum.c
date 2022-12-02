@@ -10,35 +10,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _MSC_VER
-#include "getopt.h"
+# include "getopt.h"
 # ifndef PATH_MAX
 #  define PATH_MAX _MAX_PATH
 # endif
-#include <BaseTsd.h>
+# include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #else
-#include <unistd.h>
+# include <unistd.h>
 #endif
-#include <limits.h>
 #include <fcntl.h>
+#include <limits.h>
 #ifdef _WIN32
 # include <io.h>
 #endif
-#include <string.h>
 #include "gosthash.h"
+
+#include <string.h>
 #define BUF_SIZE 262144
-int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode);
-int hash_stream(gost_hash_ctx * ctx, int fd, char *sum);
+int hash_file(gost_hash_ctx *ctx, char *filename, char *sum, int mode);
+int hash_stream(gost_hash_ctx *ctx, int fd, char *sum);
 int get_line(FILE *f, char *hash, char *filename);
+
 void help()
 {
-    fprintf(stderr, "gostsum [-bvt] [-c [file]]| [files]\n"
-            "\t-c check message digests (default is generate)\n"
-            "\t-v verbose, print file names when checking\n"
-            "\t-b read files in binary mode\n"
-            "\t-t use test GOST paramset (default is CryptoPro paramset)\n"
-            "The input for -c should be the list of message digests and file names\n"
-            "that is printed on stdout by this program when it generates digests.\n");
+    fprintf(
+        stderr,
+        "gostsum [-bvt] [-c [file]]| [files]\n"
+        "\t-c check message digests (default is generate)\n"
+        "\t-v verbose, print file names when checking\n"
+        "\t-b read files in binary mode\n"
+        "\t-t use test GOST paramset (default is CryptoPro paramset)\n"
+        "The input for -c should be the list of message digests and file names\n"
+        "that is printed on stdout by this program when it generates digests.\n");
     exit(3);
 }
 
@@ -111,7 +115,8 @@ int main(int argc, char **argv)
                 } else {
                     fprintf(stderr,
                             "%s: GOST hash sum check failed for '%s'\n",
-                            argv[0], filename);
+                            argv[0],
+                            filename);
                 }
                 failcount++;
             }
@@ -119,13 +124,16 @@ int main(int argc, char **argv)
         if (errors) {
             fprintf(stderr,
                     "%s: WARNING %d of %d file(s) cannot be processed\n",
-                    argv[0], errors, count);
-
+                    argv[0],
+                    errors,
+                    count);
         }
         if (verbose && failcount) {
             fprintf(stderr,
                     "%s: %d of %d file(f) failed GOST hash sum check\n",
-                    argv[0], failcount, count);
+                    argv[0],
+                    failcount,
+                    count);
         }
         exit((failcount || errors) ? 1 : 0);
     }
@@ -154,7 +162,7 @@ int main(int argc, char **argv)
     exit(errors ? 1 : 0);
 }
 
-int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode)
+int hash_file(gost_hash_ctx *ctx, char *filename, char *sum, int mode)
 {
     int fd;
     if ((fd = open(filename, mode)) < 0) {
@@ -170,7 +178,7 @@ int hash_file(gost_hash_ctx * ctx, char *filename, char *sum, int mode)
     return 1;
 }
 
-int hash_stream(gost_hash_ctx * ctx, int fd, char *sum)
+int hash_stream(gost_hash_ctx *ctx, int fd, char *sum)
 {
     unsigned char buffer[BUF_SIZE];
     ssize_t bytes;

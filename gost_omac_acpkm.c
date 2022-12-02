@@ -5,18 +5,19 @@
  * Contents licensed under the terms of the OpenSSL license
  * See https://www.openssl.org/source/license.html for details
  */
-#include <string.h>
+#include "e_gost_err.h"
+#include "gost_grasshopper_cipher.h"
+#include "gost_grasshopper_defines.h"
+#include "gost_lcl.h"
+
 #include <openssl/cmac.h>
 #include <openssl/conf.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
-
-#include "e_gost_err.h"
-#include "gost_lcl.h"
-#include "gost_grasshopper_defines.h"
-#include "gost_grasshopper_cipher.h"
+#include <string.h>
 
 #define ACPKM_T_MAX (GRASSHOPPER_KEY_SIZE + GRASSHOPPER_BLOCK_SIZE)
+
 /*
  * CMAC code from crypto/cmac/cmac.c with ACPKM tweaks
  */
@@ -33,7 +34,7 @@ struct CMAC_ACPKM_CTX_st {
     /* Number of bytes in last block: -1 means context not initialised */
     int nlast_block;
     unsigned int section_size; /* N */
-    unsigned int num; /* processed bytes until section_size */
+    unsigned int num;          /* processed bytes until section_size */
 };
 typedef struct CMAC_ACPKM_CTX_st CMAC_ACPKM_CTX;
 
@@ -169,8 +170,8 @@ static int CMAC_ACPKM_Init(CMAC_ACPKM_CTX *ctx, const void *key, size_t keylen,
             return 0;
 
         /* Initialize cbc for CMAC */
-        if (!EVP_CIPHER_CTX_cipher(ctx->cctx) ||
-            !EVP_CIPHER_CTX_set_key_length(ctx->cctx, key_len))
+        if (!EVP_CIPHER_CTX_cipher(ctx->cctx)
+            || !EVP_CIPHER_CTX_set_key_length(ctx->cctx, key_len))
             return 0;
         /* set CBC key to K^1 */
         if (!EVP_EncryptInit_ex(ctx->cctx, NULL, NULL, ctx->km, zero_iv))
@@ -184,9 +185,11 @@ static int CMAC_ACPKM_Init(CMAC_ACPKM_CTX *ctx, const void *key, size_t keylen,
  * to generate T*-sized key material */
 static int CMAC_ACPKM_Master(CMAC_ACPKM_CTX *ctx)
 {
-    return EVP_Cipher(ctx->actx, ctx->km, zero_iv,
-        EVP_CIPHER_key_length(EVP_CIPHER_CTX_cipher(ctx->actx)) +
-        EVP_CIPHER_CTX_block_size(ctx->cctx));
+    return EVP_Cipher(ctx->actx,
+                      ctx->km,
+                      zero_iv,
+                      EVP_CIPHER_key_length(EVP_CIPHER_CTX_cipher(ctx->actx))
+                          + EVP_CIPHER_CTX_block_size(ctx->cctx));
 }
 
 static int CMAC_ACPKM_Mesh(CMAC_ACPKM_CTX *ctx)
@@ -197,8 +200,8 @@ static int CMAC_ACPKM_Mesh(CMAC_ACPKM_CTX *ctx)
     if (!CMAC_ACPKM_Master(ctx))
         return 0;
     /* Restart cbc with new key */
-    if (!EVP_EncryptInit_ex(ctx->cctx, NULL, NULL, ctx->km,
-            EVP_CIPHER_CTX_iv(ctx->cctx)))
+    if (!EVP_EncryptInit_ex(
+            ctx->cctx, NULL, NULL, ctx->km, EVP_CIPHER_CTX_iv(ctx->cctx)))
         return 0;
     return 1;
 }
@@ -246,7 +249,6 @@ static int CMAC_ACPKM_Update(CMAC_ACPKM_CTX *ctx, const void *in, size_t dlen)
     memcpy(ctx->last_block, data, dlen);
     ctx->nlast_block = dlen;
     return 1;
-
 }
 
 static int CMAC_ACPKM_Final(CMAC_ACPKM_CTX *ctx, unsigned char *out,
@@ -257,7 +259,7 @@ static int CMAC_ACPKM_Final(CMAC_ACPKM_CTX *ctx, unsigned char *out,
     if (ctx->nlast_block == -1)
         return 0;
     bl = EVP_CIPHER_CTX_block_size(ctx->cctx);
-    *poutlen = (size_t) bl;
+    *poutlen = (size_t)bl;
     if (!out)
         return 1;
     lb = ctx->nlast_block;
@@ -372,11 +374,13 @@ static int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
         }
         return 1;
     }
-    if ((c_to->cmac_ctx == c_from->cmac_ctx) || (c_to->cmac_ctx == NULL))  {
+    if ((c_to->cmac_ctx == c_from->cmac_ctx) || (c_to->cmac_ctx == NULL)) {
         c_to->cmac_ctx = CMAC_ACPKM_CTX_new();
     }
 
-    return (c_to->cmac_ctx) ? CMAC_ACPKM_CTX_copy(c_to->cmac_ctx, c_from->cmac_ctx) : 0;
+    return (c_to->cmac_ctx) ?
+               CMAC_ACPKM_CTX_copy(c_to->cmac_ctx, c_from->cmac_ctx) :
+               0;
 }
 
 /* Clean up imit ctx */
@@ -415,93 +419,96 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
     case EVP_MD_CTRL_KEY_LEN:
         *((unsigned int *)(ptr)) = 32;
         return 1;
-    case EVP_MD_CTRL_SET_KEY:
-        {
-            OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
-            const EVP_MD *md = EVP_MD_CTX_md(ctx);
-            EVP_CIPHER *cipher = NULL;
-            int ret = 0;
+    case EVP_MD_CTRL_SET_KEY: {
+        OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
+        const EVP_MD *md = EVP_MD_CTX_md(ctx);
+        EVP_CIPHER *cipher = NULL;
+        int ret = 0;
 
-            if (c->cipher_name == NULL) {
-                if (EVP_MD_is_a(md, SN_grasshopper_mac)
-                    || EVP_MD_is_a(md, SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac))
-                    c->cipher_name = SN_grasshopper_cbc;
-            }
-            if ((cipher =
-                 (EVP_CIPHER *)EVP_get_cipherbyname(c->cipher_name)) == NULL
-                && (cipher =
-                    EVP_CIPHER_fetch(NULL, c->cipher_name, NULL)) == NULL) {
-                GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_CIPHER_NOT_FOUND);
-            }
-            if (EVP_MD_meth_get_init(EVP_MD_CTX_md(ctx)) (ctx) <= 0) {
-                GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
-                goto set_key_end;
-            }
-            EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NO_INIT);
-            if (c->key_set) {
-                GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_BAD_ORDER);
-                goto set_key_end;
-            }
-            if (arg == 0) {
-                struct gost_mac_key *key = (struct gost_mac_key *)ptr;
-                ret = omac_acpkm_key(c, cipher, key->key, 32);
-                goto set_key_end;
-            } else if (arg == 32) {
-                ret = omac_acpkm_key(c, cipher, ptr, 32);
-                goto set_key_end;
-            }
-            GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
-          set_key_end:
-            EVP_CIPHER_free(cipher);
-            return ret;
+        if (c->cipher_name == NULL) {
+            if (EVP_MD_is_a(md, SN_grasshopper_mac)
+                || EVP_MD_is_a(
+                    md,
+                    SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac))
+                c->cipher_name = SN_grasshopper_cbc;
         }
-    case EVP_CTRL_KEY_MESH:
-        {
-            OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
-            if (!arg || (arg % EVP_MD_block_size(EVP_MD_CTX_md(ctx))))
-                return -1;
-            c->cmac_ctx->section_size = arg;
-            if (ptr && *(int *)ptr) {
-                /* Set parameter T */
-                if (EVP_CIPHER_get0_provider(EVP_CIPHER_CTX_cipher(c->cmac_ctx->actx))
-                    == NULL) {
-                    if (!EVP_CIPHER_CTX_ctrl(c->cmac_ctx->actx, EVP_CTRL_KEY_MESH,
-                                             *(int *)ptr, NULL))
-                        return 0;
-                } else {
-                    size_t cipher_key_mesh = (size_t)*(int *)ptr;
-                    OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END };
-                    params[0] = OSSL_PARAM_construct_size_t("key-mesh",
-                                                            &cipher_key_mesh);
-                    if (!EVP_CIPHER_CTX_set_params(c->cmac_ctx->actx, params))
-                        return 0;
-                }
-            }
-            return 1;
+        if ((cipher = (EVP_CIPHER *)EVP_get_cipherbyname(c->cipher_name))
+                == NULL
+            && (cipher = EVP_CIPHER_fetch(NULL, c->cipher_name, NULL))
+                   == NULL) {
+            GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_CIPHER_NOT_FOUND);
         }
-    case EVP_MD_CTRL_XOF_LEN:   /* Supported in OpenSSL */
-        {
-            OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
-            switch (OBJ_txt2nid(c->cipher_name)) {
-            case NID_grasshopper_cbc:
-                if (arg < 1 || arg > 16) {
-                    GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
+        if (EVP_MD_meth_get_init(EVP_MD_CTX_md(ctx))(ctx) <= 0) {
+            GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
+            goto set_key_end;
+        }
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NO_INIT);
+        if (c->key_set) {
+            GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_BAD_ORDER);
+            goto set_key_end;
+        }
+        if (arg == 0) {
+            struct gost_mac_key *key = (struct gost_mac_key *)ptr;
+            ret = omac_acpkm_key(c, cipher, key->key, 32);
+            goto set_key_end;
+        } else if (arg == 32) {
+            ret = omac_acpkm_key(c, cipher, ptr, 32);
+            goto set_key_end;
+        }
+        GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_INVALID_MAC_KEY_SIZE);
+    set_key_end:
+        EVP_CIPHER_free(cipher);
+        return ret;
+    }
+    case EVP_CTRL_KEY_MESH: {
+        OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
+        if (!arg || (arg % EVP_MD_block_size(EVP_MD_CTX_md(ctx))))
+            return -1;
+        c->cmac_ctx->section_size = arg;
+        if (ptr && *(int *)ptr) {
+            /* Set parameter T */
+            if (EVP_CIPHER_get0_provider(
+                    EVP_CIPHER_CTX_cipher(c->cmac_ctx->actx))
+                == NULL) {
+                if (!EVP_CIPHER_CTX_ctrl(c->cmac_ctx->actx,
+                                         EVP_CTRL_KEY_MESH,
+                                         *(int *)ptr,
+                                         NULL))
                     return 0;
-                }
-                c->dgst_size = arg;
-                break;
-            case NID_magma_cbc:
-                if (arg < 1 || arg > 8) {
-                    GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
+            } else {
+                size_t cipher_key_mesh = (size_t) * (int *)ptr;
+                OSSL_PARAM params[] = {OSSL_PARAM_END, OSSL_PARAM_END};
+                params[0] =
+                    OSSL_PARAM_construct_size_t("key-mesh", &cipher_key_mesh);
+                if (!EVP_CIPHER_CTX_set_params(c->cmac_ctx->actx, params))
                     return 0;
-                }
-                c->dgst_size = arg;
-                break;
-            default:
+            }
+        }
+        return 1;
+    }
+    case EVP_MD_CTRL_XOF_LEN: /* Supported in OpenSSL */
+    {
+        OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
+        switch (OBJ_txt2nid(c->cipher_name)) {
+        case NID_grasshopper_cbc:
+            if (arg < 1 || arg > 16) {
+                GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
                 return 0;
             }
-            return 1;
+            c->dgst_size = arg;
+            break;
+        case NID_magma_cbc:
+            if (arg < 1 || arg > 8) {
+                GOSTerr(GOST_F_OMAC_ACPKM_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
+                return 0;
+            }
+            c->dgst_size = arg;
+            break;
+        default:
+            return 0;
         }
+        return 1;
+    }
 
     default:
         return 0;

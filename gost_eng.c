@@ -8,68 +8,70 @@
  *       This file is distributed under the same license as OpenSSL   *
  *                                                                    *
  **********************************************************************/
-#include <string.h>
+#include "e_gost_err.h"
+#include "gost-engine.h"
+#include "gost_grasshopper_cipher.h"
+#include "gost_lcl.h"
+
 #include <openssl/crypto.h>
+#include <openssl/engine.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
-#include <openssl/engine.h>
 #include <openssl/obj_mac.h>
-#include "e_gost_err.h"
-#include "gost_lcl.h"
-#include "gost-engine.h"
+#include <string.h>
 
-#include "gost_grasshopper_cipher.h"
+static const char *engine_gost_id = "gost";
 
-static const char* engine_gost_id = "gost";
+static const char *engine_gost_name = "Reference implementation of GOST engine";
 
-static const char* engine_gost_name =
-        "Reference implementation of GOST engine";
-
-const ENGINE_CMD_DEFN gost_cmds[] = {
-    {GOST_CTRL_CRYPT_PARAMS,
-     "CRYPT_PARAMS",
-     "OID of default GOST 28147-89 parameters",
-     ENGINE_CMD_FLAG_STRING},
-    {GOST_CTRL_PBE_PARAMS,
-     "PBE_PARAMS",
-     "Shortname of default digest alg for PBE",
-     ENGINE_CMD_FLAG_STRING},
-    {GOST_CTRL_PK_FORMAT,
-     "GOST_PK_FORMAT",
-     "Private key format params",
-     ENGINE_CMD_FLAG_STRING},
-    {0, NULL, NULL, 0}
-};
+const ENGINE_CMD_DEFN gost_cmds[] = {{GOST_CTRL_CRYPT_PARAMS,
+                                      "CRYPT_PARAMS",
+                                      "OID of default GOST 28147-89 parameters",
+                                      ENGINE_CMD_FLAG_STRING},
+                                     {GOST_CTRL_PBE_PARAMS,
+                                      "PBE_PARAMS",
+                                      "Shortname of default digest alg for PBE",
+                                      ENGINE_CMD_FLAG_STRING},
+                                     {GOST_CTRL_PK_FORMAT,
+                                      "GOST_PK_FORMAT",
+                                      "Private key format params",
+                                      ENGINE_CMD_FLAG_STRING},
+                                     {0, NULL, NULL, 0}};
 
 /* Symmetric cipher and digest function registrar */
 
-static int gost_ciphers(ENGINE* e, const EVP_CIPHER** cipher,
-                        const int** nids, int nid);
+static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher, const int **nids,
+                        int nid);
 
-static int gost_digests(ENGINE* e, const EVP_MD** digest,
-                        const int** nids, int nid);
+static int gost_digests(ENGINE *e, const EVP_MD **digest, const int **nids,
+                        int nid);
 
-static int gost_pkey_meths(ENGINE* e, EVP_PKEY_METHOD** pmeth,
-                           const int** nids, int nid);
+static int gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth, const int **nids,
+                           int nid);
 
-static int gost_pkey_asn1_meths(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
-                                const int** nids, int nid);
+static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
+                                const int **nids, int nid);
 
-static EVP_PKEY_METHOD* pmeth_GostR3410_2001 = NULL,
-        * pmeth_GostR3410_2001DH = NULL,
-        * pmeth_GostR3410_2012_256 = NULL,
-        * pmeth_GostR3410_2012_512 = NULL,
-        * pmeth_Gost28147_MAC = NULL, * pmeth_Gost28147_MAC_12 = NULL,
-        * pmeth_magma_mac = NULL,  * pmeth_grasshopper_mac = NULL,
-        * pmeth_magma_mac_acpkm = NULL,  * pmeth_grasshopper_mac_acpkm = NULL;
+static EVP_PKEY_METHOD *pmeth_GostR3410_2001 = NULL,
+                       *pmeth_GostR3410_2001DH = NULL,
+                       *pmeth_GostR3410_2012_256 = NULL,
+                       *pmeth_GostR3410_2012_512 = NULL,
+                       *pmeth_Gost28147_MAC = NULL,
+                       *pmeth_Gost28147_MAC_12 = NULL, *pmeth_magma_mac = NULL,
+                       *pmeth_grasshopper_mac = NULL,
+                       *pmeth_magma_mac_acpkm = NULL,
+                       *pmeth_grasshopper_mac_acpkm = NULL;
 
-static EVP_PKEY_ASN1_METHOD* ameth_GostR3410_2001 = NULL,
-        * ameth_GostR3410_2001DH = NULL,
-        * ameth_GostR3410_2012_256 = NULL,
-        * ameth_GostR3410_2012_512 = NULL,
-        * ameth_Gost28147_MAC = NULL, * ameth_Gost28147_MAC_12 = NULL,
-        * ameth_magma_mac = NULL,  * ameth_grasshopper_mac = NULL,
-        * ameth_magma_mac_acpkm = NULL,  * ameth_grasshopper_mac_acpkm = NULL;
+static EVP_PKEY_ASN1_METHOD *ameth_GostR3410_2001 = NULL,
+                            *ameth_GostR3410_2001DH = NULL,
+                            *ameth_GostR3410_2012_256 = NULL,
+                            *ameth_GostR3410_2012_512 = NULL,
+                            *ameth_Gost28147_MAC = NULL,
+                            *ameth_Gost28147_MAC_12 = NULL,
+                            *ameth_magma_mac = NULL,
+                            *ameth_grasshopper_mac = NULL,
+                            *ameth_magma_mac_acpkm = NULL,
+                            *ameth_grasshopper_mac_acpkm = NULL;
 
 GOST_digest *gost_digest_array[] = {
     &GostR3411_94_digest,
@@ -182,11 +184,11 @@ static struct gost_meth_minfo {
         "ID-TC26-CIPHER-GOSTR3412-2015-KUZNYECHIK-CTRACPKM-OMAC",
         "GOST R 34.13-2015 Grasshopper MAC ACPKM",
     },
-    { 0 },
+    {0},
 };
 
 #ifndef OSSL_NELEM
-# define OSSL_NELEM(x) (sizeof(x)/sizeof((x)[0]))
+# define OSSL_NELEM(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
 static int known_digest_nids[OSSL_NELEM(gost_digest_array)];
@@ -195,8 +197,8 @@ static int known_cipher_nids[OSSL_NELEM(gost_cipher_array)];
 static int known_meths_nids[OSSL_NELEM(gost_meth_array) - 1];
 
 /* ENGINE_DIGESTS_PTR callback installed by ENGINE_set_digests */
-static int gost_digests(ENGINE *e, const EVP_MD **digest,
-                        const int **nids, int nid)
+static int gost_digests(ENGINE *e, const EVP_MD **digest, const int **nids,
+                        int nid)
 {
     int i;
 
@@ -219,8 +221,8 @@ static int gost_digests(ENGINE *e, const EVP_MD **digest,
 }
 
 /* ENGINE_CIPHERS_PTR callback installed by ENGINE_set_ciphers */
-static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
-                        const int **nids, int nid)
+static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher, const int **nids,
+                        int nid)
 {
     int i;
 
@@ -254,8 +256,8 @@ static int gost_meth_nids(const int **nids)
 }
 
 /* ENGINE_PKEY_METHS_PTR installed by ENGINE_set_pkey_meths */
-static int gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth,
-                           const int **nids, int nid)
+static int gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth, const int **nids,
+                           int nid)
 {
     struct gost_meth_minfo *info;
 
@@ -289,17 +291,20 @@ static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
     return 0;
 }
 
-static int gost_engine_init(ENGINE* e) {
+static int gost_engine_init(ENGINE *e)
+{
     return 1;
 }
 
-static int gost_engine_finish(ENGINE* e) {
+static int gost_engine_finish(ENGINE *e)
+{
     return 1;
 }
 
 static void free_NIDs();
 
-static int gost_engine_destroy(ENGINE* e) {
+static int gost_engine_destroy(ENGINE *e)
+{
     int i;
 
     for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
@@ -318,9 +323,9 @@ static int gost_engine_destroy(ENGINE* e) {
     free_cached_groups();
     free_NIDs();
 
-# ifndef BUILDING_GOST_PROVIDER
+#ifndef BUILDING_GOST_PROVIDER
     ERR_unload_GOST_strings();
-# endif
+#endif
 
     return 1;
 }
@@ -335,7 +340,8 @@ static GOST_NID_JOB *missing_NIDs[] = {
     &magma_mgm_NID,
 };
 
-static int create_NIDs() {
+static int create_NIDs()
+{
     int i;
     int new_nid = OBJ_new_nid(OSSL_NELEM(missing_NIDs));
     for (i = 0; i < OSSL_NELEM(missing_NIDs); i++) {
@@ -352,17 +358,20 @@ static int create_NIDs() {
     return 1;
 }
 
-static void free_NIDs() {
+static void free_NIDs()
+{
     int i;
     for (i = 0; i < OSSL_NELEM(missing_NIDs); i++) {
         ASN1_OBJECT_free(missing_NIDs[i]->asn1);
     }
 }
 
-# ifndef BUILDING_GOST_PROVIDER
+#ifndef BUILDING_GOST_PROVIDER
 static
-# endif
-int populate_gost_engine(ENGINE* e) {
+#endif
+    int
+    populate_gost_engine(ENGINE *e)
+{
     int ret = 0;
 
     if (e == NULL)
@@ -418,29 +427,28 @@ int populate_gost_engine(ENGINE* e) {
      */
     struct gost_meth_minfo *minfo = gost_meth_array;
     for (; minfo->nid; minfo++) {
-
         /* This skip looks temporary. */
         if (minfo->nid == NID_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac)
             continue;
 
-        if (!register_ameth_gost(minfo->nid, minfo->ameth, minfo->pemstr,
-                minfo->info))
+        if (!register_ameth_gost(
+                minfo->nid, minfo->ameth, minfo->pemstr, minfo->info))
             goto end;
         if (!register_pmeth_gost(minfo->nid, minfo->pmeth, 0))
             goto end;
     }
 
     ret = 1;
-  end:
+end:
     return ret;
 }
 
 #ifndef BUILDING_GOST_PROVIDER
-static int bind_gost_engine(ENGINE* e) {
+static int bind_gost_engine(ENGINE *e)
+{
     int ret = 0;
 
-    if (!ENGINE_register_ciphers(e)
-        || !ENGINE_register_digests(e)
+    if (!ENGINE_register_ciphers(e) || !ENGINE_register_digests(e)
         || !ENGINE_register_pkey_meths(e))
         goto end;
 
@@ -459,11 +467,11 @@ static int bind_gost_engine(ENGINE* e) {
 
     ERR_load_GOST_strings();
     ret = 1;
-  end:
+end:
     return ret;
 }
 
-static int check_gost_engine(ENGINE* e, const char* id)
+static int check_gost_engine(ENGINE *e, const char *id)
 {
     if (id != NULL && strcmp(id, engine_gost_id) != 0)
         return 0;
@@ -474,14 +482,13 @@ static int check_gost_engine(ENGINE* e, const char* id)
     return 1;
 }
 
-static int make_gost_engine(ENGINE* e, const char* id)
+static int make_gost_engine(ENGINE *e, const char *id)
 {
-    return check_gost_engine(e, id)
-        && populate_gost_engine(e)
-        && bind_gost_engine(e);
+    return check_gost_engine(e, id) && populate_gost_engine(e)
+           && bind_gost_engine(e);
 }
 
-#ifndef BUILDING_ENGINE_AS_LIBRARY
+# ifndef BUILDING_ENGINE_AS_LIBRARY
 
 /*
  * When building gost-engine as a dynamically loadable module, these two
@@ -492,15 +499,16 @@ static int make_gost_engine(ENGINE* e, const char* id)
 IMPLEMENT_DYNAMIC_BIND_FN(make_gost_engine)
 IMPLEMENT_DYNAMIC_CHECK_FN()
 
-#else
+# else
 
 /*
  * When building gost-engine as a shared library, the application that uses
  * it must manually call ENGINE_load_gost() for it to bind itself into the
  * libcrypto libraries.
  */
-void ENGINE_load_gost(void) {
-    ENGINE* toadd;
+void ENGINE_load_gost(void)
+{
+    ENGINE *toadd;
     int ret = 0;
 
     if ((toadd = ENGINE_new()) != NULL
@@ -510,6 +518,6 @@ void ENGINE_load_gost(void) {
     if (ret > 0)
         ERR_clear_error();
 }
-#endif
+# endif
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */

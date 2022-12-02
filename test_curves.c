@@ -11,35 +11,37 @@
 # pragma warning(pop)
 #endif
 #include "gost_lcl.h"
-#include <openssl/evp.h>
-#include <openssl/rand.h>
-#include <openssl/err.h>
+
 #include <openssl/asn1.h>
-#include <openssl/obj_mac.h>
-#include <openssl/ec.h>
 #include <openssl/bn.h>
+#include <openssl/ec.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/obj_mac.h>
+#include <openssl/rand.h>
 #include <string.h>
 
-#define T(e) \
-    if (!(e)) { \
-        ERR_print_errors_fp(stderr); \
-        OpenSSLDie(__FILE__, __LINE__, #e); \
-    }
+#define T(e)                          \
+ if (!(e)) {                          \
+  ERR_print_errors_fp(stderr);        \
+  OpenSSLDie(__FILE__, __LINE__, #e); \
+ }
 
-#define cRED	"\033[1;31m"
-#define cDRED	"\033[0;31m"
-#define cGREEN	"\033[1;32m"
-#define cDGREEN	"\033[0;32m"
-#define cBLUE	"\033[1;34m"
-#define cDBLUE	"\033[0;34m"
-#define cNORM	"\033[m"
-#define TEST_ASSERT(e) { \
-	test = e; \
-	if (test) \
-		printf(cRED "  Test FAILED" cNORM "\n"); \
-	else \
-		printf(cGREEN "  Test passed" cNORM "\n"); \
-}
+#define cRED    "\033[1;31m"
+#define cDRED   "\033[0;31m"
+#define cGREEN  "\033[1;32m"
+#define cDGREEN "\033[0;32m"
+#define cBLUE   "\033[1;34m"
+#define cDBLUE  "\033[0;34m"
+#define cNORM   "\033[m"
+#define TEST_ASSERT(e)                        \
+ {                                            \
+  test = e;                                   \
+  if (test)                                   \
+   printf(cRED "  Test FAILED" cNORM "\n");   \
+  else                                        \
+   printf(cGREEN "  Test passed" cNORM "\n"); \
+ }
 
 struct test_curve {
     int nid;
@@ -49,20 +51,43 @@ struct test_curve {
 
 static struct test_curve test_curves[] = {
 #if 2001
-    { NID_id_GostR3410_2001_TestParamSet, },
+    {
+        NID_id_GostR3410_2001_TestParamSet,
+    },
 #endif
-    { NID_id_GostR3410_2001_CryptoPro_A_ParamSet },
-    { NID_id_GostR3410_2001_CryptoPro_B_ParamSet },
-    { NID_id_GostR3410_2001_CryptoPro_C_ParamSet },
-    { NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet },
-    { NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet },
-    { NID_id_tc26_gost_3410_2012_512_paramSetA, "id-tc26-gost-3410-2012-512-paramSetA", },
-    { NID_id_tc26_gost_3410_2012_512_paramSetB, "id-tc26-gost-3410-2012-512-paramSetB", },
-    { NID_id_tc26_gost_3410_2012_512_paramSetC, "id-tc26-gost-3410-2012-512-paramSetC", },
-    { NID_id_tc26_gost_3410_2012_256_paramSetA, "id-tc26-gost-3410-2012-256-paramSetA", },
-    { NID_id_tc26_gost_3410_2012_256_paramSetB, "id-tc26-gost-3410-2012-256-paramSetB", },
-    { NID_id_tc26_gost_3410_2012_256_paramSetC, "id-tc26-gost-3410-2012-256-paramSetC", },
-    { NID_id_tc26_gost_3410_2012_256_paramSetD, "id-tc26-gost-3410-2012-256-paramSetD", },
+    {NID_id_GostR3410_2001_CryptoPro_A_ParamSet},
+    {NID_id_GostR3410_2001_CryptoPro_B_ParamSet},
+    {NID_id_GostR3410_2001_CryptoPro_C_ParamSet},
+    {NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet},
+    {NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet},
+    {
+        NID_id_tc26_gost_3410_2012_512_paramSetA,
+        "id-tc26-gost-3410-2012-512-paramSetA",
+    },
+    {
+        NID_id_tc26_gost_3410_2012_512_paramSetB,
+        "id-tc26-gost-3410-2012-512-paramSetB",
+    },
+    {
+        NID_id_tc26_gost_3410_2012_512_paramSetC,
+        "id-tc26-gost-3410-2012-512-paramSetC",
+    },
+    {
+        NID_id_tc26_gost_3410_2012_256_paramSetA,
+        "id-tc26-gost-3410-2012-256-paramSetA",
+    },
+    {
+        NID_id_tc26_gost_3410_2012_256_paramSetB,
+        "id-tc26-gost-3410-2012-256-paramSetB",
+    },
+    {
+        NID_id_tc26_gost_3410_2012_256_paramSetC,
+        "id-tc26-gost-3410-2012-256-paramSetC",
+    },
+    {
+        NID_id_tc26_gost_3410_2012_256_paramSetD,
+        "id-tc26-gost-3410-2012-256-paramSetD",
+    },
     0,
 };
 
@@ -71,8 +96,8 @@ static struct test_curve *get_test_curve(int nid)
     int i;
 
     for (i = 0; test_curves[i].nid; i++)
-	if (test_curves[i].nid == nid)
-	    return &test_curves[i];
+        if (test_curves[i].nid == nid)
+            return &test_curves[i];
     return NULL;
 }
 
@@ -91,14 +116,14 @@ static int parameter_test(struct test_curve *tc)
 
     printf(cBLUE "Test curve NID %d" cNORM, nid);
     if (tc->name)
-	printf(cBLUE ": %s" cNORM, tc->name);
+        printf(cBLUE ": %s" cNORM, tc->name);
     else if (OBJ_nid2sn(nid))
-	printf(cBLUE ": %s" cNORM, OBJ_nid2sn(nid));
+        printf(cBLUE ": %s" cNORM, OBJ_nid2sn(nid));
     printf("\n");
 
     if (!OBJ_nid2obj(nid)) {
-	printf(cRED "NID %d not found" cNORM "\n", nid);
-	return 1;
+        printf(cRED "NID %d not found" cNORM "\n", nid);
+        return 1;
     }
 
     /* nid resolves in both directions */
@@ -106,16 +131,16 @@ static int parameter_test(struct test_curve *tc)
     T(sn = OBJ_nid2sn(nid));
     T(ln = OBJ_nid2ln(nid));
     if (tc->name)
-	T(!strcmp(tc->name, OBJ_nid2sn(nid)));
+        T(!strcmp(tc->name, OBJ_nid2sn(nid)));
     T(nid == OBJ_sn2nid(sn));
     T(nid == OBJ_ln2nid(ln));
 
     EC_KEY *ec;
     T(ec = EC_KEY_new());
     if (!fill_GOST_EC_params(ec, nid)) {
-	printf(cRED "fill_GOST_EC_params FAIL" cNORM "\n");
-	ERR_print_errors_fp(stderr);
-	return 1;
+        printf(cRED "fill_GOST_EC_params FAIL" cNORM "\n");
+        ERR_print_errors_fp(stderr);
+        return 1;
     }
 
     const EC_GROUP *group;
@@ -162,10 +187,10 @@ static int parameter_test(struct test_curve *tc)
     /* y^2 == (x^3 + ax + b) mod p
      * Should be same as EC_POINT_is_on_curve(generator),
      * but, let's calculate it manually. */
-    BIGNUM *yy  = BN_new();
-    BIGNUM *r   = BN_new();
+    BIGNUM *yy = BN_new();
+    BIGNUM *r = BN_new();
     BIGNUM *xxx = BN_new();
-    BIGNUM *ax  = BN_new();
+    BIGNUM *ax = BN_new();
     T(yy && r && xxx && ax);
     BN_set_word(r, 2);
     BN_mod_exp(yy, y, r, p, ctx);
@@ -231,12 +256,12 @@ int main(int argc, char **argv)
 
     struct test_curve *tc;
     for (tc = test_curves; tc->nid; tc++) {
-	ret |= parameter_test(tc);
+        ret |= parameter_test(tc);
     }
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!" cNORM "\n");
+        printf(cDRED "= Some tests FAILED!" cNORM "\n");
     else
-	printf(cDGREEN "= All tests passed!" cNORM "\n");
+        printf(cDGREEN "= All tests passed!" cNORM "\n");
     return ret;
 }

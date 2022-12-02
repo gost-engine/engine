@@ -12,19 +12,20 @@
 # include <openssl/applink.c>
 # pragma warning(pop)
 #endif
+#include "gost_lcl.h"
+
 #include <openssl/ec.h>
 #include <openssl/engine.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gost_lcl.h"
 
-#define T(e) \
-    if (!(e)) { \
-        ERR_print_errors_fp(stderr); \
-        OpenSSLDie(__FILE__, __LINE__, #e); \
-    }
+#define T(e)                          \
+ if (!(e)) {                          \
+  ERR_print_errors_fp(stderr);        \
+  OpenSSLDie(__FILE__, __LINE__, #e); \
+ }
 
 #define cRED    "\033[1;31m"
 #define cDRED   "\033[0;31m"
@@ -34,13 +35,16 @@
 #define cDBLUE  "\033[0;34m"
 #define cCYAN   "\033[1;36m"
 #define cNORM   "\033[m"
-#define TEST_ASSERT(e) {if ((test = (e))) \
-                 printf(cRED "  Test FAILED" cNORM "\n"); \
-             else \
-                 printf(cGREEN "  Test passed" cNORM "\n");}
+#define TEST_ASSERT(e)                        \
+ {                                            \
+  if ((test = (e)))                           \
+   printf(cRED "  Test FAILED" cNORM "\n");   \
+  else                                        \
+   printf(cGREEN "  Test passed" cNORM "\n"); \
+ }
 
 #ifndef OSSL_NELEM
-# define OSSL_NELEM(x) (sizeof(x)/sizeof((x)[0]))
+# define OSSL_NELEM(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
 const char party_a_priv[] =
@@ -76,43 +80,43 @@ struct test_derive {
     const char *descr; /* Source of test vector. */
     int dgst_nid;      /* VKO mode */
     int key_nid;
-    int param_nid;     /* Curve id. */
-    const char *ukm;   /* User Keying Material. */
+    int param_nid;   /* Curve id. */
+    const char *ukm; /* User Keying Material. */
     int ukm_len;
     const char *key_a_priv;
     const char *key_a_pub;
     const char *key_b_priv;
     const char *key_b_pub;
-    const char *kek;   /* Key Encryption Key. Output. */
+    const char *kek; /* Key Encryption Key. Output. */
     int kek_len;
 } derive_tests[] = {
     {
-        .descr      = "VKO_GOSTR3410_2012_256 from R 50.1.113-2016 A.9 (p.18)",
-        .dgst_nid   = NID_id_GostR3411_2012_256,
-        .key_nid    = NID_id_GostR3410_2012_512,
-        .param_nid  = NID_id_tc26_gost_3410_2012_512_paramSetA,
+        .descr = "VKO_GOSTR3410_2012_256 from R 50.1.113-2016 A.9 (p.18)",
+        .dgst_nid = NID_id_GostR3411_2012_256,
+        .key_nid = NID_id_GostR3410_2012_512,
+        .param_nid = NID_id_tc26_gost_3410_2012_512_paramSetA,
         .key_a_priv = party_a_priv,
-        .key_a_pub  = party_a_pub,
+        .key_a_pub = party_a_pub,
         .key_b_priv = party_b_priv,
-        .key_b_pub  = party_b_pub,
-        .ukm        = "\x1d\x80\x60\x3c\x85\x44\xc7\x27",
-        .ukm_len    = 8,
+        .key_b_pub = party_b_pub,
+        .ukm = "\x1d\x80\x60\x3c\x85\x44\xc7\x27",
+        .ukm_len = 8,
         .kek =
             "\xc9\xa9\xa7\x73\x20\xe2\xcc\x55\x9e\xd7\x2d\xce\x6f\x47\xe2\x19"
             "\x2c\xce\xa9\x5f\xa6\x48\x67\x05\x82\xc0\x54\xc0\xef\x36\xc2\x21",
         .kek_len = 32,
     },
     {
-        .descr      = "VKO_GOSTR3410_2012_512 from R 50.1.113-2016 A.10 (p.19)",
-        .dgst_nid   = NID_id_GostR3411_2012_512,
-        .key_nid    = NID_id_GostR3410_2012_512,
-        .param_nid  = NID_id_tc26_gost_3410_2012_512_paramSetA,
+        .descr = "VKO_GOSTR3410_2012_512 from R 50.1.113-2016 A.10 (p.19)",
+        .dgst_nid = NID_id_GostR3411_2012_512,
+        .key_nid = NID_id_GostR3410_2012_512,
+        .param_nid = NID_id_tc26_gost_3410_2012_512_paramSetA,
         .key_a_priv = party_a_priv,
-        .key_a_pub  = party_a_pub,
+        .key_a_pub = party_a_pub,
         .key_b_priv = party_b_priv,
-        .key_b_pub  = party_b_pub,
-        .ukm        = "\x1d\x80\x60\x3c\x85\x44\xc7\x27",
-        .ukm_len    = 8,
+        .key_b_pub = party_b_pub,
+        .ukm = "\x1d\x80\x60\x3c\x85\x44\xc7\x27",
+        .ukm_len = 8,
         .kek =
             "\x79\xf0\x02\xa9\x69\x40\xce\x7b\xde\x32\x59\xa5\x2e\x01\x52\x97"
             "\xad\xaa\xd8\x45\x97\xa0\xd2\x05\xb5\x0e\x3e\x17\x19\xf9\x7b\xfa"
@@ -125,12 +129,11 @@ struct test_derive {
 static EVP_PKEY *load_private_key(int key_nid, int param_nid, const char *pk,
                                   const char *pub)
 {
-
     EVP_PKEY_CTX *ctx;
     T(ctx = EVP_PKEY_CTX_new_id(key_nid, NULL));
     T(EVP_PKEY_paramgen_init(ctx));
-    T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_GOST_PARAMSET, param_nid,
-                        NULL));
+    T(EVP_PKEY_CTX_ctrl(
+        ctx, -1, -1, EVP_PKEY_CTRL_GOST_PARAMSET, param_nid, NULL));
     EVP_PKEY *key = NULL;
     T((EVP_PKEY_paramgen(ctx, &key)) == 1);
     EVP_PKEY_CTX_free(ctx);
@@ -187,7 +190,8 @@ static EVP_PKEY *load_private_key(int key_nid, int param_nid, const char *pk,
         BN_free(y);
         if (EC_POINT_cmp(group, pkey, xy, bc) == 0)
             printf("Public key %08x matches private key %08x\n",
-                   *(int *)pub, *(int *)pk);
+                   *(int *)pub,
+                   *(int *)pk);
         else {
             printf(cRED "Public key mismatch!" cNORM "\n");
             exit(1);
@@ -207,20 +211,20 @@ int test_derive(struct test_derive *t, const char *name)
 
     printf(cBLUE "Test %s" cNORM " for %s\n", t->descr, name);
 
-    EVP_PKEY *keyA = load_private_key(t->key_nid, t->param_nid,
-                                      t->key_a_priv, t->key_a_pub);
-    EVP_PKEY *keyB = load_private_key(t->key_nid, t->param_nid,
-                                      NULL, t->key_b_pub);
+    EVP_PKEY *keyA =
+        load_private_key(t->key_nid, t->param_nid, t->key_a_priv, t->key_a_pub);
+    EVP_PKEY *keyB =
+        load_private_key(t->key_nid, t->param_nid, NULL, t->key_b_pub);
 
     EVP_PKEY_CTX *ctx;
     T(ctx = EVP_PKEY_CTX_new(keyA, NULL));
     T(EVP_PKEY_derive_init(ctx));
     T(EVP_PKEY_derive_set_peer(ctx, keyB));
     if (t->dgst_nid)
-        T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_SET_VKO,
-                            t->dgst_nid, NULL));
-    T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_SET_IV,
-                        t->ukm_len, (unsigned char *)t->ukm));
+        T(EVP_PKEY_CTX_ctrl(
+            ctx, -1, -1, EVP_PKEY_CTRL_SET_VKO, t->dgst_nid, NULL));
+    T(EVP_PKEY_CTX_ctrl(
+        ctx, -1, -1, EVP_PKEY_CTRL_SET_IV, t->ukm_len, (unsigned char *)t->ukm));
 
     size_t skeylen;
     unsigned char *skey;
@@ -255,9 +259,9 @@ int test_derive_pair(struct test_derive *t)
     ret |= test_derive(&tt, "A");
     /* Test swapped keys. */
     tt.key_a_priv = t->key_b_priv;
-    tt.key_a_pub  = t->key_b_pub;
+    tt.key_a_pub = t->key_b_pub;
     tt.key_b_priv = NULL;
-    tt.key_b_pub  = t->key_a_pub;
+    tt.key_b_pub = t->key_a_pub;
     ret |= test_derive(&tt, "B");
     return ret;
 }
@@ -280,22 +284,20 @@ static EVP_PKEY *keygen(const char *algo, const char *param)
     return key;
 }
 
-unsigned char *derive(EVP_PKEY *keyA, EVP_PKEY *keyB, int dgst_nid,
-                      int ukm_len, size_t *len)
+unsigned char *derive(EVP_PKEY *keyA, EVP_PKEY *keyB, int dgst_nid, int ukm_len,
+                      size_t *len)
 {
     EVP_PKEY_CTX *ctx;
     T(ctx = EVP_PKEY_CTX_new(keyA, NULL));
     T(EVP_PKEY_derive_init(ctx));
     T(EVP_PKEY_derive_set_peer(ctx, keyB));
     if (dgst_nid)
-        T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_SET_VKO,
-                            dgst_nid, NULL));
+        T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_SET_VKO, dgst_nid, NULL));
     if (ukm_len) {
-        unsigned char ukm[32] = { 1 };
+        unsigned char ukm[32] = {1};
 
         OPENSSL_assert(ukm_len <= sizeof(ukm));
-        T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_SET_IV,
-                            ukm_len, ukm));
+        T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_SET_IV, ukm_len, ukm));
     }
 
     T(EVP_PKEY_derive(ctx, NULL, len));
@@ -393,4 +395,5 @@ int main(int argc, char **argv)
         printf(cDGREEN "= All tests passed!" cNORM "\n");
     return ret;
 }
+
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */

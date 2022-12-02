@@ -8,20 +8,23 @@ extern "C" {
 #endif
 
 #include "gost_grasshopper_core.h"
+
+#include "gost_grasshopper_defines.h"
 #include "gost_grasshopper_math.h"
 #include "gost_grasshopper_precompiled.h"
-#include "gost_grasshopper_defines.h"
 
-static GRASSHOPPER_INLINE void grasshopper_l(grasshopper_w128_t* w) {
+static GRASSHOPPER_INLINE void grasshopper_l(grasshopper_w128_t *w)
+{
     unsigned int j;
     int i;
 
     // 16 rounds
-    for (j = 0; j < sizeof(grasshopper_lvec) / sizeof(grasshopper_lvec[0]); j++) {
+    for (j = 0; j < sizeof(grasshopper_lvec) / sizeof(grasshopper_lvec[0]);
+         j++) {
         uint8_t x;
 
         // An LFSR with 16 elements from GF(2^8)
-        x = w->b[15];    // since lvec[15] = 1
+        x = w->b[15]; // since lvec[15] = 1
 
         for (i = 14; i >= 0; i--) {
             w->b[i + 1] = w->b[i];
@@ -31,12 +34,14 @@ static GRASSHOPPER_INLINE void grasshopper_l(grasshopper_w128_t* w) {
     }
 }
 
-static GRASSHOPPER_INLINE void grasshopper_l_inv(grasshopper_w128_t* w) {
+static GRASSHOPPER_INLINE void grasshopper_l_inv(grasshopper_w128_t *w)
+{
     unsigned int j;
     int i;
 
     // 16 rounds
-    for (j = 0; j < sizeof(grasshopper_lvec) / sizeof(grasshopper_lvec[0]); j++) {
+    for (j = 0; j < sizeof(grasshopper_lvec) / sizeof(grasshopper_lvec[0]);
+         j++) {
         uint8_t x = w->b[0];
         for (i = 0; i < 15; i++) {
             w->b[i] = w->b[i + 1];
@@ -48,7 +53,9 @@ static GRASSHOPPER_INLINE void grasshopper_l_inv(grasshopper_w128_t* w) {
 
 // key setup
 
-void grasshopper_set_encrypt_key(grasshopper_round_keys_t* subkeys, const grasshopper_key_t* key) {
+void grasshopper_set_encrypt_key(grasshopper_round_keys_t *subkeys,
+                                 const grasshopper_key_t *key)
+{
     grasshopper_w128_t c, x, y, z;
     int i;
 
@@ -62,10 +69,9 @@ void grasshopper_set_encrypt_key(grasshopper_round_keys_t* subkeys, const grassh
     grasshopper_copy128(&subkeys->k[1], &y);
 
     for (i = 1; i <= 32; i++) {
-
         // C Value
         grasshopper_zero128(&c);
-        c.b[15] = (uint8_t) i;        // load round in lsb
+        c.b[15] = (uint8_t)i; // load round in lsb
         grasshopper_l(&c);
 
         grasshopper_plus128(&z, &x, &c);
@@ -90,8 +96,10 @@ void grasshopper_set_encrypt_key(grasshopper_round_keys_t* subkeys, const grassh
     grasshopper_zero128(&z);
 }
 
-void grasshopper_set_decrypt_key(grasshopper_round_keys_t* subkeys, const grasshopper_key_t* key) {
-		int i;
+void grasshopper_set_decrypt_key(grasshopper_round_keys_t *subkeys,
+                                 const grasshopper_key_t *key)
+{
+    int i;
     grasshopper_set_encrypt_key(subkeys, key);
 
     for (i = 1; i < 10; i++) {
@@ -99,8 +107,11 @@ void grasshopper_set_decrypt_key(grasshopper_round_keys_t* subkeys, const grassh
     }
 }
 
-void grasshopper_encrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source,
-                               grasshopper_w128_t* target, grasshopper_w128_t* buffer) {
+void grasshopper_encrypt_block(grasshopper_round_keys_t *subkeys,
+                               grasshopper_w128_t *source,
+                               grasshopper_w128_t *target,
+                               grasshopper_w128_t *buffer)
+{
     int i;
     grasshopper_copy128(target, source);
 
@@ -112,8 +123,11 @@ void grasshopper_encrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w1
     grasshopper_append128(target, &subkeys->k[9]);
 }
 
-void grasshopper_decrypt_block(grasshopper_round_keys_t* subkeys, grasshopper_w128_t* source,
-                               grasshopper_w128_t* target, grasshopper_w128_t* buffer) {
+void grasshopper_decrypt_block(grasshopper_round_keys_t *subkeys,
+                               grasshopper_w128_t *source,
+                               grasshopper_w128_t *target,
+                               grasshopper_w128_t *buffer)
+{
     int i;
     grasshopper_copy128(target, source);
 

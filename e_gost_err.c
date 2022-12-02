@@ -8,8 +8,9 @@
  * https://www.openssl.org/source/license.html
  */
 
-#include <openssl/err.h>
 #include "e_gost_err.h"
+
+#include <openssl/err.h>
 
 #ifdef OPENSSL_VERSION_MAJOR
 /*
@@ -122,32 +123,31 @@ static ERR_STRING_DATA GOST_str_functs[] = {
     {ERR_PACK(0, GOST_F_PUB_ENCODE_GOST_EC, 0), "pub_encode_gost_ec"},
     {ERR_PACK(0, GOST_F_UNPACK_CP_SIGNATURE, 0), "unpack_cp_signature"},
     {ERR_PACK(0, GOST_F_VKO_COMPUTE_KEY, 0), "VKO_compute_key"},
-    {0, NULL}
-};
+    {0, NULL}};
 # endif
 
 static ERR_STRING_DATA GOST_str_reasons[] = {
     {ERR_PACK(0, 0, GOST_R_BAD_KEY_PARAMETERS_FORMAT),
-    "bad key parameters format"},
+     "bad key parameters format"},
     {ERR_PACK(0, 0, GOST_R_BAD_MAC), "bad mac"},
     {ERR_PACK(0, 0, GOST_R_BAD_ORDER), "bad order"},
     {ERR_PACK(0, 0, GOST_R_BAD_PKEY_PARAMETERS_FORMAT),
-    "bad pkey parameters format"},
+     "bad pkey parameters format"},
     {ERR_PACK(0, 0, GOST_R_CANNOT_PACK_EPHEMERAL_KEY),
-    "cannot pack ephemeral key"},
+     "cannot pack ephemeral key"},
     {ERR_PACK(0, 0, GOST_R_CANNOT_UNPACK_EPHEMERAL_KEY),
-    "cannot unpack ephemeral key"},
+     "cannot unpack ephemeral key"},
     {ERR_PACK(0, 0, GOST_R_CIPHER_NOT_FOUND), "cipher not found"},
     {ERR_PACK(0, 0, GOST_R_CTRL_CALL_FAILED), "ctrl call failed"},
     {ERR_PACK(0, 0, GOST_R_DATA_TOO_LARGE), "data too large"},
     {ERR_PACK(0, 0, GOST_R_ERROR_COMPUTING_EXPORT_KEYS),
-    "error computing export keys"},
+     "error computing export keys"},
     {ERR_PACK(0, 0, GOST_R_ERROR_COMPUTING_SHARED_KEY),
-    "error computing shared key"},
+     "error computing shared key"},
     {ERR_PACK(0, 0, GOST_R_ERROR_DECODING_PUBLIC_KEY),
-    "error decoding public key"},
+     "error decoding public key"},
     {ERR_PACK(0, 0, GOST_R_ERROR_PARSING_KEY_TRANSPORT_INFO),
-    "error parsing key transport info"},
+     "error parsing key transport info"},
     {ERR_PACK(0, 0, GOST_R_ERROR_POINT_MUL), "error point mul"},
     {ERR_PACK(0, 0, GOST_R_ERROR_SETTING_PEER_KEY), "error setting peer key"},
     {ERR_PACK(0, 0, GOST_R_INCOMPATIBLE_ALGORITHMS), "incompatible algorithms"},
@@ -156,7 +156,7 @@ static ERR_STRING_DATA GOST_str_reasons[] = {
     {ERR_PACK(0, 0, GOST_R_INVALID_CIPHER), "invalid cipher"},
     {ERR_PACK(0, 0, GOST_R_INVALID_CIPHER_PARAMS), "invalid cipher params"},
     {ERR_PACK(0, 0, GOST_R_INVALID_CIPHER_PARAM_OID),
-    "invalid cipher param oid"},
+     "invalid cipher param oid"},
     {ERR_PACK(0, 0, GOST_R_INVALID_DIGEST_TYPE), "invalid digest type"},
     {ERR_PACK(0, 0, GOST_R_INVALID_IV_LENGTH), "invalid iv length"},
     {ERR_PACK(0, 0, GOST_R_INVALID_MAC_KEY_LENGTH), "invalid mac key length"},
@@ -171,21 +171,20 @@ static ERR_STRING_DATA GOST_str_reasons[] = {
     {ERR_PACK(0, 0, GOST_R_NO_PARAMETERS_SET), "no parameters set"},
     {ERR_PACK(0, 0, GOST_R_NO_PEER_KEY), "no peer key"},
     {ERR_PACK(0, 0, GOST_R_NO_PRIVATE_PART_OF_NON_EPHEMERAL_KEYPAIR),
-    "no private part of non ephemeral keypair"},
+     "no private part of non ephemeral keypair"},
     {ERR_PACK(0, 0, GOST_R_PUBLIC_KEY_UNDEFINED), "public key undefined"},
     {ERR_PACK(0, 0, GOST_R_RNG_ERROR), "rng error"},
     {ERR_PACK(0, 0, GOST_R_SIGNATURE_MISMATCH), "signature mismatch"},
     {ERR_PACK(0, 0, GOST_R_SIGNATURE_PARTS_GREATER_THAN_Q),
-    "signature parts greater than q"},
+     "signature parts greater than q"},
     {ERR_PACK(0, 0, GOST_R_UKM_NOT_SET), "ukm not set"},
     {ERR_PACK(0, 0, GOST_R_UNSUPPORTED_CIPHER_CTL_COMMAND),
-    "unsupported cipher ctl command"},
+     "unsupported cipher ctl command"},
     {ERR_PACK(0, 0, GOST_R_UNSUPPORTED_PARAMETER_SET),
-    "unsupported parameter set"},
+     "unsupported parameter set"},
     {ERR_PACK(0, 0, GOST_R_UNSUPPORTED_RECIPIENT_INFO),
-    "unsupported recipient info"},
-    {0, NULL}
-};
+     "unsupported recipient info"},
+    {0, NULL}};
 
 #endif
 
@@ -199,12 +198,12 @@ int ERR_load_GOST_strings(void)
         lib_code = ERR_get_next_error_library();
 
     if (!error_loaded) {
-#ifndef OPENSSL_NO_ERR
-# ifndef OPENSSL_ERR_NEW_WORLD_ORDER
+# ifndef OPENSSL_NO_ERR
+#  ifndef OPENSSL_ERR_NEW_WORLD_ORDER
         ERR_load_strings(lib_code, GOST_str_functs);
-# endif
+#  endif
         ERR_load_strings(lib_code, GOST_str_reasons);
-#endif
+# endif
         error_loaded = 1;
     }
     return 1;
@@ -213,12 +212,12 @@ int ERR_load_GOST_strings(void)
 void ERR_unload_GOST_strings(void)
 {
     if (error_loaded) {
-#ifndef OPENSSL_NO_ERR
-# ifndef OPENSSL_ERR_NEW_WORLD_ORDER
+# ifndef OPENSSL_NO_ERR
+#  ifndef OPENSSL_ERR_NEW_WORLD_ORDER
         ERR_unload_strings(lib_code, GOST_str_functs);
-# endif
+#  endif
         ERR_unload_strings(lib_code, GOST_str_reasons);
-#endif
+# endif
         error_loaded = 0;
     }
 }
@@ -227,11 +226,11 @@ void ERR_GOST_error(int function, int reason, char *file, int line)
 {
     if (lib_code == 0)
         lib_code = ERR_get_next_error_library();
-#ifndef OPENSSL_ERR_NEW_WORLD_ORDER
+# ifndef OPENSSL_ERR_NEW_WORLD_ORDER
     ERR_PUT_error(lib_code, function, reason, file, line);
-#else
+# else
     ERR_raise(lib_code, reason);
     ERR_set_debug(file, line, NULL);
-#endif
+# endif
 }
 #endif

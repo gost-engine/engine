@@ -8,9 +8,10 @@
  * Doesn't need OpenSSL                                               *
  **********************************************************************/
 #ifndef GOST_KEYWRAP_H
-# define GOST_KEYWRAP_H
-# include <string.h>
-# include "gost89.h"
+#define GOST_KEYWRAP_H
+#include "gost89.h"
+
+#include <string.h>
 /*-
  * Diversifies key using random UserKey Material
  * Implements RFC 4357 p 6.5 key diversification algorithm
@@ -20,10 +21,8 @@
  * outputKey - 32byte buffer to store diversified key
  *
  */
-void keyDiversifyCryptoPro(gost_ctx * ctx,
-                           const unsigned char *inputKey,
-                           const unsigned char *ukm,
-                           unsigned char *outputKey);
+void keyDiversifyCryptoPro(gost_ctx *ctx, const unsigned char *inputKey,
+                           const unsigned char *ukm, unsigned char *outputKey);
 /*-
  * Wraps key using RFC 4357 6.3
  * ctx - gost encryption context, initialized with some S-boxes
@@ -33,10 +32,8 @@ void keyDiversifyCryptoPro(gost_ctx * ctx,
  * wrappedKey - 44-byte buffer to store wrapped key
  */
 
-int keyWrapCryptoPro(gost_ctx * ctx,
-                     const unsigned char *keyExchangeKey,
-                     const unsigned char *ukm,
-                     const unsigned char *sessionKey,
+int keyWrapCryptoPro(gost_ctx *ctx, const unsigned char *keyExchangeKey,
+                     const unsigned char *ukm, const unsigned char *sessionKey,
                      unsigned char *wrappedKey);
 /*-
  * Unwraps key using RFC 4357 6.4
@@ -49,8 +46,7 @@ int keyWrapCryptoPro(gost_ctx * ctx,
  * Returns 1 if key is decrypted successfully, and 0 if MAC doesn't match
  */
 
-int keyUnwrapCryptoPro(gost_ctx * ctx,
-                       const unsigned char *keyExchangeKey,
+int keyUnwrapCryptoPro(gost_ctx *ctx, const unsigned char *keyExchangeKey,
                        const unsigned char *wrappedKey,
                        unsigned char *sessionKey);
 #endif

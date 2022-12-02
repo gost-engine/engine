@@ -8,10 +8,11 @@
  *                Requires OpenSSL 3.0 for compilation                *
  **********************************************************************/
 
+#include "gost_lcl.h"
+#include "gost_prov.h"
+
 #include <openssl/core.h>
 #include <openssl/core_dispatch.h>
-#include "gost_prov.h"
-#include "gost_lcl.h"
 
 /*
  * Forward declarations of all generic OSSL_DISPATCH functions, to make sure
@@ -86,10 +87,9 @@ static GOST_CTX *mac_newctx(void *provctx, const GOST_DESC *descriptor)
         gctx->digest = GOST_init_digest(descriptor->digest_desc);
         gctx->dctx = EVP_MD_CTX_new();
 
-        if (gctx->digest == NULL
-            || gctx->dctx == NULL
-            || EVP_DigestInit_ex(gctx->dctx, gctx->digest,
-                                 gctx->provctx->e) <= 0) {
+        if (gctx->digest == NULL || gctx->dctx == NULL
+            || EVP_DigestInit_ex(gctx->dctx, gctx->digest, gctx->provctx->e)
+                   <= 0) {
             mac_freectx(gctx);
             gctx = NULL;
         }
@@ -100,23 +100,23 @@ static GOST_CTX *mac_newctx(void *provctx, const GOST_DESC *descriptor)
 static void *mac_dupctx(void *vsrc)
 {
     GOST_CTX *src = vsrc;
-    GOST_CTX *dst =
-        mac_newctx(src->provctx, src->descriptor);
+    GOST_CTX *dst = mac_newctx(src->provctx, src->descriptor);
 
     if (dst != NULL)
         EVP_MD_CTX_copy(dst->dctx, src->dctx);
     return dst;
 }
 
-static int mac_init(void *mctx, const unsigned char *key,
-                    size_t keylen, const OSSL_PARAM params[])
+static int mac_init(void *mctx, const unsigned char *key, size_t keylen,
+                    const OSSL_PARAM params[])
 {
     GOST_CTX *gctx = mctx;
 
     return mac_set_ctx_params(gctx, params)
-        && (key == NULL
-            || EVP_MD_CTX_ctrl(gctx->dctx, EVP_MD_CTRL_SET_KEY,
-                               (int)keylen, (void *)key) > 0);
+           && (key == NULL
+               || EVP_MD_CTX_ctrl(
+                      gctx->dctx, EVP_MD_CTRL_SET_KEY, (int)keylen, (void *)key)
+                      > 0);
 }
 
 static int mac_update(void *mctx, const unsigned char *in, size_t inl)
@@ -153,40 +153,34 @@ static int mac_final(void *mctx, unsigned char *out, size_t *outl,
 }
 
 static const OSSL_PARAM *mac_gettable_params(void *provctx,
-                                             const GOST_DESC * descriptor)
+                                             const GOST_DESC *descriptor)
 {
-    static const OSSL_PARAM params[] = {
-        OSSL_PARAM_size_t("size", NULL),
-        OSSL_PARAM_size_t("keylen", NULL),
-        OSSL_PARAM_END
-    };
+    static const OSSL_PARAM params[] = {OSSL_PARAM_size_t("size", NULL),
+                                        OSSL_PARAM_size_t("keylen", NULL),
+                                        OSSL_PARAM_END};
 
     return params;
 }
 
 static const OSSL_PARAM *mac_gettable_ctx_params(void *mctx, void *provctx)
 {
-    static const OSSL_PARAM params[] = {
-        OSSL_PARAM_size_t("size", NULL),
-        OSSL_PARAM_size_t("keylen", NULL),
-        OSSL_PARAM_END
-    };
+    static const OSSL_PARAM params[] = {OSSL_PARAM_size_t("size", NULL),
+                                        OSSL_PARAM_size_t("keylen", NULL),
+                                        OSSL_PARAM_END};
 
     return params;
 }
 
 static const OSSL_PARAM *mac_settable_ctx_params(void *mctx, void *provctx)
 {
-    static const OSSL_PARAM params[] = {
-        OSSL_PARAM_size_t("size", NULL),
-        OSSL_PARAM_octet_string("key", NULL, 0),
-        OSSL_PARAM_END
-    };
+    static const OSSL_PARAM params[] = {OSSL_PARAM_size_t("size", NULL),
+                                        OSSL_PARAM_octet_string("key", NULL, 0),
+                                        OSSL_PARAM_END};
 
     return params;
 }
 
-static int mac_get_params(const GOST_DESC * descriptor, OSSL_PARAM params[])
+static int mac_get_params(const GOST_DESC *descriptor, OSSL_PARAM params[])
 {
     OSSL_PARAM *p = NULL;
 
@@ -239,8 +233,8 @@ static int mac_set_ctx_params(void *mctx, const OSSL_PARAM params[])
         if (!OSSL_PARAM_get_octet_string_ptr(p, (const void **)&key, &keylen))
             return 0;
 
-        ret = EVP_MD_CTX_ctrl(gctx->dctx, EVP_MD_CTRL_SET_KEY,
-                              (int)keylen, (void *)key);
+        ret = EVP_MD_CTX_ctrl(
+            gctx->dctx, EVP_MD_CTRL_SET_KEY, (int)keylen, (void *)key);
         if (ret <= 0 && ret != -2)
             return 0;
     }
@@ -266,8 +260,9 @@ static int mac_set_ctx_params(void *mctx, const OSSL_PARAM params[])
             }
         }
 
-        if (EVP_MD_CTX_ctrl(gctx->dctx, EVP_CTRL_KEY_MESH,
-                            key_mesh, p_cipher_key_mesh) <= 0)
+        if (EVP_MD_CTX_ctrl(
+                gctx->dctx, EVP_CTRL_KEY_MESH, key_mesh, p_cipher_key_mesh)
+            <= 0)
             return 0;
     }
     return 1;
@@ -278,49 +273,46 @@ static int mac_set_ctx_params(void *mctx, const OSSL_PARAM params[])
  * implementation where necessary.  Not needed for magma and grasshopper, as
  * they already have fitting names.
  */
-#define id_Gost28147_89_MAC_digest      Gost28147_89_MAC_digest
-#define gost_mac_12_digest              Gost28147_89_mac_12_digest
+#define id_Gost28147_89_MAC_digest Gost28147_89_MAC_digest
+#define gost_mac_12_digest         Gost28147_89_mac_12_digest
 #define id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_digest \
-    kuznyechik_ctracpkm_omac_digest
+ kuznyechik_ctracpkm_omac_digest
 
 typedef void (*fptr_t)(void);
-#define MAKE_FUNCTIONS(name, macsize)                                   \
-    const GOST_DESC name##_desc = {                                     \
-        &name##_digest,                                                 \
-        macsize,                                                        \
-    };                                                                  \
-    static OSSL_FUNC_mac_newctx_fn name##_newctx;                       \
-    static void *name##_newctx(void *provctx)                           \
-    {                                                                   \
-        return mac_newctx(provctx, &name##_desc);                       \
-    }                                                                   \
-    static OSSL_FUNC_mac_gettable_params_fn name##_gettable_params;     \
-    static const OSSL_PARAM *name##_gettable_params(void *provctx)      \
-    {                                                                   \
-        return mac_gettable_params(provctx, &name##_desc);              \
-    }                                                                   \
-    static OSSL_FUNC_mac_get_params_fn name##_get_params;               \
-    static int name##_get_params(OSSL_PARAM *params)                    \
-    {                                                                   \
-        return mac_get_params(&name##_desc, params);                    \
-    }                                                                   \
-    static const OSSL_DISPATCH name##_functions[] = {                   \
-        { OSSL_FUNC_MAC_GETTABLE_PARAMS,                                \
-          (fptr_t)name##_gettable_params },                             \
-        { OSSL_FUNC_MAC_GET_PARAMS, (fptr_t)name##_get_params },        \
-        { OSSL_FUNC_MAC_NEWCTX, (fptr_t)name##_newctx },                \
-        { OSSL_FUNC_MAC_DUPCTX, (fptr_t)mac_dupctx },                   \
-        { OSSL_FUNC_MAC_FREECTX, (fptr_t)mac_freectx },                 \
-        { OSSL_FUNC_MAC_INIT, (fptr_t)mac_init },                       \
-        { OSSL_FUNC_MAC_UPDATE, (fptr_t)mac_update },                   \
-        { OSSL_FUNC_MAC_FINAL, (fptr_t)mac_final },                     \
-        { OSSL_FUNC_MAC_GETTABLE_CTX_PARAMS,                            \
-          (fptr_t)mac_gettable_ctx_params },                            \
-        { OSSL_FUNC_MAC_GET_CTX_PARAMS, (fptr_t)mac_get_ctx_params },   \
-        { OSSL_FUNC_MAC_SETTABLE_CTX_PARAMS,                            \
-          (fptr_t)mac_settable_ctx_params },                            \
-        { OSSL_FUNC_MAC_SET_CTX_PARAMS, (fptr_t)mac_set_ctx_params },   \
-    }
+#define MAKE_FUNCTIONS(name, macsize)                                      \
+ const GOST_DESC name##_desc = {                                           \
+     &name##_digest,                                                       \
+     macsize,                                                              \
+ };                                                                        \
+ static OSSL_FUNC_mac_newctx_fn name##_newctx;                             \
+ static void *name##_newctx(void *provctx)                                 \
+ {                                                                         \
+  return mac_newctx(provctx, &name##_desc);                                \
+ }                                                                         \
+ static OSSL_FUNC_mac_gettable_params_fn name##_gettable_params;           \
+ static const OSSL_PARAM *name##_gettable_params(void *provctx)            \
+ {                                                                         \
+  return mac_gettable_params(provctx, &name##_desc);                       \
+ }                                                                         \
+ static OSSL_FUNC_mac_get_params_fn name##_get_params;                     \
+ static int name##_get_params(OSSL_PARAM *params)                          \
+ {                                                                         \
+  return mac_get_params(&name##_desc, params);                             \
+ }                                                                         \
+ static const OSSL_DISPATCH name##_functions[] = {                         \
+     {OSSL_FUNC_MAC_GETTABLE_PARAMS, (fptr_t)name##_gettable_params},      \
+     {OSSL_FUNC_MAC_GET_PARAMS, (fptr_t)name##_get_params},                \
+     {OSSL_FUNC_MAC_NEWCTX, (fptr_t)name##_newctx},                        \
+     {OSSL_FUNC_MAC_DUPCTX, (fptr_t)mac_dupctx},                           \
+     {OSSL_FUNC_MAC_FREECTX, (fptr_t)mac_freectx},                         \
+     {OSSL_FUNC_MAC_INIT, (fptr_t)mac_init},                               \
+     {OSSL_FUNC_MAC_UPDATE, (fptr_t)mac_update},                           \
+     {OSSL_FUNC_MAC_FINAL, (fptr_t)mac_final},                             \
+     {OSSL_FUNC_MAC_GETTABLE_CTX_PARAMS, (fptr_t)mac_gettable_ctx_params}, \
+     {OSSL_FUNC_MAC_GET_CTX_PARAMS, (fptr_t)mac_get_ctx_params},           \
+     {OSSL_FUNC_MAC_SETTABLE_CTX_PARAMS, (fptr_t)mac_settable_ctx_params}, \
+     {OSSL_FUNC_MAC_SET_CTX_PARAMS, (fptr_t)mac_set_ctx_params},           \
+ }
 
 /*
  * The name used here is the same as the NID name.  Some of the names are
@@ -334,25 +326,26 @@ MAKE_FUNCTIONS(id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac, 16);
 
 /* The OSSL_ALGORITHM for the provider's operation query function */
 const OSSL_ALGORITHM GOST_prov_macs[] = {
-    { SN_id_Gost28147_89_MAC ":1.2.643.2.2.22", NULL,
-      id_Gost28147_89_MAC_functions, "GOST 28147-89 MAC" },
-    { SN_gost_mac_12, NULL, gost_mac_12_functions },
-    { SN_magma_mac, NULL, magma_mac_functions },
-    { SN_grasshopper_mac, NULL, grasshopper_mac_functions },
-    { SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac
-      ":1.2.643.7.1.1.5.2.2", NULL,
-      id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_functions },
-    { NULL , NULL, NULL }
-};
+    {SN_id_Gost28147_89_MAC ":1.2.643.2.2.22",
+     NULL,
+     id_Gost28147_89_MAC_functions,
+     "GOST 28147-89 MAC"},
+    {SN_gost_mac_12, NULL, gost_mac_12_functions},
+    {SN_magma_mac, NULL, magma_mac_functions},
+    {SN_grasshopper_mac, NULL, grasshopper_mac_functions},
+    {SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac
+     ":1.2.643.7.1.1.5.2.2",
+     NULL,
+     id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_functions},
+    {NULL, NULL, NULL}};
 
-void GOST_prov_deinit_mac_digests(void) {
-    static GOST_digest *list[] = {
-        &Gost28147_89_MAC_digest,
-        &Gost28147_89_mac_12_digest,
-        &magma_mac_digest,
-        &grasshopper_mac_digest,
-        &kuznyechik_ctracpkm_omac_digest
-    };
+void GOST_prov_deinit_mac_digests(void)
+{
+    static GOST_digest *list[] = {&Gost28147_89_MAC_digest,
+                                  &Gost28147_89_mac_12_digest,
+                                  &magma_mac_digest,
+                                  &grasshopper_mac_digest,
+                                  &kuznyechik_ctracpkm_omac_digest};
     size_t i;
 #define elems(l) (sizeof(l) / sizeof(l[0]))
 
