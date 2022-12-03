@@ -378,9 +378,9 @@ static int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
         c_to->cmac_ctx = CMAC_ACPKM_CTX_new();
     }
 
-    return (c_to->cmac_ctx) ?
-               CMAC_ACPKM_CTX_copy(c_to->cmac_ctx, c_from->cmac_ctx) :
-               0;
+    return (c_to->cmac_ctx)
+               ? CMAC_ACPKM_CTX_copy(c_to->cmac_ctx, c_from->cmac_ctx)
+               : 0;
 }
 
 /* Clean up imit ctx */

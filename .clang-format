@@ -50,7 +50,8 @@ AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignConsecutiveMacros: Consecutive
 AlignEscapedNewlines: Left # Unknown to clang-format-4.0
-AlignOperands: true
+AlignOperands: Align
+BreakBeforeBinaryOperators: NonAssignment
 AlignTrailingComments: true
 
 # 7
@@ -66,8 +67,7 @@ AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: false
-BreakBeforeBinaryOperators: NonAssignment
-BreakBeforeTernaryOperators: false
+BreakBeforeTernaryOperators: true
 DisableFormat: false
 #FixNamespaceComments: false # Unknown to clang-format-4.0
 
@@ -95,3 +95,4 @@ SortIncludes: CaseInsensitive
 #SortUsingDeclarations: false # Unknown to clang-format-4.0
 
 Cpp11BracedListStyle: true # bad but reduces initial diff
+IndentExternBlock: NoIndent

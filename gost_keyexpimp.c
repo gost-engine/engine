@@ -44,9 +44,9 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
     int ret = 0;
     int len;
 
-    mac_len = (cipher_nid == NID_magma_ctr)       ? 8 :
-              (cipher_nid == NID_grasshopper_ctr) ? 16 :
-                                                    0;
+    mac_len = (cipher_nid == NID_magma_ctr)         ? 8
+              : (cipher_nid == NID_grasshopper_ctr) ? 16
+                                                    : 0;
 
     if (mac_len == 0) {
         GOSTerr(GOST_F_GOST_KEXP15, GOST_R_INVALID_CIPHER);
@@ -127,9 +127,9 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
     int ret = 0;
     int len;
 
-    mac_len = (cipher_nid == NID_magma_ctr)       ? 8 :
-              (cipher_nid == NID_grasshopper_ctr) ? 16 :
-                                                    0;
+    mac_len = (cipher_nid == NID_magma_ctr)         ? 8
+              : (cipher_nid == NID_grasshopper_ctr) ? 16
+                                                    : 0;
 
     if (mac_len == 0) {
         GOSTerr(GOST_F_GOST_KIMP15, GOST_R_INVALID_CIPHER);
@@ -407,9 +407,9 @@ static int magma_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
                            cctx->iv,
                            4,
                            out)
-                       > 0 ?
-                   GOSTKEYLEN :
-                   0;
+                       > 0
+                   ? GOSTKEYLEN
+                   : 0;
     }
 }
 
@@ -469,9 +469,9 @@ static int kuznyechik_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
                            cctx->iv,
                            8,
                            out)
-                       > 0 ?
-                   GOSTKEYLEN :
-                   0;
+                       > 0
+                   ? GOSTKEYLEN
+                   : 0;
     }
 }
 

@@ -292,9 +292,9 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
     int pkey_nid = EVP_PKEY_base_id(pubk);
     ASN1_OBJECT *crypt_params_obj =
         (pkey_nid == NID_id_GostR3410_2001
-         || pkey_nid == NID_id_GostR3410_2001DH) ?
-            OBJ_nid2obj(NID_id_Gost28147_89_CryptoPro_A_ParamSet) :
-            OBJ_nid2obj(NID_id_tc26_gost_28147_param_Z);
+         || pkey_nid == NID_id_GostR3410_2001DH)
+            ? OBJ_nid2obj(NID_id_Gost28147_89_CryptoPro_A_ParamSet)
+            : OBJ_nid2obj(NID_id_tc26_gost_28147_param_Z);
     const struct gost_cipher_info *param =
         get_encryption_params(crypt_params_obj);
     unsigned char ukm[8], shared_key[32], crypted_key[44];

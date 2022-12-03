@@ -504,13 +504,13 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
             case NID_kuznyechik_ctr: {
                 int ka_nid;
 
-                nid = (gctx->cipher_nid == NID_magma_ctr) ?
-                          NID_magma_kexp15 :
-                          NID_kuznyechik_kexp15;
+                nid = (gctx->cipher_nid == NID_magma_ctr)
+                          ? NID_magma_kexp15
+                          : NID_kuznyechik_kexp15;
 
-                ka_nid = (EVP_PKEY_base_id(pkey) == NID_id_GostR3410_2012_256) ?
-                             NID_id_tc26_agreement_gost_3410_2012_256 :
-                             NID_id_tc26_agreement_gost_3410_2012_512;
+                ka_nid = (EVP_PKEY_base_id(pkey) == NID_id_GostR3410_2012_256)
+                             ? NID_id_tc26_agreement_gost_3410_2012_256
+                             : NID_id_tc26_agreement_gost_3410_2012_512;
 
                 params = gost_encode_cms_params(ka_nid);
             } break;

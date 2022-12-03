@@ -153,9 +153,9 @@ int gost2015_process_unprotected_attributes(STACK_OF(X509_ATTRIBUTE) * attrs,
                                         V_ASN1_OCTET_STRING,
                                         final_tag,
                                         mac_len)
-                == NULL) ?
-                   -1 :
-                   1;
+                == NULL)
+                   ? -1
+                   : 1;
     }
     return 1;
 }
