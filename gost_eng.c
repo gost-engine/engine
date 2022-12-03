@@ -342,7 +342,7 @@ static GOST_NID_JOB *missing_NIDs[] = {
 
 static int create_NIDs()
 {
-    int i;
+      int i;
     int new_nid = OBJ_new_nid(OSSL_NELEM(missing_NIDs));
     for (i = 0; i < OSSL_NELEM(missing_NIDs); i++) {
         GOST_NID_JOB *job = missing_NIDs[i];
