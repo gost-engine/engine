@@ -152,7 +152,7 @@ int main(int argc, char **argv)
         printf("wait...");
         fflush(stdout);
         siglen = EVP_PKEY_size(pkey);
-        sigbuf = malloc(siglen * cycles);
+        sigbuf = malloc((size_t)siglen * cycles);
         if (!sigbuf) {
             fprintf(stderr, "No tests were run, malloc failure.\n");
             exit(1);
