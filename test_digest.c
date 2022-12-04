@@ -125,22 +125,8 @@ static const char P_omac_acpkm1[] = {
 };
 
 static const char MAC_omac_acpkm1[] = {
-    0xB5,
-    0x36,
-    0x7F,
-    0x47,
-    0xB6,
-    0x2B,
-    0x99,
-    0x5E,
-    0xEB,
-    0x2A,
-    0x64,
-    0x8C,
-    0x58,
-    0x43,
-    0x14,
-    0x5E,
+    0xB5, 0x36, 0x7F, 0x47, 0xB6, 0x2B, 0x99, 0x5E,
+    0xEB, 0x2A, 0x64, 0x8C, 0x58, 0x43, 0x14, 0x5E,
 };
 
 /*
@@ -157,22 +143,8 @@ static const char P_omac_acpkm2[] = {
 };
 
 static const char MAC_omac_acpkm2[] = {
-    0xFB,
-    0xB8,
-    0xDC,
-    0xEE,
-    0x45,
-    0xBE,
-    0xA6,
-    0x7C,
-    0x35,
-    0xF5,
-    0x8C,
-    0x57,
-    0x00,
-    0x89,
-    0x8E,
-    0x5D,
+    0xFB, 0xB8, 0xDC, 0xEE, 0x45, 0xBE, 0xA6, 0x7C,
+    0x35, 0xF5, 0x8C, 0x57, 0x00, 0x89, 0x8E, 0x5D,
 };
 
 /* Some other test vectors. */
@@ -221,14 +193,13 @@ static const char etalon_carry[] = {
 };
 
 /* This is another carry test. */
-static const char ff[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                          0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                          0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                          0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                          0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                          0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                          0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                          0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+static const char ff[] = {
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 struct hash_testvec {
     const char *algname;   /* Algorithm name */
@@ -571,10 +542,10 @@ static int do_hmac_prov(int iter, const EVP_MD *md, const char *plaintext,
     T(hmac = EVP_MAC_fetch(NULL, "HMAC", NULL));
     EVP_MAC_CTX *ctx;
     T(ctx = EVP_MAC_CTX_new(hmac));
-    OSSL_PARAM params[] = {OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_DIGEST,
-                                                  (char *)EVP_MD_name(md),
-                                                  0),
-                           OSSL_PARAM_END};
+    OSSL_PARAM params[] = {
+        OSSL_PARAM_utf8_string(
+            OSSL_MAC_PARAM_DIGEST, (char *)EVP_MD_name(md), 0),
+        OSSL_PARAM_END};
     T(EVP_MAC_init(ctx, (const unsigned char *)t->key, t->key_size, params));
     T(EVP_MAC_update(ctx, (unsigned char *)plaintext, t->psize));
     T(EVP_MAC_final(ctx, out, &len, sizeof(out)));
@@ -611,8 +582,8 @@ static int do_hmac(int iter, const EVP_MD *type, const char *plaintext,
  * If we have OMAC1/CMAC test vector,
  * use CMAC provider to test it.
  */
-static int do_cmac_prov(int iter, const char *plaintext,
-                        const struct hash_testvec *t)
+static int
+do_cmac_prov(int iter, const char *plaintext, const struct hash_testvec *t)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
     char *ciphername = NULL;
@@ -713,8 +684,7 @@ static int do_mac(int iter, EVP_MAC *mac, const char *plaintext,
     EVP_MAC_CTX_free(ctx);
     T(len == outsize);
     if (memcmp(out, t->digest, outsize) != 0) {
-        printf(cRED "mac mismatch (iter %d, outsize %d)" cNORM "\n",
-               iter,
+        printf(cRED "mac mismatch (iter %d, outsize %d)" cNORM "\n", iter,
                (int)outsize);
         hexdump(t->digest, outsize);
         hexdump(out, outsize);
@@ -747,9 +717,7 @@ static int do_digest(int iter, const EVP_MD *type, const char *plaintext,
         T(EVP_MD_CTX_ctrl(
             ctx, EVP_MD_CTRL_SET_KEY, t->key_size, (void *)t->key));
     if (t->acpkm)
-        T(EVP_MD_CTX_ctrl(ctx,
-                          EVP_CTRL_KEY_MESH,
-                          t->acpkm,
+        T(EVP_MD_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, t->acpkm,
                           t->acpkm_t ? (void *)&t->acpkm_t : NULL));
     T(EVP_DigestUpdate(ctx, plaintext, t->psize));
 
@@ -766,8 +734,7 @@ static int do_digest(int iter, const EVP_MD *type, const char *plaintext,
     EVP_MD_CTX_free(ctx);
     T(len == outsize);
     if (memcmp(out, t->digest, outsize) != 0) {
-        printf(cRED "digest mismatch (iter %d, outsize %d)" cNORM "\n",
-               iter,
+        printf(cRED "digest mismatch (iter %d, outsize %d)" cNORM "\n", iter,
                (int)outsize);
         hexdump(t->digest, outsize);
         hexdump(out, outsize);
@@ -888,8 +855,7 @@ static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
 
     if (len != mdlen) {
         printf(cRED "digest output len mismatch %u != %u (expected)" cNORM "\n",
-               len,
-               mdlen);
+               len, mdlen);
         goto err;
     }
 

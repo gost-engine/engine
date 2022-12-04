@@ -126,8 +126,8 @@ static int mac_update(void *mctx, const unsigned char *in, size_t inl)
     return EVP_DigestUpdate(gctx->dctx, in, inl) > 0;
 }
 
-static int mac_final(void *mctx, unsigned char *out, size_t *outl,
-                     size_t outsize)
+static int
+mac_final(void *mctx, unsigned char *out, size_t *outl, size_t outsize)
 {
     GOST_CTX *gctx = mctx;
     unsigned int tmpoutl;
@@ -152,30 +152,30 @@ static int mac_final(void *mctx, unsigned char *out, size_t *outl,
     return ret;
 }
 
-static const OSSL_PARAM *mac_gettable_params(void *provctx,
-                                             const GOST_DESC *descriptor)
+static const OSSL_PARAM *
+mac_gettable_params(void *provctx, const GOST_DESC *descriptor)
 {
-    static const OSSL_PARAM params[] = {OSSL_PARAM_size_t("size", NULL),
-                                        OSSL_PARAM_size_t("keylen", NULL),
-                                        OSSL_PARAM_END};
+    static const OSSL_PARAM params[] = {
+        OSSL_PARAM_size_t("size", NULL), OSSL_PARAM_size_t("keylen", NULL),
+        OSSL_PARAM_END};
 
     return params;
 }
 
 static const OSSL_PARAM *mac_gettable_ctx_params(void *mctx, void *provctx)
 {
-    static const OSSL_PARAM params[] = {OSSL_PARAM_size_t("size", NULL),
-                                        OSSL_PARAM_size_t("keylen", NULL),
-                                        OSSL_PARAM_END};
+    static const OSSL_PARAM params[] = {
+        OSSL_PARAM_size_t("size", NULL), OSSL_PARAM_size_t("keylen", NULL),
+        OSSL_PARAM_END};
 
     return params;
 }
 
 static const OSSL_PARAM *mac_settable_ctx_params(void *mctx, void *provctx)
 {
-    static const OSSL_PARAM params[] = {OSSL_PARAM_size_t("size", NULL),
-                                        OSSL_PARAM_octet_string("key", NULL, 0),
-                                        OSSL_PARAM_END};
+    static const OSSL_PARAM params[] = {
+        OSSL_PARAM_size_t("size", NULL),
+        OSSL_PARAM_octet_string("key", NULL, 0), OSSL_PARAM_END};
 
     return params;
 }
@@ -326,26 +326,22 @@ MAKE_FUNCTIONS(id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac, 16);
 
 /* The OSSL_ALGORITHM for the provider's operation query function */
 const OSSL_ALGORITHM GOST_prov_macs[] = {
-    {SN_id_Gost28147_89_MAC ":1.2.643.2.2.22",
-     NULL,
-     id_Gost28147_89_MAC_functions,
-     "GOST 28147-89 MAC"},
+    {SN_id_Gost28147_89_MAC ":1.2.643.2.2.22", NULL,
+     id_Gost28147_89_MAC_functions, "GOST 28147-89 MAC"},
     {SN_gost_mac_12, NULL, gost_mac_12_functions},
     {SN_magma_mac, NULL, magma_mac_functions},
     {SN_grasshopper_mac, NULL, grasshopper_mac_functions},
     {SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac
      ":1.2.643.7.1.1.5.2.2",
-     NULL,
-     id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_functions},
+     NULL, id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_functions},
     {NULL, NULL, NULL}};
 
 void GOST_prov_deinit_mac_digests(void)
 {
-    static GOST_digest *list[] = {&Gost28147_89_MAC_digest,
-                                  &Gost28147_89_mac_12_digest,
-                                  &magma_mac_digest,
-                                  &grasshopper_mac_digest,
-                                  &kuznyechik_ctracpkm_omac_digest};
+    static GOST_digest *list[] = {
+        &Gost28147_89_MAC_digest, &Gost28147_89_mac_12_digest,
+        &magma_mac_digest, &grasshopper_mac_digest,
+        &kuznyechik_ctracpkm_omac_digest};
     size_t i;
 #define elems(l) (sizeof(l) / sizeof(l[0]))
 

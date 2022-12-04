@@ -41,7 +41,6 @@ const char *tests[] = {
     "md_gost12_256",
     "gost2012_256",
     "TCD",
-
     "md_gost12_512",
     "gost2012_512",
     "A",
@@ -51,7 +50,6 @@ const char *tests[] = {
     "md_gost12_512",
     "gost2012_512",
     "C",
-
     NULL,
 };
 
@@ -171,10 +169,8 @@ int main(int argc, char **argv)
                 for (i = 0; i < cycles; i++) {
                     EVP_SignInit(md_ctx, mdtype);
                     err = EVP_SignUpdate(md_ctx, data, data_len)
-                          && EVP_SignFinal(md_ctx,
-                                           &sigbuf[siglen * i],
-                                           (unsigned int *)&siglen,
-                                           pkey);
+                          && EVP_SignFinal(md_ctx, &sigbuf[siglen * i],
+                                           (unsigned int *)&siglen, pkey);
                     if (err != 1)
                         printf("!");
                     EVP_MD_CTX_reset(md_ctx);
@@ -196,11 +192,8 @@ int main(int argc, char **argv)
             timersub(&fin, &debut, &delta);
             diff[pass] = (double)delta.tv_sec + (double)delta.tv_usec / 1000000;
         }
-        printf("\r%s %s: sign: %.1f/s, verify: %.1f/s\n",
-               algo,
-               param,
-               (double)cycles / diff[0],
-               (double)cycles / diff[1]);
+        printf("\r%s %s: sign: %.1f/s, verify: %.1f/s\n", algo, param,
+               (double)cycles / diff[0], (double)cycles / diff[1]);
         EVP_PKEY_free(pkey);
         free(sigbuf);
         free(data);

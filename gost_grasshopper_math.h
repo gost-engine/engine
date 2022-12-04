@@ -97,25 +97,24 @@ grasshopper_append128(grasshopper_w128_t *x, const grasshopper_w128_t *y)
 #endif
 }
 
-static GRASSHOPPER_INLINE void grasshopper_plus128(grasshopper_w128_t *result,
-                                                   const grasshopper_w128_t *x,
-                                                   const grasshopper_w128_t *y)
+static GRASSHOPPER_INLINE void
+grasshopper_plus128(grasshopper_w128_t *result, const grasshopper_w128_t *x,
+                    const grasshopper_w128_t *y)
 {
     grasshopper_copy128(result, x);
     grasshopper_append128(result, y);
 }
 
 // result & x must be different
-static GRASSHOPPER_INLINE void
-grasshopper_plus128multi(grasshopper_w128_t *result,
-                         const grasshopper_w128_t *x,
-                         const grasshopper_w128_t array[][256])
+static GRASSHOPPER_INLINE void grasshopper_plus128multi(
+    grasshopper_w128_t *result, const grasshopper_w128_t *x,
+    const grasshopper_w128_t array[][256])
 {
     int i;
     grasshopper_zero128(result);
     for (i = 0; i < GRASSHOPPER_MAX_BIT_PARTS; i++) {
-        grasshopper_append128(result,
-                              &array[i][GRASSHOPPER_ACCESS_128_VALUE_8(*x, i)]);
+        grasshopper_append128(
+            result, &array[i][GRASSHOPPER_ACCESS_128_VALUE_8(*x, i)]);
     }
 }
 
@@ -127,8 +126,8 @@ grasshopper_append128multi(grasshopper_w128_t *result, grasshopper_w128_t *x,
     grasshopper_copy128(x, result);
 }
 
-static GRASSHOPPER_INLINE void grasshopper_convert128(grasshopper_w128_t *x,
-                                                      const uint8_t *array)
+static GRASSHOPPER_INLINE void
+grasshopper_convert128(grasshopper_w128_t *x, const uint8_t *array)
 {
     int i;
     for (i = 0; i < GRASSHOPPER_MAX_BIT_PARTS; i++) {

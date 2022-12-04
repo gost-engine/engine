@@ -267,20 +267,13 @@ int gost_ec_compute_public(EC_KEY *ec);
 int gost_ec_point_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n,
                       const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);
 
-# define CURVEDEF(a)                                                     \
-  int point_mul_##a(const EC_GROUP *group,                               \
-                    EC_POINT *r,                                         \
-                    const EC_POINT *q,                                   \
-                    const BIGNUM *m,                                     \
-                    BN_CTX *ctx);                                        \
-  int point_mul_g_##a(                                                   \
-      const EC_GROUP *group, EC_POINT *r, const BIGNUM *n, BN_CTX *ctx); \
-  int point_mul_two_##a(const EC_GROUP *group,                           \
-                        EC_POINT *r,                                     \
-                        const BIGNUM *n,                                 \
-                        const EC_POINT *q,                               \
-                        const BIGNUM *m,                                 \
-                        BN_CTX *ctx);
+# define CURVEDEF(a)                                                         \
+  int point_mul_##a(const EC_GROUP *group, EC_POINT *r, const EC_POINT *q,   \
+                    const BIGNUM *m, BN_CTX *ctx);                           \
+  int point_mul_g_##a(                                                       \
+      const EC_GROUP *group, EC_POINT *r, const BIGNUM *n, BN_CTX *ctx);     \
+  int point_mul_two_##a(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n, \
+                        const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);
 
 CURVEDEF(id_GostR3410_2001_CryptoPro_A_ParamSet)
 CURVEDEF(id_GostR3410_2001_CryptoPro_B_ParamSet)
@@ -297,11 +290,10 @@ int VKO_compute_key(unsigned char *shared_key, const EC_POINT *pub_key,
                     const size_t ukm_size, const int vko_dgst_nid);
 
 /* KDF TREE */
-int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
-                         const unsigned char *key, size_t keylen,
-                         const unsigned char *label, size_t label_len,
-                         const unsigned char *seed, size_t seed_len,
-                         const size_t representation);
+int gost_kdftree2012_256(
+    unsigned char *keyout, size_t keyout_len, const unsigned char *key,
+    size_t keylen, const unsigned char *label, size_t label_len,
+    const unsigned char *seed, size_t seed_len, const size_t representation);
 
 int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
                  const unsigned char *tlsseq);

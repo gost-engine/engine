@@ -126,8 +126,8 @@ struct test_derive {
     },
 };
 
-static EVP_PKEY *load_private_key(int key_nid, int param_nid, const char *pk,
-                                  const char *pub)
+static EVP_PKEY *
+load_private_key(int key_nid, int param_nid, const char *pk, const char *pub)
 {
     EVP_PKEY_CTX *ctx;
     T(ctx = EVP_PKEY_CTX_new_id(key_nid, NULL));
@@ -189,8 +189,7 @@ static EVP_PKEY *load_private_key(int key_nid, int param_nid, const char *pk,
         BN_free(x);
         BN_free(y);
         if (EC_POINT_cmp(group, pkey, xy, bc) == 0)
-            printf("Public key %08x matches private key %08x\n",
-                   *(int *)pub,
+            printf("Public key %08x matches private key %08x\n", *(int *)pub,
                    *(int *)pk);
         else {
             printf(cRED "Public key mismatch!" cNORM "\n");
@@ -223,8 +222,8 @@ int test_derive(struct test_derive *t, const char *name)
     if (t->dgst_nid)
         T(EVP_PKEY_CTX_ctrl(
             ctx, -1, -1, EVP_PKEY_CTRL_SET_VKO, t->dgst_nid, NULL));
-    T(EVP_PKEY_CTX_ctrl(
-        ctx, -1, -1, EVP_PKEY_CTRL_SET_IV, t->ukm_len, (unsigned char *)t->ukm));
+    T(EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_SET_IV, t->ukm_len,
+                        (unsigned char *)t->ukm));
 
     size_t skeylen;
     unsigned char *skey;
@@ -284,8 +283,8 @@ static EVP_PKEY *keygen(const char *algo, const char *param)
     return key;
 }
 
-unsigned char *derive(EVP_PKEY *keyA, EVP_PKEY *keyB, int dgst_nid, int ukm_len,
-                      size_t *len)
+unsigned char *
+derive(EVP_PKEY *keyA, EVP_PKEY *keyB, int dgst_nid, int ukm_len, size_t *len)
 {
     EVP_PKEY_CTX *ctx;
     T(ctx = EVP_PKEY_CTX_new(keyA, NULL));

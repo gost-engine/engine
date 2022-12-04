@@ -14,11 +14,11 @@
 #include <openssl/rand.h>
 #include <string.h>
 
-int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx,
-                        size_t mac_size, unsigned char *encrypted_mac,
-                        int (*do_cipher)(EVP_CIPHER_CTX *ctx,
-                                         unsigned char *out,
-                                         const unsigned char *in, size_t inl))
+int gost2015_final_call(
+    EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx, size_t mac_size,
+    unsigned char *encrypted_mac,
+    int (*do_cipher)(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                     const unsigned char *in, size_t inl))
 {
     unsigned char calculated_mac[KUZNYECHIK_MAC_MAX_SIZE];
     memset(calculated_mac, 0, KUZNYECHIK_MAC_MAX_SIZE);
@@ -51,9 +51,9 @@ int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx,
 #define MAX_GOST2015_UKM_SIZE 16
 #define KDF_SEED_SIZE         8
 
-int gost2015_get_asn1_params(const ASN1_TYPE *params, size_t ukm_size,
-                             unsigned char *iv, size_t ukm_offset,
-                             unsigned char *kdf_seed)
+int gost2015_get_asn1_params(
+    const ASN1_TYPE *params, size_t ukm_size, unsigned char *iv,
+    size_t ukm_offset, unsigned char *kdf_seed)
 {
     int iv_len = 16;
     GOST2015_CIPHER_PARAMS *gcp = NULL;
@@ -133,9 +133,9 @@ end:
     return ret;
 }
 
-int gost2015_process_unprotected_attributes(STACK_OF(X509_ATTRIBUTE) * attrs,
-                                            int encryption, size_t mac_len,
-                                            unsigned char *final_tag)
+int gost2015_process_unprotected_attributes(
+    STACK_OF(X509_ATTRIBUTE) * attrs, int encryption, size_t mac_len,
+    unsigned char *final_tag)
 {
     if (encryption == 0) /*Decrypting*/ {
         ASN1_OCTET_STRING *osExpectedMac = X509at_get0_data_by_OBJ(
@@ -148,11 +148,9 @@ int gost2015_process_unprotected_attributes(STACK_OF(X509_ATTRIBUTE) * attrs,
     } else {
         if (attrs == NULL)
             return -1;
-        return (X509at_add1_attr_by_OBJ(&attrs,
-                                        OBJ_txt2obj(OID_GOST_CMS_MAC, 1),
-                                        V_ASN1_OCTET_STRING,
-                                        final_tag,
-                                        mac_len)
+        return (X509at_add1_attr_by_OBJ(
+                    &attrs, OBJ_txt2obj(OID_GOST_CMS_MAC, 1),
+                    V_ASN1_OCTET_STRING, final_tag, mac_len)
                 == NULL)
                    ? -1
                    : 1;
@@ -160,9 +158,9 @@ int gost2015_process_unprotected_attributes(STACK_OF(X509_ATTRIBUTE) * attrs,
     return 1;
 }
 
-int gost2015_acpkm_omac_init(int nid, int enc, const unsigned char *inkey,
-                             EVP_MD_CTX *omac_ctx, unsigned char *outkey,
-                             unsigned char *kdf_seed)
+int gost2015_acpkm_omac_init(
+    int nid, int enc, const unsigned char *inkey, EVP_MD_CTX *omac_ctx,
+    unsigned char *outkey, unsigned char *kdf_seed)
 {
     int ret = 0;
     unsigned char keys[64];
@@ -177,15 +175,9 @@ int gost2015_acpkm_omac_init(int nid, int enc, const unsigned char *inkey,
             return 0;
     }
 
-    if (gost_kdftree2012_256(keys,
-                             64,
-                             inkey,
-                             32,
-                             (const unsigned char *)"kdf tree",
-                             8,
-                             kdf_seed,
-                             8,
-                             1)
+    if (gost_kdftree2012_256(
+            keys, 64, inkey, 32, (const unsigned char *)"kdf tree", 8, kdf_seed,
+            8, 1)
         <= 0)
         return 0;
 
@@ -300,11 +292,11 @@ int gost_mgm128_aad(mgm128_context *ctx, const unsigned char *aad, size_t len)
         }
     }
     while (len >= bl) {
-        (*block)(ctx->Zi.c, ctx->Hi.c, key);                  // H_i = E_K(Z_i)
-        mul_gf(ctx->mul.u, ctx->Hi.u, (uint64_t *)aad);       // H_i (x) A_i
-        grasshopper_plus128((grasshopper_w128_t *)ctx->sum.u, // acc XOR
-                            (grasshopper_w128_t *)ctx->sum.u,
-                            (grasshopper_w128_t *)ctx->mul.u);
+        (*block)(ctx->Zi.c, ctx->Hi.c, key);            // H_i = E_K(Z_i)
+        mul_gf(ctx->mul.u, ctx->Hi.u, (uint64_t *)aad); // H_i (x) A_i
+        grasshopper_plus128(
+            (grasshopper_w128_t *)ctx->sum.u, // acc XOR
+            (grasshopper_w128_t *)ctx->sum.u, (grasshopper_w128_t *)ctx->mul.u);
         inc_counter(ctx->Zi.c, bl / 2); // Z_{i+1} = incr_l(Z_i)
         aad += bl;
         len -= bl;
@@ -356,11 +348,11 @@ int gost_mgm128_encrypt(mgm128_context *ctx, const unsigned char *in,
     if (ctx->ares) {
         /* First call to encrypt finalizes AAD */
         memset(ctx->ACi.c + ctx->ares, 0, bl - ctx->ares);
-        (*block)(ctx->Zi.c, ctx->Hi.c, key);                  // H_i = E_K(Z_i)
-        mul_gf(ctx->mul.u, ctx->Hi.u, ctx->ACi.u);            // H_i (x) A_i
-        grasshopper_plus128((grasshopper_w128_t *)ctx->sum.u, // acc XOR
-                            (grasshopper_w128_t *)ctx->sum.u,
-                            (grasshopper_w128_t *)ctx->mul.u);
+        (*block)(ctx->Zi.c, ctx->Hi.c, key);       // H_i = E_K(Z_i)
+        mul_gf(ctx->mul.u, ctx->Hi.u, ctx->ACi.u); // H_i (x) A_i
+        grasshopper_plus128(
+            (grasshopper_w128_t *)ctx->sum.u, // acc XOR
+            (grasshopper_w128_t *)ctx->sum.u, (grasshopper_w128_t *)ctx->mul.u);
         inc_counter(ctx->Zi.c, bl / 2); // Z_{i+1} = incr_l(Z_i)
 
         ctx->ares = 0;
@@ -422,11 +414,11 @@ int gost_mgm128_decrypt(mgm128_context *ctx, const unsigned char *in,
     if (ctx->ares) {
         /* First call to encrypt finalizes AAD */
         memset(ctx->ACi.c + ctx->ares, 0, bl - ctx->ares);
-        (*block)(ctx->Zi.c, ctx->Hi.c, key);                  // H_i = E_K(Z_i)
-        mul_gf(ctx->mul.u, ctx->Hi.u, ctx->ACi.u);            // H_i (x) A_i
-        grasshopper_plus128((grasshopper_w128_t *)ctx->sum.u, // acc XOR
-                            (grasshopper_w128_t *)ctx->sum.u,
-                            (grasshopper_w128_t *)ctx->mul.u);
+        (*block)(ctx->Zi.c, ctx->Hi.c, key);       // H_i = E_K(Z_i)
+        mul_gf(ctx->mul.u, ctx->Hi.u, ctx->ACi.u); // H_i (x) A_i
+        grasshopper_plus128(
+            (grasshopper_w128_t *)ctx->sum.u, // acc XOR
+            (grasshopper_w128_t *)ctx->sum.u, (grasshopper_w128_t *)ctx->mul.u);
         inc_counter(ctx->Zi.c, bl / 2); // Z_{i+1} = incr_l(Z_i)
 
         ctx->ares = 0;
@@ -457,8 +449,7 @@ int gost_mgm128_decrypt(mgm128_context *ctx, const unsigned char *in,
     return 0;
 }
 
-int gost_mgm128_finish(mgm128_context *ctx, const unsigned char *tag,
-                       size_t len)
+int gost_mgm128_finish(mgm128_context *ctx, const unsigned char *tag, size_t len)
 {
     uint64_t alen = ctx->len.u[0] << 3;
     uint64_t clen = ctx->len.u[1] << 3;
@@ -469,14 +460,13 @@ int gost_mgm128_finish(mgm128_context *ctx, const unsigned char *tag,
 
     if (ctx->mres || ctx->ares) {
         /* First call to encrypt finalizes AAD/ENC */
-        memset(ctx->ACi.c + ctx->ares + ctx->mres,
-               0,
+        memset(ctx->ACi.c + ctx->ares + ctx->mres, 0,
                bl - (ctx->ares + ctx->mres));
         (*block)(ctx->Zi.c, ctx->Hi.c, key);       // H_i = E_K(Z_i)
         mul_gf(ctx->mul.u, ctx->Hi.u, ctx->ACi.u); // H_i (x) [A_i or C_i]
-        grasshopper_plus128((grasshopper_w128_t *)ctx->sum.u, // acc XOR
-                            (grasshopper_w128_t *)ctx->sum.u,
-                            (grasshopper_w128_t *)ctx->mul.u);
+        grasshopper_plus128(
+            (grasshopper_w128_t *)ctx->sum.u, // acc XOR
+            (grasshopper_w128_t *)ctx->sum.u, (grasshopper_w128_t *)ctx->mul.u);
         inc_counter(ctx->Zi.c, bl / 2); // Z_{i+1} = incr_l(Z_i)
     }
 
@@ -495,9 +485,9 @@ int gost_mgm128_finish(mgm128_context *ctx, const unsigned char *tag,
 
     (*block)(ctx->Zi.c, ctx->Hi.c, key);       // H_i = E_K(Z_i)
     mul_gf(ctx->mul.u, ctx->Hi.u, ctx->len.u); // H_i (x) (len(A) || len(C))
-    grasshopper_plus128((grasshopper_w128_t *)ctx->sum.u, // acc XOR
-                        (grasshopper_w128_t *)ctx->sum.u,
-                        (grasshopper_w128_t *)ctx->mul.u);
+    grasshopper_plus128(
+        (grasshopper_w128_t *)ctx->sum.u, // acc XOR
+        (grasshopper_w128_t *)ctx->sum.u, (grasshopper_w128_t *)ctx->mul.u);
     (*block)(ctx->sum.c, ctx->tag.c, key); // E_K(sum)
 
     if (tag && len <= sizeof(ctx->tag))
@@ -509,6 +499,6 @@ int gost_mgm128_finish(mgm128_context *ctx, const unsigned char *tag,
 void gost_mgm128_tag(mgm128_context *ctx, unsigned char *tag, size_t len)
 {
     gost_mgm128_finish(ctx, NULL, 0);
-    memcpy(
-        tag, ctx->tag.c, len <= sizeof(ctx->tag.c) ? len : sizeof(ctx->tag.c));
+    memcpy(tag, ctx->tag.c,
+           len <= sizeof(ctx->tag.c) ? len : sizeof(ctx->tag.c));
 }

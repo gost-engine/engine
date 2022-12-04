@@ -185,9 +185,7 @@ static int CMAC_ACPKM_Init(CMAC_ACPKM_CTX *ctx, const void *key, size_t keylen,
  * to generate T*-sized key material */
 static int CMAC_ACPKM_Master(CMAC_ACPKM_CTX *ctx)
 {
-    return EVP_Cipher(ctx->actx,
-                      ctx->km,
-                      zero_iv,
+    return EVP_Cipher(ctx->actx, ctx->km, zero_iv,
                       EVP_CIPHER_key_length(EVP_CIPHER_CTX_cipher(ctx->actx))
                           + EVP_CIPHER_CTX_block_size(ctx->cctx));
 }
@@ -251,8 +249,8 @@ static int CMAC_ACPKM_Update(CMAC_ACPKM_CTX *ctx, const void *in, size_t dlen)
     return 1;
 }
 
-static int CMAC_ACPKM_Final(CMAC_ACPKM_CTX *ctx, unsigned char *out,
-                            size_t *poutlen)
+static int
+CMAC_ACPKM_Final(CMAC_ACPKM_CTX *ctx, unsigned char *out, size_t *poutlen)
 {
     int i, bl, lb, key_len;
     unsigned char *k1, k2[EVP_MAX_BLOCK_LENGTH];
@@ -326,8 +324,8 @@ static int grasshopper_omac_acpkm_init(EVP_MD_CTX *ctx)
     return omac_acpkm_init(ctx, SN_grasshopper_cbc);
 }
 
-static int omac_acpkm_imit_update(EVP_MD_CTX *ctx, const void *data,
-                                  size_t count)
+static int
+omac_acpkm_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
 {
     OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
     if (!c->key_set) {
@@ -470,10 +468,8 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             if (EVP_CIPHER_get0_provider(
                     EVP_CIPHER_CTX_cipher(c->cmac_ctx->actx))
                 == NULL) {
-                if (!EVP_CIPHER_CTX_ctrl(c->cmac_ctx->actx,
-                                         EVP_CTRL_KEY_MESH,
-                                         *(int *)ptr,
-                                         NULL))
+                if (!EVP_CIPHER_CTX_ctrl(c->cmac_ctx->actx, EVP_CTRL_KEY_MESH,
+                                         *(int *)ptr, NULL))
                     return 0;
             } else {
                 size_t cipher_key_mesh = (size_t) * (int *)ptr;

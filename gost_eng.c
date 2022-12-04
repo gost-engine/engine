@@ -24,64 +24,50 @@ static const char *engine_gost_id = "gost";
 
 static const char *engine_gost_name = "Reference implementation of GOST engine";
 
-const ENGINE_CMD_DEFN gost_cmds[] = {{GOST_CTRL_CRYPT_PARAMS,
-                                      "CRYPT_PARAMS",
-                                      "OID of default GOST 28147-89 parameters",
-                                      ENGINE_CMD_FLAG_STRING},
-                                     {GOST_CTRL_PBE_PARAMS,
-                                      "PBE_PARAMS",
-                                      "Shortname of default digest alg for PBE",
-                                      ENGINE_CMD_FLAG_STRING},
-                                     {GOST_CTRL_PK_FORMAT,
-                                      "GOST_PK_FORMAT",
-                                      "Private key format params",
-                                      ENGINE_CMD_FLAG_STRING},
-                                     {0, NULL, NULL, 0}};
+const ENGINE_CMD_DEFN gost_cmds[] = {
+    {GOST_CTRL_CRYPT_PARAMS, "CRYPT_PARAMS",
+     "OID of default GOST 28147-89 parameters", ENGINE_CMD_FLAG_STRING},
+    {GOST_CTRL_PBE_PARAMS, "PBE_PARAMS",
+     "Shortname of default digest alg for PBE", ENGINE_CMD_FLAG_STRING},
+    {GOST_CTRL_PK_FORMAT, "GOST_PK_FORMAT", "Private key format params",
+     ENGINE_CMD_FLAG_STRING},
+    {0, NULL, NULL, 0}};
 
 /* Symmetric cipher and digest function registrar */
 
-static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher, const int **nids,
-                        int nid);
+static int
+gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher, const int **nids, int nid);
 
-static int gost_digests(ENGINE *e, const EVP_MD **digest, const int **nids,
-                        int nid);
+static int
+gost_digests(ENGINE *e, const EVP_MD **digest, const int **nids, int nid);
 
-static int gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth, const int **nids,
-                           int nid);
+static int
+gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth, const int **nids, int nid);
 
 static int gost_pkey_asn1_meths(ENGINE *e, EVP_PKEY_ASN1_METHOD **ameth,
                                 const int **nids, int nid);
 
-static EVP_PKEY_METHOD *pmeth_GostR3410_2001 = NULL,
-                       *pmeth_GostR3410_2001DH = NULL,
-                       *pmeth_GostR3410_2012_256 = NULL,
-                       *pmeth_GostR3410_2012_512 = NULL,
-                       *pmeth_Gost28147_MAC = NULL,
-                       *pmeth_Gost28147_MAC_12 = NULL, *pmeth_magma_mac = NULL,
-                       *pmeth_grasshopper_mac = NULL,
-                       *pmeth_magma_mac_acpkm = NULL,
-                       *pmeth_grasshopper_mac_acpkm = NULL;
+static EVP_PKEY_METHOD *
+    pmeth_GostR3410_2001 = NULL,
+   *pmeth_GostR3410_2001DH = NULL, *pmeth_GostR3410_2012_256 = NULL,
+   *pmeth_GostR3410_2012_512 = NULL, *pmeth_Gost28147_MAC = NULL,
+   *pmeth_Gost28147_MAC_12 = NULL, *pmeth_magma_mac = NULL,
+   *pmeth_grasshopper_mac = NULL, *pmeth_magma_mac_acpkm = NULL,
+   *pmeth_grasshopper_mac_acpkm = NULL;
 
-static EVP_PKEY_ASN1_METHOD *ameth_GostR3410_2001 = NULL,
-                            *ameth_GostR3410_2001DH = NULL,
-                            *ameth_GostR3410_2012_256 = NULL,
-                            *ameth_GostR3410_2012_512 = NULL,
-                            *ameth_Gost28147_MAC = NULL,
-                            *ameth_Gost28147_MAC_12 = NULL,
-                            *ameth_magma_mac = NULL,
-                            *ameth_grasshopper_mac = NULL,
-                            *ameth_magma_mac_acpkm = NULL,
-                            *ameth_grasshopper_mac_acpkm = NULL;
+static EVP_PKEY_ASN1_METHOD *
+    ameth_GostR3410_2001 = NULL,
+   *ameth_GostR3410_2001DH = NULL, *ameth_GostR3410_2012_256 = NULL,
+   *ameth_GostR3410_2012_512 = NULL, *ameth_Gost28147_MAC = NULL,
+   *ameth_Gost28147_MAC_12 = NULL, *ameth_magma_mac = NULL,
+   *ameth_grasshopper_mac = NULL, *ameth_magma_mac_acpkm = NULL,
+   *ameth_grasshopper_mac_acpkm = NULL;
 
 GOST_digest *gost_digest_array[] = {
-    &GostR3411_94_digest,
-    &Gost28147_89_MAC_digest,
-    &GostR3411_2012_256_digest,
-    &GostR3411_2012_512_digest,
-    &Gost28147_89_mac_12_digest,
-    &magma_mac_digest,
-    &grasshopper_mac_digest,
-    &kuznyechik_ctracpkm_omac_digest,
+    &GostR3411_94_digest,        &Gost28147_89_MAC_digest,
+    &GostR3411_2012_256_digest,  &GostR3411_2012_512_digest,
+    &Gost28147_89_mac_12_digest, &magma_mac_digest,
+    &grasshopper_mac_digest,     &kuznyechik_ctracpkm_omac_digest,
 };
 
 GOST_cipher *gost_cipher_array[] = {
@@ -197,8 +183,8 @@ static int known_cipher_nids[OSSL_NELEM(gost_cipher_array)];
 static int known_meths_nids[OSSL_NELEM(gost_meth_array) - 1];
 
 /* ENGINE_DIGESTS_PTR callback installed by ENGINE_set_digests */
-static int gost_digests(ENGINE *e, const EVP_MD **digest, const int **nids,
-                        int nid)
+static int
+gost_digests(ENGINE *e, const EVP_MD **digest, const int **nids, int nid)
 {
     int i;
 
@@ -221,8 +207,8 @@ static int gost_digests(ENGINE *e, const EVP_MD **digest, const int **nids,
 }
 
 /* ENGINE_CIPHERS_PTR callback installed by ENGINE_set_ciphers */
-static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher, const int **nids,
-                        int nid)
+static int
+gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher, const int **nids, int nid)
 {
     int i;
 
@@ -256,8 +242,8 @@ static int gost_meth_nids(const int **nids)
 }
 
 /* ENGINE_PKEY_METHS_PTR installed by ENGINE_set_pkey_meths */
-static int gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth, const int **nids,
-                           int nid)
+static int
+gost_pkey_meths(ENGINE *e, EVP_PKEY_METHOD **pmeth, const int **nids, int nid)
 {
     struct gost_meth_minfo *info;
 

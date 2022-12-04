@@ -279,9 +279,9 @@ enum /* permitted values for its `has_arg' field...	*/
  *	Parse long options in argc/argv argument vector.
  * Returns -1 if short_too is set and the option does not match long_options.
  */
-static int parse_long_options(char *const *nargv, const char *options,
-                              const struct option *long_options, int *idx,
-                              int short_too)
+static int
+parse_long_options(char *const *nargv, const char *options,
+                   const struct option *long_options, int *idx, int short_too)
 {
     char *current_argv, *has_equal;
     size_t current_argv_len;
@@ -401,9 +401,9 @@ static int parse_long_options(char *const *nargv, const char *options,
  * getopt_internal --
  *	Parse argc/argv argument vector.  Called by user level routines.
  */
-static int getopt_internal(int nargc, char *const *nargv, const char *options,
-                           const struct option *long_options, int *idx,
-                           int flags)
+static int
+getopt_internal(int nargc, char *const *nargv, const char *options,
+                const struct option *long_options, int *idx, int flags)
 {
     char *oli; /* option letter list index */
     int optchar, short_too;
@@ -606,8 +606,8 @@ int getopt_long(int nargc, char *const *nargv, const char *options,
 int getopt_long_only(int nargc, char *const *nargv, const char *options,
                      const struct option *long_options, int *idx)
 {
-    return (getopt_internal(
-        nargc, nargv, options, long_options, idx, FLAG_PERMUTE | FLAG_LONGONLY));
+    return (getopt_internal(nargc, nargv, options, long_options, idx,
+                            FLAG_PERMUTE | FLAG_LONGONLY));
 }
 
 //extern int getopt_long(int nargc, char * const *nargv, const char *options,

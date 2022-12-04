@@ -15,9 +15,9 @@ AllowShortLoopsOnASingleLine: false
 ColumnLimit: 80
 BreakStringLiterals: false
 AlignAfterOpenBracket: Align
-BinPackArguments: false
+BinPackArguments: true
 BinPackParameters: true
-InsertTrailingCommas: Wrapped
+#InsertTrailingCommas: Wrapped
 ExperimentalAutoDetectBinPacking: false
 AllowAllParametersOfDeclarationOnNextLine: true
 ContinuationIndentWidth: 4
@@ -96,3 +96,4 @@ SortIncludes: CaseInsensitive
 
 Cpp11BracedListStyle: true # bad but reduces initial diff
 IndentExternBlock: NoIndent
+PenaltyIndentedWhitespace: 3

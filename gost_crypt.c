@@ -52,12 +52,12 @@ static int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
 
 static int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                              const unsigned char *iv, int enc);
-static int magma_cipher_init_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx,
-                                            const unsigned char *key,
-                                            const unsigned char *iv, int enc);
-static int gost_magma_cipher_init_mgm(EVP_CIPHER_CTX *ctx,
-                                      const unsigned char *key,
-                                      const unsigned char *iv, int enc);
+static int magma_cipher_init_ctr_acpkm_omac(
+    EVP_CIPHER_CTX *ctx, const unsigned char *key, const unsigned char *iv,
+    int enc);
+static int
+gost_magma_cipher_init_mgm(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                           const unsigned char *iv, int enc);
 /* Handles block of data in CBC mode */
 static int magma_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                const unsigned char *in, size_t inl);
@@ -66,9 +66,9 @@ static int magma_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
 static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                const unsigned char *in, size_t inl);
 
-static int magma_cipher_do_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx,
-                                          unsigned char *out,
-                                          const unsigned char *in, size_t inl);
+static int magma_cipher_do_ctr_acpkm_omac(
+    EVP_CIPHER_CTX *ctx, unsigned char *out, const unsigned char *in,
+    size_t inl);
 static int gost_magma_cipher_do_mgm(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                     const unsigned char *in, size_t len);
 /* set/get cipher parameters */
@@ -76,8 +76,8 @@ static int magma_set_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params);
 static int magma_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params);
 /* Control function */
 static int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
-static int magma_cipher_ctl_acpkm_omac(EVP_CIPHER_CTX *ctx, int type, int arg,
-                                       void *ptr);
+static int
+magma_cipher_ctl_acpkm_omac(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
 static int gost_magma_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void *ptr);
 
 /*
@@ -121,10 +121,10 @@ EVP_CIPHER *GOST_init_cipher(GOST_cipher *c)
         || !EVP_CIPHER_meth_set_do_cipher(cipher, TPL(c, do_cipher))
         || !EVP_CIPHER_meth_set_cleanup(cipher, TPL(c, cleanup))
         || !EVP_CIPHER_meth_set_impl_ctx_size(cipher, TPL(c, ctx_size))
-        || !EVP_CIPHER_meth_set_set_asn1_params(cipher,
-                                                TPL(c, set_asn1_parameters))
-        || !EVP_CIPHER_meth_set_get_asn1_params(cipher,
-                                                TPL(c, get_asn1_parameters))
+        || !EVP_CIPHER_meth_set_set_asn1_params(
+            cipher, TPL(c, set_asn1_parameters))
+        || !EVP_CIPHER_meth_set_get_asn1_params(
+            cipher, TPL(c, get_asn1_parameters))
         || !EVP_CIPHER_meth_set_ctrl(cipher, TPL(c, ctrl))) {
         EVP_CIPHER_meth_free(cipher);
         cipher = NULL;
@@ -244,9 +244,9 @@ GOST_cipher magma_mgm_cipher = {
     .template = &magma_template_cipher,
     .block_size = 1,
     .iv_len = 8,
-    .flags = EVP_CIPH_NO_PADDING | EVP_CIPH_CUSTOM_IV
-             | EVP_CIPH_FLAG_CUSTOM_CIPHER | EVP_CIPH_CTRL_INIT
-             | EVP_CIPH_FLAG_AEAD_CIPHER,
+    .flags =
+        EVP_CIPH_NO_PADDING | EVP_CIPH_CUSTOM_IV | EVP_CIPH_FLAG_CUSTOM_CIPHER
+        | EVP_CIPH_CTRL_INIT | EVP_CIPH_FLAG_AEAD_CIPHER,
     .init = gost_magma_cipher_init_mgm,
     .do_cipher = gost_magma_cipher_do_mgm,
     .ctrl = gost_magma_mgm_ctrl,
@@ -367,9 +367,7 @@ const struct gost_cipher_info *get_encryption_params(ASN1_OBJECT *obj)
         if (nid == NID_undef) {
             GOSTerr(GOST_F_GET_ENCRYPTION_PARAMS,
                     GOST_R_INVALID_CIPHER_PARAM_OID);
-            ERR_add_error_data(3,
-                               "Unsupported CRYPT_PARAMS='",
-                               params,
+            ERR_add_error_data(3, "Unsupported CRYPT_PARAMS='", params,
                                "' specified in environment or in config");
             return NULL;
         }
@@ -402,9 +400,9 @@ static int gost_cipher_set_param(struct ossl_gost_cipher_ctx *c, int nid)
 }
 
 /* Initializes EVP_CIPHER_CTX by paramset NID */
-static int gost_cipher_init_param(EVP_CIPHER_CTX *ctx, const unsigned char *key,
-                                  const unsigned char *iv, int enc,
-                                  int paramNID, int mode)
+static int
+gost_cipher_init_param(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                       const unsigned char *iv, int enc, int paramNID, int mode)
 {
     struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     if (EVP_CIPHER_CTX_get_app_data(ctx) == NULL) {
@@ -415,19 +413,17 @@ static int gost_cipher_init_param(EVP_CIPHER_CTX *ctx, const unsigned char *key,
     if (key)
         gost_key(&(c->cctx), key);
     if (iv) {
-        memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx),
-               iv,
+        memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx), iv,
                EVP_CIPHER_CTX_iv_length(ctx));
     }
-    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx),
-           EVP_CIPHER_CTX_original_iv(ctx),
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), EVP_CIPHER_CTX_original_iv(ctx),
            EVP_CIPHER_CTX_iv_length(ctx));
     return 1;
 }
 
-static int gost_cipher_init_cnt(EVP_CIPHER_CTX *ctx, const unsigned char *key,
-                                const unsigned char *iv,
-                                gost_subst_block *block)
+static int
+gost_cipher_init_cnt(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                     const unsigned char *iv, gost_subst_block *block)
 {
     struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
     gost_init(&(c->cctx), block);
@@ -436,12 +432,10 @@ static int gost_cipher_init_cnt(EVP_CIPHER_CTX *ctx, const unsigned char *key,
     if (key)
         gost_key(&(c->cctx), key);
     if (iv) {
-        memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx),
-               iv,
+        memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx), iv,
                EVP_CIPHER_CTX_iv_length(ctx));
     }
-    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx),
-           EVP_CIPHER_CTX_original_iv(ctx),
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), EVP_CIPHER_CTX_original_iv(ctx),
            EVP_CIPHER_CTX_iv_length(ctx));
     return 1;
 }
@@ -496,12 +490,10 @@ static int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
         magma_master_key(&(c->cctx), key);
     }
     if (iv) {
-        memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx),
-               iv,
+        memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx), iv,
                EVP_CIPHER_CTX_iv_length(ctx));
     }
-    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx),
-           EVP_CIPHER_CTX_original_iv(ctx),
+    memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), EVP_CIPHER_CTX_original_iv(ctx),
            EVP_CIPHER_CTX_iv_length(ctx));
 
     if (EVP_CIPHER_CTX_nid(ctx) == NID_magma_ctr_acpkm
@@ -515,9 +507,9 @@ static int magma_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 }
 
 /* Initializes EVP_CIPHER_CTX with default values */
-static int magma_cipher_init_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx,
-                                            const unsigned char *key,
-                                            const unsigned char *iv, int enc)
+static int magma_cipher_init_ctr_acpkm_omac(
+    EVP_CIPHER_CTX *ctx, const unsigned char *key, const unsigned char *iv,
+    int enc)
 {
     if (key) {
         struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
@@ -607,9 +599,9 @@ static void gf64_mul(uint64_t *result, uint64_t *arg1, uint64_t *arg2)
 #endif
 }
 
-static int gost_magma_cipher_init_mgm(EVP_CIPHER_CTX *ctx,
-                                      const unsigned char *key,
-                                      const unsigned char *iv, int enc)
+static int
+gost_magma_cipher_init_mgm(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                           const unsigned char *iv, int enc)
 {
     gost_mgm_ctx *mctx = (gost_mgm_ctx *)EVP_CIPHER_CTX_get_cipher_data(ctx);
     int bl;
@@ -618,15 +610,12 @@ static int gost_magma_cipher_init_mgm(EVP_CIPHER_CTX *ctx,
         return 1;
     if (key) {
         bl = EVP_CIPHER_CTX_iv_length(ctx);
-        if (!gost_cipher_set_param(&mctx->ks.g_ks,
-                                   NID_id_tc26_gost_28147_param_Z))
+        if (!gost_cipher_set_param(
+                &mctx->ks.g_ks, NID_id_tc26_gost_28147_param_Z))
             return 0;
         magma_key(&(mctx->ks.g_ks.cctx), key);
-        gost_mgm128_init(&mctx->mgm,
-                         &mctx->ks,
-                         (block128_f)gost_magma_encrypt_wrap,
-                         gf64_mul,
-                         bl);
+        gost_mgm128_init(&mctx->mgm, &mctx->ks,
+                         (block128_f)gost_magma_encrypt_wrap, gf64_mul, bl);
 
         /*
          * If we have an iv can set it directly, otherwise use saved IV.
@@ -808,8 +797,8 @@ static void ctr64_inc(unsigned char *counter)
 #define MAGMA_BLOCK_SIZE 8
 #define MAGMA_BLOCK_MASK (MAGMA_BLOCK_SIZE - 1)
 
-static inline void apply_acpkm_magma(struct ossl_gost_cipher_ctx *ctx,
-                                     unsigned int *num)
+static inline void
+apply_acpkm_magma(struct ossl_gost_cipher_ctx *ctx, unsigned int *num)
 {
     if (!ctx->key_meshing || (*num < (unsigned int)ctx->key_meshing))
         return;
@@ -869,9 +858,9 @@ static int magma_cipher_do_ctr(EVP_CIPHER_CTX *ctx, unsigned char *out,
 }
 
 /* MAGMA encryption in CTR mode */
-static int magma_cipher_do_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx,
-                                          unsigned char *out,
-                                          const unsigned char *in, size_t inl)
+static int magma_cipher_do_ctr_acpkm_omac(
+    EVP_CIPHER_CTX *ctx, unsigned char *out, const unsigned char *in,
+    size_t inl)
 {
     struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
 
@@ -955,8 +944,8 @@ static int gost_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
     unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     /* process partial block if any */
     if (EVP_CIPHER_CTX_num(ctx)) {
-        for (j = EVP_CIPHER_CTX_num(ctx), i = 0; j < 8 && i < inl;
-             j++, i++, in_ptr++, out_ptr++) {
+        for (j = EVP_CIPHER_CTX_num(ctx), i = 0; j < 8 && i < inl; j++, i++,
+            in_ptr++, out_ptr++) {
             if (!EVP_CIPHER_CTX_encrypting(ctx))
                 buf[j + 8] = *in_ptr;
             *out_ptr = buf[j] ^ (*in_ptr);
@@ -1021,8 +1010,8 @@ static int gost_cipher_do_cnt(EVP_CIPHER_CTX *ctx, unsigned char *out,
     unsigned char *iv = EVP_CIPHER_CTX_iv_noconst(ctx);
     /* process partial block if any */
     if (EVP_CIPHER_CTX_num(ctx)) {
-        for (j = EVP_CIPHER_CTX_num(ctx), i = 0; j < 8 && i < inl;
-             j++, i++, in_ptr++, out_ptr++) {
+        for (j = EVP_CIPHER_CTX_num(ctx), i = 0; j < 8 && i < inl; j++, i++,
+            in_ptr++, out_ptr++) {
             *out_ptr = buf[j] ^ (*in_ptr);
         }
         if (j == 8) {
@@ -1145,8 +1134,7 @@ static int gost_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_CTRL_RAND_KEY: {
-        if (RAND_priv_bytes((unsigned char *)ptr,
-                            EVP_CIPHER_CTX_key_length(ctx))
+        if (RAND_priv_bytes((unsigned char *)ptr, EVP_CIPHER_CTX_key_length(ctx))
             <= 0) {
             GOSTerr(GOST_F_GOST_CIPHER_CTL, GOST_R_RNG_ERROR);
             return -1;
@@ -1245,8 +1233,7 @@ static int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_CTRL_RAND_KEY:
-        if (RAND_priv_bytes((unsigned char *)ptr,
-                            EVP_CIPHER_CTX_key_length(ctx))
+        if (RAND_priv_bytes((unsigned char *)ptr, EVP_CIPHER_CTX_key_length(ctx))
             <= 0) {
             GOSTerr(GOST_F_MAGMA_CIPHER_CTL, GOST_R_RNG_ERROR);
             return -1;
@@ -1296,10 +1283,8 @@ static int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
             return -1;
         }
 
-        if (gost_tlstree(NID_magma_cbc,
-                         (const unsigned char *)c->master_key,
-                         newkey,
-                         (const unsigned char *)seq)
+        if (gost_tlstree(NID_magma_cbc, (const unsigned char *)c->master_key,
+                         newkey, (const unsigned char *)seq)
             > 0) {
             memset(adjusted_iv, 0, 8);
             memcpy(adjusted_iv, EVP_CIPHER_CTX_original_iv(ctx), 4);
@@ -1323,8 +1308,8 @@ static int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
     return 1;
 }
 
-static int magma_cipher_ctl_acpkm_omac(EVP_CIPHER_CTX *ctx, int type, int arg,
-                                       void *ptr)
+static int
+magma_cipher_ctl_acpkm_omac(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_CTRL_PROCESS_UNPROTECTED: {
@@ -1439,8 +1424,7 @@ static int gost89_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
         return -1;
     }
     /*XXX missing non-const accessor */
-    memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx),
-           gcp->iv->data,
+    memcpy((unsigned char *)EVP_CIPHER_CTX_original_iv(ctx), gcp->iv->data,
            EVP_CIPHER_CTX_iv_length(ctx));
 
     GOST_CIPHER_PARAMS_free(gcp);
@@ -1500,8 +1484,8 @@ static int gost_imit_init_cp_12(EVP_MD_CTX *ctx)
     return gost_imit_init(ctx, &Gost28147_TC26ParamSetZ);
 }
 
-static void mac_block_mesh(struct ossl_gost_imit_ctx *c,
-                           const unsigned char *data)
+static void
+mac_block_mesh(struct ossl_gost_imit_ctx *c, const unsigned char *data)
 {
     /*
      * We are using NULL for iv because CryptoPro doesn't interpret
@@ -1628,8 +1612,7 @@ static int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 static int gost_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
 {
     if (EVP_MD_CTX_md_data(to) && EVP_MD_CTX_md_data(from)) {
-        memcpy(EVP_MD_CTX_md_data(to),
-               EVP_MD_CTX_md_data(from),
+        memcpy(EVP_MD_CTX_md_data(to), EVP_MD_CTX_md_data(from),
                sizeof(struct ossl_gost_imit_ctx));
     }
     return 1;

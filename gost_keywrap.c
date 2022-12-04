@@ -95,12 +95,12 @@ int keyUnwrapCryptoPro(gost_ctx *ctx, const unsigned char *keyExchangeKey,
                        unsigned char *sessionKey)
 {
     unsigned char kek_ukm[32], cek_mac[4];
-    keyDiversifyCryptoPro(ctx,
-                          keyExchangeKey,
-                          wrappedKey
-                          /* First 8 bytes of wrapped Key is ukm */
-                          ,
-                          kek_ukm);
+    keyDiversifyCryptoPro(
+        ctx, keyExchangeKey,
+        wrappedKey
+        /* First 8 bytes of wrapped Key is ukm */
+        ,
+        kek_ukm);
     gost_key(ctx, kek_ukm);
     gost_dec(ctx, wrappedKey + 8, sessionKey, 4);
     gost_mac_iv(ctx, 32, wrappedKey, sessionKey, 32, cek_mac);

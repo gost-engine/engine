@@ -56,27 +56,27 @@ typedef struct {
     int tlstree_mode;
 } gost_mgm_ctx;
 
-int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx,
-                        size_t mac_size, unsigned char *encrypted_mac,
-                        int (*do_cipher)(EVP_CIPHER_CTX *ctx,
-                                         unsigned char *out,
-                                         const unsigned char *in, size_t inl));
+int gost2015_final_call(
+    EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx, size_t mac_size,
+    unsigned char *encrypted_mac,
+    int (*do_cipher)(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                     const unsigned char *in, size_t inl));
 
 /* IV is expected to be 16 bytes*/
-int gost2015_get_asn1_params(const ASN1_TYPE *params, size_t ukm_size,
-                             unsigned char *iv, size_t ukm_offset,
-                             unsigned char *kdf_seed);
+int gost2015_get_asn1_params(
+    const ASN1_TYPE *params, size_t ukm_size, unsigned char *iv,
+    size_t ukm_offset, unsigned char *kdf_seed);
 
 int gost2015_set_asn1_params(ASN1_TYPE *params, const unsigned char *iv,
                              size_t iv_size, const unsigned char *kdf_seed);
 
-int gost2015_process_unprotected_attributes(STACK_OF(X509_ATTRIBUTE) * attrs,
-                                            int encryption, size_t mac_len,
-                                            unsigned char *final_tag);
+int gost2015_process_unprotected_attributes(
+    STACK_OF(X509_ATTRIBUTE) * attrs, int encryption, size_t mac_len,
+    unsigned char *final_tag);
 
-int gost2015_acpkm_omac_init(int nid, int enc, const unsigned char *inkey,
-                             EVP_MD_CTX *omac_ctx, unsigned char *outkey,
-                             unsigned char *kdf_seed);
+int gost2015_acpkm_omac_init(
+    int nid, int enc, const unsigned char *inkey, EVP_MD_CTX *omac_ctx,
+    unsigned char *outkey, unsigned char *kdf_seed);
 int init_zero_kdf_seed(unsigned char *kdf_seed);
 
 /* enc/dec mgm mode */

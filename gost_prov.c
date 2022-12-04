@@ -57,8 +57,8 @@ static void provider_ctx_free(PROV_CTX *ctx)
 
 extern int populate_gost_engine(ENGINE *e);
 
-static PROV_CTX *provider_ctx_new(const OSSL_CORE_HANDLE *core,
-                                  const OSSL_DISPATCH *in)
+static PROV_CTX *
+provider_ctx_new(const OSSL_CORE_HANDLE *core, const OSSL_DISPATCH *in)
 {
     PROV_CTX *ctx;
 
@@ -86,8 +86,8 @@ static PROV_CTX *provider_ctx_new(const OSSL_CORE_HANDLE *core,
 typedef void (*fptr_t)(void);
 
 /* The function that returns the appropriate algorithm table per operation */
-static const OSSL_ALGORITHM *gost_operation(void *vprovctx, int operation_id,
-                                            const int *no_cache)
+static const OSSL_ALGORITHM *
+gost_operation(void *vprovctx, int operation_id, const int *no_cache)
 {
     switch (operation_id) {
     case OSSL_OP_CIPHER:

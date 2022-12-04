@@ -113,10 +113,8 @@ int main(int argc, char **argv)
                 if (verbose) {
                     fprintf(stderr, "%s\tFAILED\n", filename);
                 } else {
-                    fprintf(stderr,
-                            "%s: GOST hash sum check failed for '%s'\n",
-                            argv[0],
-                            filename);
+                    fprintf(stderr, "%s: GOST hash sum check failed for '%s'\n",
+                            argv[0], filename);
                 }
                 failcount++;
             }
@@ -124,16 +122,11 @@ int main(int argc, char **argv)
         if (errors) {
             fprintf(stderr,
                     "%s: WARNING %d of %d file(s) cannot be processed\n",
-                    argv[0],
-                    errors,
-                    count);
+                    argv[0], errors, count);
         }
         if (verbose && failcount) {
-            fprintf(stderr,
-                    "%s: %d of %d file(f) failed GOST hash sum check\n",
-                    argv[0],
-                    failcount,
-                    count);
+            fprintf(stderr, "%s: %d of %d file(f) failed GOST hash sum check\n",
+                    argv[0], failcount, count);
         }
         exit((failcount || errors) ? 1 : 0);
     }

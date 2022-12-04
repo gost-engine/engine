@@ -51,13 +51,13 @@ void init_gost2012_hash_ctx(gost2012_hash_ctx *CTX,
 
 static INLINE void pad(gost2012_hash_ctx *CTX)
 {
-    memset(
-        &(CTX->buffer.B[CTX->bufsize]), 0, sizeof(CTX->buffer) - CTX->bufsize);
+    memset(&(CTX->buffer.B[CTX->bufsize]), 0,
+           sizeof(CTX->buffer) - CTX->bufsize);
     CTX->buffer.B[CTX->bufsize] = 1;
 }
 
-static INLINE void add512(union uint512_u *RESTRICT x,
-                          const union uint512_u *RESTRICT y)
+static INLINE void
+add512(union uint512_u *RESTRICT x, const union uint512_u *RESTRICT y)
 {
 #ifndef __GOST3411_BIG_ENDIAN__
     unsigned int CF = 0;

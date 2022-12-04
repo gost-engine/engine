@@ -119,16 +119,8 @@ int main(void)
     tlsseq[7] = 63;
     memset(out, 0, 32);
 
-    ret = gost_kexp15(shared_key,
-                      32,
-                      NID_magma_ctr,
-                      magma_key,
-                      NID_magma_mac,
-                      mac_magma_key,
-                      magma_iv,
-                      4,
-                      buf,
-                      &outlen);
+    ret = gost_kexp15(shared_key, 32, NID_magma_ctr, magma_key, NID_magma_mac,
+                      mac_magma_key, magma_iv, 4, buf, &outlen);
 
     if (ret <= 0) {
         ERR_print_errors_fp(stderr);
@@ -141,15 +133,8 @@ int main(void)
         }
     }
 
-    ret = gost_kimp15(magma_export,
-                      40,
-                      NID_magma_ctr,
-                      magma_key,
-                      NID_magma_mac,
-                      mac_magma_key,
-                      magma_iv,
-                      4,
-                      buf);
+    ret = gost_kimp15(magma_export, 40, NID_magma_ctr, magma_key, NID_magma_mac,
+                      mac_magma_key, magma_iv, 4, buf);
 
     if (ret <= 0) {
         ERR_print_errors_fp(stderr);

@@ -210,22 +210,9 @@ static const unsigned char iv_ctr[] = {
 static const unsigned char iv_cbc[] = {
     0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef};
 /* Truncated to 128-bits IV from GOST examples. */
-static const unsigned char iv_128bit[] = {0x12,
-                                          0x34,
-                                          0x56,
-                                          0x78,
-                                          0x90,
-                                          0xab,
-                                          0xce,
-                                          0xf0,
-                                          0xa1,
-                                          0xb2,
-                                          0xc3,
-                                          0xd4,
-                                          0xe5,
-                                          0xf0,
-                                          0x01,
-                                          0x12};
+static const unsigned char iv_128bit[] = {
+    0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xce, 0xf0,
+    0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf0, 0x01, 0x12};
 /* Universal IV for ACPKM-Master. */
 static const unsigned char iv_acpkm_m[] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -359,11 +346,11 @@ static void hexdump(const void *ptr, size_t len)
     printf("\n");
 }
 
-static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
-                      const unsigned char *pt, const unsigned char *key,
-                      const unsigned char *exp, const size_t size,
-                      const unsigned char *iv, size_t iv_size, int acpkm,
-                      int inplace)
+static int
+test_block(const EVP_CIPHER *type, const char *name, int block_size,
+           const unsigned char *pt, const unsigned char *key,
+           const unsigned char *exp, const size_t size, const unsigned char *iv,
+           size_t iv_size, int acpkm, int inplace)
 {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     const char *standard = acpkm ? "R 23565.1.017-2018" : "GOST R 34.13-2015";
@@ -372,9 +359,7 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
     int ret = 0, test;
 
     OPENSSL_assert(ctx);
-    printf("Encryption test from %s [%s] %s: ",
-           standard,
-           name,
+    printf("Encryption test from %s [%s] %s: ", standard, name,
            inplace ? "in-place" : "out-of-place");
 
     T(EVP_CIPHER_iv_length(type) == iv_size);
@@ -416,9 +401,7 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
     ret |= test;
 
     /* test with small chunks of block size */
-    printf("Chunked encryption test from %s [%s] %s: ",
-           standard,
-           name,
+    printf("Chunked encryption test from %s [%s] %s: ", standard, name,
            inplace ? "in-place" : "out-of-place");
     int blocks = size / block_size;
     int z;
@@ -459,9 +442,7 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
     ret |= test;
 
     /* test with single big chunk */
-    printf("Decryption test from %s [%s] %s: ",
-           standard,
-           name,
+    printf("Decryption test from %s [%s] %s: ", standard, name,
            inplace ? "in-place" : "out-of-place");
     EVP_CIPHER_CTX_init(ctx);
     T(EVP_CipherInit_ex(ctx, type, NULL, key, iv, 0));
@@ -496,10 +477,10 @@ static int test_block(const EVP_CIPHER *type, const char *name, int block_size,
     return ret;
 }
 
-static int test_stream(const EVP_CIPHER *type, const char *name,
-                       const unsigned char *pt, const unsigned char *key,
-                       const unsigned char *exp, const size_t size,
-                       const unsigned char *iv, size_t iv_size, int acpkm)
+static int test_stream(
+    const EVP_CIPHER *type, const char *name, const unsigned char *pt,
+    const unsigned char *key, const unsigned char *exp, const size_t size,
+    const unsigned char *iv, size_t iv_size, int acpkm)
 {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     const char *standard = acpkm ? "R 23565.1.017-2018" : "GOST R 34.13-2015";
@@ -640,27 +621,13 @@ int main(int argc, char **argv)
 
         printf(cBLUE "# Tests for %s [%s]" cNORM "\n", t->algname, standard);
         for (inplace = 0; inplace <= 1; inplace++)
-            ret |= test_block(ciph,
-                              t->algname,
-                              t->block,
-                              t->plaintext,
-                              t->key,
-                              t->expected,
-                              t->size,
-                              t->iv,
-                              t->iv_size,
-                              t->acpkm,
-                              inplace);
+            ret |= test_block(
+                ciph, t->algname, t->block, t->plaintext, t->key, t->expected,
+                t->size, t->iv, t->iv_size, t->acpkm, inplace);
         if (t->stream)
-            ret |= test_stream(ciph,
-                               t->algname,
-                               t->plaintext,
-                               t->key,
-                               t->expected,
-                               t->size,
-                               t->iv,
-                               t->iv_size,
-                               t->acpkm);
+            ret |=
+                test_stream(ciph, t->algname, t->plaintext, t->key, t->expected,
+                            t->size, t->iv, t->iv_size, t->acpkm);
 
         EVP_CIPHER_free(ciph);
     }

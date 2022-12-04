@@ -141,8 +141,8 @@ int main(int argc, char **argv)
                 continue;
             }
 
-            if (!hash_file(
-                    &ctx, filename, calcsum, open_mode, expected_hash_size)) {
+            if (!hash_file(&ctx, filename, calcsum, open_mode,
+                           expected_hash_size)) {
                 errors++;
                 error = 1;
             }
@@ -158,8 +158,8 @@ int main(int argc, char **argv)
                 if (verbose) {
                     fprintf(stderr, "%s\tFAILED\n", filename);
                 } else {
-                    fprintf(
-                        stderr, "%s: GOST hash sum check failed\n", filename);
+                    fprintf(stderr, "%s: GOST hash sum check failed\n",
+                            filename);
                 }
                 failcount++;
             }
@@ -167,17 +167,13 @@ int main(int argc, char **argv)
         if (errors) {
             fprintf(stderr,
                     "%s: WARNING %d of %d file(s) cannot be processed\n",
-                    argv[0],
-                    errors,
-                    count);
+                    argv[0], errors, count);
         }
         if (failcount) {
             fprintf(
                 stderr,
                 "%s: WARNING %d of %d processed file(s) failed GOST hash sum check\n",
-                argv[0],
-                failcount,
-                count - errors);
+                argv[0], failcount, count - errors);
         }
         exit((failcount || errors) ? 1 : 0);
     } else if (filenames_from_stdin) {

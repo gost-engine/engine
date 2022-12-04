@@ -44,9 +44,11 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
     int ret = 0;
     int len;
 
-    mac_len = (cipher_nid == NID_magma_ctr)         ? 8
-              : (cipher_nid == NID_grasshopper_ctr) ? 16
-                                                    : 0;
+    mac_len =
+        (cipher_nid == NID_magma_ctr) ? 8
+        : (cipher_nid == NID_grasshopper_ctr)
+            ? 16
+            : 0;
 
     if (mac_len == 0) {
         GOSTerr(GOST_F_GOST_KEXP15, GOST_R_INVALID_CIPHER);
@@ -127,9 +129,11 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
     int ret = 0;
     int len;
 
-    mac_len = (cipher_nid == NID_magma_ctr)         ? 8
-              : (cipher_nid == NID_grasshopper_ctr) ? 16
-                                                    : 0;
+    mac_len =
+        (cipher_nid == NID_magma_ctr) ? 8
+        : (cipher_nid == NID_grasshopper_ctr)
+            ? 16
+            : 0;
 
     if (mac_len == 0) {
         GOSTerr(GOST_F_GOST_KIMP15, GOST_R_INVALID_CIPHER);
@@ -199,11 +203,10 @@ err:
     return ret;
 }
 
-int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
-                         const unsigned char *key, size_t keylen,
-                         const unsigned char *label, size_t label_len,
-                         const unsigned char *seed, size_t seed_len,
-                         const size_t representation)
+int gost_kdftree2012_256(
+    unsigned char *keyout, size_t keyout_len, const unsigned char *key,
+    size_t keylen, const unsigned char *label, size_t label_len,
+    const unsigned char *seed, size_t seed_len, const size_t representation)
 {
     int iters, i = 0;
     unsigned char zero = 0;
@@ -236,11 +239,8 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
         unsigned char *rep_ptr =
             ((unsigned char *)&iter_net) + (4 - representation);
 
-        if (HMAC_Init_ex(ctx,
-                         key,
-                         keylen,
-                         EVP_get_digestbynid(NID_id_GostR3411_2012_256),
-                         NULL)
+        if (HMAC_Init_ex(ctx, key, keylen,
+                         EVP_get_digestbynid(NID_id_GostR3411_2012_256), NULL)
                 <= 0
             || HMAC_Update(ctx, rep_ptr, representation) <= 0
             || HMAC_Update(ctx, label, label_len) <= 0
@@ -297,35 +297,16 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
     seed2 = seq & c2;
     seed3 = seq & c3;
 
-    if (gost_kdftree2012_256(ko1,
-                             32,
-                             in,
-                             32,
-                             (const unsigned char *)"level1",
-                             6,
-                             (const unsigned char *)&seed1,
-                             8,
-                             1)
+    if (gost_kdftree2012_256(ko1, 32, in, 32, (const unsigned char *)"level1",
+                             6, (const unsigned char *)&seed1, 8, 1)
             <= 0
-        || gost_kdftree2012_256(ko2,
-                                32,
-                                ko1,
-                                32,
-                                (const unsigned char *)"level2",
-                                6,
-                                (const unsigned char *)&seed2,
-                                8,
-                                1)
+        || gost_kdftree2012_256(
+               ko2, 32, ko1, 32, (const unsigned char *)"level2", 6,
+               (const unsigned char *)&seed2, 8, 1)
                <= 0
-        || gost_kdftree2012_256(out,
-                                32,
-                                ko2,
-                                32,
-                                (const unsigned char *)"level3",
-                                6,
-                                (const unsigned char *)&seed3,
-                                8,
-                                1)
+        || gost_kdftree2012_256(
+               out, 32, ko2, 32, (const unsigned char *)"level3", 6,
+               (const unsigned char *)&seed3, 8, 1)
                <= 0)
         return 0;
 
@@ -398,15 +379,9 @@ static int magma_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
 #endif
         return -1;
     } else {
-        return gost_kimp15(cctx->wrapped,
-                           cctx->wrap_count,
-                           NID_magma_ctr,
-                           cctx->key + GOSTKEYLEN,
-                           NID_magma_mac,
-                           cctx->key,
-                           cctx->iv,
-                           4,
-                           out)
+        return gost_kimp15(cctx->wrapped, cctx->wrap_count, NID_magma_ctr,
+                           cctx->key + GOSTKEYLEN, NID_magma_mac, cctx->key,
+                           cctx->iv, 4, out)
                        > 0
                    ? GOSTKEYLEN
                    : 0;
@@ -460,15 +435,9 @@ static int kuznyechik_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
 #endif
         return -1;
     } else {
-        return gost_kimp15(cctx->wrapped,
-                           cctx->wrap_count,
-                           NID_kuznyechik_ctr,
-                           cctx->key + GOSTKEYLEN,
-                           NID_kuznyechik_mac,
-                           cctx->key,
-                           cctx->iv,
-                           8,
-                           out)
+        return gost_kimp15(cctx->wrapped, cctx->wrap_count, NID_kuznyechik_ctr,
+                           cctx->key + GOSTKEYLEN, NID_kuznyechik_mac,
+                           cctx->key, cctx->iv, 8, out)
                        > 0
                    ? GOSTKEYLEN
                    : 0;

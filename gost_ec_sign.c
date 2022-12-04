@@ -14,8 +14,8 @@
 #include <openssl/rand.h>
 #include <string.h>
 #ifdef DEBUG_SIGN
-extern void dump_signature(const char *message, const unsigned char *buffer,
-                           size_t len);
+extern void
+dump_signature(const char *message, const unsigned char *buffer, size_t len);
 void dump_dsa_sig(const char *message, ECDSA_SIG *sig);
 #else
 

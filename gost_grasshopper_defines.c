@@ -85,22 +85,9 @@ const uint8_t grasshopper_pi_inv[0x100] = {
 
 // Linear vector from sect 5.1.2
 
-const uint8_t grasshopper_lvec[16] = {0x94,
-                                      0x20,
-                                      0x85,
-                                      0x10,
-                                      0xC2,
-                                      0xC0,
-                                      0x01,
-                                      0xFB,
-                                      0x01,
-                                      0xC0,
-                                      0xC2,
-                                      0x10,
-                                      0x85,
-                                      0x20,
-                                      0x94,
-                                      0x01};
+const uint8_t grasshopper_lvec[16] = {
+    0x94, 0x20, 0x85, 0x10, 0xC2, 0xC0, 0x01, 0xFB,
+    0x01, 0xC0, 0xC2, 0x10, 0x85, 0x20, 0x94, 0x01};
 
 #if defined(__cplusplus)
 }

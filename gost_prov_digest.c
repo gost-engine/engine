@@ -119,8 +119,8 @@ static int digest_update(void *vgctx, const unsigned char *in, size_t inl)
     return EVP_DigestUpdate(gctx->dctx, in, (int)inl) > 0;
 }
 
-static int digest_final(void *vgctx, unsigned char *out, size_t *outl,
-                        size_t outsize)
+static int
+digest_final(void *vgctx, unsigned char *out, size_t *outl, size_t outsize)
 {
     GOST_CTX *gctx = vgctx;
     unsigned int int_outl = outl != NULL ? *outl : 0;
@@ -173,20 +173,16 @@ const OSSL_ALGORITHM GOST_prov_digests[] = {
      * https://www.ietf.org/archive/id/draft-deremin-rfc4491-bis-06.txt
      * (is there not an RFC namming these?)
      */
-    {"id-tc26-gost3411-12-256:md_gost12_256:1.2.643.7.1.1.2.2",
-     NULL,
+    {"id-tc26-gost3411-12-256:md_gost12_256:1.2.643.7.1.1.2.2", NULL,
      GostR3411_2012_256_digest_functions,
      "GOST R 34.11-2012 with 256 bit hash"},
-    {"id-tc26-gost3411-12-512:md_gost12_512:1.2.643.7.1.1.2.3",
-     NULL,
+    {"id-tc26-gost3411-12-512:md_gost12_512:1.2.643.7.1.1.2.3", NULL,
      GostR3411_2012_512_digest_functions,
      "GOST R 34.11-2012 with 512 bit hash"},
 
     /* Described in RFC 5831, first name from RFC 4357, section 10.4 */
-    {"id-GostR3411-94:md_gost94:1.2.643.2.2.9",
-     NULL,
-     GostR3411_94_digest_functions,
-     "GOST R 34.11-94"},
+    {"id-GostR3411-94:md_gost94:1.2.643.2.2.9", NULL,
+     GostR3411_94_digest_functions, "GOST R 34.11-94"},
     {NULL, NULL, NULL}};
 
 void GOST_prov_deinit_digests(void)

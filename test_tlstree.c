@@ -43,69 +43,23 @@ int main(void)
     };
 
     const unsigned char full_iv[] = {
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     };
 
     unsigned char seq0[] = {
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     };
 
     const unsigned char rec0_header[] = {0x17, 0x03, 0x03, 0x00, 0x0F};
 
-    const unsigned char data0[15] = {0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00,
-                                     0x00};
+    const unsigned char data0[15] = {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-    const unsigned char mac0_etl[16] = {0x75,
-                                        0x53,
-                                        0x09,
-                                        0xCB,
-                                        0xC7,
-                                        0x3B,
-                                        0xB9,
-                                        0x49,
-                                        0xC5,
-                                        0x0E,
-                                        0xBB,
-                                        0x86,
-                                        0x16,
-                                        0x0A,
-                                        0x0F,
-                                        0xEE};
+    const unsigned char mac0_etl[16] = {
+        0x75, 0x53, 0x09, 0xCB, 0xC7, 0x3B, 0xB9, 0x49,
+        0xC5, 0x0E, 0xBB, 0x86, 0x16, 0x0A, 0x0F, 0xEE};
 
     const unsigned char enc0_etl[31] = {
         0xf3, 0x17, 0xa7, 0x1d, 0x3a, 0xce, 0x43, 0x3b, 0x01, 0xd4, 0xe7,
@@ -116,36 +70,16 @@ int main(void)
     unsigned char mac0[16];
 
     unsigned char seq63[] = {
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x3F,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3F,
     };
 
     const unsigned char rec63_header[] = {0x17, 0x03, 0x03, 0x10, 0x00};
 
     unsigned char data63[4096];
 
-    const unsigned char mac63_etl[16] = {0x0A,
-                                         0x3B,
-                                         0xFD,
-                                         0x43,
-                                         0x0F,
-                                         0xCD,
-                                         0xD8,
-                                         0xD8,
-                                         0x5C,
-                                         0x96,
-                                         0x46,
-                                         0x86,
-                                         0x81,
-                                         0x78,
-                                         0x4F,
-                                         0x7D};
+    const unsigned char mac63_etl[16] = {
+        0x0A, 0x3B, 0xFD, 0x43, 0x0F, 0xCD, 0xD8, 0xD8,
+        0x5C, 0x96, 0x46, 0x86, 0x81, 0x78, 0x4F, 0x7D};
 
     const unsigned char enc63_etl_head[32] = {
         0x6A, 0x18, 0x38, 0xB0, 0xA0, 0xD5, 0xA0, 0x4D, 0x1F, 0x29, 0x64,
@@ -248,10 +182,9 @@ int main(void)
         fprintf(stderr, "ENC63 mismatch: head");
         exit(1);
     }
-    hexdump(
-        stderr, "ENC63 result: tail", data63_processed + 4096 + 16 - 48, 48);
-    if (memcmp(enc63_etl_tail,
-               data63_processed + 4096 + 16 - 48,
+    hexdump(stderr, "ENC63 result: tail", data63_processed + 4096 + 16 - 48,
+            48);
+    if (memcmp(enc63_etl_tail, data63_processed + 4096 + 16 - 48,
                sizeof(enc63_etl_tail))
         != 0) {
         fprintf(stderr, "ENC63 mismatch: tail");

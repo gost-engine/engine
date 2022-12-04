@@ -213,9 +213,9 @@ static int cipher_set_ctx_params(void *vgctx, const OSSL_PARAM params[])
     return 1;
 }
 
-static int cipher_encrypt_init(void *vgctx, const unsigned char *key,
-                               size_t keylen, const unsigned char *iv,
-                               size_t ivlen, const OSSL_PARAM params[])
+static int cipher_encrypt_init(
+    void *vgctx, const unsigned char *key, size_t keylen,
+    const unsigned char *iv, size_t ivlen, const OSSL_PARAM params[])
 {
     GOST_CTX *gctx = vgctx;
 
@@ -228,9 +228,9 @@ static int cipher_encrypt_init(void *vgctx, const unsigned char *key,
         gctx->cctx, gctx->cipher, gctx->provctx->e, key, iv, 1);
 }
 
-static int cipher_decrypt_init(void *vgctx, const unsigned char *key,
-                               size_t keylen, const unsigned char *iv,
-                               size_t ivlen, const OSSL_PARAM params[])
+static int cipher_decrypt_init(
+    void *vgctx, const unsigned char *key, size_t keylen,
+    const unsigned char *iv, size_t ivlen, const OSSL_PARAM params[])
 {
     GOST_CTX *gctx = vgctx;
 
@@ -255,8 +255,8 @@ static int cipher_update(void *vgctx, unsigned char *out, size_t *outl,
     return res > 0;
 }
 
-static int cipher_final(void *vgctx, unsigned char *out, size_t *outl,
-                        size_t outsize)
+static int
+cipher_final(void *vgctx, unsigned char *out, size_t *outl, size_t outsize)
 {
     GOST_CTX *gctx = vgctx;
     int int_outl = outl != NULL ? *outl : 0;
@@ -335,8 +335,7 @@ MAKE_FUNCTIONS(grasshopper_mgm_cipher);
 
 /* The OSSL_ALGORITHM for the provider's operation query function */
 const OSSL_ALGORITHM GOST_prov_ciphers[] = {
-    {SN_id_Gost28147_89 ":gost89:GOST 28147-89:1.2.643.2.2.21",
-     NULL,
+    {SN_id_Gost28147_89 ":gost89:GOST 28147-89:1.2.643.2.2.21", NULL,
      Gost28147_89_cipher_functions},
     {SN_gost89_cnt, NULL, Gost28147_89_cnt_cipher_functions},
     {SN_gost89_cnt_12, NULL, Gost28147_89_cnt_12_cipher_functions},
@@ -348,18 +347,14 @@ const OSSL_ALGORITHM GOST_prov_ciphers[] = {
     {SN_grasshopper_ctr, NULL, grasshopper_ctr_cipher_functions},
     {SN_magma_cbc, NULL, magma_cbc_cipher_functions},
     {SN_magma_ctr, NULL, magma_ctr_cipher_functions},
-    {SN_magma_ctr_acpkm ":1.2.643.7.1.1.5.1.1",
-     NULL,
+    {SN_magma_ctr_acpkm ":1.2.643.7.1.1.5.1.1", NULL,
      magma_ctr_acpkm_cipher_functions},
-    {SN_magma_ctr_acpkm_omac ":1.2.643.7.1.1.5.1.2",
-     NULL,
+    {SN_magma_ctr_acpkm_omac ":1.2.643.7.1.1.5.1.2", NULL,
      magma_ctr_acpkm_omac_cipher_functions},
     {"magma-mgm", NULL, magma_mgm_cipher_functions},
-    {SN_kuznyechik_ctr_acpkm ":1.2.643.7.1.1.5.2.1",
-     NULL,
+    {SN_kuznyechik_ctr_acpkm ":1.2.643.7.1.1.5.2.1", NULL,
      grasshopper_ctr_acpkm_cipher_functions},
-    {SN_kuznyechik_ctr_acpkm_omac ":1.2.643.7.1.1.5.2.2",
-     NULL,
+    {SN_kuznyechik_ctr_acpkm_omac ":1.2.643.7.1.1.5.2.2", NULL,
      grasshopper_ctr_acpkm_omac_cipher_functions},
     {"kuznyechik-mgm", NULL, grasshopper_mgm_cipher_functions},
 #if 0 /* Not yet implemented */

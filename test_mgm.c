@@ -47,29 +47,15 @@ const unsigned char gh_key[32] = {
     0x32, 0x10, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
 };
 
-const unsigned char gh_nonce[16] = {0x11,
-                                    0x22,
-                                    0x33,
-                                    0x44,
-                                    0x55,
-                                    0x66,
-                                    0x77,
-                                    0x00,
-                                    0xFF,
-                                    0xEE,
-                                    0xDD,
-                                    0xCC,
-                                    0xBB,
-                                    0xAA,
-                                    0x99,
-                                    0x88};
+const unsigned char gh_nonce[16] = {
+    0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x00,
+    0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88};
 
-const unsigned char gh_adata[41] = {0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
-                                    0x02, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                                    0x01, 0x01, 0x04, 0x04, 0x04, 0x04, 0x04,
-                                    0x04, 0x04, 0x04, 0x03, 0x03, 0x03, 0x03,
-                                    0x03, 0x03, 0x03, 0x03, 0xEA, 0x05, 0x05,
-                                    0x05, 0x05, 0x05, 0x05, 0x05, 0x05};
+const unsigned char gh_adata[41] = {
+    0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+    0x04, 0x04, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0xEA,
+    0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05};
 
 const unsigned char gh_pdata[67] = {
     0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x00, 0xFF, 0xEE, 0xDD, 0xCC,
@@ -87,38 +73,23 @@ const unsigned char gh_e_cdata[67] = {
     0xC6, 0x0C, 0x14, 0xD4, 0xD3, 0xF8, 0x83, 0xD0, 0xAB, 0x94, 0x42, 0x06,
     0x95, 0xC7, 0x6D, 0xEB, 0x2C, 0x75, 0x52};
 
-const unsigned char gh_e_tag[16] = {0xCF,
-                                    0x5D,
-                                    0x65,
-                                    0x6F,
-                                    0x40,
-                                    0xC3,
-                                    0x4F,
-                                    0x5C,
-                                    0x46,
-                                    0xE8,
-                                    0xBB,
-                                    0x0E,
-                                    0x29,
-                                    0xFC,
-                                    0xDB,
-                                    0x4C};
+const unsigned char gh_e_tag[16] = {
+    0xCF, 0x5D, 0x65, 0x6F, 0x40, 0xC3, 0x4F, 0x5C,
+    0x46, 0xE8, 0xBB, 0x0E, 0x29, 0xFC, 0xDB, 0x4C};
 
-const unsigned char mg_key[32] = {0xFF, 0xee, 0xDD, 0xcc, 0xbb, 0xaa, 0x99,
-                                  0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22,
-                                  0x11, 0x00, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4,
-                                  0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB,
-                                  0xFC, 0xFD, 0xFE, 0xff};
+const unsigned char mg_key[32] = {
+    0xFF, 0xee, 0xDD, 0xcc, 0xbb, 0xaa, 0x99, 0x88, 0x77, 0x66, 0x55,
+    0x44, 0x33, 0x22, 0x11, 0x00, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5,
+    0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xff};
 
 const unsigned char mg_nonce[8] = {
     0x12, 0xDE, 0xF0, 0x6B, 0x3C, 0x13, 0x0A, 0x59};
 
-const unsigned char mg_adata[41] = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                                    0x01, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
-                                    0x02, 0x02, 0x03, 0x03, 0x03, 0x03, 0x03,
-                                    0x03, 0x03, 0x03, 0x04, 0x04, 0x04, 0x04,
-                                    0x04, 0x04, 0x04, 0x04, 0x05, 0x05, 0x05,
-                                    0x05, 0x05, 0x05, 0x05, 0x05, 0xea};
+const unsigned char mg_adata[41] = {
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02,
+    0x02, 0x02, 0x02, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
+    0x03, 0x03, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x05,
+    0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0xea};
 
 const unsigned char mg_pdata[67] = {
     0xFF, 0xee, 0xDD, 0xcc, 0xbb, 0xaa, 0x99, 0x88, 0x11, 0x22, 0x33, 0x44,
@@ -150,35 +121,34 @@ static struct testcase {
     size_t ptext_len;
     const unsigned char *expected;
     const unsigned char *expected_tag;
-} testcases[] = {{.sn = SN_kuznyechik_mgm,
-                  .key = gh_key,
-                  .nonce = gh_nonce,
-                  .nonce_len = sizeof(gh_nonce),
-                  .aad = gh_adata,
-                  .aad_len = sizeof(gh_adata),
-                  .plaintext = gh_pdata,
-                  .ptext_len = sizeof(gh_pdata),
-                  .expected = gh_e_cdata,
-                  .expected_tag = gh_e_tag},
-                 {.sn = SN_magma_mgm,
-                  .key = mg_key,
-                  .nonce = mg_nonce,
-                  .nonce_len = sizeof(mg_nonce),
-                  .aad = mg_adata,
-                  .aad_len = sizeof(mg_adata),
-                  .plaintext = mg_pdata,
-                  .ptext_len = sizeof(mg_pdata),
-                  .expected = mg_e_cdata,
-                  .expected_tag = mg_e_tag},
-                 {0}};
+} testcases[] = {
+    {.sn = SN_kuznyechik_mgm,
+     .key = gh_key,
+     .nonce = gh_nonce,
+     .nonce_len = sizeof(gh_nonce),
+     .aad = gh_adata,
+     .aad_len = sizeof(gh_adata),
+     .plaintext = gh_pdata,
+     .ptext_len = sizeof(gh_pdata),
+     .expected = gh_e_cdata,
+     .expected_tag = gh_e_tag},
+    {.sn = SN_magma_mgm,
+     .key = mg_key,
+     .nonce = mg_nonce,
+     .nonce_len = sizeof(mg_nonce),
+     .aad = mg_adata,
+     .aad_len = sizeof(mg_adata),
+     .plaintext = mg_pdata,
+     .ptext_len = sizeof(mg_pdata),
+     .expected = mg_e_cdata,
+     .expected_tag = mg_e_tag},
+    {0}};
 
-static int test_block(const EVP_CIPHER *ciph, const char *name,
-                      const unsigned char *nonce, size_t nlen,
-                      const unsigned char *aad, size_t alen,
-                      const unsigned char *ptext, size_t plen,
-                      const unsigned char *exp_ctext,
-                      const unsigned char *exp_tag, const unsigned char *key,
-                      int small)
+static int test_block(
+    const EVP_CIPHER *ciph, const char *name, const unsigned char *nonce,
+    size_t nlen, const unsigned char *aad, size_t alen,
+    const unsigned char *ptext, size_t plen, const unsigned char *exp_ctext,
+    const unsigned char *exp_tag, const unsigned char *key, int small)
 {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     unsigned char *c = alloca(plen);
@@ -188,23 +158,19 @@ static int test_block(const EVP_CIPHER *ciph, const char *name,
     int ret = 0, rv, test, i;
 
     OPENSSL_assert(ctx);
-    printf("Encryption test %s [%s]: ",
-           name,
+    printf("Encryption test %s [%s]: ", name,
            small ? "small chunks" : "big chunks");
 
     // test encrypt
     EVP_CIPHER_CTX_init(ctx);
     EVP_EncryptInit_ex(ctx, ciph, NULL, NULL, NULL); // Set cipher type and mode
-    EVP_CIPHER_CTX_ctrl(
-        ctx, EVP_CTRL_AEAD_SET_IVLEN, nlen, NULL);   // Set IV length
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, nlen,
+                        NULL);                       // Set IV length
     EVP_EncryptInit_ex(ctx, NULL, NULL, key, nonce); // Initialise key and IV
     memset(c, 0, plen);
     if (!small) {
         // test big chunks
-        EVP_EncryptUpdate(ctx,
-                          NULL,
-                          &outlen1,
-                          aad,
+        EVP_EncryptUpdate(ctx, NULL, &outlen1, aad,
                           alen); // Zero or more calls to specify any AAD
         EVP_EncryptUpdate(ctx, c, &outlen2, ptext, plen); // Encrypt plaintext
     } else {
@@ -230,8 +196,7 @@ static int test_block(const EVP_CIPHER *ciph, const char *name,
     ret |= test;
 
     // test decrtypt
-    printf("Decryption test %s [%s]: ",
-           name,
+    printf("Decryption test %s [%s]: ", name,
            small ? "small chunks" : "big chunks");
     EVP_CIPHER_CTX_init(ctx);
     EVP_DecryptInit_ex(ctx, ciph, NULL, NULL, NULL);
@@ -289,18 +254,9 @@ int main(void)
 
         printf("Tests for %s\n", name);
         for (small = 0; small <= 1; small++)
-            ret |= test_block(ciph,
-                              name,
-                              t->nonce,
-                              t->nonce_len,
-                              t->aad,
-                              t->aad_len,
-                              t->plaintext,
-                              t->ptext_len,
-                              t->expected,
-                              t->expected_tag,
-                              t->key,
-                              small);
+            ret |= test_block(ciph, name, t->nonce, t->nonce_len, t->aad,
+                              t->aad_len, t->plaintext, t->ptext_len,
+                              t->expected, t->expected_tag, t->key, small);
         EVP_CIPHER_free(ciph_prov);
     }
 

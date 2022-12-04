@@ -73,8 +73,7 @@ static int test_contexts_cipher(const char *name, const int enc, int acpkm)
       || (type = EVP_CIPHER_fetch(NULL, name, NULL)));
     ERR_pop_to_mark();
 
-    printf(cBLUE "%s test for %s" cNORM "\n",
-           enc ? "Encryption" : "Decryption",
+    printf(cBLUE "%s test for %s" cNORM "\n", enc ? "Encryption" : "Decryption",
            name);
 
     /* produce base encryption */

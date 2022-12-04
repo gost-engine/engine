@@ -57,11 +57,8 @@ int VKO_compute_key(unsigned char *shared_key, const EC_POINT *pub_key,
 
     if ((Y = BN_CTX_get(ctx)) == NULL || (pnt = EC_POINT_new(grp)) == NULL
         || BN_lebin2bn(ukm, ukm_size, scalar) == NULL
-        || !BN_mod_mul(scalar,
-                       scalar,
-                       EC_KEY_get0_private_key(priv_key),
-                       EC_GROUP_get0_order(grp),
-                       ctx))
+        || !BN_mod_mul(scalar, scalar, EC_KEY_get0_private_key(priv_key),
+                       EC_GROUP_get0_order(grp), ctx))
         goto err;
 
 #if 0
@@ -130,9 +127,9 @@ err:
  * KEG Algorithm described in R 1323565.1.020-2018 6.4.5.1.
  * keyout expected to be 64 bytes
  * */
-static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
-                    const EC_POINT *pub_key, const EC_KEY *priv_key,
-                    unsigned char *keyout)
+static int
+gost_keg(const unsigned char *ukm_source, int pkey_nid, const EC_POINT *pub_key,
+         const EC_KEY *priv_key, unsigned char *keyout)
 {
     /* Adjust UKM */
     unsigned char real_ukm[16];
@@ -161,15 +158,9 @@ static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
         if (keylen == 0)
             return 0;
 
-        if (gost_kdftree2012_256(keyout,
-                                 64,
-                                 tmpkey,
-                                 32,
-                                 (const unsigned char *)"kdf tree",
-                                 8,
-                                 ukm_source + 16,
-                                 8,
-                                 1)
+        if (gost_kdftree2012_256(
+                keyout, 64, tmpkey, 32, (const unsigned char *)"kdf tree", 8,
+                ukm_source + 16, 8, 1)
             > 0)
             keylen = 64;
         else
@@ -214,13 +205,10 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
             *keylen = data->vko_dgst_nid == NID_id_GostR3411_2012_256 ? 32 : 64;
             return 1;
         }
-        *keylen =
-            VKO_compute_key(key,
-                            EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
-                            (EC_KEY *)EVP_PKEY_get0(my_key),
-                            data->shared_ukm,
-                            data->shared_ukm_size,
-                            data->vko_dgst_nid);
+        *keylen = VKO_compute_key(
+            key, EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
+            (EC_KEY *)EVP_PKEY_get0(my_key), data->shared_ukm,
+            data->shared_ukm_size, data->vko_dgst_nid);
         return (*keylen) ? 1 : 0;
     }
 
@@ -243,13 +231,9 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
         if (dgst_nid == NID_id_GostR3411_2012_512)
             dgst_nid = NID_id_GostR3411_2012_256;
 
-        *keylen =
-            VKO_compute_key(key,
-                            EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
-                            (EC_KEY *)EVP_PKEY_get0(my_key),
-                            data->shared_ukm,
-                            8,
-                            dgst_nid);
+        *keylen = VKO_compute_key(
+            key, EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
+            (EC_KEY *)EVP_PKEY_get0(my_key), data->shared_ukm, 8, dgst_nid);
         return (*keylen) ? 1 : 0;
     } break;
     case 32: {
@@ -258,11 +242,9 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
             return 1;
         }
 
-        *keylen = gost_keg(data->shared_ukm,
-                           EVP_PKEY_id(my_key),
+        *keylen = gost_keg(data->shared_ukm, EVP_PKEY_id(my_key),
                            EC_KEY_get0_public_key(EVP_PKEY_get0(peer_key)),
-                           (EC_KEY *)EVP_PKEY_get0(my_key),
-                           key);
+                           (EC_KEY *)EVP_PKEY_get0(my_key), key);
         return (*keylen) ? 1 : 0;
     }
 
@@ -282,9 +264,9 @@ int pkey_gost_ec_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen)
  * Implementation of GOST2001/12 key transport, cryptopro variation
  */
 
-static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
-                                  size_t *out_len, const unsigned char *key,
-                                  size_t key_len)
+static int
+pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out, size_t *out_len,
+                       const unsigned char *key, size_t key_len)
 {
     GOST_KEY_TRANSPORT *gkt = NULL;
     EVP_PKEY *pubk = EVP_PKEY_CTX_get0_pkey(pctx);
@@ -341,12 +323,9 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         if (dgst_nid == NID_id_GostR3411_2012_512)
             dgst_nid = NID_id_GostR3411_2012_256;
 
-        if (!VKO_compute_key(shared_key,
-                             EC_KEY_get0_public_key(EVP_PKEY_get0(pubk)),
-                             EVP_PKEY_get0(sec_key),
-                             ukm,
-                             8,
-                             dgst_nid)) {
+        if (!VKO_compute_key(
+                shared_key, EC_KEY_get0_public_key(EVP_PKEY_get0(pubk)),
+                EVP_PKEY_get0(sec_key), ukm, 8, dgst_nid)) {
             GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT,
                     GOST_R_ERROR_COMPUTING_SHARED_KEY);
             goto err;
@@ -369,8 +348,8 @@ static int pkey_GOST_ECcp_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         goto err;
     }
     if (key_is_ephemeral) {
-        if (!X509_PUBKEY_set(&gkt->key_agreement_info->ephem_key,
-                             out ? sec_key : pubk)) {
+        if (!X509_PUBKEY_set(
+                &gkt->key_agreement_info->ephem_key, out ? sec_key : pubk)) {
             GOSTerr(GOST_F_PKEY_GOST_ECCP_ENCRYPT,
                     GOST_R_CANNOT_PACK_EPHEMERAL_KEY);
             goto err;
@@ -423,9 +402,9 @@ err:
  * EVP_PKEY_METHOD callback decrypt
  * Implementation of GOST2018 key transport
  */
-static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
-                                 size_t *out_len, const unsigned char *key,
-                                 size_t key_len)
+static int
+pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out, size_t *out_len,
+                      const unsigned char *key, size_t key_len)
 {
     PSKeyTransport_gost *pst = NULL;
     EVP_PKEY *pubk = EVP_PKEY_CTX_get0_pkey(pctx);
@@ -490,27 +469,18 @@ static int pkey_gost2018_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out,
         data->shared_ukm_size = 32;
     }
 
-    if (gost_keg(data->shared_ukm,
-                 pkey_nid,
+    if (gost_keg(data->shared_ukm, pkey_nid,
                  EC_KEY_get0_public_key(EVP_PKEY_get0(pubk)),
-                 EVP_PKEY_get0(sec_key),
-                 expkeys)
+                 EVP_PKEY_get0(sec_key), expkeys)
         <= 0) {
         GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT,
                 GOST_R_ERROR_COMPUTING_EXPORT_KEYS);
         goto err;
     }
 
-    if (gost_kexp15(key,
-                    key_len,
-                    data->cipher_nid,
-                    expkeys + 32,
-                    mac_nid,
-                    expkeys + 0,
-                    data->shared_ukm + 24,
-                    iv_len,
-                    exp_buf,
-                    &exp_len)
+    if (gost_kexp15(
+            key, key_len, data->cipher_nid, expkeys + 32, mac_nid, expkeys + 0,
+            data->shared_ukm + 24, iv_len, exp_buf, &exp_len)
         <= 0) {
         GOSTerr(GOST_F_PKEY_GOST2018_ENCRYPT, GOST_R_CANNOT_PACK_EPHEMERAL_KEY);
         goto err;
@@ -597,9 +567,9 @@ int pkey_gost_encrypt(EVP_PKEY_CTX *pctx, unsigned char *out, size_t *out_len,
  * EVP_PKEY_METHOD callback decrypt
  * Implementation of GOST2001/12 key transport, cryptopro variation
  */
-static int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
-                                  size_t *key_len, const unsigned char *in,
-                                  size_t in_len)
+static int
+pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key, size_t *key_len,
+                       const unsigned char *in, size_t in_len)
 {
     const unsigned char *p = in;
     EVP_PKEY *priv = EVP_PKEY_CTX_get0_pkey(pctx);
@@ -658,12 +628,9 @@ static int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     if (dgst_nid == NID_id_GostR3411_2012_512)
         dgst_nid = NID_id_GostR3411_2012_256;
 
-    if (!VKO_compute_key(sharedKey,
-                         EC_KEY_get0_public_key(EVP_PKEY_get0(peerkey)),
-                         EVP_PKEY_get0(priv),
-                         wrappedKey,
-                         8,
-                         dgst_nid)) {
+    if (!VKO_compute_key(
+            sharedKey, EC_KEY_get0_public_key(EVP_PKEY_get0(peerkey)),
+            EVP_PKEY_get0(priv), wrappedKey, 8, dgst_nid)) {
         GOSTerr(GOST_F_PKEY_GOST_ECCP_DECRYPT,
                 GOST_R_ERROR_COMPUTING_SHARED_KEY);
         goto err;
@@ -687,9 +654,9 @@ err:
  * EVP_PKEY_METHOD callback decrypt
  * Implementation of GOST2018 key transport
  */
-static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
-                                 size_t *key_len, const unsigned char *in,
-                                 size_t in_len)
+static int
+pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key, size_t *key_len,
+                      const unsigned char *in, size_t in_len)
 {
     const unsigned char *p = in;
     struct gost_pmeth_data *data;
@@ -753,10 +720,7 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     }
 
     if (data->shared_ukm_size == 0 && pst->ukm != NULL) {
-        if (EVP_PKEY_CTX_ctrl(pctx,
-                              -1,
-                              -1,
-                              EVP_PKEY_CTRL_SET_IV,
+        if (EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_CTRL_SET_IV,
                               ASN1_STRING_length(pst->ukm),
                               (void *)ASN1_STRING_get0_data(pst->ukm))
             < 0) {
@@ -765,26 +729,19 @@ static int pkey_gost2018_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
         }
     }
 
-    if (gost_keg(data->shared_ukm,
-                 pkey_nid,
+    if (gost_keg(data->shared_ukm, pkey_nid,
                  EC_KEY_get0_public_key(EVP_PKEY_get0(eph_key)),
-                 EVP_PKEY_get0(priv),
-                 expkeys)
+                 EVP_PKEY_get0(priv), expkeys)
         <= 0) {
         GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT,
                 GOST_R_ERROR_COMPUTING_EXPORT_KEYS);
         goto err;
     }
 
-    if (gost_kimp15(ASN1_STRING_get0_data(pst->psexp),
-                    ASN1_STRING_length(pst->psexp),
-                    data->cipher_nid,
-                    expkeys + 32,
-                    mac_nid,
-                    expkeys + 0,
-                    data->shared_ukm + 24,
-                    iv_len,
-                    key)
+    if (gost_kimp15(
+            ASN1_STRING_get0_data(pst->psexp), ASN1_STRING_length(pst->psexp),
+            data->cipher_nid, expkeys + 32, mac_nid, expkeys + 0,
+            data->shared_ukm + 24, iv_len, key)
         <= 0) {
         GOSTerr(GOST_F_PKEY_GOST2018_DECRYPT,
                 GOST_R_CANNOT_UNPACK_EPHEMERAL_KEY);
