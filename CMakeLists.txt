@@ -449,5 +449,5 @@ if (MSVC)
   install(FILES $<TARGET_PDB_FILE:gost_prov>
     EXPORT GostProviderConfig DESTINATION ${OPENSSL_MODULES_DIR} OPTIONAL)
 endif()
-install(EXPORT GostEngineConfig DESTINATION GostEngine/share/cmake/GostEngine)
-install(EXPORT GostProviderConfig DESTINATION GostEngine/share/cmake/GostProvider)
+install(EXPORT GostEngineConfig DESTINATION share/cmake/GostEngine)
+install(EXPORT GostProviderConfig DESTINATION share/cmake/GostProvider)
