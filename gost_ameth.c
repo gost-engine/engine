@@ -7,17 +7,17 @@
  *       for OpenSSL                                                  *
  *          Requires OpenSSL 0.9.9 for compilation                    *
  **********************************************************************/
-#include <string.h>
-#include <openssl/crypto.h>
-#include <openssl/err.h>
-#include <openssl/engine.h>
-#include <openssl/evp.h>
 #include <openssl/asn1.h>
+#include <openssl/crypto.h>
+#include <openssl/engine.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <string.h>
 #ifndef OPENSSL_NO_CMS
 # include <openssl/cms.h>
 #endif
-#include "gost_lcl.h"
 #include "e_gost_err.h"
+#include "gost_lcl.h"
 
 #define PK_WRAP_PARAM "LEGACY_PK_WRAP"
 
@@ -68,24 +68,24 @@ static ASN1_STRING *encode_gost_algor_params(const EVP_PKEY *key)
     switch (EVP_PKEY_base_id(key)) {
     case NID_id_GostR3410_2012_256:
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
-	switch (pkey_param_nid) {
-	    case NID_id_GostR3410_2001_TestParamSet:
-	    case NID_id_GostR3410_2001_CryptoPro_A_ParamSet:
-	    case NID_id_GostR3410_2001_CryptoPro_B_ParamSet:
-	    case NID_id_GostR3410_2001_CryptoPro_C_ParamSet:
-	    case NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet:
-	    case NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet:
-		gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_256);
-	}
+        switch (pkey_param_nid) {
+        case NID_id_GostR3410_2001_TestParamSet:
+        case NID_id_GostR3410_2001_CryptoPro_A_ParamSet:
+        case NID_id_GostR3410_2001_CryptoPro_B_ParamSet:
+        case NID_id_GostR3410_2001_CryptoPro_C_ParamSet:
+        case NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet:
+        case NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet:
+            gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_256);
+        }
         break;
     case NID_id_GostR3410_2012_512:
         pkey_param_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(key_ptr));
-	switch (pkey_param_nid) {
-	    case NID_id_tc26_gost_3410_2012_512_paramSetTest:
-	    case NID_id_tc26_gost_3410_2012_512_paramSetA:
-	    case NID_id_tc26_gost_3410_2012_512_paramSetB:
-		gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_512);
-	}
+        switch (pkey_param_nid) {
+        case NID_id_tc26_gost_3410_2012_512_paramSetTest:
+        case NID_id_tc26_gost_3410_2012_512_paramSetA:
+        case NID_id_tc26_gost_3410_2012_512_paramSetB:
+            gkp->hash_params = OBJ_nid2obj(NID_id_GostR3411_2012_512);
+        }
         break;
     case NID_id_GostR3410_2001:
     case NID_id_GostR3410_2001DH:
@@ -110,10 +110,10 @@ static ASN1_STRING *encode_gost_algor_params(const EVP_PKEY *key)
     }
     params->type = V_ASN1_SEQUENCE;
     result = 1;
- err:
+err:
     if (gkp)
         GOST_KEY_PARAMS_free(gkp);
-    if (result == 0) {          /* if error */
+    if (result == 0) { /* if error */
         if (params)
             ASN1_STRING_free(params);
         return NULL;
@@ -147,8 +147,7 @@ static int gost_decode_nid_params(EVP_PKEY *pkey, int pkey_nid, int param_nid)
  * Parses GOST algorithm parameters from X509_ALGOR and modifies pkey setting
  * NID and parameters
  */
-static int decode_gost_algor_params(EVP_PKEY *pkey,
-                                    const X509_ALGOR *palg)
+static int decode_gost_algor_params(EVP_PKEY *pkey, const X509_ALGOR *palg)
 {
     const ASN1_OBJECT *palg_obj = NULL;
     int ptype = V_ASN1_UNDEF;
@@ -189,19 +188,18 @@ static int gost_set_priv_key(EVP_PKEY *pkey, BIGNUM *priv)
     case NID_id_GostR3410_2012_512:
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2001:
-    case NID_id_GostR3410_2001DH:
-        {
-            EC_KEY *ec = EVP_PKEY_get0(pkey);
-            if (!ec) {
-                ec = EC_KEY_new();
-                EVP_PKEY_assign(pkey, EVP_PKEY_base_id(pkey), ec);
-            }
-            if (!EC_KEY_set_private_key(ec, priv))
-                return 0;
-            if (!EVP_PKEY_missing_parameters(pkey))
-                return gost_ec_compute_public(ec);
-            break;
+    case NID_id_GostR3410_2001DH: {
+        EC_KEY *ec = EVP_PKEY_get0(pkey);
+        if (!ec) {
+            ec = EC_KEY_new();
+            EVP_PKEY_assign(pkey, EVP_PKEY_base_id(pkey), ec);
         }
+        if (!EC_KEY_set_private_key(ec, priv))
+            return 0;
+        if (!EVP_PKEY_missing_parameters(pkey))
+            return gost_ec_compute_public(ec);
+        break;
+    }
     default:
         return 0;
     }
@@ -214,13 +212,12 @@ BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey)
     case NID_id_GostR3410_2012_512:
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2001:
-    case NID_id_GostR3410_2001DH:
-        {
-            EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pkey);
-            if (ec)
-                return (BIGNUM *)EC_KEY_get0_private_key(ec);
-            break;
-        }
+    case NID_id_GostR3410_2001DH: {
+        EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pkey);
+        if (ec)
+            return (BIGNUM *)EC_KEY_get0_private_key(ec);
+        break;
+    }
     }
     return NULL;
 }
@@ -231,183 +228,206 @@ BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey)
 /* FIXME reaarange declarations */
 static int pub_decode_gost_ec(EVP_PKEY *pk, const X509_PUBKEY *pub);
 
-static int gost_cms_set_kari_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
+static int gost_cms_set_kari_shared_info(EVP_PKEY_CTX *pctx,
+                                         CMS_RecipientInfo *ri)
 {
-	int ret = 0;
-	X509_ALGOR *alg;
-	ASN1_OCTET_STRING *ukm;
+    int ret = 0;
+    X509_ALGOR *alg;
+    ASN1_OCTET_STRING *ukm;
 
-	/* Deal with originator */
-	X509_ALGOR *pubalg = NULL;
-	ASN1_BIT_STRING *pubkey = NULL;
+    /* Deal with originator */
+    X509_ALGOR *pubalg = NULL;
+    ASN1_BIT_STRING *pubkey = NULL;
 
-	EVP_PKEY *peer_key = NULL;
-	X509_PUBKEY *tmp   = NULL;
+    EVP_PKEY *peer_key = NULL;
+    X509_PUBKEY *tmp = NULL;
 
-	int nid;
-	unsigned char shared_key[64];
-	size_t shared_key_size = 64;
-	const EVP_CIPHER *cipher = NULL;
+    int nid;
+    unsigned char shared_key[64];
+    size_t shared_key_size = 64;
+    const EVP_CIPHER *cipher = NULL;
 
-	if (CMS_RecipientInfo_kari_get0_alg(ri, &alg, &ukm) == 0)
-		goto err;
+    if (CMS_RecipientInfo_kari_get0_alg(ri, &alg, &ukm) == 0)
+        goto err;
 
-	if (CMS_RecipientInfo_kari_get0_orig_id(ri, &pubalg, &pubkey, NULL, NULL, NULL) == 0)
-		  goto err;
+    if (CMS_RecipientInfo_kari_get0_orig_id(
+            ri, &pubalg, &pubkey, NULL, NULL, NULL)
+        == 0)
+        goto err;
 
-	nid = OBJ_obj2nid(alg->algorithm);
-	if (alg->parameter->type != V_ASN1_SEQUENCE)
-		  goto err;
+    nid = OBJ_obj2nid(alg->algorithm);
+    if (alg->parameter->type != V_ASN1_SEQUENCE)
+        goto err;
 
-	switch (nid) {
-		case NID_kuznyechik_kexp15:
-		case NID_magma_kexp15:
-			cipher = EVP_get_cipherbynid(nid);
-			break;
-	}
+    switch (nid) {
+    case NID_kuznyechik_kexp15:
+    case NID_magma_kexp15:
+        cipher = EVP_get_cipherbynid(nid);
+        break;
+    }
 
-	if (cipher == NULL) {
-			GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_CIPHER_NOT_FOUND);
-		  goto err;
-  }
+    if (cipher == NULL) {
+        GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_CIPHER_NOT_FOUND);
+        goto err;
+    }
 
-	if (EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_CTRL_SET_IV,
-		ASN1_STRING_length(ukm), (void *)ASN1_STRING_get0_data(ukm)) <= 0)
-			goto err;
+    if (EVP_PKEY_CTX_ctrl(pctx,
+                          -1,
+                          -1,
+                          EVP_PKEY_CTRL_SET_IV,
+                          ASN1_STRING_length(ukm),
+                          (void *)ASN1_STRING_get0_data(ukm))
+        <= 0)
+        goto err;
 
-	if (pubkey != NULL && pubalg != NULL) {
-		const ASN1_OBJECT *paobj = NULL;
-		int ptype = 0;
-		const void *param = NULL;
+    if (pubkey != NULL && pubalg != NULL) {
+        const ASN1_OBJECT *paobj = NULL;
+        int ptype = 0;
+        const void *param = NULL;
 
-		peer_key = EVP_PKEY_new();
-		tmp = X509_PUBKEY_new();
+        peer_key = EVP_PKEY_new();
+        tmp = X509_PUBKEY_new();
 
-		if ((peer_key == NULL) || (tmp == NULL)) {
-			GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, ERR_R_MALLOC_FAILURE);
-			goto err;
-		}
+        if ((peer_key == NULL) || (tmp == NULL)) {
+            GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, ERR_R_MALLOC_FAILURE);
+            goto err;
+        }
 
-		X509_ALGOR_get0(&paobj, &ptype, &param, pubalg);
+        X509_ALGOR_get0(&paobj, &ptype, &param, pubalg);
 
-		if (X509_PUBKEY_set0_param(tmp, (ASN1_OBJECT *)paobj,
-			ptype, (void *)param,
-			(unsigned char *)ASN1_STRING_get0_data(pubkey),
-			ASN1_STRING_length(pubkey) ) == 0) {
-				GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_PUBLIC_KEY_UNDEFINED);
-				goto err;
-		}
+        if (X509_PUBKEY_set0_param(
+                tmp,
+                (ASN1_OBJECT *)paobj,
+                ptype,
+                (void *)param,
+                (unsigned char *)ASN1_STRING_get0_data(pubkey),
+                ASN1_STRING_length(pubkey))
+            == 0) {
+            GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO,
+                    GOST_R_PUBLIC_KEY_UNDEFINED);
+            goto err;
+        }
 
-		if (pub_decode_gost_ec(peer_key, tmp) <= 0) {
-				GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_ERROR_DECODING_PUBLIC_KEY);
-				goto err;
-		}
+        if (pub_decode_gost_ec(peer_key, tmp) <= 0) {
+            GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO,
+                    GOST_R_ERROR_DECODING_PUBLIC_KEY);
+            goto err;
+        }
 
-		if (EVP_PKEY_derive_set_peer(pctx, peer_key) <= 0) {
-				GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_ERROR_SETTING_PEER_KEY);
-				goto err;
-		}
-	}
+        if (EVP_PKEY_derive_set_peer(pctx, peer_key) <= 0) {
+            GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO,
+                    GOST_R_ERROR_SETTING_PEER_KEY);
+            goto err;
+        }
+    }
 
-	if (EVP_PKEY_derive(pctx, shared_key, &shared_key_size) <= 0) {
-		GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO, GOST_R_ERROR_COMPUTING_SHARED_KEY);
-		goto err;
-	}
+    if (EVP_PKEY_derive(pctx, shared_key, &shared_key_size) <= 0) {
+        GOSTerr(GOST_F_GOST_CMS_SET_KARI_SHARED_INFO,
+                GOST_R_ERROR_COMPUTING_SHARED_KEY);
+        goto err;
+    }
 
-	EVP_CIPHER_CTX_set_flags(CMS_RecipientInfo_kari_get0_ctx(ri), EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
-	if (EVP_DecryptInit_ex(CMS_RecipientInfo_kari_get0_ctx(ri), cipher, NULL,
-		shared_key, ukm->data+24) == 0)
-			goto err;
+    EVP_CIPHER_CTX_set_flags(CMS_RecipientInfo_kari_get0_ctx(ri),
+                             EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+    if (EVP_DecryptInit_ex(CMS_RecipientInfo_kari_get0_ctx(ri),
+                           cipher,
+                           NULL,
+                           shared_key,
+                           ukm->data + 24)
+        == 0)
+        goto err;
 
-	ret = 1;
+    ret = 1;
 err:
-	EVP_PKEY_free(peer_key);
-	if (ret == 0) {
-		X509_PUBKEY_free(tmp);
-	}
+    EVP_PKEY_free(peer_key);
+    if (ret == 0) {
+        X509_PUBKEY_free(tmp);
+    }
 
-	return ret;
+    return ret;
 }
 
-static int gost_cms_set_ktri_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
+static int gost_cms_set_ktri_shared_info(EVP_PKEY_CTX *pctx,
+                                         CMS_RecipientInfo *ri)
 {
-	X509_ALGOR *alg;
-	struct gost_pmeth_data *gctx = EVP_PKEY_CTX_get_data(pctx);
+    X509_ALGOR *alg;
+    struct gost_pmeth_data *gctx = EVP_PKEY_CTX_get_data(pctx);
 
-	CMS_RecipientInfo_ktri_get0_algs(ri, NULL, NULL, &alg);
+    CMS_RecipientInfo_ktri_get0_algs(ri, NULL, NULL, &alg);
 
-	switch (OBJ_obj2nid(alg->algorithm)) {
-		case NID_kuznyechik_kexp15:
-			gctx->cipher_nid = NID_kuznyechik_ctr;
-			break;
+    switch (OBJ_obj2nid(alg->algorithm)) {
+    case NID_kuznyechik_kexp15:
+        gctx->cipher_nid = NID_kuznyechik_ctr;
+        break;
 
-		case NID_magma_kexp15:
-			gctx->cipher_nid = NID_magma_ctr;
-			break;
+    case NID_magma_kexp15:
+        gctx->cipher_nid = NID_magma_ctr;
+        break;
 
-		case NID_id_GostR3410_2001:
-		case NID_id_GostR3410_2001DH:
-		case NID_id_GostR3410_2012_256:
-		case NID_id_GostR3410_2012_512:
-			gctx->cipher_nid = NID_id_Gost28147_89;
-			break;
+    case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
+    case NID_id_GostR3410_2012_256:
+    case NID_id_GostR3410_2012_512:
+        gctx->cipher_nid = NID_id_Gost28147_89;
+        break;
 
-		default:
-			GOSTerr(GOST_F_GOST_CMS_SET_KTRI_SHARED_INFO, GOST_R_UNSUPPORTED_RECIPIENT_INFO);
-			return 0;
-	}
+    default:
+        GOSTerr(GOST_F_GOST_CMS_SET_KTRI_SHARED_INFO,
+                GOST_R_UNSUPPORTED_RECIPIENT_INFO);
+        return 0;
+    }
 
-	return 1;
+    return 1;
 }
 
 static int gost_cms_set_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
 {
-	switch(CMS_RecipientInfo_type(ri)) {
-		case CMS_RECIPINFO_AGREE:
-			return gost_cms_set_kari_shared_info(pctx, ri);
-		break;
-		case CMS_RECIPINFO_TRANS:
-			return gost_cms_set_ktri_shared_info(pctx, ri);
-		break;
-	}
+    switch (CMS_RecipientInfo_type(ri)) {
+    case CMS_RECIPINFO_AGREE:
+        return gost_cms_set_kari_shared_info(pctx, ri);
+        break;
+    case CMS_RECIPINFO_TRANS:
+        return gost_cms_set_ktri_shared_info(pctx, ri);
+        break;
+    }
 
-	GOSTerr(GOST_F_GOST_CMS_SET_SHARED_INFO, GOST_R_UNSUPPORTED_RECIPIENT_INFO);
-	return 0;
+    GOSTerr(GOST_F_GOST_CMS_SET_SHARED_INFO, GOST_R_UNSUPPORTED_RECIPIENT_INFO);
+    return 0;
 }
 
 static ASN1_STRING *gost_encode_cms_params(int ka_nid)
 {
-	ASN1_STRING *ret = NULL;
-	ASN1_STRING *params = ASN1_STRING_new();
+    ASN1_STRING *ret = NULL;
+    ASN1_STRING *params = ASN1_STRING_new();
 
-	/* It's a hack. We have only one OID here, so we can use
+    /* It's a hack. We have only one OID here, so we can use
 	 * GOST_KEY_PARAMS which is a sequence of 3 OIDs,
 	 * the 1st one is mandatory and the rest are optional */
-	GOST_KEY_PARAMS *gkp = GOST_KEY_PARAMS_new();
+    GOST_KEY_PARAMS *gkp = GOST_KEY_PARAMS_new();
 
-	if (params == NULL || gkp == NULL) {
-		  GOSTerr(GOST_F_GOST_ENCODE_CMS_PARAMS, ERR_R_MALLOC_FAILURE);
-			goto end;
-	}
+    if (params == NULL || gkp == NULL) {
+        GOSTerr(GOST_F_GOST_ENCODE_CMS_PARAMS, ERR_R_MALLOC_FAILURE);
+        goto end;
+    }
 
-	gkp->key_params = OBJ_nid2obj(ka_nid);
-	params->length = i2d_GOST_KEY_PARAMS(gkp, &params->data);
+    gkp->key_params = OBJ_nid2obj(ka_nid);
+    params->length = i2d_GOST_KEY_PARAMS(gkp, &params->data);
 
-	if (params->length < 0) {
-		  GOSTerr(GOST_F_GOST_ENCODE_CMS_PARAMS, ERR_R_MALLOC_FAILURE);
-			goto end;
-	}
+    if (params->length < 0) {
+        GOSTerr(GOST_F_GOST_ENCODE_CMS_PARAMS, ERR_R_MALLOC_FAILURE);
+        goto end;
+    }
 
-	params->type = V_ASN1_SEQUENCE;
-	ret = params;
+    params->type = V_ASN1_SEQUENCE;
+    ret = params;
 
 end:
-	GOST_KEY_PARAMS_free(gkp);
+    GOST_KEY_PARAMS_free(gkp);
 
-	if (ret == NULL)
-		ASN1_STRING_free(params);
+    if (ret == NULL)
+        ASN1_STRING_free(params);
 
-	return ret;
+    return ret;
 }
 
 /*
@@ -437,8 +457,8 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     switch (op) {
     case ASN1_PKEY_CTRL_PKCS7_SIGN:
         if (arg1 == 0) {
-            PKCS7_SIGNER_INFO_get0_algs((PKCS7_SIGNER_INFO *)arg2, NULL,
-                                        &alg1, &alg2);
+            PKCS7_SIGNER_INFO_get0_algs(
+                (PKCS7_SIGNER_INFO *)arg2, NULL, &alg1, &alg2);
             X509_ALGOR_set0(alg1, OBJ_nid2obj(md_nid), V_ASN1_NULL, 0);
             X509_ALGOR_set0(alg2, OBJ_nid2obj(nid), V_ASN1_NULL, 0);
         }
@@ -446,8 +466,8 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 #ifndef OPENSSL_NO_CMS
     case ASN1_PKEY_CTRL_CMS_SIGN:
         if (arg1 == 0) {
-            CMS_SignerInfo_get0_algs((CMS_SignerInfo *)arg2, NULL, NULL,
-                                     &alg1, &alg2);
+            CMS_SignerInfo_get0_algs(
+                (CMS_SignerInfo *)arg2, NULL, NULL, &alg1, &alg2);
             X509_ALGOR_set0(alg1, OBJ_nid2obj(md_nid), V_ASN1_NULL, 0);
             X509_ALGOR_set0(alg2, OBJ_nid2obj(nid), V_ASN1_NULL, 0);
         }
@@ -460,73 +480,72 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
                 return -1;
             }
             PKCS7_RECIP_INFO_get0_alg((PKCS7_RECIP_INFO *)arg2, &alg1);
-            X509_ALGOR_set0(alg1, OBJ_nid2obj(EVP_PKEY_id(pkey)),
-                            V_ASN1_SEQUENCE, params);
-				}
+            X509_ALGOR_set0(
+                alg1, OBJ_nid2obj(EVP_PKEY_id(pkey)), V_ASN1_SEQUENCE, params);
+        }
         return 1;
 #ifndef OPENSSL_NO_CMS
     case ASN1_PKEY_CTRL_CMS_ENVELOPE:
         if (arg1 == 0) {
-          EVP_PKEY_CTX *pctx;
-          CMS_RecipientInfo *ri = arg2;
+            EVP_PKEY_CTX *pctx;
+            CMS_RecipientInfo *ri = arg2;
 
-          struct gost_pmeth_data *gctx = NULL;
-          ASN1_STRING *params = NULL;
+            struct gost_pmeth_data *gctx = NULL;
+            ASN1_STRING *params = NULL;
 
-          pctx = CMS_RecipientInfo_get0_pkey_ctx(ri);
-          if (!pctx)
-            return 0;
+            pctx = CMS_RecipientInfo_get0_pkey_ctx(ri);
+            if (!pctx)
+                return 0;
 
-          gctx = EVP_PKEY_CTX_get_data(pctx);
+            gctx = EVP_PKEY_CTX_get_data(pctx);
 
-          switch (gctx->cipher_nid) {
+            switch (gctx->cipher_nid) {
             case NID_magma_ctr:
-            case NID_kuznyechik_ctr:
-              {
+            case NID_kuznyechik_ctr: {
                 int ka_nid;
 
-                nid = (gctx->cipher_nid == NID_magma_ctr) ? NID_magma_kexp15 :
-                  NID_kuznyechik_kexp15;
+                nid = (gctx->cipher_nid == NID_magma_ctr)
+                          ? NID_magma_kexp15
+                          : NID_kuznyechik_kexp15;
 
-                ka_nid = (EVP_PKEY_base_id(pkey) == NID_id_GostR3410_2012_256) ?
-                  NID_id_tc26_agreement_gost_3410_2012_256 : NID_id_tc26_agreement_gost_3410_2012_512;
+                ka_nid = (EVP_PKEY_base_id(pkey) == NID_id_GostR3410_2012_256)
+                             ? NID_id_tc26_agreement_gost_3410_2012_256
+                             : NID_id_tc26_agreement_gost_3410_2012_512;
 
                 params = gost_encode_cms_params(ka_nid);
-              }
-              break;
+            } break;
             default:
                 params = encode_gost_algor_params(pkey);
-              break;
-          }
+                break;
+            }
 
-          if (params == NULL)
-              return -1;
+            if (params == NULL)
+                return -1;
 
-          CMS_RecipientInfo_ktri_get0_algs((CMS_RecipientInfo *)arg2, NULL,
-              NULL, &alg1);
-          X509_ALGOR_set0(alg1, OBJ_nid2obj(nid), V_ASN1_SEQUENCE, params);
+            CMS_RecipientInfo_ktri_get0_algs(
+                (CMS_RecipientInfo *)arg2, NULL, NULL, &alg1);
+            X509_ALGOR_set0(alg1, OBJ_nid2obj(nid), V_ASN1_SEQUENCE, params);
         } else {
-          EVP_PKEY_CTX *pctx;
-          CMS_RecipientInfo *ri = arg2;
-          pctx = CMS_RecipientInfo_get0_pkey_ctx(ri);
-          if (!pctx)
-              return 0;
-          return gost_cms_set_shared_info(pctx, ri);
+            EVP_PKEY_CTX *pctx;
+            CMS_RecipientInfo *ri = arg2;
+            pctx = CMS_RecipientInfo_get0_pkey_ctx(ri);
+            if (!pctx)
+                return 0;
+            return gost_cms_set_shared_info(pctx, ri);
         }
         return 1;
-#ifdef ASN1_PKEY_CTRL_CMS_RI_TYPE
-  case ASN1_PKEY_CTRL_CMS_RI_TYPE:
+# ifdef ASN1_PKEY_CTRL_CMS_RI_TYPE
+    case ASN1_PKEY_CTRL_CMS_RI_TYPE:
         *(int *)arg2 = CMS_RECIPINFO_TRANS;
         return 1;
-	case ASN1_PKEY_CTRL_CMS_IS_RI_TYPE_SUPPORTED:
-			if (arg1 == CMS_RECIPINFO_AGREE || arg1 == CMS_RECIPINFO_TRANS) {
-          *(int *)arg2 = 1;
-				  return 1;
-      }
-			else
-				  return 0;
-			break;
-#endif
+    case ASN1_PKEY_CTRL_CMS_IS_RI_TYPE_SUPPORTED:
+        if (arg1 == CMS_RECIPINFO_AGREE || arg1 == CMS_RECIPINFO_TRANS) {
+            *(int *)arg2 = 1;
+            return 1;
+        } else
+            return 0;
+        break;
+# endif
 #endif
     case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
         *(int *)arg2 = md_nid;
@@ -544,8 +563,8 @@ static void pkey_free_gost_ec(EVP_PKEY *key)
 
 /* ------------------ private key functions  -----------------------------*/
 
-static BIGNUM *unmask_priv_key(EVP_PKEY *pk,
-                               const unsigned char *buf, int len, int num_masks)
+static BIGNUM *unmask_priv_key(EVP_PKEY *pk, const unsigned char *buf, int len,
+                               int num_masks)
 {
     BIGNUM *pknum_masked = NULL, *q = NULL;
     const EC_KEY *key_ptr = (pk) ? EVP_PKEY_get0(pk) : NULL;
@@ -579,14 +598,13 @@ static BIGNUM *unmask_priv_key(EVP_PKEY *pk,
         }
     }
 
- end:
+end:
     if (q)
         BN_free(q);
     return pknum_masked;
 }
 
-static int priv_decode_gost(EVP_PKEY *pk,
-                            const PKCS8_PRIV_KEY_INFO *p8inf)
+static int priv_decode_gost(EVP_PKEY *pk, const PKCS8_PRIV_KEY_INFO *p8inf)
 {
     const unsigned char *pkey_buf = NULL, *p = NULL;
     int priv_len = 0;
@@ -612,8 +630,8 @@ static int priv_decode_gost(EVP_PKEY *pk,
 
     if (priv_len % expected_key_len == 0) {
         /* Key is not wrapped but masked */
-        pk_num = unmask_priv_key(pk, pkey_buf, expected_key_len,
-                                 priv_len / expected_key_len - 1);
+        pk_num = unmask_priv_key(
+            pk, pkey_buf, expected_key_len, priv_len / expected_key_len - 1);
     } else if (V_ASN1_OCTET_STRING == *p) {
         /* New format - Little endian octet string */
         ASN1_OCTET_STRING *s = d2i_ASN1_OCTET_STRING(NULL, &p, priv_len);
@@ -647,7 +665,8 @@ static int priv_decode_gost(EVP_PKEY *pk,
             return 0;
         }
 
-        pk_num = unmask_priv_key(pk, mgk->masked_priv_key->data,
+        pk_num = unmask_priv_key(pk,
+                                 mgk->masked_priv_key->data,
                                  expected_key_len,
                                  priv_len / expected_key_len - 1);
         MASKED_GOST_KEY_free(mgk);
@@ -713,12 +732,12 @@ static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
         ASN1_STRING_free(octet);
         OPENSSL_secure_free(buf);
 
-        return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
-                               priv_buf, priv_len);
+        return PKCS8_pkey_set0(
+            p8, algobj, 0, V_ASN1_SEQUENCE, params, priv_buf, priv_len);
     }
 
-    return PKCS8_pkey_set0(p8, algobj, 0, V_ASN1_SEQUENCE, params,
-                           buf, key_len);
+    return PKCS8_pkey_set0(
+        p8, algobj, 0, V_ASN1_SEQUENCE, params, buf, key_len);
 }
 
 /* --------- printing keys --------------------------------*/
@@ -780,7 +799,7 @@ static int print_gost_ec_pub(BIO *out, const EVP_PKEY *pkey, int indent)
     BN_print(out, Y);
     BIO_printf(out, "\n");
     ok = 1;
- err:
+err:
     BN_CTX_end(ctx);
     BN_CTX_free(ctx);
 
@@ -980,7 +999,8 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     pval = params;
 
     order = BN_new();
-    if (order == NULL || EC_GROUP_get_order(EC_KEY_get0_group(ec), order, NULL) == 0) {
+    if (order == NULL
+        || EC_GROUP_get_order(EC_KEY_get0_group(ec), order, NULL) == 0) {
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -999,8 +1019,8 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    if (!EC_POINT_get_affine_coordinates(EC_KEY_get0_group(ec),
-                                             pub_key, X, Y, NULL)) {
+    if (!EC_POINT_get_affine_coordinates(
+            EC_KEY_get0_group(ec), pub_key, X, Y, NULL)) {
         GOSTerr(GOST_F_PUB_ENCODE_GOST_EC, ERR_R_INTERNAL_ERROR);
         goto err;
     }
@@ -1028,7 +1048,7 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     }
 
     ret = i2d_ASN1_OCTET_STRING(octet, &buf);
- err:
+err:
     ASN1_BIT_STRING_free(octet);
     if (X)
         BN_free(X);
@@ -1132,9 +1152,8 @@ static int mac_ctrl_grasshopper(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 
 static int gost2001_param_encode(const EVP_PKEY *pkey, unsigned char **pder)
 {
-    int nid =
-        EC_GROUP_get_curve_name(EC_KEY_get0_group
-                                (EVP_PKEY_get0((EVP_PKEY *)pkey)));
+    int nid = EC_GROUP_get_curve_name(
+        EC_KEY_get0_group(EVP_PKEY_get0((EVP_PKEY *)pkey)));
     return i2d_ASN1_OBJECT(OBJ_nid2obj(nid), pder);
 }
 
@@ -1163,18 +1182,23 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
     case NID_id_GostR3410_2001:
     case NID_id_GostR3410_2001DH:
         EVP_PKEY_asn1_set_free(*ameth, pkey_free_gost_ec);
-        EVP_PKEY_asn1_set_private(*ameth,
-                                  priv_decode_gost, priv_encode_gost,
-                                  priv_print_gost_ec);
+        EVP_PKEY_asn1_set_private(
+            *ameth, priv_decode_gost, priv_encode_gost, priv_print_gost_ec);
 
         EVP_PKEY_asn1_set_param(*ameth,
-                                gost2001_param_decode, gost2001_param_encode,
-                                param_missing_gost_ec, param_copy_gost_ec,
-                                param_cmp_gost_ec, param_print_gost_ec);
+                                gost2001_param_decode,
+                                gost2001_param_encode,
+                                param_missing_gost_ec,
+                                param_copy_gost_ec,
+                                param_cmp_gost_ec,
+                                param_print_gost_ec);
         EVP_PKEY_asn1_set_public(*ameth,
-                                 pub_decode_gost_ec, pub_encode_gost_ec,
-                                 pub_cmp_gost_ec, pub_print_gost_ec,
-                                 pkey_size_gost, pkey_bits_gost);
+                                 pub_decode_gost_ec,
+                                 pub_encode_gost_ec,
+                                 pub_cmp_gost_ec,
+                                 pub_print_gost_ec,
+                                 pkey_size_gost,
+                                 pkey_bits_gost);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
         EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);
@@ -1182,19 +1206,24 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
     case NID_id_GostR3410_2012_256:
     case NID_id_GostR3410_2012_512:
         EVP_PKEY_asn1_set_free(*ameth, pkey_free_gost_ec);
-        EVP_PKEY_asn1_set_private(*ameth,
-                                  priv_decode_gost, priv_encode_gost,
-                                  priv_print_gost_ec);
+        EVP_PKEY_asn1_set_private(
+            *ameth, priv_decode_gost, priv_encode_gost, priv_print_gost_ec);
 
         EVP_PKEY_asn1_set_param(*ameth,
-                                NULL, NULL,
-                                param_missing_gost_ec, param_copy_gost_ec,
-                                param_cmp_gost_ec, NULL);
+                                NULL,
+                                NULL,
+                                param_missing_gost_ec,
+                                param_copy_gost_ec,
+                                param_cmp_gost_ec,
+                                NULL);
 
         EVP_PKEY_asn1_set_public(*ameth,
-                                 pub_decode_gost_ec, pub_encode_gost_ec,
-                                 pub_cmp_gost_ec, pub_print_gost_ec,
-                                 pkey_size_gost, pkey_bits_gost);
+                                 pub_decode_gost_ec,
+                                 pub_encode_gost_ec,
+                                 pub_cmp_gost_ec,
+                                 pub_print_gost_ec,
+                                 pkey_size_gost,
+                                 pkey_bits_gost);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
         EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);

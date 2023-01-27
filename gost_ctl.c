@@ -6,17 +6,18 @@
  *        Implementation of control commands for GOST engine          *
  *            OpenSSL 0.9.9 libraries required                        *
  **********************************************************************/
-#include <stdlib.h>
-#include <string.h>
-#include <openssl/crypto.h>
-#include <openssl/err.h>
-#include <openssl/engine.h>
-#include <openssl/buffer.h>
 #include "gost_lcl.h"
 
-static char *gost_params[GOST_PARAM_MAX + 1] = { NULL };
-static const char *gost_envnames[] =
-    { "CRYPT_PARAMS", "GOST_PBE_HMAC", "GOST_PK_FORMAT" };
+#include <openssl/buffer.h>
+#include <openssl/crypto.h>
+#include <openssl/engine.h>
+#include <openssl/err.h>
+#include <stdlib.h>
+#include <string.h>
+
+static char *gost_params[GOST_PARAM_MAX + 1] = {NULL};
+static const char *gost_envnames[] = {
+    "CRYPT_PARAMS", "GOST_PBE_HMAC", "GOST_PK_FORMAT"};
 
 void gost_param_free()
 {
@@ -26,10 +27,9 @@ void gost_param_free()
         OPENSSL_free(gost_params[i]);
         gost_params[i] = NULL;
     }
-
 }
 
-int gost_control_func(ENGINE *e, int cmd, long i, void *p, void (*f) (void))
+int gost_control_func(ENGINE *e, int cmd, long i, void *p, void (*f)(void))
 {
     int param = cmd - ENGINE_CMD_BASE;
     int ret = 0;

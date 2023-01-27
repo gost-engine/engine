@@ -7,11 +7,13 @@
  *                Requires OpenSSL 3.0 for compilation                *
  **********************************************************************/
 
+#include "gost_prov.h"
+
+#include "gost_lcl.h"
+#include "prov/err.h" /* libprov err functions */
+
 #include <openssl/core_dispatch.h>
 #include <openssl/core_names.h>
-#include "gost_prov.h"
-#include "gost_lcl.h"
-#include "prov/err.h"           /* libprov err functions */
 
 /*********************************************************************
  *
@@ -29,6 +31,7 @@
 static struct proverr_functions_st *err_handle;
 #define GOST_PROV
 #include "e_gost_err.c"
+
 void ERR_GOST_error(int function, int reason, char *file, int line)
 {
     proverr_new_error(err_handle);
@@ -53,6 +56,7 @@ static void provider_ctx_free(PROV_CTX *ctx)
 }
 
 extern int populate_gost_engine(ENGINE *e);
+
 static PROV_CTX *provider_ctx_new(const OSSL_CORE_HANDLE *core,
                                   const OSSL_DISPATCH *in)
 {
@@ -61,8 +65,7 @@ static PROV_CTX *provider_ctx_new(const OSSL_CORE_HANDLE *core,
     if ((ctx = OPENSSL_zalloc(sizeof(*ctx))) != NULL
         && (ctx->proverr_handle = proverr_new_handle(core, in)) != NULL
         && (ctx->libctx = OSSL_LIB_CTX_new()) != NULL
-        && (ctx->e = ENGINE_new()) != NULL
-        && populate_gost_engine(ctx->e)) {
+        && (ctx->e = ENGINE_new()) != NULL && populate_gost_engine(ctx->e)) {
         ctx->core_handle = core;
 
         /* Ugly hack */
@@ -83,9 +86,8 @@ static PROV_CTX *provider_ctx_new(const OSSL_CORE_HANDLE *core,
 typedef void (*fptr_t)(void);
 
 /* The function that returns the appropriate algorithm table per operation */
-static const OSSL_ALGORITHM *gost_operation(void *vprovctx,
-                                                int operation_id,
-                                                const int *no_cache)
+static const OSSL_ALGORITHM *gost_operation(void *vprovctx, int operation_id,
+                                            const int *no_cache)
 {
     switch (operation_id) {
     case OSSL_OP_CIPHER:
@@ -131,12 +133,11 @@ static void gost_teardown(void *vprovctx)
 
 /* The base dispatch table */
 static const OSSL_DISPATCH provider_functions[] = {
-    { OSSL_FUNC_PROVIDER_QUERY_OPERATION, (fptr_t)gost_operation },
-    { OSSL_FUNC_PROVIDER_GET_REASON_STRINGS, (fptr_t)gost_get_reason_strings },
-    { OSSL_FUNC_PROVIDER_GET_PARAMS, (fptr_t)gost_get_params },
-    { OSSL_FUNC_PROVIDER_TEARDOWN, (fptr_t)gost_teardown },
-    { 0, NULL }
-};
+    {OSSL_FUNC_PROVIDER_QUERY_OPERATION, (fptr_t)gost_operation},
+    {OSSL_FUNC_PROVIDER_GET_REASON_STRINGS, (fptr_t)gost_get_reason_strings},
+    {OSSL_FUNC_PROVIDER_GET_PARAMS, (fptr_t)gost_get_params},
+    {OSSL_FUNC_PROVIDER_TEARDOWN, (fptr_t)gost_teardown},
+    {0, NULL}};
 
 struct prov_ctx_st {
     void *core_handle;
@@ -154,10 +155,8 @@ struct prov_ctx_st {
 #endif
 
 OPENSSL_EXPORT
-int OSSL_provider_init(const OSSL_CORE_HANDLE *core,
-                       const OSSL_DISPATCH *in,
-                       const OSSL_DISPATCH **out,
-                       void **vprovctx)
+int OSSL_provider_init(const OSSL_CORE_HANDLE *core, const OSSL_DISPATCH *in,
+                       const OSSL_DISPATCH **out, void **vprovctx)
 {
     if ((*vprovctx = provider_ctx_new(core, in)) == NULL)
         return 0;

@@ -6,36 +6,34 @@
  * See https://www.openssl.org/source/license.html for details
  */
 
-#include <string.h>
+#include "e_gost_err.h"
+#include "gost_lcl.h"
+
+#include <openssl/buffer.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
-#include <openssl/buffer.h>
-
-#include "gost_lcl.h"
-#include "e_gost_err.h"
+#include <string.h>
 
 static uint32_t be32(uint32_t host)
 {
 #ifdef L_ENDIAN
-    return (host & 0xff000000) >> 24 |
-           (host & 0x00ff0000) >> 8  |
-           (host & 0x0000ff00) << 8  |
-           (host & 0x000000ff) << 24;
+    return (host & 0xff000000) >> 24 | (host & 0x00ff0000) >> 8
+           | (host & 0x0000ff00) << 8 | (host & 0x000000ff) << 24;
 #else
     return host;
 #endif
 }
 
 int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr);
+
 /*
  * Function expects that out is a preallocated buffer of length
  * defined as sum of shared_len and mac length defined by mac_nid
  * */
 int gost_kexp15(const unsigned char *shared_key, const int shared_len,
-                int cipher_nid, const unsigned char *cipher_key,
-                int mac_nid, unsigned char *mac_key,
-                const unsigned char *iv, const size_t ivlen,
-                unsigned char *out, int *out_len)
+                int cipher_nid, const unsigned char *cipher_key, int mac_nid,
+                unsigned char *mac_key, const unsigned char *iv,
+                const size_t ivlen, unsigned char *out, int *out_len)
 {
     unsigned char iv_full[16], mac_buf[16];
     unsigned int mac_len;
@@ -46,8 +44,9 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
     int ret = 0;
     int len;
 
-    mac_len = (cipher_nid == NID_magma_ctr) ? 8 :
-        (cipher_nid == NID_grasshopper_ctr) ? 16 : 0;
+    mac_len = (cipher_nid == NID_magma_ctr)         ? 8
+              : (cipher_nid == NID_grasshopper_ctr) ? 16
+                                                    : 0;
 
     if (mac_len == 0) {
         GOSTerr(GOST_F_GOST_KEXP15, GOST_R_INVALID_CIPHER);
@@ -86,8 +85,9 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
         goto err;
     }
 
-    if (EVP_CipherInit_ex
-        (ciph, EVP_get_cipherbynid(cipher_nid), NULL, NULL, NULL, 1) <= 0
+    if (EVP_CipherInit_ex(
+            ciph, EVP_get_cipherbynid(cipher_nid), NULL, NULL, NULL, 1)
+            <= 0
         || EVP_CipherInit_ex(ciph, NULL, NULL, cipher_key, iv_full, 1) <= 0
         || EVP_CipherUpdate(ciph, out, &len, shared_key, shared_len) <= 0
         || EVP_CipherUpdate(ciph, out + shared_len, &len, mac_buf, mac_len) <= 0
@@ -100,7 +100,7 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
 
     ret = 1;
 
- err:
+err:
     OPENSSL_cleanse(mac_buf, mac_len);
     EVP_MD_CTX_free(mac);
     EVP_CIPHER_CTX_free(ciph);
@@ -113,10 +113,9 @@ int gost_kexp15(const unsigned char *shared_key, const int shared_len,
  * with length defined as expkeylen + mac_len defined by mac_nid
  * */
 int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
-                int cipher_nid, const unsigned char *cipher_key,
-                int mac_nid, unsigned char *mac_key,
-                const unsigned char *iv, const size_t ivlen,
-                unsigned char *shared_key)
+                int cipher_nid, const unsigned char *cipher_key, int mac_nid,
+                unsigned char *mac_key, const unsigned char *iv,
+                const size_t ivlen, unsigned char *shared_key)
 {
     unsigned char iv_full[16], out[48], mac_buf[16];
     unsigned int mac_len;
@@ -128,8 +127,9 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
     int ret = 0;
     int len;
 
-    mac_len = (cipher_nid == NID_magma_ctr) ? 8 :
-        (cipher_nid == NID_grasshopper_ctr) ? 16 : 0;
+    mac_len = (cipher_nid == NID_magma_ctr)         ? 8
+              : (cipher_nid == NID_grasshopper_ctr) ? 16
+                                                    : 0;
 
     if (mac_len == 0) {
         GOSTerr(GOST_F_GOST_KIMP15, GOST_R_INVALID_CIPHER);
@@ -156,8 +156,9 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
         goto err;
     }
 
-    if (EVP_CipherInit_ex
-        (ciph, EVP_get_cipherbynid(cipher_nid), NULL, NULL, NULL, 0) <= 0
+    if (EVP_CipherInit_ex(
+            ciph, EVP_get_cipherbynid(cipher_nid), NULL, NULL, NULL, 0)
+            <= 0
         || EVP_CipherInit_ex(ciph, NULL, NULL, cipher_key, iv_full, 0) <= 0
         || EVP_CipherUpdate(ciph, out, &len, expkey, expkeylen) <= 0
         || EVP_CipherFinal_ex(ciph, out + len, &len) <= 0) {
@@ -191,7 +192,7 @@ int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
     memcpy(shared_key, out, shared_len);
     ret = 1;
 
- err:
+err:
     OPENSSL_cleanse(out, sizeof(out));
     EVP_MD_CTX_free(mac);
     EVP_CIPHER_CTX_free(ciph);
@@ -235,9 +236,12 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
         unsigned char *rep_ptr =
             ((unsigned char *)&iter_net) + (4 - representation);
 
-        if (HMAC_Init_ex(ctx, key, keylen,
+        if (HMAC_Init_ex(ctx,
+                         key,
+                         keylen,
                          EVP_get_digestbynid(NID_id_GostR3411_2012_256),
-                         NULL) <= 0
+                         NULL)
+                <= 0
             || HMAC_Update(ctx, rep_ptr, representation) <= 0
             || HMAC_Update(ctx, label, label_len) <= 0
             || HMAC_Update(ctx, &zero, 1) <= 0
@@ -262,9 +266,9 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
                  const unsigned char *tlsseq)
 {
     uint64_t gh_c1 = 0x00000000FFFFFFFF, gh_c2 = 0x0000F8FFFFFFFFFF,
-        gh_c3 = 0xC0FFFFFFFFFFFFFF;
+             gh_c3 = 0xC0FFFFFFFFFFFFFF;
     uint64_t mg_c1 = 0x00000000C0FFFFFF, mg_c2 = 0x000000FEFFFFFFFF,
-        mg_c3 = 0x00F0FFFFFFFFFFFF;
+             mg_c3 = 0x00F0FFFFFFFFFFFF;
     uint64_t c1, c2, c3;
     uint64_t seed1, seed2, seed3;
     uint64_t seq;
@@ -293,150 +297,193 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
     seed2 = seq & c2;
     seed3 = seq & c3;
 
-    if (gost_kdftree2012_256(ko1, 32, in, 32, (const unsigned char *)"level1", 6,
-                         (const unsigned char *)&seed1, 8, 1) <= 0
-			  || gost_kdftree2012_256(ko2, 32, ko1, 32, (const unsigned char *)"level2", 6,
-                         (const unsigned char *)&seed2, 8, 1) <= 0
-        || gost_kdftree2012_256(out, 32, ko2, 32, (const unsigned char *)"level3", 6,
-                         (const unsigned char *)&seed3, 8, 1) <= 0)
-			return 0;
+    if (gost_kdftree2012_256(ko1,
+                             32,
+                             in,
+                             32,
+                             (const unsigned char *)"level1",
+                             6,
+                             (const unsigned char *)&seed1,
+                             8,
+                             1)
+            <= 0
+        || gost_kdftree2012_256(ko2,
+                                32,
+                                ko1,
+                                32,
+                                (const unsigned char *)"level2",
+                                6,
+                                (const unsigned char *)&seed2,
+                                8,
+                                1)
+               <= 0
+        || gost_kdftree2012_256(out,
+                                32,
+                                ko2,
+                                32,
+                                (const unsigned char *)"level3",
+                                6,
+                                (const unsigned char *)&seed3,
+                                8,
+                                1)
+               <= 0)
+        return 0;
 
     return 1;
 }
 
-#define GOST_WRAP_FLAGS  EVP_CIPH_CTRL_INIT | EVP_CIPH_WRAP_MODE | EVP_CIPH_CUSTOM_IV | EVP_CIPH_FLAG_CUSTOM_CIPHER | EVP_CIPH_FLAG_DEFAULT_ASN1
+#define GOST_WRAP_FLAGS                                       \
+ EVP_CIPH_CTRL_INIT | EVP_CIPH_WRAP_MODE | EVP_CIPH_CUSTOM_IV \
+     | EVP_CIPH_FLAG_CUSTOM_CIPHER | EVP_CIPH_FLAG_DEFAULT_ASN1
 
-#define MAGMA_MAC_WRAP_LEN 8
-#define KUZNYECHIK_MAC_WRAP_LEN 16
-#define MAX_MAC_WRAP_LEN KUZNYECHIK_MAC_WRAP_LEN
-#define GOSTKEYLEN 32
-#define MAGMA_WRAPPED_KEY_LEN GOSTKEYLEN + MAGMA_MAC_WRAP_LEN
+#define MAGMA_MAC_WRAP_LEN         8
+#define KUZNYECHIK_MAC_WRAP_LEN    16
+#define MAX_MAC_WRAP_LEN           KUZNYECHIK_MAC_WRAP_LEN
+#define GOSTKEYLEN                 32
+#define MAGMA_WRAPPED_KEY_LEN      GOSTKEYLEN + MAGMA_MAC_WRAP_LEN
 #define KUZNYECHIK_WRAPPED_KEY_LEN GOSTKEYLEN + KUZNYECHIK_MAC_WRAP_LEN
-#define MAX_WRAPPED_KEY_LEN KUZNYECHIK_WRAPPED_KEY_LEN
+#define MAX_WRAPPED_KEY_LEN        KUZNYECHIK_WRAPPED_KEY_LEN
 
 typedef struct {
-	unsigned char iv[8];   /* Max IV size is half of base cipher block length */
-	unsigned char key[GOSTKEYLEN*2]; /* Combined cipher and mac keys */
-	unsigned char wrapped[MAX_WRAPPED_KEY_LEN]; /* Max size */
-	size_t wrap_count;
+    unsigned char iv[8]; /* Max IV size is half of base cipher block length */
+    unsigned char key[GOSTKEYLEN * 2]; /* Combined cipher and mac keys */
+    unsigned char wrapped[MAX_WRAPPED_KEY_LEN]; /* Max size */
+    size_t wrap_count;
 } GOST_WRAP_CTX;
 
 static int magma_wrap_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
-	const unsigned char *iv, int enc)
+                           const unsigned char *iv, int enc)
 {
-	GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
-	memset(cctx->wrapped, 0, MAX_WRAPPED_KEY_LEN);
-	cctx->wrap_count = 0;
+    GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
+    memset(cctx->wrapped, 0, MAX_WRAPPED_KEY_LEN);
+    cctx->wrap_count = 0;
 
-	if (iv) {
-		memset(cctx->iv, 0, 8);
-		memcpy(cctx->iv, iv, 4);
-	}
+    if (iv) {
+        memset(cctx->iv, 0, 8);
+        memcpy(cctx->iv, iv, 4);
+    }
 
-	if (key) {
-		memcpy(cctx->key, key, GOSTKEYLEN*2);
-	}
-	return 1;
+    if (key) {
+        memcpy(cctx->key, key, GOSTKEYLEN * 2);
+    }
+    return 1;
 }
 
 static int magma_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
-	const unsigned char *in, size_t inl)
+                         const unsigned char *in, size_t inl)
 {
-	GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
-	int enc = EVP_CIPHER_CTX_encrypting(ctx) ? 1 : 0;
+    GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
+    int enc = EVP_CIPHER_CTX_encrypting(ctx) ? 1 : 0;
 
-	if (out == NULL)
-		return GOSTKEYLEN;
+    if (out == NULL)
+        return GOSTKEYLEN;
 
-	if (inl <= MAGMA_WRAPPED_KEY_LEN) {
-		if (cctx->wrap_count + inl > MAGMA_WRAPPED_KEY_LEN)
-			return -1;
+    if (inl <= MAGMA_WRAPPED_KEY_LEN) {
+        if (cctx->wrap_count + inl > MAGMA_WRAPPED_KEY_LEN)
+            return -1;
 
-		if (cctx->wrap_count + inl <= MAGMA_WRAPPED_KEY_LEN)
-		{
-			memcpy(cctx->wrapped+cctx->wrap_count, in, inl);
-			cctx->wrap_count += inl;
-		}
-	}
+        if (cctx->wrap_count + inl <= MAGMA_WRAPPED_KEY_LEN) {
+            memcpy(cctx->wrapped + cctx->wrap_count, in, inl);
+            cctx->wrap_count += inl;
+        }
+    }
 
-	if (cctx->wrap_count < MAGMA_WRAPPED_KEY_LEN)
-		return 0;
+    if (cctx->wrap_count < MAGMA_WRAPPED_KEY_LEN)
+        return 0;
 
-	if (enc) {
+    if (enc) {
 #if 0
 		return gost_kexp15(cctx->key, 32, NID_magma_ctr, in, NID_magma_mac,
 			cctx->key, /* FIXME mac_key, */ cctx->iv, 4, out, &outl);
 #endif
-		return -1;
-	} else {
-		return gost_kimp15(cctx->wrapped, cctx->wrap_count, NID_magma_ctr,
-		cctx->key+GOSTKEYLEN, NID_magma_mac, cctx->key, cctx->iv, 4, out) > 0 ? GOSTKEYLEN : 0;
-	}
+        return -1;
+    } else {
+        return gost_kimp15(cctx->wrapped,
+                           cctx->wrap_count,
+                           NID_magma_ctr,
+                           cctx->key + GOSTKEYLEN,
+                           NID_magma_mac,
+                           cctx->key,
+                           cctx->iv,
+                           4,
+                           out)
+                       > 0
+                   ? GOSTKEYLEN
+                   : 0;
+    }
 }
 
 static int kuznyechik_wrap_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
-	const unsigned char *iv, int enc)
+                                const unsigned char *iv, int enc)
 {
-	GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
-	memset(cctx->wrapped, 0, KUZNYECHIK_WRAPPED_KEY_LEN);
-	cctx->wrap_count = 0;
+    GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
+    memset(cctx->wrapped, 0, KUZNYECHIK_WRAPPED_KEY_LEN);
+    cctx->wrap_count = 0;
 
-	if (iv) {
-		memset(cctx->iv, 0, 8);
-		memcpy(cctx->iv, iv, 8);
-	}
+    if (iv) {
+        memset(cctx->iv, 0, 8);
+        memcpy(cctx->iv, iv, 8);
+    }
 
-	if (key) {
-		memcpy(cctx->key, key, GOSTKEYLEN*2);
-	}
-	return 1;
+    if (key) {
+        memcpy(cctx->key, key, GOSTKEYLEN * 2);
+    }
+    return 1;
 }
 
 static int kuznyechik_wrap_do(EVP_CIPHER_CTX *ctx, unsigned char *out,
-	const unsigned char *in, size_t inl)
+                              const unsigned char *in, size_t inl)
 {
-	GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
-	int enc = EVP_CIPHER_CTX_encrypting(ctx) ? 1 : 0;
+    GOST_WRAP_CTX *cctx = EVP_CIPHER_CTX_get_cipher_data(ctx);
+    int enc = EVP_CIPHER_CTX_encrypting(ctx) ? 1 : 0;
 
-	if (out == NULL)
-		return GOSTKEYLEN;
+    if (out == NULL)
+        return GOSTKEYLEN;
 
-	if (inl <= KUZNYECHIK_WRAPPED_KEY_LEN) {
-		if (cctx->wrap_count + inl > KUZNYECHIK_WRAPPED_KEY_LEN)
-			return -1;
+    if (inl <= KUZNYECHIK_WRAPPED_KEY_LEN) {
+        if (cctx->wrap_count + inl > KUZNYECHIK_WRAPPED_KEY_LEN)
+            return -1;
 
-		if (cctx->wrap_count + inl <= KUZNYECHIK_WRAPPED_KEY_LEN)
-		{
-			memcpy(cctx->wrapped+cctx->wrap_count, in, inl);
-			cctx->wrap_count += inl;
-		}
-	}
+        if (cctx->wrap_count + inl <= KUZNYECHIK_WRAPPED_KEY_LEN) {
+            memcpy(cctx->wrapped + cctx->wrap_count, in, inl);
+            cctx->wrap_count += inl;
+        }
+    }
 
-	if (cctx->wrap_count < KUZNYECHIK_WRAPPED_KEY_LEN)
-		return 0;
+    if (cctx->wrap_count < KUZNYECHIK_WRAPPED_KEY_LEN)
+        return 0;
 
-	if (enc) {
+    if (enc) {
 #if 0
 		return gost_kexp15(cctx->key, 32, NID_magma_ctr, in, NID_magma_mac,
 			cctx->key, /* FIXME mac_key, */ cctx->iv, 4, out, &outl);
 #endif
-		return -1;
-	} else {
-		return gost_kimp15(cctx->wrapped, cctx->wrap_count, NID_kuznyechik_ctr,
-		cctx->key+GOSTKEYLEN, NID_kuznyechik_mac, cctx->key, cctx->iv, 8, out) > 0 ? GOSTKEYLEN : 0;
-	}
+        return -1;
+    } else {
+        return gost_kimp15(cctx->wrapped,
+                           cctx->wrap_count,
+                           NID_kuznyechik_ctr,
+                           cctx->key + GOSTKEYLEN,
+                           NID_kuznyechik_mac,
+                           cctx->key,
+                           cctx->iv,
+                           8,
+                           out)
+                       > 0
+                   ? GOSTKEYLEN
+                   : 0;
+    }
 }
 
-static int wrap_ctrl (EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+static int wrap_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 {
-	switch(type)
-	{
-		case EVP_CTRL_INIT:
-			EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
-			return 1;
-		default:
-			return -2;
-	}
+    switch (type) {
+    case EVP_CTRL_INIT:
+        EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+        return 1;
+    default:
+        return -2;
+    }
 }
 
 static GOST_cipher wrap_template_cipher = {

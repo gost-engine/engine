@@ -13,24 +13,24 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
-# if !defined(inline) && !defined(__cplusplus)
-#  if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-#   define GRASSHOPPER_INLINE inline
-#  elif defined(__GNUC__) && __GNUC__ >= 2
-#   define GRASSHOPPER_INLINE __inline__
-#   define likely(x) __builtin_expect(!!(x), 1)
-#  elif defined(_MSC_VER)
-#   define GRASSHOPPER_INLINE __inline
-#  else
-#   define GRASSHOPPER_INLINE
-#  endif
-# else
+#if !defined(inline) && !defined(__cplusplus)
+# if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 #  define GRASSHOPPER_INLINE inline
+# elif defined(__GNUC__) && __GNUC__ >= 2
+#  define GRASSHOPPER_INLINE __inline__
+#  define likely(x)          __builtin_expect(!!(x), 1)
+# elif defined(_MSC_VER)
+#  define GRASSHOPPER_INLINE __inline
+# else
+#  define GRASSHOPPER_INLINE
 # endif
+#else
+# define GRASSHOPPER_INLINE inline
+#endif
 
-# if !defined(likely)
-#   define likely(x) x
-# endif
+#if !defined(likely)
+# define likely(x) x
+#endif
 
 typedef union {
     uint8_t b[16];
@@ -63,8 +63,8 @@ extern const uint8_t grasshopper_pi_inv[0x100];
 
 extern const uint8_t grasshopper_lvec[16];
 
-#define GRASSHOPPER_BLOCK_SIZE (128/8)
-#define GRASSHOPPER_KEY_SIZE (256/8)
+#define GRASSHOPPER_BLOCK_SIZE (128 / 8)
+#define GRASSHOPPER_KEY_SIZE   (256 / 8)
 
 #if defined(__cplusplus)
 }

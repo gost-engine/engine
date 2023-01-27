@@ -15,18 +15,19 @@
 #endif
 #include "e_gost_err.h"
 #include "gost_lcl.h"
-#include <openssl/evp.h>
-#include <openssl/ssl.h>
-#include <openssl/bio.h>
-#include <openssl/rand.h>
-#include <openssl/err.h>
+
 #include <openssl/asn1.h>
-#include <openssl/obj_mac.h>
-#include <openssl/x509v3.h>
-#include <openssl/ec.h>
+#include <openssl/bio.h>
 #include <openssl/bn.h>
-#include <string.h>
+#include <openssl/ec.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/obj_mac.h>
+#include <openssl/rand.h>
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 
 #ifdef __GNUC__
@@ -34,29 +35,32 @@
 # pragma GCC diagnostic ignored "-Wpointer-sign"
 #endif
 
-#define T(e) \
-    if (!(e)) { \
-        ERR_print_errors_fp(stderr); \
-        OpenSSLDie(__FILE__, __LINE__, #e); \
-    }
-#define TE(e) \
-    if (!(e)) { \
-        ERR_print_errors_fp(stderr); \
-        fprintf(stderr, "Error at %s:%d %s\n", __FILE__, __LINE__, #e); \
-        return -1; \
-    }
+#define T(e)                          \
+ if (!(e)) {                          \
+  ERR_print_errors_fp(stderr);        \
+  OpenSSLDie(__FILE__, __LINE__, #e); \
+ }
+#define TE(e)                                                     \
+ if (!(e)) {                                                      \
+  ERR_print_errors_fp(stderr);                                    \
+  fprintf(stderr, "Error at %s:%d %s\n", __FILE__, __LINE__, #e); \
+  return -1;                                                      \
+ }
 
-#define cRED	"\033[1;31m"
-#define cDRED	"\033[0;31m"
-#define cGREEN	"\033[1;32m"
-#define cDGREEN	"\033[0;32m"
-#define cBLUE	"\033[1;34m"
-#define cDBLUE	"\033[0;34m"
-#define cNORM	"\033[m"
-#define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "  Test FAILED\n" cNORM); \
-	     else \
-		 printf(cGREEN "  Test passed\n" cNORM);}
+#define cRED    "\033[1;31m"
+#define cDRED   "\033[0;31m"
+#define cGREEN  "\033[1;32m"
+#define cDGREEN "\033[0;32m"
+#define cBLUE   "\033[1;34m"
+#define cDBLUE  "\033[0;34m"
+#define cNORM   "\033[m"
+#define TEST_ASSERT(e)                     \
+ {                                         \
+  if ((test = (e)))                        \
+   printf(cRED "  Test FAILED\n" cNORM);   \
+  else                                     \
+   printf(cGREEN "  Test passed\n" cNORM); \
+ }
 
 struct certkey {
     EVP_PKEY *pkey;
@@ -88,7 +92,7 @@ static struct certkey certgen(const char *algname, const char *paramset)
     T(ctx = EVP_PKEY_CTX_new(tkey, NULL));
     T(EVP_PKEY_keygen_init(ctx));
     if (paramset)
-	T(EVP_PKEY_CTX_ctrl_str(ctx, "paramset", paramset));
+        T(EVP_PKEY_CTX_ctrl_str(ctx, "paramset", paramset));
     EVP_PKEY *pkey = NULL;
     T((EVP_PKEY_keygen(ctx, &pkey)) == 1);
     EVP_PKEY_CTX_free(ctx);
@@ -100,8 +104,10 @@ static struct certkey certgen(const char *algname, const char *paramset)
     T(X509_REQ_set_version(req, 0L));
     X509_NAME *name;
     T(name = X509_NAME_new());
-    T(X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, (unsigned char *)"Test CA", -1, -1, 0));
-    T(X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (unsigned char *)"Test Key", -1, -1, 0));
+    T(X509_NAME_add_entry_by_txt(
+        name, "O", MBSTRING_ASC, (unsigned char *)"Test CA", -1, -1, 0));
+    T(X509_NAME_add_entry_by_txt(
+        name, "CN", MBSTRING_ASC, (unsigned char *)"Test Key", -1, -1, 0));
     T(X509_REQ_set_subject_name(req, name));
     T(X509_REQ_set_pubkey(req, pkey));
     X509_NAME_free(name);
@@ -125,13 +131,16 @@ static struct certkey certgen(const char *algname, const char *paramset)
     X509V3_set_ctx_nodb(&v3ctx);
     X509V3_set_ctx(&v3ctx, x509ss, x509ss, NULL, NULL, 0);
     X509_EXTENSION *ext;
-    T(ext = X509V3_EXT_conf_nid(NULL, &v3ctx, NID_basic_constraints, "critical,CA:TRUE"));
+    T(ext = X509V3_EXT_conf_nid(
+          NULL, &v3ctx, NID_basic_constraints, "critical,CA:TRUE"));
     T(X509_add_ext(x509ss, ext, 0));
     X509_EXTENSION_free(ext);
-    T(ext = X509V3_EXT_conf_nid(NULL, &v3ctx, NID_subject_key_identifier, "hash"));
+    T(ext = X509V3_EXT_conf_nid(
+          NULL, &v3ctx, NID_subject_key_identifier, "hash"));
     T(X509_add_ext(x509ss, ext, 1));
     X509_EXTENSION_free(ext);
-    T(ext = X509V3_EXT_conf_nid(NULL, &v3ctx, NID_authority_key_identifier, "keyid:always,issuer"));
+    T(ext = X509V3_EXT_conf_nid(
+          NULL, &v3ctx, NID_authority_key_identifier, "keyid:always,issuer"));
     T(X509_add_ext(x509ss, ext, 2));
     X509_EXTENSION_free(ext);
 
@@ -150,7 +159,7 @@ static struct certkey certgen(const char *algname, const char *paramset)
     PEM_write_bio_X509(out, x509ss);
     BIO_free_all(out);
 #endif
-    return (struct certkey){ .pkey = pkey, .cert = x509ss };
+    return (struct certkey){.pkey = pkey, .cert = x509ss};
 }
 
 /* Non-blocking BIO test mechanic is based on sslapitest.c */
@@ -160,7 +169,7 @@ int test(const char *algname, const char *paramset)
 
     printf(cBLUE "Test %s", algname);
     if (paramset)
-	printf(cBLUE ":%s", paramset);
+        printf(cBLUE ":%s", paramset);
     printf(cNORM "\n");
 
     struct certkey ck;
@@ -216,12 +225,12 @@ int test(const char *algname, const char *paramset)
             if (verbose)
                 printf("SSL_accept: %d %d\n", rets, err);
         }
-        if (rets <= 0 && err != SSL_ERROR_WANT_READ &&
-            err != SSL_ERROR_WANT_X509_LOOKUP) {
+        if (rets <= 0 && err != SSL_ERROR_WANT_READ
+            && err != SSL_ERROR_WANT_X509_LOOKUP) {
             ERR_print_errors_fp(stderr);
             OpenSSLDie(__FILE__, __LINE__, "SSL_accept");
         }
-    } while (retc <=0 || rets <= 0);
+    } while (retc <= 0 || rets <= 0);
 
     /* Two SSL_read_ex should fail. */
     unsigned char buf;
@@ -276,7 +285,7 @@ int main(int argc, char **argv)
 
     char *p;
     if ((p = getenv("VERBOSE")))
-	verbose = atoi(p);
+        verbose = atoi(p);
 
     ret |= test("rsa", NULL);
     cipher_list = "LEGACY-GOST2012-GOST8912-GOST8912";
@@ -289,8 +298,8 @@ int main(int argc, char **argv)
     ret |= test("gost2012_512", "C");
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!\n" cNORM);
+        printf(cDRED "= Some tests FAILED!\n" cNORM);
     else
-	printf(cDGREEN "= All tests passed!\n" cNORM);
+        printf(cDGREEN "= All tests passed!\n" cNORM);
     return ret;
 }
