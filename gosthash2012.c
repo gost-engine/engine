@@ -23,20 +23,16 @@
 # define INLINE inline
 #endif
 
-#define BSWAP64(x) \
-    (((x & 0xFF00000000000000ULL) >> 56) | \
-     ((x & 0x00FF000000000000ULL) >> 40) | \
-     ((x & 0x0000FF0000000000ULL) >> 24) | \
-     ((x & 0x000000FF00000000ULL) >>  8) | \
-     ((x & 0x00000000FF000000ULL) <<  8) | \
-     ((x & 0x0000000000FF0000ULL) << 24) | \
-     ((x & 0x000000000000FF00ULL) << 40) | \
-     ((x & 0x00000000000000FFULL) << 56))
+#define BSWAP64(x)                                                           \
+ (((x & 0xFF00000000000000ULL) >> 56) | ((x & 0x00FF000000000000ULL) >> 40)  \
+  | ((x & 0x0000FF0000000000ULL) >> 24) | ((x & 0x000000FF00000000ULL) >> 8) \
+  | ((x & 0x00000000FF000000ULL) << 8) | ((x & 0x0000000000FF0000ULL) << 24) \
+  | ((x & 0x000000000000FF00ULL) << 40) | ((x & 0x00000000000000FFULL) << 56))
 
 /*
  * Initialize gost2012 hash context structure
  */
-void init_gost2012_hash_ctx(gost2012_hash_ctx * CTX,
+void init_gost2012_hash_ctx(gost2012_hash_ctx *CTX,
                             const unsigned int digest_size)
 {
     memset(CTX, 0, sizeof(gost2012_hash_ctx));
@@ -53,15 +49,15 @@ void init_gost2012_hash_ctx(gost2012_hash_ctx * CTX,
         memset(&CTX->h, 0x01, sizeof(uint512_u));
 }
 
-static INLINE void pad(gost2012_hash_ctx * CTX)
+static INLINE void pad(gost2012_hash_ctx *CTX)
 {
-    memset(&(CTX->buffer.B[CTX->bufsize]), 0, sizeof(CTX->buffer) - CTX->bufsize);
+    memset(&(CTX->buffer.B[CTX->bufsize]), 0,
+           sizeof(CTX->buffer) - CTX->bufsize);
     CTX->buffer.B[CTX->bufsize] = 1;
-
 }
 
-static INLINE void add512(union uint512_u * RESTRICT x,
-                          const union uint512_u * RESTRICT y)
+static INLINE void
+add512(union uint512_u *RESTRICT x, const union uint512_u *RESTRICT y)
 {
 #ifndef __GOST3411_BIG_ENDIAN__
     unsigned int CF = 0;
@@ -69,7 +65,7 @@ static INLINE void add512(union uint512_u * RESTRICT x,
 
 # ifdef HAVE_ADDCARRY_U64
     for (i = 0; i < 8; i++)
-        CF = _addcarry_u64(CF, x->QWORD[i] , y->QWORD[i], &(x->QWORD[i]));
+        CF = _addcarry_u64(CF, x->QWORD[i], y->QWORD[i], &(x->QWORD[i]));
 # else
     for (i = 0; i < 8; i++) {
         const unsigned long long left = x->QWORD[i];
@@ -93,7 +89,7 @@ static INLINE void add512(union uint512_u * RESTRICT x,
         x->QWORD[i] = sum;
     }
 # endif /* !__x86_64__ */
-#else /* __GOST3411_BIG_ENDIAN__ */
+#else   /* __GOST3411_BIG_ENDIAN__ */
     const unsigned char *yp;
     unsigned char *xp;
     unsigned int i;
@@ -107,11 +103,11 @@ static INLINE void add512(union uint512_u * RESTRICT x,
         buf = xp[i] + yp[i] + (buf >> 8);
         xp[i] = (unsigned char)buf & 0xFF;
     }
-#endif /* __GOST3411_BIG_ENDIAN__ */
+#endif  /* __GOST3411_BIG_ENDIAN__ */
 }
 
-static void g(union uint512_u *h, const union uint512_u * RESTRICT N,
-              const union uint512_u * RESTRICT m)
+static void g(union uint512_u *h, const union uint512_u *RESTRICT N,
+              const union uint512_u *RESTRICT m)
 {
 #ifdef __GOST3411_HAS_SSE2__
     __m128i xmm0, xmm2, xmm4, xmm6; /* XMMR0-quadruple */
@@ -162,7 +158,7 @@ static void g(union uint512_u *h, const union uint512_u * RESTRICT N,
 #endif
 }
 
-static INLINE void stage2(gost2012_hash_ctx * CTX, const union uint512_u *data)
+static INLINE void stage2(gost2012_hash_ctx *CTX, const union uint512_u *data)
 {
     g(&(CTX->h), &(CTX->N), data);
 
@@ -170,7 +166,7 @@ static INLINE void stage2(gost2012_hash_ctx * CTX, const union uint512_u *data)
     add512(&(CTX->Sigma), data);
 }
 
-static INLINE void stage3(gost2012_hash_ctx * CTX)
+static INLINE void stage3(gost2012_hash_ctx *CTX)
 {
     pad(CTX);
     g(&(CTX->h), &(CTX->N), &(CTX->buffer));
@@ -192,8 +188,8 @@ static INLINE void stage3(gost2012_hash_ctx * CTX)
  * Hash block of arbitrary length
  *
  */
-void gost2012_hash_block(gost2012_hash_ctx * CTX,
-                         const unsigned char *data, size_t len)
+void gost2012_hash_block(gost2012_hash_ctx *CTX, const unsigned char *data,
+                         size_t len)
 {
     register size_t bufsize = CTX->bufsize;
 
@@ -218,7 +214,7 @@ void gost2012_hash_block(gost2012_hash_ctx * CTX,
         data += chunksize;
 
         if (bufsize == 64) {
-            stage2(CTX, &(CTX->buffer) );
+            stage2(CTX, &(CTX->buffer));
             bufsize = 0;
         }
     }
@@ -230,7 +226,7 @@ void gost2012_hash_block(gost2012_hash_ctx * CTX,
  * state of hash ctx becomes invalid and cannot be used for further
  * hashing.
  */
-void gost2012_finish_hash(gost2012_hash_ctx * CTX, unsigned char *digest)
+void gost2012_finish_hash(gost2012_hash_ctx *CTX, unsigned char *digest)
 {
     stage3(CTX);
 

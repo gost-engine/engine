@@ -6,10 +6,11 @@
  *    Implementation of GOST R 34.11-94 hash function                 *
  *       uses on gost89.c and gost89.h Doesn't need OpenSSL           *
  **********************************************************************/
-#include <string.h>
+#include "gosthash.h"
 
 #include "gost89.h"
-#include "gosthash.h"
+
+#include <string.h>
 
 /*
  * Use OPENSSL_malloc for memory allocation if compiled with
@@ -19,27 +20,26 @@
 # ifdef OPENSSL_BUILD
 #  include <openssl/crypto.h>
 #  define MYALLOC(size) OPENSSL_malloc(size)
-#  define MYFREE(ptr) OPENSSL_free(ptr)
+#  define MYFREE(ptr)   OPENSSL_free(ptr)
 # else
 #  define MYALLOC(size) malloc(size)
-#  define MYFREE(ptr) free(ptr)
+#  define MYFREE(ptr)   free(ptr)
 # endif
 #endif
 /*
  * Following functions are various bit meshing routines used in GOST R
  * 34.11-94 algorithms
  */
-static void swap_bytes(byte * w, byte * k)
+static void swap_bytes(byte *w, byte *k)
 {
     int i, j;
     for (i = 0; i < 4; i++)
         for (j = 0; j < 8; j++)
             k[i + 4 * j] = w[8 * i + j];
-
 }
 
 /* was A_A */
-static void circle_xor8(const byte * w, byte * k)
+static void circle_xor8(const byte *w, byte *k)
 {
     byte buf[8];
     int i;
@@ -50,18 +50,19 @@ static void circle_xor8(const byte * w, byte * k)
 }
 
 /* was R_R */
-static void transform_3(byte * data)
+static void transform_3(byte *data)
 {
     unsigned short int acc;
-    acc = (data[0] ^ data[2] ^ data[4] ^ data[6] ^ data[24] ^ data[30]) |
-        ((data[1] ^ data[3] ^ data[5] ^ data[7] ^ data[25] ^ data[31]) << 8);
+    acc =
+        (data[0] ^ data[2] ^ data[4] ^ data[6] ^ data[24] ^ data[30])
+        | ((data[1] ^ data[3] ^ data[5] ^ data[7] ^ data[25] ^ data[31]) << 8);
     memmove(data, data + 2, 30);
     data[30] = acc & 0xff;
     data[31] = acc >> 8;
 }
 
 /* Adds blocks of N bytes modulo 2**(8*n). Returns carry*/
-static int add_blocks(int n, byte * left, const byte * right)
+static int add_blocks(int n, byte *left, const byte *right)
 {
     int i;
     int carry = 0;
@@ -74,8 +75,7 @@ static int add_blocks(int n, byte * left, const byte * right)
 }
 
 /* Xor two sequences of bytes */
-static void xor_blocks(byte * result, const byte * a, const byte * b,
-                       size_t len)
+static void xor_blocks(byte *result, const byte *a, const byte *b, size_t len)
 {
     size_t i;
     for (i = 0; i < len; i++)
@@ -86,7 +86,7 @@ static void xor_blocks(byte * result, const byte * a, const byte * b,
  *      Calculate H(i+1) = Hash(Hi,Mi)
  *      Where H and M are 32 bytes long
  */
-static int hash_step(gost_ctx * c, byte * H, const byte * M)
+static int hash_step(gost_ctx *c, byte *H, const byte *M)
 {
     byte U[32], W[32], V[32], S[32], Key[32];
     int i;
@@ -150,11 +150,10 @@ static int hash_step(gost_ctx * c, byte * H, const byte * M)
  * Initialize gost_hash ctx - cleans up temporary structures and set up
  * substitution blocks
  */
-int init_gost_hash_ctx(gost_hash_ctx * ctx,
-                       const gost_subst_block * subst_block)
+int init_gost_hash_ctx(gost_hash_ctx *ctx, const gost_subst_block *subst_block)
 {
     memset(ctx, 0, sizeof(*ctx));
-    ctx->cipher_ctx = (gost_ctx *) MYALLOC(sizeof(gost_ctx));
+    ctx->cipher_ctx = (gost_ctx *)MYALLOC(sizeof(gost_ctx));
     if (!ctx->cipher_ctx) {
         return 0;
     }
@@ -168,7 +167,7 @@ int init_gost_hash_ctx(gost_hash_ctx * ctx,
  * GOST hash algroritm
  *
  */
-void done_gost_hash_ctx(gost_hash_ctx * ctx)
+void done_gost_hash_ctx(gost_hash_ctx *ctx)
 {
     /*
      * No need to use gost_destroy, because cipher keys are not really secret
@@ -180,7 +179,7 @@ void done_gost_hash_ctx(gost_hash_ctx * ctx)
 /*
  * reset state of hash context to begin hashing new message
  */
-int start_hash(gost_hash_ctx * ctx)
+int start_hash(gost_hash_ctx *ctx)
 {
     if (!ctx->cipher_ctx)
         return 0;
@@ -196,7 +195,7 @@ int start_hash(gost_hash_ctx * ctx)
  *
  *
  */
-int hash_block(gost_hash_ctx * ctx, const byte * block, size_t length)
+int hash_block(gost_hash_ctx *ctx, const byte *block, size_t length)
 {
     if (ctx->left) {
         /*
@@ -237,7 +236,7 @@ int hash_block(gost_hash_ctx * ctx, const byte * block, size_t length)
  * state of hash ctx becomes invalid and cannot be used for further
  * hashing.
  */
-int finish_hash(gost_hash_ctx * ctx, byte * hashval)
+int finish_hash(gost_hash_ctx *ctx, byte *hashval)
 {
     byte buf[32];
     byte H[32];
@@ -257,9 +256,9 @@ int finish_hash(gost_hash_ctx * ctx, byte * hashval)
     if (fin_len == 0)
         hash_step(ctx->cipher_ctx, H, buf);
     bptr = buf;
-    fin_len <<= 3;              /* Hash length in BITS!! */
+    fin_len <<= 3; /* Hash length in BITS!! */
     while (fin_len > 0) {
-        *(bptr++) = (byte) (fin_len & 0xFF);
+        *(bptr++) = (byte)(fin_len & 0xFF);
         fin_len >>= 8;
     };
     hash_step(ctx->cipher_ctx, H, buf);

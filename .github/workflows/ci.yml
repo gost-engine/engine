@@ -99,3 +99,11 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
+    clang-format:
+        runs-on: ubuntu-22.04
+        env:
+            APT_INSTALL: clang-format
+        steps:
+            - uses: actions/checkout@v2
+            - run: .github/format.sh
+

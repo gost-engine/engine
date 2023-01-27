@@ -13,42 +13,46 @@
 # pragma warning(pop)
 #endif
 #include "gost_lcl.h"
-#include <openssl/evp.h>
-#include <openssl/rand.h>
-#include <openssl/err.h>
+
 #include <openssl/asn1.h>
-#include <openssl/obj_mac.h>
-#include <openssl/ec.h>
 #include <openssl/bn.h>
-#include <openssl/store.h>
+#include <openssl/ec.h>
 #include <openssl/engine.h>
-#include <string.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/obj_mac.h>
+#include <openssl/rand.h>
+#include <openssl/store.h>
 #include <stdlib.h>
+#include <string.h>
 
-#define T(e) \
-    if (!(e)) { \
-        ERR_print_errors_fp(stderr); \
-        OpenSSLDie(__FILE__, __LINE__, #e); \
-    }
-#define TE(e) \
-    if (!(e)) { \
-        ERR_print_errors_fp(stderr); \
-        fprintf(stderr, "Error at %s:%d %s\n", __FILE__, __LINE__, #e); \
-        return -1; \
-    }
+#define T(e)                          \
+ if (!(e)) {                          \
+  ERR_print_errors_fp(stderr);        \
+  OpenSSLDie(__FILE__, __LINE__, #e); \
+ }
+#define TE(e)                                                     \
+ if (!(e)) {                                                      \
+  ERR_print_errors_fp(stderr);                                    \
+  fprintf(stderr, "Error at %s:%d %s\n", __FILE__, __LINE__, #e); \
+  return -1;                                                      \
+ }
 
-#define cRED	"\033[1;31m"
-#define cDRED	"\033[0;31m"
-#define cGREEN	"\033[1;32m"
-#define cDGREEN	"\033[0;32m"
-#define cBLUE	"\033[1;34m"
-#define cDBLUE	"\033[0;34m"
-#define cCYAN	"\033[1;36m"
-#define cNORM	"\033[m"
-#define TEST_ASSERT(e) {if ((test = (e))) \
-		 printf(cRED "  Test FAILED" cNORM "\n"); \
-	     else \
-		 printf(cGREEN "  Test passed" cNORM "\n");}
+#define cRED    "\033[1;31m"
+#define cDRED   "\033[0;31m"
+#define cGREEN  "\033[1;32m"
+#define cDGREEN "\033[0;32m"
+#define cBLUE   "\033[1;34m"
+#define cDBLUE  "\033[0;34m"
+#define cCYAN   "\033[1;36m"
+#define cNORM   "\033[m"
+#define TEST_ASSERT(e)                        \
+ {                                            \
+  if ((test = (e)))                           \
+   printf(cRED "  Test FAILED" cNORM "\n");   \
+  else                                        \
+   printf(cGREEN "  Test passed" cNORM "\n"); \
+ }
 
 struct test_sign {
     const char *name;
@@ -57,7 +61,10 @@ struct test_sign {
     const char *paramset;
 };
 
-#define D(x,y,z) { .name = #x, .nid = x, .bits = y, .paramset = z }
+#define D(x, y, z)                               \
+ {                                               \
+  .name = #x, .nid = x, .bits = y, .paramset = z \
+ }
 static struct test_sign test_signs[] = {
     D(NID_id_GostR3410_2001_CryptoPro_A_ParamSet, 256, "A"),
     D(NID_id_GostR3410_2001_CryptoPro_B_ParamSet, 256, "B"),
@@ -66,11 +73,10 @@ static struct test_sign test_signs[] = {
     D(NID_id_tc26_gost_3410_2012_256_paramSetB, 256, "TCB"),
     D(NID_id_tc26_gost_3410_2012_256_paramSetC, 256, "TCC"),
     D(NID_id_tc26_gost_3410_2012_256_paramSetD, 256, "TCD"),
-    D(NID_id_tc26_gost_3410_2012_512_paramSetA,   512, "A"),
-    D(NID_id_tc26_gost_3410_2012_512_paramSetB,   512, "B"),
-    D(NID_id_tc26_gost_3410_2012_512_paramSetC,   512, "C"),
-    0
-};
+    D(NID_id_tc26_gost_3410_2012_512_paramSetA, 512, "A"),
+    D(NID_id_tc26_gost_3410_2012_512_paramSetB, 512, "B"),
+    D(NID_id_tc26_gost_3410_2012_512_paramSetC, 512, "C"),
+    0};
 #undef D
 
 static void hexdump(const void *ptr, size_t len)
@@ -79,8 +85,8 @@ static void hexdump(const void *ptr, size_t len)
     size_t i, j;
 
     for (i = 0; i < len; i += j) {
-	for (j = 0; j < 16 && i + j < len; j++)
-	    printf("%s %02x", j? "" : "\n", p[i + j]);
+        for (j = 0; j < 16 && i + j < len; j++)
+            printf("%s %02x", j ? "" : "\n", p[i + j]);
     }
     printf("\n");
 }
@@ -88,19 +94,19 @@ static void hexdump(const void *ptr, size_t len)
 static void print_test_tf(int err, int val, const char *t, const char *f)
 {
     if (err == 1)
-	printf(cGREEN "%s" cNORM "\n", t);
+        printf(cGREEN "%s" cNORM "\n", t);
     else
-	printf(cRED "%s [%d]" cNORM "\n", f, val);
+        printf(cRED "%s [%d]" cNORM "\n", f, val);
 }
 
 static void print_test_result(int err)
 {
     if (err == 1)
-	printf(cGREEN "success" cNORM "\n");
+        printf(cGREEN "success" cNORM "\n");
     else if (err == 0)
-	printf(cRED "failure" cNORM "\n");
+        printf(cRED "failure" cNORM "\n");
     else
-	ERR_print_errors_fp(stderr);
+        ERR_print_errors_fp(stderr);
 }
 
 static int test_sign(struct test_sign *t)
@@ -114,16 +120,16 @@ static int test_sign(struct test_sign *t)
     int type = 0;
     const char *algname = NULL;
     switch (t->bits) {
-	case 256:
-	    type = NID_id_GostR3410_2012_256;
-	    algname = "gost2012_256";
-	    break;
-	case 512:
-	    type = NID_id_GostR3410_2012_512;
-	    algname = "gost2012_512";
-	    break;
-	default:
-	    return -1;
+    case 256:
+        type = NID_id_GostR3410_2012_256;
+        algname = "gost2012_256";
+        break;
+    case 512:
+        type = NID_id_GostR3410_2012_512;
+        algname = "gost2012_512";
+        break;
+    default:
+        return -1;
     }
 
     /* Keygen. */
@@ -133,7 +139,8 @@ static int test_sign(struct test_sign *t)
     EVP_PKEY_CTX *ctx;
     T(ctx = EVP_PKEY_CTX_new(pkey, NULL));
     T(EVP_PKEY_keygen_init(ctx));
-    T(EVP_PKEY_CTX_ctrl(ctx, type, -1, EVP_PKEY_CTRL_GOST_PARAMSET, t->nid, NULL));
+    T(EVP_PKEY_CTX_ctrl(
+        ctx, type, -1, EVP_PKEY_CTRL_GOST_PARAMSET, t->nid, NULL));
     EVP_PKEY *priv_key = NULL;
     err = EVP_PKEY_keygen(ctx, &priv_key);
     printf("\tEVP_PKEY_keygen:\t");
@@ -141,7 +148,7 @@ static int test_sign(struct test_sign *t)
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(pkey);
     if (err != 1)
-	return -1;
+        return -1;
 
     /* Convert to PEM and back. */
     BIO *bp;
@@ -185,27 +192,28 @@ static int test_sign(struct test_sign *t)
     fflush(stdout);
     pkey = NULL;
     OSSL_STORE_CTX *cts;
-    T(cts = OSSL_STORE_attach(bp, "file", NULL, NULL, NULL, NULL, NULL, NULL, NULL));
+    T(cts = OSSL_STORE_attach(
+          bp, "file", NULL, NULL, NULL, NULL, NULL, NULL, NULL));
     for (;;) {
-	OSSL_STORE_INFO *info = OSSL_STORE_load(cts);
-	if (!info) {
-	    ERR_print_errors_fp(stderr);
-	    T(OSSL_STORE_eof(cts));
-	    break;
-	}
-	if (OSSL_STORE_INFO_get_type(info) == OSSL_STORE_INFO_PKEY) {
-	    T((pkey = OSSL_STORE_INFO_get1_PKEY(info)));
-	}
-	OSSL_STORE_INFO_free(info);
+        OSSL_STORE_INFO *info = OSSL_STORE_load(cts);
+        if (!info) {
+            ERR_print_errors_fp(stderr);
+            T(OSSL_STORE_eof(cts));
+            break;
+        }
+        if (OSSL_STORE_INFO_get_type(info) == OSSL_STORE_INFO_PKEY) {
+            T((pkey = OSSL_STORE_INFO_get1_PKEY(info)));
+        }
+        OSSL_STORE_INFO_free(info);
     }
     OSSL_STORE_close(cts);
     if (pkey) {
-	err = !EVP_PKEY_cmp(priv_key, pkey);
-	print_test_result(!err);
-	ret |= err;
-	EVP_PKEY_free(pkey);
+        err = !EVP_PKEY_cmp(priv_key, pkey);
+        print_test_result(!err);
+        ret |= err;
+        EVP_PKEY_free(pkey);
     } else
-	printf(cCYAN "skipped" cNORM "\n");
+        printf(cCYAN "skipped" cNORM "\n");
     BIO_free(bp);
 
     /* Convert to DER and back, using memory API. */
@@ -330,11 +338,11 @@ int main(int argc, char **argv)
 
     struct test_sign *sp;
     for (sp = test_signs; sp->name; sp++)
-	ret |= test_sign(sp);
+        ret |= test_sign(sp);
 
     if (ret)
-	printf(cDRED "= Some tests FAILED!" cNORM "\n");
+        printf(cDRED "= Some tests FAILED!" cNORM "\n");
     else
-	printf(cDGREEN "= All tests passed!" cNORM "\n");
+        printf(cDGREEN "= All tests passed!" cNORM "\n");
     return ret;
 }

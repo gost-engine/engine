@@ -1,0 +1,99 @@
+# 1
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+IndentPPDirectives: AfterHash # Unknown to clang-format-5.0
+PPIndentWidth: 1
+AccessModifierOffset: -4
+
+# 2
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+ColumnLimit: 80
+BreakStringLiterals: false
+AlignAfterOpenBracket: Align
+BinPackArguments: true
+BinPackParameters: true
+#InsertTrailingCommas: Wrapped
+ExperimentalAutoDetectBinPacking: false
+AllowAllParametersOfDeclarationOnNextLine: true
+ContinuationIndentWidth: 4
+
+# 3
+BreakBeforeBraces: Linux
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+IndentCaseBlocks: false
+IndentCaseLabels: false
+Cpp11BracedListStyle: false
+
+# 3.1
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDefinitionName: false
+SpaceAfterCStyleCast: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+AlignArrayOfStructures: None
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: Left # Unknown to clang-format-4.0
+AlignOperands: Align
+BreakBeforeBinaryOperators: NonAssignment
+AlignTrailingComments: true
+
+# 7
+PointerAlignment: Right
+DerivePointerAlignment: false
+
+# 14
+Standard: Cpp03
+
+# unsorted
+
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: false
+BreakBeforeTernaryOperators: true
+DisableFormat: false
+#FixNamespaceComments: false # Unknown to clang-format-4.0
+
+IncludeBlocks: Regroup # Unknown to clang-format-5.0
+IndentWrappedFunctionNames: false
+MacroBlockBegin: ''
+MacroBlockEnd: ''
+NamespaceIndentation: None
+#ObjCBinPackProtocolList: Auto # Unknown to clang-format-5.0
+ObjCBlockIndentWidth: 4
+ObjCSpaceAfterProperty: true
+ObjCSpaceBeforeProtocolList: true
+
+#PenaltyBreakAssignment: 10 # Unknown to clang-format-4.0
+PenaltyBreakBeforeFirstCallParameter: 30
+PenaltyBreakComment: 10
+PenaltyBreakFirstLessLess: 0
+PenaltyBreakString: 10
+PenaltyExcessCharacter: 100
+PenaltyReturnTypeOnItsOwnLine: 60
+
+ReflowComments: false
+SeparateDefinitionBlocks: Always
+SortIncludes: CaseInsensitive
+#SortUsingDeclarations: false # Unknown to clang-format-4.0
+
+Cpp11BracedListStyle: true # bad but reduces initial diff
+IndentExternBlock: NoIndent
+PenaltyIndentedWhitespace: 3

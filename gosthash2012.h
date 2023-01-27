@@ -41,19 +41,20 @@
 # include "gosthash2012_ref.h"
 #endif
 
-# if defined(__GNUC__) || defined(__clang__)
-#  define RESTRICT __restrict__
-# else
-#  define RESTRICT
-# endif
+#if defined(__GNUC__) || defined(__clang__)
+# define RESTRICT __restrict__
+#else
+# define RESTRICT
+#endif
 
 #ifdef _MSC_VER
 # define ALIGN(x) __declspec(align(x))
 #else
-# define ALIGN(x) __attribute__ ((__aligned__(x)))
+# define ALIGN(x) __attribute__((__aligned__(x)))
 #endif
 
 ALIGN(16)
+
 typedef union uint512_u {
     unsigned long long QWORD[8];
     unsigned char B[64];
@@ -72,8 +73,8 @@ typedef struct gost2012_hash_ctx {
     unsigned int digest_size;
 } gost2012_hash_ctx;
 
-void init_gost2012_hash_ctx(gost2012_hash_ctx * CTX,
+void init_gost2012_hash_ctx(gost2012_hash_ctx *CTX,
                             const unsigned int digest_size);
-void gost2012_hash_block(gost2012_hash_ctx * CTX,
-                         const unsigned char *data, size_t len);
-void gost2012_finish_hash(gost2012_hash_ctx * CTX, unsigned char *digest);
+void gost2012_hash_block(gost2012_hash_ctx *CTX, const unsigned char *data,
+                         size_t len);
+void gost2012_finish_hash(gost2012_hash_ctx *CTX, unsigned char *digest);

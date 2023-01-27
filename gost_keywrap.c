@@ -7,9 +7,11 @@
  *               RFC 4357 p 6.3 and 6.4                               *
  *                  Doesn't need OpenSSL                              *
  **********************************************************************/
-#include <string.h>
-#include "gost89.h"
 #include "gost_keywrap.h"
+
+#include "gost89.h"
+
+#include <string.h>
 
 /*-
  * Diversifies key using random UserKey Material
@@ -20,7 +22,7 @@
  * outputKey - 32byte buffer to store diversified key
  *
  */
-void keyDiversifyCryptoPro(gost_ctx * ctx, const unsigned char *inputKey,
+void keyDiversifyCryptoPro(gost_ctx *ctx, const unsigned char *inputKey,
                            const unsigned char *ukm, unsigned char *outputKey)
 {
     int i;
@@ -34,8 +36,8 @@ void keyDiversifyCryptoPro(gost_ctx * ctx, const unsigned char *inputKey,
         /* Compute IV S */
         for (j = 0, mask = 1; j < 8; j++, mask <<= 1) {
             u4 k;
-            k = ((u4) outputKey[4 * j]) | (outputKey[4 * j + 1] << 8) |
-                (outputKey[4 * j + 2] << 16) | (outputKey[4 * j + 3] << 24);
+            k = ((u4)outputKey[4 * j]) | (outputKey[4 * j + 1] << 8)
+                | (outputKey[4 * j + 2] << 16) | (outputKey[4 * j + 3] << 24);
             if (mask & ukm[i]) {
                 s1 += k;
             } else {
@@ -64,9 +66,8 @@ void keyDiversifyCryptoPro(gost_ctx * ctx, const unsigned char *inputKey,
  * wrappedKey - 44-byte buffer to store wrapped key
  */
 
-int keyWrapCryptoPro(gost_ctx * ctx, const unsigned char *keyExchangeKey,
-                     const unsigned char *ukm,
-                     const unsigned char *sessionKey,
+int keyWrapCryptoPro(gost_ctx *ctx, const unsigned char *keyExchangeKey,
+                     const unsigned char *ukm, const unsigned char *sessionKey,
                      unsigned char *wrappedKey)
 {
     unsigned char kek_ukm[32];
@@ -89,14 +90,17 @@ int keyWrapCryptoPro(gost_ctx * ctx, const unsigned char *keyExchangeKey,
  * Returns 1 if key is decrypted successfully, and 0 if MAC doesn't match
  */
 
-int keyUnwrapCryptoPro(gost_ctx * ctx, const unsigned char *keyExchangeKey,
+int keyUnwrapCryptoPro(gost_ctx *ctx, const unsigned char *keyExchangeKey,
                        const unsigned char *wrappedKey,
                        unsigned char *sessionKey)
 {
     unsigned char kek_ukm[32], cek_mac[4];
-    keyDiversifyCryptoPro(ctx, keyExchangeKey, wrappedKey
-                          /* First 8 bytes of wrapped Key is ukm */
-                          , kek_ukm);
+    keyDiversifyCryptoPro(
+        ctx, keyExchangeKey,
+        wrappedKey
+        /* First 8 bytes of wrapped Key is ukm */
+        ,
+        kek_ukm);
     gost_key(ctx, kek_ukm);
     gost_dec(ctx, wrappedKey + 8, sessionKey, 4);
     gost_mac_iv(ctx, 32, wrappedKey, sessionKey, 32, cek_mac);
