@@ -1097,9 +1097,11 @@ static int gost_grasshopper_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void 
                   > 0) {
                gost_grasshopper_cipher_key(&mctx->ks.gh_ks, newkey);
                memset(newkey, 0, sizeof(newkey));
+
+               return 1;
             }
         }
-        return 1;
+        return -1;
 
     default:
         return -1;
