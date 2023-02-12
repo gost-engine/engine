@@ -308,6 +308,7 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
             c1 = 0x00000000000000f8;
             c2 = 0x00000000f0ffffff;
             c3 = 0x00e0ffffffffffff;
+            break;
         default:
             return 0;
         }

@@ -1132,9 +1132,11 @@ static int gost_magma_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void *ptr)
                   > 0) {
                 magma_key(&mctx->ks.g_ks.cctx, newkey);
                 memset(newkey, 0, sizeof(newkey));
+
+                return 1;
             }
         }
-        return 1;
+        return -1;
 
     default:
         return -1;
