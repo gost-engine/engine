@@ -249,6 +249,7 @@ static int CMAC_ACPKM_Update(CMAC_ACPKM_CTX *ctx, const void *in, size_t dlen)
 
 }
 
+/* Return value is propagated to EVP_DigestFinal_ex */
 static int CMAC_ACPKM_Final(CMAC_ACPKM_CTX *ctx, unsigned char *out,
                             size_t *poutlen)
 {
@@ -257,6 +258,10 @@ static int CMAC_ACPKM_Final(CMAC_ACPKM_CTX *ctx, unsigned char *out,
     if (ctx->nlast_block == -1)
         return 0;
     bl = EVP_CIPHER_CTX_block_size(ctx->cctx);
+    if (bl != 8 && bl != 16) {
+        GOSTerr(GOST_F_OMAC_ACPKM_IMIT_FINAL, GOST_R_INVALID_MAC_PARAMS);
+        return 0;
+    }
     *poutlen = (size_t) bl;
     if (!out)
         return 1;
@@ -341,16 +346,17 @@ int omac_acpkm_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
     OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
     unsigned char mac[MAX_GOST_OMAC_ACPKM_SIZE];
     size_t mac_size = sizeof(mac);
+    int ret;
 
     if (!c->key_set) {
         GOSTerr(GOST_F_OMAC_ACPKM_IMIT_FINAL, GOST_R_MAC_KEY_NOT_SET);
         return 0;
     }
 
-    CMAC_ACPKM_Final(c->cmac_ctx, mac, &mac_size);
+    ret = CMAC_ACPKM_Final(c->cmac_ctx, mac, &mac_size);
 
     memcpy(md, mac, c->dgst_size);
-    return 1;
+    return ret;
 }
 
 static int omac_acpkm_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
