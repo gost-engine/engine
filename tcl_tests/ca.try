@@ -61,9 +61,9 @@ test -skip {![file exists $userdir/broken.pem]} "Registering broken request at c
 test  "Revoking certificate" {
 	set revoking_cert $::test::ca/newcerts/[string trim [getFile $::test::ca/serial.old]].pem
 	append serial_list [regsub "serial=" [openssl "x509 -in $revoking_cert -noout -serial"] "    Serial Number: "]
-	grep "Data Base" [openssl "ca -crl_reason keyCompromize -crl_compromise [clock\
-	format [clock seconds]  -format %Y%m%d%H%M%SZ] -revoke $revoking_cert -config $::test::ca/ca.conf"]
-} 0 "Data Base Updated
+	string map {"Data Base" Database Updated updated} [ grep "Data" [openssl "ca -crl_reason keyCompromize -crl_compromise [clock\
+	format [clock seconds]  -format %Y%m%d%H%M%SZ] -revoke $revoking_cert -config $::test::ca/ca.conf"] ]
+} 0 "Database updated
 "
 test -createsfiles test.crl "Generating CRL" {
 	openssl "ca -gencrl -config $::test::ca/ca.conf -out test.crl"
