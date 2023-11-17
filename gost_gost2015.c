@@ -465,8 +465,11 @@ int gost_mgm128_finish(mgm128_context *ctx, const unsigned char *tag,
         ctx->len.u[0] = alen;
         ctx->len.u[1] = clen;
     } else {
-        // TODO: check for big-endian
+#ifdef L_ENDIAN
         ctx->len.u[0] = (alen >> 32) | clen;
+#else
+        ctx->len.u[0] = (alen << 32) | clen;
+#endif
         ctx->len.u[1] = 0;
     }
 
