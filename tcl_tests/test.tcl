@@ -198,7 +198,8 @@ namespace eval test {
 				set timestamp "$teststart+[expr $testend-$teststart]"
 			}
 		}	
-		if {$status!=$exitStatus || ($status==1?![regexp --\
+		if {($exitStatus!=-1 && $status!=$exitStatus) ||
+		       	($exitStatus!=0?![regexp --\
 			[rus $expectedResult] $result]:([info exists opts(-time)]?\
 		    ![listcompare $result $expectedResult $opts(-time)]:\
 			[string compare "$result" "$expectedResult"]))} {
