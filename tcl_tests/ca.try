@@ -88,8 +88,7 @@ test -skip {![file exists test.crl]} "Verifying CRL OK" {
 test -skip {![file exists test.crl]} "Verifying corrupted CRL" {
 	makeFile "badcrl.pem" [hackPem "\01\x1E" [getFile test.crl] "\01\0"]
 	grep verify [openssl "crl -in badcrl.pem -noout -CAfile $::test::ca/cacert.pem"]
-} 0 "verify failure
-"
+} -1 "verify failure"
 
 test "Verifying CA certificate" {
 	grep "(cacert.pem|error|OK)" [openssl "verify -CAfile $::test::ca/cacert.pem $::test::ca/cacert.pem"]
