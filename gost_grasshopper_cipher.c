@@ -175,6 +175,7 @@ static void acpkm_next(gost_grasshopper_cipher_ctx * c)
                                   &c->buffer);
     }
     gost_grasshopper_cipher_key(c, newkey);
+    OPENSSL_cleanse(newkey, sizeof(newkey));
 }
 
 /* Set 256 bit  key into context */
@@ -351,6 +352,7 @@ gost_grasshopper_cipher_init_ctracpkm_omac(EVP_CIPHER_CTX
 
     if (key) {
         unsigned char cipher_key[32];
+        int ret;
         c->omac_ctx = EVP_MD_CTX_new();
 
         if (c->omac_ctx == NULL) {
@@ -365,7 +367,9 @@ gost_grasshopper_cipher_init_ctracpkm_omac(EVP_CIPHER_CTX
             return 0;
         }
 
-        return gost_grasshopper_cipher_init(ctx, cipher_key, iv, enc);
+        ret = gost_grasshopper_cipher_init(ctx, cipher_key, iv, enc);
+        OPENSSL_cleanse(cipher_key, sizeof(cipher_key));
+        return ret;
     }
 
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
@@ -1158,6 +1162,7 @@ static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, v
             memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), adjusted_iv, 16);
 
             gost_grasshopper_cipher_key(c, newkey);
+            OPENSSL_cleanse(newkey, sizeof(newkey));
             return 1;
           }
         }

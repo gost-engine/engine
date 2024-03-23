@@ -529,6 +529,7 @@ static int magma_cipher_init_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx, const unsigned 
 	if (key) {
     struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
 		unsigned char cipher_key[32];
+        int ret;
 		c->omac_ctx = EVP_MD_CTX_new();
 
 		if (c->omac_ctx == NULL) {
@@ -543,7 +544,9 @@ static int magma_cipher_init_ctr_acpkm_omac(EVP_CIPHER_CTX *ctx, const unsigned 
 		    return 0;
 		}
 
-		return magma_cipher_init(ctx, cipher_key, iv, enc);
+		ret = magma_cipher_init(ctx, cipher_key, iv, enc);
+        OPENSSL_cleanse(cipher_key, sizeof(cipher_key));
+        return ret;
 	}
 
 	return magma_cipher_init(ctx, key, iv, enc);
@@ -1324,6 +1327,7 @@ static int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
                 memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), adjusted_iv, 8);
 
                 magma_key(c, newkey);
+                OPENSSL_cleanse(newkey, sizeof(newkey));
                 return 1;
           }
         }
