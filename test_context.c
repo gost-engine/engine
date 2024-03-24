@@ -333,6 +333,7 @@ static struct testcase_digest {
     { SN_magma_mac, 1 },
     { SN_grasshopper_mac, 1 },
     { SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac, 1 },
+    { SN_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac, 1 },
     { 0 },
 };
 int main(int argc, char **argv)

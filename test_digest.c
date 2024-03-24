@@ -109,6 +109,30 @@ static const char MAC_omac[] = { 0x33,0x6f,0x4d,0x29,0x60,0x59,0xfb,0xe3 };
 static const char MAC_magma_omac[] = { 0x15,0x4e,0x72,0x10 };
 
 /*
+ * OMAC-ACPKM test vector from R 1323565.1.017-2018 A.3.1
+ */
+static const char P_omac_acpkm01[] = {
+   0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x00,0xFF,0xEE,0xDD,0xCC,
+};
+
+static const char MAC_omac_acpkm01[] = {
+   0xA0,0x54,0x0E,0x37,0x30,0xAC,0xBC,0xF3,
+};
+
+/*
+ * OMAC-ACPKM test vector from R 1323565.1.017-2018 A.3.2
+ */
+static const char P_omac_acpkm02[] = {
+    0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x00,0xFF,0xEE,0xDD,0xCC,0xBB,0xAA,0x99,0x88,
+    0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xAA,0xBB,0xCC,0xEE,0xFF,0x0A,
+    0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,
+};
+
+static const char MAC_omac_acpkm02[] = {
+    0x34,0x00,0x8D,0xAD,0x54,0x96,0xBB,0x8E,
+};
+
+/*
  * OMAC-ACPKM test vector from R 1323565.1.017-2018 A.4.1
  */
 static const char P_omac_acpkm1[] = {
@@ -276,6 +300,30 @@ static const struct hash_testvec testvecs[] = {
 	.digest = MAC_magma_omac,
 	.outsize = 64 / 8,
 	.truncate = sizeof(MAC_magma_omac),
+    },
+    {
+	.algname = SN_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac,
+	.name = "M from R 1323565.1.017-2018 (A.3.1)",
+	.plaintext = P_omac_acpkm01,
+	.psize = sizeof(P_omac_acpkm01),
+	.key = K,
+	.key_size = sizeof(K),
+	.acpkm = 128 / 8,
+	.acpkm_t = 640 / 8,
+	.digest = MAC_omac_acpkm01,
+	.outsize = sizeof(MAC_omac_acpkm01),
+    },
+    {
+	.algname = SN_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac,
+	.name = "M from R 1323565.1.017-2018 (A.3.2)",
+	.plaintext = P_omac_acpkm02,
+	.psize = sizeof(P_omac_acpkm02),
+	.key = K,
+	.key_size = sizeof(K),
+	.acpkm = 128 / 8,
+	.acpkm_t = 640 / 8,
+	.digest = MAC_omac_acpkm02,
+	.outsize = sizeof(MAC_omac_acpkm02),
     },
     {
 	.algname = SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,

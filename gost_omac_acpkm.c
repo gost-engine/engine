@@ -138,9 +138,16 @@ static int CMAC_ACPKM_Init(CMAC_ACPKM_CTX *ctx, const void *key, size_t keylen,
 
         if (!EVP_EncryptInit_ex(ctx->cctx, cipher, impl, NULL, NULL))
             return 0;
-        if (!EVP_CIPHER_is_a(cipher, SN_grasshopper_cbc))
+        /* EVP_CIPHER_is_a doesn't work, checking by NID */
+        if (EVP_CIPHER_is_a(cipher, SN_magma_cbc)
+            && EVP_CIPHER_nid(cipher) == NID_magma_cbc)
+            acpkm = cipher_gost_magma_ctracpkm();
+        else if (EVP_CIPHER_is_a(cipher, SN_grasshopper_cbc)
+                 && EVP_CIPHER_nid(cipher) == NID_grasshopper_cbc)
+            acpkm = cipher_gost_grasshopper_ctracpkm();
+        else
             return 0;
-        acpkm = cipher_gost_grasshopper_ctracpkm();
+
         if (!EVP_EncryptInit_ex(ctx->actx, acpkm, impl, NULL, NULL))
             return 0;
     }
@@ -319,6 +326,9 @@ static int omac_acpkm_init(EVP_MD_CTX *ctx, const char *cipher_name)
     case NID_grasshopper_cbc:
         c->dgst_size = 16;
         break;
+    case NID_magma_cbc:
+        c->dgst_size = 8;
+        break;
     }
 
     return 1;
@@ -327,6 +337,11 @@ static int omac_acpkm_init(EVP_MD_CTX *ctx, const char *cipher_name)
 static int grasshopper_omac_acpkm_init(EVP_MD_CTX *ctx)
 {
     return omac_acpkm_init(ctx, SN_grasshopper_cbc);
+}
+
+static int magma_omac_acpkm_init(EVP_MD_CTX *ctx)
+{
+    return omac_acpkm_init(ctx, SN_magma_cbc);
 }
 
 static int omac_acpkm_imit_update(EVP_MD_CTX *ctx, const void *data,
@@ -432,6 +447,9 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
                 if (EVP_MD_is_a(md, SN_grasshopper_mac)
                     || EVP_MD_is_a(md, SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac))
                     c->cipher_name = SN_grasshopper_cbc;
+                else if (EVP_MD_is_a(md, SN_magma_mac)
+                    || EVP_MD_is_a(md, SN_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac))
+                    c->cipher_name = SN_magma_cbc;
             }
             if ((cipher =
                  (EVP_CIPHER *)EVP_get_cipherbyname(c->cipher_name)) == NULL
@@ -521,6 +539,20 @@ GOST_digest kuznyechik_ctracpkm_omac_digest = {
     .app_datasize = sizeof(OMAC_ACPKM_CTX),
     .flags = EVP_MD_FLAG_XOF,
     .init = grasshopper_omac_acpkm_init,
+    .update = omac_acpkm_imit_update,
+    .final = omac_acpkm_imit_final,
+    .copy = omac_acpkm_imit_copy,
+    .cleanup = omac_acpkm_imit_cleanup,
+    .ctrl = omac_acpkm_imit_ctrl,
+};
+
+GOST_digest magma_ctracpkm_omac_digest = {
+    .nid = NID_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac,
+    .result_size = 8,
+    .input_blocksize = 8,
+    .app_datasize = sizeof(OMAC_ACPKM_CTX),
+    .flags = EVP_MD_FLAG_XOF,
+    .init = magma_omac_acpkm_init,
     .update = omac_acpkm_imit_update,
     .final = omac_acpkm_imit_final,
     .copy = omac_acpkm_imit_copy,

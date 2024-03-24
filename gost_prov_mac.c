@@ -282,6 +282,8 @@ static int mac_set_ctx_params(void *mctx, const OSSL_PARAM params[])
 #define gost_mac_12_digest              Gost28147_89_mac_12_digest
 #define id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_digest \
     kuznyechik_ctracpkm_omac_digest
+#define id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac_digest \
+    magma_ctracpkm_omac_digest
 
 typedef void (*fptr_t)(void);
 #define MAKE_FUNCTIONS(name, macsize)                                   \
@@ -331,6 +333,7 @@ MAKE_FUNCTIONS(gost_mac_12, 4);
 MAKE_FUNCTIONS(magma_mac, 8);
 MAKE_FUNCTIONS(grasshopper_mac, 16);
 MAKE_FUNCTIONS(id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac, 16);
+MAKE_FUNCTIONS(id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac, 8);
 
 /* The OSSL_ALGORITHM for the provider's operation query function */
 const OSSL_ALGORITHM GOST_prov_macs[] = {
@@ -342,6 +345,9 @@ const OSSL_ALGORITHM GOST_prov_macs[] = {
     { SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac
       ":1.2.643.7.1.1.5.2.2", NULL,
       id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_functions },
+    { SN_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac
+      ":1.2.643.7.1.1.5.1.2", NULL,
+      id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac_functions },
     { NULL , NULL, NULL }
 };
 
@@ -351,7 +357,8 @@ void GOST_prov_deinit_mac_digests(void) {
         &Gost28147_89_mac_12_digest,
         &magma_mac_digest,
         &grasshopper_mac_digest,
-        &kuznyechik_ctracpkm_omac_digest
+        &kuznyechik_ctracpkm_omac_digest,
+        &magma_ctracpkm_omac_digest
     };
     size_t i;
 #define elems(l) (sizeof(l) / sizeof(l[0]))
