@@ -134,18 +134,27 @@ static int CMAC_ACPKM_Init(CMAC_ACPKM_CTX *ctx, const void *key, size_t keylen,
     }
     /* Initialise context */
     if (cipher) {
-        const EVP_CIPHER *acpkm;
+        const EVP_CIPHER *acpkm = NULL;
 
         if (!EVP_EncryptInit_ex(ctx->cctx, cipher, impl, NULL, NULL))
             return 0;
-        /* EVP_CIPHER_is_a doesn't work, checking by NID */
-        if (EVP_CIPHER_is_a(cipher, SN_magma_cbc)
-            && EVP_CIPHER_nid(cipher) == NID_magma_cbc)
-            acpkm = cipher_gost_magma_ctracpkm();
-        else if (EVP_CIPHER_is_a(cipher, SN_grasshopper_cbc)
-                 && EVP_CIPHER_nid(cipher) == NID_grasshopper_cbc)
-            acpkm = cipher_gost_grasshopper_ctracpkm();
-        else
+        /* Unfortunately, EVP_CIPHER_is_a is bugged for an engine, EVP_CIPHER_nid is bugged for a provider. */
+        if (EVP_CIPHER_nid(cipher) == NID_undef) {
+            /* Looks like a provider */
+            if (EVP_CIPHER_is_a(cipher, SN_magma_cbc))
+                acpkm = cipher_gost_magma_ctracpkm();
+            else if (EVP_CIPHER_is_a(cipher, SN_grasshopper_cbc))
+                acpkm = cipher_gost_grasshopper_ctracpkm();
+        }
+        else {
+            /* Looks like an engine */
+            if (EVP_CIPHER_nid(cipher) == NID_magma_cbc)
+                acpkm = cipher_gost_magma_ctracpkm();
+            else if (EVP_CIPHER_nid(cipher) == NID_grasshopper_cbc)
+                acpkm = cipher_gost_grasshopper_ctracpkm();
+        }
+
+        if (acpkm == NULL)
             return 0;
 
         if (!EVP_EncryptInit_ex(ctx->actx, acpkm, impl, NULL, NULL))
@@ -486,9 +495,13 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
                 return -1;
             c->cmac_ctx->section_size = arg;
             if (ptr && *(int *)ptr) {
+                const EVP_CIPHER *cipher;
+                if ((cipher = EVP_CIPHER_CTX_cipher(c->cmac_ctx->actx)) == NULL) {
+                    return 0;
+                }
+
                 /* Set parameter T */
-                if (EVP_CIPHER_get0_provider(EVP_CIPHER_CTX_cipher(c->cmac_ctx->actx))
-                    == NULL) {
+                if (EVP_CIPHER_get0_provider(cipher) == NULL) {
                     if (!EVP_CIPHER_CTX_ctrl(c->cmac_ctx->actx, EVP_CTRL_KEY_MESH,
                                              *(int *)ptr, NULL))
                         return 0;
