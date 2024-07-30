@@ -250,7 +250,7 @@ int hash_stream(gost_hash_ctx * ctx, int fd, char *sum, int hashsize)
 int get_line(FILE *f, char *hash, char *filename, int verbose, int *size)
 {
     int i, len;
-    char *ptr = filename;
+    char *ptr;
     char *spacepos = NULL;
 
     while (!feof(f)) {
