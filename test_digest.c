@@ -663,6 +663,7 @@ static int do_mac(int iter, EVP_MAC *mac, const char *plaintext,
     }
     else
         outsize = EVP_MAC_CTX_get_mac_size(ctx);
+    T(p - params < 4);
 
     T(EVP_MAC_init(ctx, (const unsigned char *)t->key, t->key_size, NULL));
     T(EVP_MAC_CTX_set_params(ctx, params));
