@@ -1,0 +1,43 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "authors": [
+      {
+        "name": "@VCS_SBOM_AUTHORS@"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:github/gost-engine/engine@@VCS_TAG@",
+      "cpe": "cpe:2.3:a:gost_engine_project:gost_engine:@VCS_TAG@:*:*:*:*:*:*:*",
+      "name": "GOST Engine",
+      "version": "@VCS_VERSION@",
+      "description": "A reference implementation of the Russian GOST crypto algorithms",
+      "authors": [
+        {
+          "name": "@VCS_AUTHORS@"
+        }
+      ],
+      "supplier": {
+        "name": "GOST Engine Team"
+      },
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/gost-engine/engine"
+        }
+      ]
+    }
+  ]
+}
