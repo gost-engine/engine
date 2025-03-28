@@ -73,11 +73,14 @@ test -createsfiles test.crl "Generating CRL" {
 
 
 test -skip {![file exists test.crl]} "Displaying CRL" {
-	regsub -all " = " [grep "(Serial|Version|Signature Alg|Issuer)" [openssl "crl -text -noout -in test.crl"] ] "="
-} 0 "        Version 2 (0x1)
-        Signature Algorithm: [hash_with_sign_long_name $ca_alg]
-        Issuer: C=RU, L=Moscow, CN=Test CA $ca_alg, O=Cryptocom, OU=OpenSSL CA, emailAddress=openssl@cryptocom.ru
-$serial_list    Signature Algorithm: [hash_with_sign_long_name  $ca_alg]
+	regsub -all " +" [
+		regsub -all " = " [grep "(Serial|Version|Signature Alg|Issuer)" [openssl "crl -text -noout -in test.crl"] ] "="
+	] " "
+} 0 " Version 2 (0x1)
+ Signature Algorithm: [hash_with_sign_long_name $ca_alg]
+ Issuer: C=RU, L=Moscow, CN=Test CA $ca_alg, O=Cryptocom, OU=OpenSSL CA, emailAddress=openssl@cryptocom.ru
+[regsub -all " +" $serial_list " "]\
+ Signature Algorithm: [hash_with_sign_long_name  $ca_alg]
 "
 
 test -skip {![file exists test.crl]} "Verifying CRL OK" {
