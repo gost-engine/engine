@@ -7,7 +7,7 @@ use Cwd 'abs_path';
 
 # prepare data for 
 
-open (my $F,">","testdata.dat");
+open (my $F,">","$ARGV[0]-testdata.dat");
 print $F "12345670" x 128;
 close $F;
 
@@ -49,8 +49,8 @@ is(`openssl engine -c $engine`,
 $engine_info,
 "load engine without any config");
 
-is(`openssl dgst -engine $engine -md_gost94 testdata.dat`,
-"md_gost94(testdata.dat)= f7fc6d16a6a5c12ac4f7d320e0fd0d8354908699125e09727a4ef929122b1cae\n",
+is(`openssl dgst -engine $engine -md_gost94 $ARGV[0]-testdata.dat`,
+"md_gost94($ARGV[0]-testdata.dat)= f7fc6d16a6a5c12ac4f7d320e0fd0d8354908699125e09727a4ef929122b1cae\n",
 "compute digest without config");
 
 
@@ -72,17 +72,17 @@ is(`openssl engine -c $engine`,
 $engine_info,
 "load engine with config");
 
-is(`openssl dgst -md_gost94 testdata.dat`,
-"md_gost94(testdata.dat)= f7fc6d16a6a5c12ac4f7d320e0fd0d8354908699125e09727a4ef929122b1cae\n",
+is(`openssl dgst -md_gost94 $ARGV[0]-testdata.dat`,
+"md_gost94($ARGV[0]-testdata.dat)= f7fc6d16a6a5c12ac4f7d320e0fd0d8354908699125e09727a4ef929122b1cae\n",
 "compute digest with config without explicit engine param");
 
-is(`openssl dgst -engine $engine -md_gost94 testdata.dat`,
-"md_gost94(testdata.dat)= f7fc6d16a6a5c12ac4f7d320e0fd0d8354908699125e09727a4ef929122b1cae\n",
+is(`openssl dgst -engine $engine -md_gost94 $ARGV[0]-testdata.dat`,
+"md_gost94($ARGV[0]-testdata.dat)= f7fc6d16a6a5c12ac4f7d320e0fd0d8354908699125e09727a4ef929122b1cae\n",
 "compute digest with both config and explicit engine param");
 
 like(`openssl ciphers`, qr|GOST2001-GOST89-GOST89|, 'display GOST2001-GOST89-GOST89 cipher');
 
 like(`openssl ciphers`, qr|GOST2012-GOST8912-GOST8912|, 'display GOST2012-GOST8912-GOST8912 cipher');
 
-unlink('testdata.dat');
+unlink("$ARGV[0]-testdata.dat");
 unlink('test.cnf');

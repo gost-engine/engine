@@ -40,11 +40,11 @@ plan(19 * scalar @test_types);
 
 # prepare data for 
 my $F;
-open $F,">","testdata.dat";
+open $F,">","$ARGV[0]-testdata.dat";
 print $F "12345670" x 128;
 close $F;
 
-open $F,">","testbig.dat";
+open $F,">","$ARGV[0]-testbig.dat";
 print $F ("12345670" x 8 . "\n") x  4096;
 close $F;
 
@@ -156,9 +156,9 @@ foreach my $test_type (@test_types) {
       my $expected;
 
       $cmd = $mac_cmd->(-mac => 'gost-mac', -key => $key,
-                        -args => $module_args, -infile => 'testdata.dat');
+                        -args => $module_args, -infile => "$ARGV[0]-testdata.dat");
       $expected = $mac_expected->(-mac => 'GOST-MAC-gost-mac',
-                                  -infile => 'testdata.dat',
+                                  -infile => "$ARGV[0]-testdata.dat",
                                   -result => '2ee8d13d');
       unless (is(`$cmd`, $expected, "GOST MAC - default size")) {
           diag("Command was: $cmd");
@@ -167,9 +167,9 @@ foreach my $test_type (@test_types) {
       my $i;
       for ($i=1;$i<=8; $i++) {
           $cmd = $mac_cmd->(-mac => 'gost-mac', -key => $key, -size => $i,
-                            -args => $module_args, -infile => 'testdata.dat');
+                            -args => $module_args, -infile => "$ARGV[0]-testdata.dat");
           $expected = $mac_expected->(-mac => 'GOST-MAC-gost-mac',
-                                      -infile => 'testdata.dat',
+                                      -infile => "$ARGV[0]-testdata.dat",
                                       -result => substr("2ee8d13dff7f037d",0,$i*2));
           unless (is(`$cmd`, $expected, "GOST MAC - size $i bytes")) {
               diag("Command was: $cmd");
@@ -179,27 +179,27 @@ foreach my $test_type (@test_types) {
 
 
       $cmd = $mac_cmd->(-mac => 'gost-mac', -key => $key,
-                        -args => $module_args, -infile => 'testbig.dat');
+                        -args => $module_args, -infile => "$ARGV[0]-testbig.dat");
       $expected = $mac_expected->(-mac => 'GOST-MAC-gost-mac',
-                                  -infile => 'testbig.dat',
+                                  -infile => "$ARGV[0]-testbig.dat",
                                   -result => '5efab81f');
       unless (is(`$cmd`, $expected, "GOST MAC - big data")) {
           diag("Command was: $cmd");
       }
 
       $cmd = $mac_cmd->(-mac => 'gost-mac-12', -key => $key,
-                        -args => $module_args, -infile => 'testdata.dat');
+                        -args => $module_args, -infile => "$ARGV[0]-testdata.dat");
       $expected = $mac_expected->(-mac => 'GOST-MAC-12-gost-mac-12',
-                                  -infile => 'testdata.dat',
+                                  -infile => "$ARGV[0]-testdata.dat",
                                   -result => 'be4453ec');
       unless (is(`$cmd`, $expected, "GOST MAC parameters 2012 - default size")) {
           diag("Command was: $cmd");
       }
       for ($i=1;$i<=8; $i++) {
           $cmd = $mac_cmd->(-mac => 'gost-mac-12', -key => $key, -size => $i,
-                            -args => $module_args, -infile => 'testdata.dat');
+                            -args => $module_args, -infile => "$ARGV[0]-testdata.dat");
           $expected = $mac_expected->(-mac => 'GOST-MAC-12-gost-mac-12',
-                                      -infile => 'testdata.dat',
+                                      -infile => "$ARGV[0]-testdata.dat",
                                       -result => substr("be4453ec1ec327be",0,$i*2));
           unless (is(`$cmd`, $expected, "GOST MAC parameters 2012 - size $i bytes")) {
               diag("Command was: $cmd");
@@ -208,5 +208,5 @@ foreach my $test_type (@test_types) {
     }
 }
 
-unlink('testdata.dat');
-unlink('testbig.dat');
+unlink("$ARGV[0]-testdata.dat");
+unlink("$ARGV[0]-testbig.dat");

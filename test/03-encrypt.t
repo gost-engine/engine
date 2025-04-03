@@ -78,7 +78,7 @@ sub crypt_test {
     my $test_type = $p{-testtype};
     my $args = $p{-args};
     my $count = ++${$p{-count}};
-    my $result_name = "$test_type$count";
+    my $result_name = "$ARGV[0]-$test_type$count";
     open my $f, ">", "$result_name.clear";
     print $f $p{-cleartext};
     close $f;
