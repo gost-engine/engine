@@ -1131,6 +1131,7 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
         EVP_PKEY_meth_set_copy(*pmeth, pkey_gost_mac_copy);
         return 1;
     case NID_magma_mac:
+    case NID_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac:  /* FIXME beldmit */
         EVP_PKEY_meth_set_ctrl(*pmeth, pkey_gost_magma_mac_ctrl,
                                pkey_gost_magma_mac_ctrl_str);
         EVP_PKEY_meth_set_signctx(*pmeth, pkey_gost_magma_mac_signctx_init,
