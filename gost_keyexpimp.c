@@ -269,6 +269,7 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
     uint64_t seed1, seed2, seed3;
     uint64_t seq;
     unsigned char ko1[32], ko2[32];
+    int ret;
 
     switch (cipher_nid) {
     case NID_magma_cbc:
@@ -293,15 +294,16 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
     seed2 = seq & c2;
     seed3 = seq & c3;
 
-    if (gost_kdftree2012_256(ko1, 32, in, 32, (const unsigned char *)"level1", 6,
+    ret = !(gost_kdftree2012_256(ko1, 32, in, 32, (const unsigned char *)"level1", 6,
                          (const unsigned char *)&seed1, 8, 1) <= 0
 			  || gost_kdftree2012_256(ko2, 32, ko1, 32, (const unsigned char *)"level2", 6,
                          (const unsigned char *)&seed2, 8, 1) <= 0
         || gost_kdftree2012_256(out, 32, ko2, 32, (const unsigned char *)"level3", 6,
-                         (const unsigned char *)&seed3, 8, 1) <= 0)
-			return 0;
+                         (const unsigned char *)&seed3, 8, 1) <= 0);
 
-    return 1;
+    OPENSSL_cleanse(ko1, sizeof(ko1));
+    OPENSSL_cleanse(ko2, sizeof(ko2));
+    return ret;
 }
 
 #define GOST_WRAP_FLAGS  EVP_CIPH_CTRL_INIT | EVP_CIPH_WRAP_MODE | EVP_CIPH_CUSTOM_IV | EVP_CIPH_FLAG_CUSTOM_CIPHER | EVP_CIPH_FLAG_DEFAULT_ASN1
