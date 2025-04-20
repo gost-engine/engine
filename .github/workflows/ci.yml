@@ -27,7 +27,7 @@ jobs:
             - run: .github/script.sh
 
     macos-openssl-stable:
-        runs-on: macos-11
+        runs-on: macos-latest
         env:
             USE_RPATH:
         steps:
@@ -49,7 +49,7 @@ jobs:
             - run: .github/script.sh
 
     macos-openssl-master:
-        runs-on: macos-11
+        runs-on: macos-latest
         env:
             OPENSSL_BRANCH: master
             USE_RPATH:
