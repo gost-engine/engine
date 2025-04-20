@@ -7,7 +7,7 @@ env:
 
 jobs:
     gcc-openssl-stable:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
               with:
@@ -16,7 +16,7 @@ jobs:
             - run: .github/script.sh
 
     clang-openssl-stable:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         env:
             CC: clang
         steps:
@@ -38,7 +38,7 @@ jobs:
             - run: .github/script.sh
 
     gcc-openssl-master:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         env:
             OPENSSL_BRANCH: master
         steps:
@@ -61,7 +61,7 @@ jobs:
             - run: .github/script.sh
 
     gcc-asan-openssl-master:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         env:
             OPENSSL_BRANCH: master
             ASAN: -DASAN=1
@@ -86,7 +86,7 @@ jobs:
             - run: .github/script.sh
 
     gcc-openssl-stable-x86:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         env:
             CFLAGS: -m32
             LDFLAGS: -m32
