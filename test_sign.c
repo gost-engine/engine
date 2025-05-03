@@ -267,6 +267,50 @@ static int test_sign(struct test_sign *t)
     EVP_PKEY_CTX_free(ctx1);
     EVP_PKEY_free(key1);
 
+    /* Extract public key in raw format.
+     * Should contain X||Y in little endian.
+    */
+    size_t publen;
+    unsigned char *pub;
+    err = EVP_PKEY_get_raw_public_key(priv_key, NULL, &publen);
+    T(pub = OPENSSL_zalloc(publen));
+    err &= EVP_PKEY_get_raw_public_key(priv_key, pub, &publen);
+    printf("\tEVP_PKEY_get_raw_public_key:");
+    print_test_tf(err, err, "success", "failure");
+    ret |= err != 1;
+
+    unsigned char *pub2 = NULL;
+    int pub2len = EVP_PKEY_get1_encoded_public_key(priv_key, &pub2);
+    err = (publen == pub2len) && pub2 && !memcmp(pub, pub2, publen);
+    printf("\tEVP_PKEY_get1_encoded_public_key:\t");
+    print_test_tf(err, err, "success", "failure");
+    ret |= err != 1;
+    if (pub2)
+        OPENSSL_free(pub2);
+
+    EVP_PKEY *copy_key;
+    T(copy_key = EVP_PKEY_new());
+    T(EVP_PKEY_copy_parameters(copy_key, priv_key));
+    err = EVP_PKEY_set1_encoded_public_key(copy_key, pub, publen);
+    printf("\tEVP_PKEY_set1_encoded_public_key:\t");
+    print_test_tf(err, err, "success", "failure");
+    EVP_PKEY_free(copy_key);
+    OPENSSL_free(pub);
+    ret |= err != 1;
+
+    /* Extract private key in raw format.
+     * Should contain d on little endian form.
+    */
+    size_t privlen;
+    unsigned char *priv;
+    err = EVP_PKEY_get_raw_private_key(priv_key, NULL, &privlen);
+    T(priv = OPENSSL_zalloc(privlen));
+    err &= EVP_PKEY_get_raw_private_key(priv_key, priv, &privlen);
+    printf("\tEVP_PKEY_get_raw_private_key:\t");
+    print_test_tf(err, err, "success", "failure");
+    OPENSSL_free(priv);
+    ret |= err != 1;
+
     /*
      * Prepare for sign testing.
      */
