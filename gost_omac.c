@@ -249,6 +249,7 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
                         || (cipher = EVP_CIPHER_fetch(NULL, c->cipher_name, NULL)))
                         ret = omac_key(c, cipher, diversed_key, 32);
                     EVP_CIPHER_free(cipher);
+                    OPENSSL_cleanse(diversed_key, sizeof(diversed_key));
                 }
                 return ret;
             }
