@@ -78,7 +78,7 @@ static void err(int eval, const char *fmt, ...)
 }
 
 /* Generate simple cert+key pair. Based on req.c */
-static struct certkey certgen(const char *algname, const char *paramset)
+static void certgen(const char *algname, const char *paramset, struct certkey *ck)
 {
     /* Keygen. */
     EVP_PKEY *tkey;
@@ -150,7 +150,8 @@ static struct certkey certgen(const char *algname, const char *paramset)
     PEM_write_bio_X509(out, x509ss);
     BIO_free_all(out);
 #endif
-    return (struct certkey){ .pkey = pkey, .cert = x509ss };
+    ck->pkey = pkey;
+    ck->cert = x509ss;
 }
 
 /* Non-blocking BIO test mechanic is based on sslapitest.c */
@@ -164,7 +165,7 @@ int test(const char *algname, const char *paramset)
     printf(cNORM "\n");
 
     struct certkey ck;
-    ck = certgen(algname, paramset);
+    certgen(algname, paramset, &ck);
 
     SSL_CTX *cctx, *sctx;
 
