@@ -80,6 +80,7 @@ GOST_digest *gost_digest_array[] = {
     &magma_mac_digest,
     &grasshopper_mac_digest,
     &kuznyechik_ctracpkm_omac_digest,
+    &magma_ctracpkm_omac_digest,
 };
 
 GOST_cipher *gost_cipher_array[] = {
