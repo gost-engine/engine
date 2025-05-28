@@ -410,6 +410,135 @@ end:
 	return ret;
 }
 
+static int gost_set_raw_pub_key(EVP_PKEY *pk, const unsigned char *pub, size_t len)
+{
+    int ret = 0;
+    BIGNUM *X = NULL;
+    BIGNUM *Y = NULL;
+    EC_POINT *pub_key = NULL;
+    EC_KEY *ec;
+    const EC_GROUP *group;
+    const BIGNUM *order;
+    int half;
+
+    if (pub == NULL || len == 0) {
+        return 0;
+    }
+
+    if ((ec = EVP_PKEY_get0(pk)) == NULL
+        || (group = EC_KEY_get0_group(ec)) == NULL
+        || (order = EC_GROUP_get0_order(group)) == NULL) {
+        return 0;
+    }
+
+    half = len / 2;
+    if ((X = BN_lebin2bn(pub, half, NULL)) == NULL
+        || (Y = BN_lebin2bn(pub + half, half, NULL)) == NULL
+        || (pub_key = EC_POINT_new(group)) == NULL) {
+            goto end;
+    }
+
+    if (EC_POINT_set_affine_coordinates(group, pub_key, X, Y, NULL) != 1) {
+        goto end;
+    }
+
+    if (EC_KEY_set_public_key(ec, pub_key) != 1) {
+        goto end;
+    }
+
+    ret = 1;
+end:
+    EC_POINT_free(pub_key);
+    BN_free(Y);
+    BN_free(X);
+    return ret;
+}
+
+static int gost_get_raw_priv_key(const EVP_PKEY *pk, unsigned char *priv, size_t *len)
+{
+    const EC_KEY *ec;
+    const EC_GROUP *group;
+    const BIGNUM *order;
+    const BIGNUM *priv_key;
+    int half;
+
+    if (len == NULL) {
+        return 0;
+    }
+
+    if ((ec = EVP_PKEY_get0(pk)) == NULL
+        || (group = EC_KEY_get0_group(ec)) == NULL
+        || (order = EC_GROUP_get0_order(group)) == NULL
+        || (priv_key = EC_KEY_get0_private_key(ec)) == NULL) {
+        return 0;
+    }
+
+    half = BN_num_bytes(order);
+    if (priv == NULL) {
+        *len = half;
+        return 1;
+    }
+
+    if (BN_bn2lebinpad(priv_key, priv, half) != half) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static int gost_get_raw_pub_key(const EVP_PKEY *pk, unsigned char *pub, size_t *len)
+{
+    int ret = 0;
+    BIGNUM *X = NULL;
+    BIGNUM *Y = NULL;
+    const EC_KEY *ec;
+    const EC_GROUP *group;
+    const BIGNUM *order;
+    const EC_POINT *pub_key;
+    int half;
+
+    if (len == NULL) {
+        return 0;
+    }
+
+    if ((ec = EVP_PKEY_get0(pk)) == NULL
+        || (group = EC_KEY_get0_group(ec)) == NULL
+        || (order = EC_GROUP_get0_order(group)) == NULL
+        || (pub_key = EC_KEY_get0_public_key(ec)) == NULL) {
+        return 0;
+    }
+
+    half = BN_num_bytes(order);
+    if (pub == NULL) {
+        *len = 2 * half;
+        return 1;
+    }
+
+    if (*len < 2 * half) {
+        return 0;
+    }
+
+    if ((X = BN_new()) == NULL
+        || (Y = BN_new()) == NULL) {
+        goto end;
+    }
+
+    if (EC_POINT_get_affine_coordinates(group, pub_key, X, Y, NULL) != 1) {
+        goto end;
+    }
+
+    if (BN_bn2lebinpad(X, pub, half) != half
+        || BN_bn2lebinpad(Y, pub + half, half) != half) {
+        goto end;
+    }
+
+    ret = 1;
+ end:
+    BN_free(Y);
+    BN_free(X);
+    return ret;
+}
+
 /*
  * Control function
  */
@@ -531,6 +660,26 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
         *(int *)arg2 = md_nid;
         return 2;
+    case ASN1_PKEY_CTRL_GET1_TLS_ENCPT:
+    {
+        unsigned char **dup = (unsigned char **)arg2;
+        unsigned char *buf = NULL;
+        size_t len;
+
+        if (dup == NULL
+            || gost_get_raw_pub_key(pkey, NULL, &len) != 1
+            || (buf = OPENSSL_malloc(len)) == NULL
+            || gost_get_raw_pub_key(pkey, buf, &len) != 1) {
+            if (buf)
+                OPENSSL_free(buf);
+            return 0;
+        }
+
+        *dup = buf;
+        return len;
+    }
+    case ASN1_PKEY_CTRL_SET1_TLS_ENCPT:
+        return gost_set_raw_pub_key(pkey, (const unsigned char *)arg2, arg1);
     }
 
     return -2;
@@ -1195,6 +1344,10 @@ int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                                  pub_decode_gost_ec, pub_encode_gost_ec,
                                  pub_cmp_gost_ec, pub_print_gost_ec,
                                  pkey_size_gost, pkey_bits_gost);
+
+        EVP_PKEY_asn1_set_set_pub_key(*ameth, gost_set_raw_pub_key);
+        EVP_PKEY_asn1_set_get_priv_key(*ameth, gost_get_raw_priv_key);
+        EVP_PKEY_asn1_set_get_pub_key(*ameth, gost_get_raw_pub_key);
 
         EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
         EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);
