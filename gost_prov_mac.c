@@ -337,16 +337,16 @@ MAKE_FUNCTIONS(id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac, 8);
 
 /* The OSSL_ALGORITHM for the provider's operation query function */
 const OSSL_ALGORITHM GOST_prov_macs[] = {
-    { SN_id_Gost28147_89_MAC ":1.2.643.2.2.22", NULL,
+    { SN_id_Gost28147_89_MAC ":1.2.643.2.2.22", "provider=gost",
       id_Gost28147_89_MAC_functions, "GOST 28147-89 MAC" },
-    { SN_gost_mac_12, NULL, gost_mac_12_functions },
-    { SN_magma_mac, NULL, magma_mac_functions },
-    { SN_grasshopper_mac, NULL, grasshopper_mac_functions },
+    { SN_gost_mac_12, "provider=gost", gost_mac_12_functions },
+    { SN_magma_mac, "provider=gost", magma_mac_functions },
+    { SN_grasshopper_mac, "provider=gost", grasshopper_mac_functions },
     { SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac
-      ":1.2.643.7.1.1.5.2.2", NULL,
+      ":1.2.643.7.1.1.5.2.2", "provider=gost",
       id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_functions },
     { SN_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac
-      ":1.2.643.7.1.1.5.1.2", NULL,
+      ":1.2.643.7.1.1.5.1.2", "provider=gost",
       id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac_functions },
     { NULL , NULL, NULL }
 };

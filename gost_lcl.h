@@ -419,5 +419,8 @@ typedef struct gost_nid_job GOST_NID_JOB;
 extern GOST_NID_JOB magma_mgm_NID;
 extern GOST_NID_JOB kuznyechik_mgm_NID;
 
+/* Asymmetric key handling in provider */
+
+extern const OSSL_ALGORITHM GOST_prov_keymgmt[];
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */

@@ -207,6 +207,7 @@ set(GOST_PROV_SOURCE_FILES
         gost_prov_cipher.c
         gost_prov_digest.c
         gost_prov_mac.c
+        gost_prov_key.c
         )
 
 set(TEST_ENVIRONMENT_COMMON
