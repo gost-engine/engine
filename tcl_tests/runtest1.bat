@@ -27,24 +27,24 @@ rem выставлять "любой компьютер", либо явно за
 IF "%OPENSSL_APP%"=="" set OPENSSL_APP=c:\cryptopack3\bin\openssl.exe
 IF "%TCLSH%"=="" set TCLSH=c:\Tcl\bin\tclsh.exe
 
-%TCLSH% getengine.tcl > engine_name.txt
-set /p ENGINE_NAME= < engine_name.txt
-del engine_name.txt
+%TCLSH% get_test_target_name.tcl > test_target_name.txt
+set /p TEST_TARGET_NAME= < test_target_name.txt
+del test_target_name.txt
 
 hostname > host_name.txt
 set /p HOST_NAME= < host_name.txt
 del host_name.txt
-set TESTDIR=%HOST_NAME%-bat-%ENGINE_NAME%
+set TESTDIR=%HOST_NAME%-bat-%TEST_TARGET_NAME%
 rmdir /s /q %TESTDIR%
 mkdir %TESTDIR%
 copy oidfile %TESTDIR%
 set OTHER_VERSION=../OtherVersion
 
-IF %ENGINE_NAME%==cryptocom (
+IF %TEST_TARGET_NAME%==cryptocom (
 		set BASE_TESTS=engine ssl dgst pkcs8 enc req-genpkey req-newkey ca smime smime2 smimeenc cms cms2 cmsenc pkcs12 nopath ocsp ts smime_io cms_io smimeenc_io cmsenc_io
 		set OTHER_DIR=../%HOST_NAME%-bat-gost
 ) ELSE (
-	IF %ENGINE_NAME%==gost (
+	IF %TEST_TARGET_NAME%==gost (
 		set BASE_TESTS=engine dgst pkcs8 enc req-genpkey req-newkey ca smime smime2 smimeenc cms cms2 cmsenc pkcs12 nopath ocsp ts ssl smime_io cms_io smimeenc_io cmsenc_io
 		set OTHER_DIR=../%HOST_NAME%-bat-cryptocom
 	) ELSE (
@@ -68,7 +68,7 @@ rem FOR %%t IN (%WINCLIENT_TESTS%) DO %TCLSH% wcli.try %%t
 IF EXIST %TESTDIR%\%OTHER_DIR% %TCLSH% interop.try
 IF EXIST %TESTDIR%\%OTHER_VERSION% (
 	set OTHER_DIR=%OTHER_VERSION%
-	IF %ENGINE_NAME%==cryptocom (
+	IF %TEST_TARGET_NAME%==cryptocom (
 		set ALG_LIST="gost2001:A gost2001:B gost2001:C" 
 		set ENC_LIST="gost2001:A:1.2.643.2.2.31.3 gost2001:B:1.2.643.2.2.31.4 gost2001:C:1.2.643.2.2.31.2 gost2001:A:"
 	) ELSE (

@@ -42,6 +42,43 @@ static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
     fprintf(f, "\n");
 }
 
+static int expect_eq(const char *test_name, int ret, const unsigned char *result,
+                     const unsigned char *expected, size_t len)
+{
+    if (ret <= 0) {
+        ERR_print_errors_fp(stderr);
+        return 1;
+    } else {
+        hexdump(stdout, test_name, result, len);
+        if (memcmp(result, expected, len) != 0) {
+            fprintf(stdout, "ERROR! %s test failed\n", test_name);
+            return 2;
+        }
+    }
+    return 0;
+}
+
+static int initialize_openssl(ENGINE **eng)
+{
+#ifdef _MSC_VER
+    _putenv_s("OPENSSL_ENGINES", ENGINE_DIR);
+#else
+    setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
+#endif
+    OPENSSL_add_all_algorithms_conf();
+    ERR_load_crypto_strings();
+    T(*eng = ENGINE_by_id("gost"));
+    T(ENGINE_init(*eng));
+    T(ENGINE_set_default(*eng, ENGINE_METHOD_ALL));
+    return 0;
+}
+
+static void cleanup_openssl(ENGINE *eng)
+{
+    ENGINE_finish(eng);
+    ENGINE_free(eng);
+}
+
 int main(void)
 {
     const unsigned char shared_key[] = {
@@ -83,8 +120,9 @@ int main(void)
     };
 
     unsigned char kdf_label[] = { 0x26, 0xBD, 0xB8, 0x78 };
-    unsigned char kdf_seed[] =
-        { 0xAF, 0x21, 0x43, 0x41, 0x45, 0x65, 0x63, 0x78 };
+    unsigned char kdf_seed[] = {
+        0xAF, 0x21, 0x43, 0x41, 0x45, 0x65, 0x63, 0x78
+    };
     const unsigned char kdf_etalon[] = {
         0x22, 0xB6, 0x83, 0x78, 0x45, 0xC6, 0xBE, 0xF6,
         0x5E, 0xA7, 0x16, 0x72, 0xB2, 0x65, 0x83, 0x10,
@@ -103,6 +141,34 @@ int main(void)
         0x4e, 0x5b, 0xf0, 0xff, 0x64, 0x1a, 0x19, 0xff,
     };
 
+    const unsigned char kroot_kuzn_s[] = {
+        0x58, 0x16, 0x88, 0xD7, 0x6E, 0xFE, 0x12, 0x2B,
+        0xB5, 0x5F, 0x62, 0xB3, 0x8E, 0xF0, 0x1B, 0xCC,
+        0x8C, 0x88, 0xDB, 0x83, 0xE9, 0xEA, 0x4D, 0x55,
+        0xD3, 0x89, 0x8C, 0x53, 0x72, 0x1F, 0xC3, 0x84
+    };
+
+    const unsigned char tlstree_kuzn_s_etalon[] = {
+        0xE1, 0xC5, 0x9B, 0x41, 0x69, 0xD8, 0x96, 0x10,
+        0x7F, 0x78, 0x45, 0x68, 0x93, 0xA3, 0x75, 0x1E,
+        0x15, 0x73, 0x54, 0x3D, 0xAD, 0x8C, 0xB7, 0x40,
+        0x69, 0xE6, 0x81, 0x4A, 0x51, 0x3B, 0xBB, 0x1C
+    };
+
+    unsigned char kroot_magma_l[] = {
+        0xDF, 0x66, 0x60, 0x1E, 0xDD, 0xD6, 0x4E, 0x96,
+        0x1D, 0xFC, 0x7D, 0xD0, 0x21, 0x2E, 0xF2, 0x25,
+        0xC0, 0x05, 0x33, 0xE6, 0xDA, 0xA4, 0xAD, 0x24,
+        0x18, 0x5E, 0xBE, 0xB2, 0x24, 0xB5, 0x46, 0xB8
+    };
+
+    unsigned char tlstree_magma_l_etalon[] = {
+        0xBD, 0x00, 0x9F, 0xFC, 0x04, 0xA0, 0x52, 0x9E,
+        0x60, 0x78, 0xEB, 0xA5, 0xA0, 0x7A, 0xDE, 0x74,
+        0x93, 0x7F, 0xF3, 0xA1, 0xAB, 0x75, 0xF7, 0xAE,
+        0x05, 0x19, 0x04, 0x78, 0x51, 0x9B, 0x6D, 0xF3
+    };
+
     unsigned char buf[32 + 16];
     int ret = 0, err = 0;
     int outlen = 40;
@@ -112,20 +178,12 @@ int main(void)
     unsigned char tlsseq[8];
     unsigned char out[32];
 
-#ifdef _MSC_VER
-    _putenv_s("OPENSSL_ENGINES", ENGINE_DIR);
-#else
-    setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
-#endif
-    OPENSSL_add_all_algorithms_conf();
-    ERR_load_crypto_strings();
     ENGINE *eng;
-    T(eng = ENGINE_by_id("gost"));
-    T(ENGINE_init(eng));
-    T(ENGINE_set_default(eng, ENGINE_METHOD_ALL));
+    if (initialize_openssl(&eng) != 0) {
+        return 1;
+    }
 
     memset(buf, 0, sizeof(buf));
-
     memset(kroot, 0xFF, 32);
     memset(tlsseq, 0, 8);
     tlsseq[7] = 63;
@@ -134,60 +192,41 @@ int main(void)
     ret = gost_kexp15(shared_key, 32,
                       NID_magma_ctr, magma_key,
                       NID_magma_mac, mac_magma_key, magma_iv, 4, buf, &outlen);
-
-    if (ret <= 0) {
-        ERR_print_errors_fp(stderr);
-        err = 1;
-    } else {
-        hexdump(stdout, "Magma key export", buf, 40);
-        if (memcmp(buf, magma_export, 40) != 0) {
-            fprintf(stdout, "ERROR! test failed\n");
-            err = 2;
-        }
-    }
+    err = expect_eq("Magma key export", ret, buf, magma_export, 40);
+    if (err)
+        goto cleanup;
 
     ret = gost_kimp15(magma_export, 40,
                       NID_magma_ctr, magma_key,
                       NID_magma_mac, mac_magma_key, magma_iv, 4, buf);
-
-    if (ret <= 0) {
-        ERR_print_errors_fp(stderr);
-        err = 3;
-    } else {
-        hexdump(stdout, "Magma key import", buf, 32);
-        if (memcmp(buf, shared_key, 32) != 0) {
-            fprintf(stdout, "ERROR! test failed\n");
-            err = 4;
-        }
-    }
+    err = expect_eq("Magma key import", ret, buf, shared_key, 32);
+    if (err)
+        goto cleanup;
 
     ret = gost_kdftree2012_256(kdf_result, 64, kdftree_key, 32, kdf_label, 4,
-                               kdf_seed, 8, 1);
-    if (ret <= 0) {
-        ERR_print_errors_fp(stderr);
-        err = 5;
-    } else {
-        hexdump(stdout, "KDF TREE", kdf_result, 64);
-        if (memcmp(kdf_result, kdf_etalon, 64) != 0) {
-            fprintf(stdout, "ERROR! test failed\n");
-            err = 6;
-        }
-    }
+                              kdf_seed, 8, 1);
+    err = expect_eq("KDF TREE", ret, kdf_result, kdf_etalon, 64);
+    if (err)
+        goto cleanup;
 
-    ret = gost_tlstree(NID_grasshopper_cbc, kroot, out, tlsseq);
-    if (ret <= 0) {
-        ERR_print_errors_fp(stderr);
-        err = 7;
-    } else {
-        hexdump(stdout, "Gost TLSTREE - grasshopper", out, 32);
-        if (memcmp(out, tlstree_gh_etalon, 32) != 0) {
-            fprintf(stdout, "ERROR! test failed\n");
-            err = 8;
-        }
-    }
+    ret = gost_tlstree(NID_grasshopper_cbc, kroot, out, tlsseq, TLSTREE_MODE_NONE);
+    err = expect_eq("Gost TLSTREE - grasshopper", ret, out, tlstree_gh_etalon, 32);
+    if (err)
+        goto cleanup;
 
-    ENGINE_finish(eng);
-    ENGINE_free(eng);
+    tlsseq[7] = 7;
+    ret = gost_tlstree(NID_kuznyechik_mgm, kroot_kuzn_s, out, tlsseq, TLSTREE_MODE_S);
+    err = expect_eq("Gost TLSTREE - kuznyechik", ret, out, tlstree_kuzn_s_etalon, 32);
+    if (err)
+        goto cleanup;
 
+    tlsseq[7] = 7;
+    ret = gost_tlstree(NID_magma_mgm, kroot_magma_l, out, tlsseq, TLSTREE_MODE_L);
+    err = expect_eq("Gost TLSTREE - magma", ret, out, tlstree_magma_l_etalon, 32);
+    if (err)
+        goto cleanup;
+
+cleanup:
+    cleanup_openssl(eng);
     return err;
 }

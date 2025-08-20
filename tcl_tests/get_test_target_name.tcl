@@ -28,10 +28,11 @@ set config [getConfig]
 
 set openssl_def [getConfigLine openssl_conf]
 
+if {[catch {getConfigLine {(?!\s*default)[^#=]+?} [getConfigLine providers $openssl_def]} provider_section] == 0} {
+    puts [getConfigLine identity $provider_section]
+    exit 0
+}
+
 set engine_section [getConfigLine {[^#]+}  [getConfigLine engines $openssl_def ]]
 
 puts [getConfigLine engine_id $engine_section]
-
-
-
-

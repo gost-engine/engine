@@ -10,6 +10,7 @@
 #include <openssl/core_dispatch.h>
 #include <openssl/core_names.h>
 #include "gost_prov.h"
+#include "gost_prov_tls.h"
 #include "gost_lcl.h"
 #include "prov/err.h"           /* libprov err functions */
 
@@ -60,7 +61,7 @@ static PROV_CTX *provider_ctx_new(const OSSL_CORE_HANDLE *core,
 
     if ((ctx = OPENSSL_zalloc(sizeof(*ctx))) != NULL
         && (ctx->proverr_handle = proverr_new_handle(core, in)) != NULL
-        && (ctx->libctx = OSSL_LIB_CTX_new()) != NULL
+        && (ctx->libctx = OSSL_LIB_CTX_new_child(core, in)) != NULL
         && (ctx->e = ENGINE_new()) != NULL
         && populate_gost_engine(ctx->e)) {
         ctx->core_handle = core;
@@ -94,6 +95,16 @@ static const OSSL_ALGORITHM *gost_operation(void *vprovctx,
         return GOST_prov_digests;
     case OSSL_OP_MAC:
         return GOST_prov_macs;
+    case OSSL_OP_KEYMGMT:
+        return GOST_prov_keymgmt;
+    case OSSL_OP_ENCODER:
+        return GOST_prov_encoder;
+    case OSSL_OP_SIGNATURE:
+        return GOST_prov_signature;
+    case OSSL_OP_DECODER:
+        return GOST_prov_decoder;
+    case OSSL_OP_KEYEXCH:
+        return GOST_prov_keyexch;
     }
     return NULL;
 }
@@ -129,18 +140,29 @@ static void gost_teardown(void *vprovctx)
     provider_ctx_free(vprovctx);
 }
 
+int gost_prov_get_capabilities(void *provctx, const char *capability,
+                               OSSL_CALLBACK *cb, void *arg)
+{
+    if (!cb)
+        return 0;
+
+    if (OPENSSL_strcasecmp(capability, "TLS-GROUP") == 0)
+        return gost_prov_get_tls_group_capability(cb, arg);
+
+    if (OPENSSL_strcasecmp(capability, "TLS-SIGALG") == 0)
+        return gost_prov_get_tls_sigalg_capability(cb, arg);
+
+    return 0;
+}
+
 /* The base dispatch table */
 static const OSSL_DISPATCH provider_functions[] = {
     { OSSL_FUNC_PROVIDER_QUERY_OPERATION, (fptr_t)gost_operation },
     { OSSL_FUNC_PROVIDER_GET_REASON_STRINGS, (fptr_t)gost_get_reason_strings },
     { OSSL_FUNC_PROVIDER_GET_PARAMS, (fptr_t)gost_get_params },
     { OSSL_FUNC_PROVIDER_TEARDOWN, (fptr_t)gost_teardown },
+    { OSSL_FUNC_PROVIDER_GET_CAPABILITIES, (fptr_t)gost_prov_get_capabilities },
     { 0, NULL }
-};
-
-struct prov_ctx_st {
-    void *core_handle;
-    struct proverr_functions_st *err_handle;
 };
 
 #ifdef BUILDING_PROVIDER_AS_LIBRARY

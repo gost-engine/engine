@@ -12,6 +12,9 @@ if [ "${APT_INSTALL-}" ]; then
 fi
 
 git clone --depth 1 -b $OPENSSL_BRANCH https://github.com/openssl/openssl.git
+if [ "${PATCH_OPENSSL}" == "1" ]; then
+    git apply patches/openssl-tls1.3.patch
+fi
 cd openssl
 git describe --always --long
 

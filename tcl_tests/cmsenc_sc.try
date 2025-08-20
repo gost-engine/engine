@@ -78,7 +78,7 @@ foreach hstname $hosts {
 if {[info exist env(ENC_LIST)]} {
 	set enc_list $env(ENC_LIST)
 } else {
-	switch -exact [engine_name] {
+	switch -exact [test_target_name] {
 		"ccore" {set enc_list {gost2001:XA:1.2.643.2.2.31.3 gost2001:XB:1.2.643.2.2.31.4 }}
 		"open" {set enc_list {gost2001:XA:1.2.643.2.2.31.3 gost2001:XB:1.2.643.2.2.31.4 }}
 	}

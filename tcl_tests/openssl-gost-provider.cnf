@@ -1,0 +1,14 @@
+openssl_conf = openssl_def
+
+[openssl_def]
+providers = provider_sect
+
+[provider_sect]
+default = default_sect
+gostprov = gost_sect
+
+[default_sect]
+activate = 1
+[gost_sect]
+activate = 1
+identity = gostprov

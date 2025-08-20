@@ -15,6 +15,35 @@
 #include "gost_lcl.h"
 
 /*
+ * This definitions are added in the patch to OpenSSL 3.4.2 version to support
+ * GOST TLS 1.3. Definitions below must be removed when the patch is added to
+ * OpenSSL upstream.
+ */
+#ifndef OSSL_CIPHER_PARAM_TLSTREE
+# if defined(_MSC_VER)
+#  pragma message("Gost-engine is built against not fully supported version of OpenSSL. \
+OSSL_CIPHER_PARAM_TLSTREE definition in OpenSSL is expected.")
+# else
+#  warning "Gost-engine is built against not fully supported version of OpenSSL. \
+NID_kuznyechik_mgm definition in OpenSSL is expected. No kuznyechik mgm functionality is \
+guaranteed."
+# endif
+# define OSSL_CIPHER_PARAM_TLSTREE "tlstree"
+#endif
+
+#ifndef OSSL_CIPHER_PARAM_TLSTREE_MODE
+# if defined(_MSC_VER)
+#  pragma message("Gost-engine is built against not fully supported version of OpenSSL. \
+OSSL_CIPHER_PARAM_TLSTREE_MODE definition in OpenSSL is expected.")
+# else
+#  warning "Gost-engine is built against not fully supported version of OpenSSL. \
+NID_kuznyechik_mgm definition in OpenSSL is expected. No kuznyechik mgm functionality is \
+guaranteed."
+# endif
+# define OSSL_CIPHER_PARAM_TLSTREE_MODE "tlstree_mode"
+#endif
+
+/*
  * Forward declarations of all generic OSSL_DISPATCH functions, to make sure
  * they are correctly defined further down.  For the algorithm specific ones
  * MAKE_FUNCTIONS() does it for us.
@@ -106,7 +135,11 @@ static int cipher_get_params(EVP_CIPHER *c, OSSL_PARAM params[])
         || ((p = OSSL_PARAM_locate(params, "keylen")) != NULL
             && !OSSL_PARAM_set_size_t(p, EVP_CIPHER_key_length(c)))
         || ((p = OSSL_PARAM_locate(params, "mode")) != NULL
-            && !OSSL_PARAM_set_size_t(p, EVP_CIPHER_flags(c))))
+            && !OSSL_PARAM_set_size_t(p, EVP_CIPHER_flags(c)))
+        || ((p = OSSL_PARAM_locate(params, OSSL_CIPHER_PARAM_AEAD)) != NULL
+            && (strcmp(EVP_CIPHER_name(c), "magma-mgm") == 0
+                || strcmp(EVP_CIPHER_name(c), "kuznyechik-mgm") == 0)
+            && !OSSL_PARAM_set_size_t(p, 1)))
         return 0;
     return 1;
 }
@@ -202,6 +235,24 @@ static int cipher_set_ctx_params(void *vgctx, const OSSL_PARAM params[])
         if (!OSSL_PARAM_get_octet_string(p, &val, 1024, &taglen)
             || EVP_CIPHER_CTX_ctrl(gctx->cctx, EVP_CTRL_AEAD_SET_TAG,
                                    taglen, &tag) <= 0)
+            return 0;
+    }
+    if ((p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_TLSTREE)) != NULL) {
+        const void *val = NULL;
+        size_t arg = 0;
+
+        if (!OSSL_PARAM_get_octet_string_ptr(p, &val, &arg)
+            || EVP_CIPHER_CTX_ctrl(gctx->cctx, EVP_CTRL_TLSTREE,
+                                   arg, (void *)val) <= 0)
+            return 0;
+    }
+    if ((p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_TLSTREE_MODE)) != NULL) {
+        const void *val = NULL;
+        size_t arg = 0;
+
+        if (!OSSL_PARAM_get_octet_string_ptr(p, &val, &arg)
+            || EVP_CIPHER_CTX_ctrl(gctx->cctx, EVP_CTRL_SET_TLSTREE_PARAMS,
+                                   arg, (void *)val) <= 0)
             return 0;
     }
     return 1;

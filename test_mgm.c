@@ -108,6 +108,36 @@ const unsigned char mg_e_tag[8] = {
     0xa7, 0x92, 0x80, 0x69, 0xaa, 0x10, 0xfd, 0x10
 };
 
+const unsigned char mg_tlstree_key[32] = {
+    0xEB, 0xD2, 0x71, 0xDE, 0x19, 0xFE, 0xE1, 0x8B,
+    0xB1, 0x99, 0x8F, 0x69, 0xAF, 0x5B, 0x6A, 0xE1,
+    0x89, 0x58, 0xE8, 0xD3, 0x70, 0x2F, 0x12, 0xFB,
+    0xB5, 0xB0, 0x3F, 0x6F, 0xD6, 0x91, 0xFE, 0xFA
+};
+
+const unsigned char mg_tlstree_seqnum[8] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+const unsigned char mg_tlstree_nonce[8] = {
+    0x18, 0xFB, 0x03, 0x8D, 0xBF, 0x72, 0x41, 0xE6
+};
+
+const unsigned char mg_tlstree_adata[5] = {
+    0x17, 0x03, 0x03, 0x00, 0x0B
+};
+
+const unsigned char mg_tlstree_pdata[3] = {
+    0x01, 0x00, 0x15
+};
+
+const unsigned char mg_tlstree_e_cdata[3] = {
+    0x46, 0x4A, 0xEE
+};
+
+const unsigned char mg_tlstree_e_tag[8] = {
+    0xAD, 0x39, 0x1D, 0x97, 0x98, 0x71, 0x69, 0xF3
+};
 
 static struct testcase {
     const char *sn;
@@ -120,6 +150,8 @@ static struct testcase {
     size_t ptext_len;
     const unsigned char *expected;
     const unsigned char *expected_tag;
+    const char *tlstree_mode;
+    const unsigned char *seqnum;
 } testcases[] = {
     {
         .sn = SN_kuznyechik_mgm,
@@ -131,7 +163,9 @@ static struct testcase {
         .plaintext = gh_pdata,
         .ptext_len = sizeof(gh_pdata),
         .expected = gh_e_cdata,
-        .expected_tag = gh_e_tag
+        .expected_tag = gh_e_tag,
+        .tlstree_mode = NULL,
+        .seqnum = NULL
     },
     {
         .sn = SN_magma_mgm,
@@ -143,7 +177,23 @@ static struct testcase {
         .plaintext = mg_pdata,
         .ptext_len = sizeof(mg_pdata),
         .expected = mg_e_cdata,
-        .expected_tag = mg_e_tag
+        .expected_tag = mg_e_tag,
+        .tlstree_mode = NULL,
+        .seqnum = NULL
+    },
+    {
+        .sn = SN_magma_mgm,
+        .key = mg_tlstree_key,
+        .nonce = mg_tlstree_nonce,
+        .nonce_len = sizeof(mg_tlstree_nonce),
+        .aad = mg_tlstree_adata,
+        .aad_len = sizeof(mg_tlstree_adata),
+        .plaintext = mg_tlstree_pdata,
+        .ptext_len = sizeof(mg_tlstree_pdata),
+        .expected = mg_tlstree_e_cdata,
+        .expected_tag = mg_tlstree_e_tag,
+        .tlstree_mode = "light",
+        .seqnum = mg_tlstree_seqnum
     },
     { 0 }
 };
@@ -151,7 +201,8 @@ static struct testcase {
 static int test_block(const EVP_CIPHER *ciph, const char *name, const unsigned char *nonce, size_t nlen,
                       const unsigned char *aad, size_t alen, const unsigned char *ptext, size_t plen,
                       const unsigned char *exp_ctext, const unsigned char *exp_tag,
-                      const unsigned char * key, int small)
+                      const unsigned char *key, const char *tlstree_mode,
+                      const unsigned char *seqnum, int small)
 {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     unsigned char *c = alloca(plen);
@@ -168,6 +219,12 @@ static int test_block(const EVP_CIPHER *ciph, const char *name, const unsigned c
     EVP_EncryptInit_ex(ctx, ciph, NULL, NULL, NULL);                    // Set cipher type and mode
     EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, nlen, NULL);      // Set IV length
     EVP_EncryptInit_ex(ctx, NULL, NULL, key, nonce);                    // Initialise key and IV
+
+    if (seqnum && tlstree_mode) {
+        EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_TLSTREE_PARAMS, 0, (void *)tlstree_mode);
+        EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_TLSTREE, 0, (void *)seqnum);
+    }
+
     memset(c, 0, plen);
     if (!small) {
         // test big chunks
@@ -203,6 +260,12 @@ static int test_block(const EVP_CIPHER *ciph, const char *name, const unsigned c
     EVP_DecryptInit_ex(ctx, ciph, NULL, NULL, NULL);
     EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, nlen, NULL);
     EVP_DecryptInit_ex(ctx, NULL, NULL, key, nonce);
+
+    if (seqnum && tlstree_mode) {
+        EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_TLSTREE_PARAMS, 0, (void *)tlstree_mode);
+        EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_TLSTREE, 0, (void *)seqnum);
+    }
+
     memset(c, 0, plen);
     if (!small) {
         // test big chunks
@@ -257,7 +320,8 @@ int main(void)
         for (small = 0; small <= 1; small++)
             ret |= test_block(ciph, name, t->nonce, t->nonce_len,
                               t->aad, t->aad_len, t->plaintext, t->ptext_len,
-                              t->expected, t->expected_tag, t->key, small);
+                              t->expected, t->expected_tag, t->key,
+                              t->tlstree_mode, t->seqnum, small);
         EVP_CIPHER_free(ciph_prov);
     }
 

@@ -68,7 +68,7 @@ test "Creating CA 2012" {
 if {[info exist env(ENC_LIST)]} {
 	set enc_list $env(ENC_LIST)
 } else {
-	switch -exact [engine_name] {
+	switch -exact [test_target_name] {
 		"ccore" {set enc_list {gost2001:XA:1.2.643.2.2.31.3 gost2001:XB:1.2.643.2.2.31.4 gost2001:XA: gost2012_256:XA:1.2.643.2.2.31.1 gost2012_256:XB:1.2.643.7.1.2.5.1.1 gost2012_256:XA: gost2012_512:A:1.2.643.2.2.31.3 gost2012_512:B:1.2.643.7.1.2.5.1.1 gost2012_512:A:}}
 		"open" {set enc_list {gost2001:XA:1.2.643.2.2.31.3 gost2001:XB:1.2.643.2.2.31.4 gost2001:XA: gost2012_256:XA:1.2.643.2.2.31.1 gost2012_256:XB:1.2.643.7.1.2.5.1.1 gost2012_256:XA: gost2012_512:A:1.2.643.2.2.31.3 gost2012_512:B:1.2.643.7.1.2.5.1.1 gost2012_512:A:}}
 	}

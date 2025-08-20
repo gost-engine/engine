@@ -20,6 +20,49 @@
 # include <openssl/asn1.h>
 # include "gost89.h"
 # include "gosthash.h"
+
+/*
+ * This definitions are added in the patch to OpenSSL 3.4.2 version to support
+ * GOST TLS 1.3. Definitions below must be removed when the patch is added to
+ * OpenSSL upstream.
+ */
+# ifndef EVP_CTRL_SET_TLSTREE_PARAMS
+#  if defined(_MSC_VER)
+#   pragma message("Gost-engine is built against not fully supported version of OpenSSL. \
+EVP_CTRL_SET_TLSTREE_PARAMS definition in OpenSSL is expected.")
+#  else
+#   warning "Gost-engine is built against not fully supported version of OpenSSL. \
+EVP_CTRL_SET_TLSTREE_PARAMS definition in OpenSSL is expected."
+#  endif
+#  define EVP_CTRL_SET_TLSTREE_PARAMS 0xFF
+# endif
+
+# ifndef NID_magma_mgm
+#  if defined(_MSC_VER)
+#   pragma message("Gost-engine is built against not fully supported version of OpenSSL. \
+NID_magma_mgm definition in OpenSSL is expected. No magma mgm functionality is \
+guaranteed.")
+#  else
+#   warning "Gost-engine is built against not fully supported version of OpenSSL. \
+NID_magma_mgm definition in OpenSSL is expected. No magma mgm functionality is \
+guaranteed."
+#  endif
+#  define NID_magma_mgm ((int)(INT_MAX - 1))
+# endif
+
+# ifndef NID_kuznyechik_mgm
+#  if defined(_MSC_VER)
+#   pragma message("Gost-engine is built against not fully supported version of OpenSSL. \
+NID_kuznyechik_mgm definition in OpenSSL is expected. No magma mgm functionality is \
+guaranteed.")
+#  else
+#   warning "Gost-engine is built against not fully supported version of OpenSSL. \
+NID_kuznyechik_mgm definition in OpenSSL is expected. No kuznyechik mgm functionality is \
+guaranteed."
+#  endif
+#  define NID_kuznyechik_mgm ((int)(INT_MAX - 2))
+# endif
+
 /* Control commands */
 # define GOST_PARAM_CRYPT_PARAMS 0
 # define GOST_PARAM_PBE_PARAMS 1
@@ -53,11 +96,6 @@ int gost_set_default_param(int param, const char *value);
 void gost_param_free(void);
 
 /* method registration */
-
-/* Provider implementation data */
-extern const OSSL_ALGORITHM GOST_prov_macs[];
-void GOST_prov_deinit_mac_digests(void);
-
 int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                         const char *pemstr, const char *info);
 int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
@@ -75,6 +113,9 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
 # define EVP_PKEY_CTRL_GOST_MAC_HEXKEY (EVP_PKEY_ALG_CTRL+3)
 # define EVP_PKEY_CTRL_MAC_LEN (EVP_PKEY_ALG_CTRL+5)
 # define EVP_PKEY_CTRL_SET_VKO (EVP_PKEY_ALG_CTRL+11)
+# define TLSTREE_MODE_NONE                                  0
+# define TLSTREE_MODE_S                                     1
+# define TLSTREE_MODE_L                                     2
 /* Pmeth internal representation */
 struct gost_pmeth_data {
     int sign_param_nid;         /* Should be set whenever parameters are
@@ -290,7 +331,7 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
                          const size_t representation);
 
 int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
-                 const unsigned char *tlsseq);
+                 const unsigned char *tlsseq, int mode);
 /* KExp/KImp */
 int gost_kexp15(const unsigned char *shared_key, const int shared_len,
                 int cipher_nid, const unsigned char *cipher_key,
@@ -366,9 +407,6 @@ extern GOST_cipher grasshopper_ctr_acpkm_omac_cipher;
 extern GOST_cipher magma_kexp15_cipher;
 extern GOST_cipher kuznyechik_kexp15_cipher;
 
-/* Provider implementation data */
-extern const OSSL_ALGORITHM GOST_prov_ciphers[];
-void GOST_prov_deinit_ciphers(void);
 
 struct gost_digest_st {
     struct gost_digest_st *template;
@@ -391,6 +429,41 @@ typedef struct gost_digest_st GOST_digest;
 EVP_MD *GOST_init_digest(GOST_digest *d);
 void GOST_deinit_digest(GOST_digest *d);
 
+/* Internal functions */
+EC_KEY * internal_ec_paramgen(int sign_param_nid);
+int internal_ec_ctrl(struct gost_pmeth_data *pctx, int pkey_nid,
+                     int type, int p1, void *p2);
+int internal_ec_ctrl_str_common(struct gost_pmeth_data *ctx, int key_type,
+                                const char *type, const char *value);
+int internal_ec_ctrl_str_256(struct gost_pmeth_data *ctx, int key_type,
+                             const char *type, const char *value);
+int internal_ec_ctrl_str_512(struct gost_pmeth_data *ctx, int key_type,
+                             const char *type, const char *value);
+int internal_priv_decode(EC_KEY *ec, int *key_type,
+                         const PKCS8_PRIV_KEY_INFO *p8inf);
+int internal_priv_encode(PKCS8_PRIV_KEY_INFO *p8,
+                         EC_KEY *ec, int key_type);
+int internal_pub_decode_ec(EC_KEY *ec, int *key_type, X509_ALGOR *palg,
+                           const unsigned char *pubkey_buf, int pub_len);
+int internal_pub_encode_ec(X509_PUBKEY *pub, EC_KEY *ec, int key_type);
+int internal_gost2001_param_decode(EC_KEY *ec, const unsigned char **pder,
+                                   int derlen);
+int internal_gost2001_param_encode(const EC_KEY *ec, unsigned char **pder);
+int internal_pkey_ec_cp_sign(EC_KEY *ec, int key_type, unsigned char *sig,
+                             size_t *siglen, const unsigned char *tbs,
+                             size_t tbs_len);
+int internal_pkey_ec_cp_verify(EC_KEY *ec, const unsigned char *sig,
+                               size_t siglen, const unsigned char *tbs,
+                               size_t tbs_len);
+int internal_param_str_to_nid_256(const char *value, int *param_nid_ptr);
+int internal_param_str_to_nid_512(const char *value, int *param_nid_ptr);
+int internal_compute_ecdh(unsigned char *out, size_t *out_len,
+                          const unsigned char *ukm, const size_t ukm_size,
+                          const EC_POINT *pub_key, const EC_KEY *priv_key);
+int internal_print_gost_priv(BIO *out, const EC_KEY *ec, int indent, int pkey_nid);
+int internal_print_gost_ec_pub(BIO *out, const EC_KEY *ec, int indent, int pkey_nid);
+int internal_print_gost_ec_param(BIO *out, const EC_KEY *ec, int indent);
+
 /* ENGINE implementation data */
 extern GOST_digest GostR3411_94_digest;
 extern GOST_digest Gost28147_89_MAC_digest;
@@ -402,9 +475,6 @@ extern GOST_digest grasshopper_mac_digest;
 extern GOST_digest kuznyechik_ctracpkm_omac_digest;
 extern GOST_digest magma_ctracpkm_omac_digest;
 
-/* Provider implementation data */
-extern const OSSL_ALGORITHM GOST_prov_digests[];
-void GOST_prov_deinit_digests(void);
 
 /* job to initialize a missing NID */
 struct gost_nid_job {

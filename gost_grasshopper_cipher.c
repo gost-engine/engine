@@ -485,6 +485,7 @@ gost_grasshopper_cipher_init_mgm(EVP_CIPHER_CTX *ctx, const unsigned char *key,
     if (key) {
         bl = EVP_CIPHER_CTX_iv_length(ctx);
         gost_grasshopper_cipher_key(&mctx->ks.gh_ks, key);
+        gost_grasshopper_master_key(&mctx->ks.gh_ks, key);
         gost_mgm128_init(&mctx->mgm, &mctx->ks,
                          (block128_f) gost_grasshopper_encrypt_wrap, gf128_mul_uint64, bl);
 
@@ -1050,6 +1051,7 @@ static int gost_grasshopper_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void 
         mctx->ivlen = ivlen;
         mctx->iv = iv;
         mctx->taglen = -1;
+        mctx->tlstree_mode = TLSTREE_MODE_NONE;
         return 1;
 
     case EVP_CTRL_GET_IVLEN:
@@ -1087,6 +1089,30 @@ static int gost_grasshopper_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void 
             return 0;
         }
         memcpy(ptr, buf, arg);
+        return 1;
+
+    case EVP_CTRL_SET_TLSTREE_PARAMS:
+        if (strcmp((char *)ptr, "strong") == 0)
+            mctx->tlstree_mode = TLSTREE_MODE_S;
+        else if (strcmp((char *)ptr, "light") == 0)
+            mctx->tlstree_mode = TLSTREE_MODE_L;
+        else {
+            // TODO: set err
+            return 0;
+        }
+        return 1;
+
+    case EVP_CTRL_TLSTREE:
+        {
+            unsigned char newkey[32];
+            if (gost_tlstree(NID_kuznyechik_mgm,
+                    mctx->ks.gh_ks.master_key.k.b, newkey,
+                    (const unsigned char *)ptr, mctx->tlstree_mode)
+                  > 0) {
+                gost_grasshopper_cipher_key(&mctx->ks.gh_ks, newkey);
+                OPENSSL_cleanse(newkey, sizeof(newkey));
+            }
+        }
         return 1;
 
     default:
@@ -1149,7 +1175,7 @@ static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, v
           }
 
           if (gost_tlstree(NID_grasshopper_cbc, c->master_key.k.b, newkey,
-                (const unsigned char *)seq) > 0) {
+                (const unsigned char *)seq, TLSTREE_MODE_NONE) > 0) {
             memset(adjusted_iv, 0, 16);
             memcpy(adjusted_iv, EVP_CIPHER_CTX_original_iv(ctx), 8);
             for(j=7,carry=0; j>=0; j--)

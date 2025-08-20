@@ -173,15 +173,15 @@ const OSSL_ALGORITHM GOST_prov_digests[] = {
      * https://www.ietf.org/archive/id/draft-deremin-rfc4491-bis-06.txt
      * (is there not an RFC namming these?)
      */
-    { "id-tc26-gost3411-12-256:md_gost12_256:1.2.643.7.1.1.2.2", NULL,
+    { SN_id_GostR3411_2012_256":id-tc26-gost3411-12-256:1.2.643.7.1.1.2.2", NULL,
       GostR3411_2012_256_digest_functions,
       "GOST R 34.11-2012 with 256 bit hash" },
-    { "id-tc26-gost3411-12-512:md_gost12_512:1.2.643.7.1.1.2.3", NULL,
+    { SN_id_GostR3411_2012_512":id-tc26-gost3411-12-512:1.2.643.7.1.1.2.3", NULL,
       GostR3411_2012_512_digest_functions,
       "GOST R 34.11-2012 with 512 bit hash" },
 
     /* Described in RFC 5831, first name from RFC 4357, section 10.4 */
-    { "id-GostR3411-94:md_gost94:1.2.643.2.2.9", NULL,
+    { SN_id_GostR3411_94":id-GostR3411-94:1.2.643.2.2.9", NULL,
       GostR3411_94_digest_functions, "GOST R 34.11-94" },
     { NULL , NULL, NULL }
 };

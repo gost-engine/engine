@@ -8,13 +8,17 @@ package require ossltest
 package require asn 0.4.1
 cd $::test::dir
 
-switch -exact [engine_name] {
+switch -exact [test_target_name] {
 	"ccore" {
 		set no_param_set "no public key parameters set"
 		set invalid_paramset "invalid pubic key paramset name"
 	}
 	"open" {
 		set no_param_set "no parameters set"
+		set invalid_paramset "parameter error"
+	}
+	"openprov" {
+		set no_param_set "Error generating"
 		set invalid_paramset "parameter error"
 	}
 }
@@ -27,7 +31,7 @@ gost2001:A "ГОСТ 2001 Криптопро A" 0 1.2.643.2.2.35.1
 gost2001:B "ГОСТ 2001 Криптопро B" 0 1.2.643.2.2.35.2
 gost2001:C "ГОСТ 2001 Криптопро C" 0 1.2.643.2.2.35.3
 gost2001:D "ГОСТ 2001 Криптопро неверный параметр" 1 invalid_paramset
-gost2001:test "ГОСТ 2001 Криптопро тестовый" 0 1.2.643.2.2.35.0
+gost2001:id-GostR3410-2001-TestParamSet "ГОСТ 2001 Криптопро тестовый" 0 1.2.643.2.2.35.0
 gost2001:XA "ГОСТ 2001 Криптопро XA" 0 1.2.643.2.2.36.0
 gost2001:XB "ГОСТ 2001 Криптопро XB" 0 1.2.643.2.2.36.1
 gost2001:id-GostR3410-2001-CryptoPro-XchB-ParamSet  "ГОСТ 2001 Криптопро XB по имени" 0 1.2.643.2.2.36.1
@@ -80,7 +84,7 @@ gost2012_512:RSAencryption: "Недопустимое имя объекта" 1 i
 		set algparamcmdline ""
 	}
 
-	test -skip {{[engine_name] eq "open" && $alg eq "gost2001:test"}} $descr {
+	test $descr {
 		openssl "req -newkey $algname $algparamcmdline -keyout test.key -out test.req -batch -nodes -config $::test::ca/req.conf"
 		set pkcs8 [readpem test.key]
 		asn::asnGetSequence pkcs8 seq1

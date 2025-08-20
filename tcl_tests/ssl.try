@@ -35,7 +35,7 @@ start_tests "Тесты на SSL-соединение между s_client и s_s
 if {[info exists env(ALG_LIST)]} {
 	set alg_list $env(ALG_LIST)
 } else {
-	switch -exact [engine_name] {
+	switch -exact [test_target_name] {
 		"ccore" {set alg_list {rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A}}
 		"open" {set alg_list {rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A}}
 	}

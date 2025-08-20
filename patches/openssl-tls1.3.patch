@@ -1,0 +1,603 @@
+diff --git a/openssl/crypto/evp/evp_enc.c b/openssl/crypto/evp/evp_enc.c
+index f96d46f..1c657ce 100644
+--- a/openssl/crypto/evp/evp_enc.c
++++ b/openssl/crypto/evp/evp_enc.c
+@@ -1293,6 +1293,14 @@ int EVP_CIPHER_CTX_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+         params[0] = OSSL_PARAM_construct_octet_string(
+                 OSSL_CIPHER_PARAM_AEAD_MAC_KEY, ptr, sz);
+         break;
++    case EVP_CTRL_TLSTREE:
++        params[0] = OSSL_PARAM_construct_octet_string(OSSL_CIPHER_PARAM_TLSTREE, ptr, sz);
++        params[1] = OSSL_PARAM_construct_end();
++        break;
++    case EVP_CTRL_SET_TLSTREE_PARAMS:
++        params[0] = OSSL_PARAM_construct_octet_string(OSSL_CIPHER_PARAM_TLSTREE_MODE, ptr, sz);
++        params[1] = OSSL_PARAM_construct_end();
++        break;
+     }
+ 
+     if (set_params)
+diff --git a/openssl/crypto/objects/obj_dat.h b/openssl/crypto/objects/obj_dat.h
+index 4c61e96..8237adf 100644
+--- a/openssl/crypto/objects/obj_dat.h
++++ b/openssl/crypto/objects/obj_dat.h
+@@ -1187,7 +1187,7 @@ static const unsigned char so[8504] = {
+     0x2B,0x06,0x01,0x04,0x01,0x82,0xE4,0x25,0x01,  /* [ 8494] OBJ_id_kp_wisun_fan_device */
+ };
+ 
+-#define NUM_NID 1324
++#define NUM_NID 1326
+ static const ASN1_OBJECT nid_objs[NUM_NID] = {
+     {"UNDEF", "undefined", NID_undef},
+     {"rsadsi", "RSA Data Security, Inc.", NID_rsadsi, 6, &so[0]},
+@@ -2513,6 +2513,8 @@ static const ASN1_OBJECT nid_objs[NUM_NID] = {
+     {"id-on-hardwareModuleName", "Hardware Module Name", NID_id_on_hardwareModuleName, 8, &so[8486]},
+     {"id-kp-wisun-fan-device", "Wi-SUN Alliance Field Area Network (FAN)", NID_id_kp_wisun_fan_device, 9, &so[8494]},
+     {"NULL", "NULL", NID_ac_auditEntity},
++    {"magma-mgm", "magma-mgm", NID_magma_mgm},
++    {"kuznyechik-mgm", "kuznyechik-mgm", NID_kuznyechik_mgm},
+ };
+ 
+ #define NUM_SN 1315
+diff --git a/openssl/include/openssl/evp.h b/openssl/include/openssl/evp.h
+index 5466327..19c3b8e 100644
+--- a/openssl/include/openssl/evp.h
++++ b/openssl/include/openssl/evp.h
+@@ -439,6 +439,7 @@ OSSL_DEPRECATEDIN_3_0 int
+ #define          EVP_CTRL_GET_WRAP_CIPHER                0x29
+ /* TLSTREE key diversification */
+ #define          EVP_CTRL_TLSTREE                        0x2A
++#define          EVP_CTRL_SET_TLSTREE_PARAMS             0x2B
+ 
+ /* Padding modes */
+ #define EVP_PADDING_PKCS7       1
+@@ -477,6 +478,10 @@ typedef struct {
+ /* Length of CCM8 tag for TLS */
+ # define EVP_CCM8_TLS_TAG_LEN                            8
+ 
++/* GOST TLS 1.3 tag lengths */
++# define EVP_MAGMA_TLS_TAG_LEN                           8
++# define EVP_KUZNYECHIK_TLS_TAG_LEN                      16
++
+ /* Length of tag for TLS */
+ # define EVP_CHACHAPOLY_TLS_TAG_LEN                      16
+ 
+diff --git a/openssl/include/openssl/obj_mac.h b/openssl/include/openssl/obj_mac.h
+index ea603c2..ea4af43 100644
+--- a/openssl/include/openssl/obj_mac.h
++++ b/openssl/include/openssl/obj_mac.h
+@@ -4880,6 +4880,9 @@
+ #define SN_kuznyechik_mac               "kuznyechik-mac"
+ #define NID_kuznyechik_mac              1017
+ 
++#define SN_kuznyechik_mgm              "kuznyechik-mgm"
++#define NID_kuznyechik_mgm              1325
++
+ #define SN_magma_ecb            "magma-ecb"
+ #define NID_magma_ecb           1187
+ 
+@@ -4898,6 +4901,9 @@
+ #define SN_magma_mac            "magma-mac"
+ #define NID_magma_mac           1192
+ 
++#define SN_magma_mgm            "magma-mgm"
++#define NID_magma_mgm           1324
++
+ #define SN_camellia_128_cbc             "CAMELLIA-128-CBC"
+ #define LN_camellia_128_cbc             "camellia-128-cbc"
+ #define NID_camellia_128_cbc            751
+diff --git a/openssl/include/openssl/tls1.h b/openssl/include/openssl/tls1.h
+index 8e9b110..8cadff9 100644
+--- a/openssl/include/openssl/tls1.h
++++ b/openssl/include/openssl/tls1.h
+@@ -658,6 +658,12 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb
+ # define TLS1_CK_RSA_PSK_WITH_ARIA_128_GCM_SHA256         0x0300C06E
+ # define TLS1_CK_RSA_PSK_WITH_ARIA_256_GCM_SHA384         0x0300C06F
+ 
++/* TLS1.3 GOST ciphersuites from RFC9367 */
++# define TLS1_3_CK_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L        0x0300C103
++# define TLS1_3_CK_GOSTR341112_256_WITH_MAGMA_MGM_L             0x0300C104
++# define TLS1_3_CK_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S        0x0300C105
++# define TLS1_3_CK_GOSTR341112_256_WITH_MAGMA_MGM_S             0x0300C106
++
+ /* a bundle of RFC standard cipher names, generated from ssl3_ciphers[] */
+ # define TLS1_RFC_RSA_WITH_AES_128_SHA                   "TLS_RSA_WITH_AES_128_CBC_SHA"
+ # define TLS1_RFC_DHE_DSS_WITH_AES_128_SHA               "TLS_DHE_DSS_WITH_AES_128_CBC_SHA"
+@@ -850,6 +856,10 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb
+ # define TLS1_RFC_DHE_PSK_WITH_ARIA_256_GCM_SHA384       "TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384"
+ # define TLS1_RFC_RSA_PSK_WITH_ARIA_128_GCM_SHA256       "TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256"
+ # define TLS1_RFC_RSA_PSK_WITH_ARIA_256_GCM_SHA384       "TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384"
++# define TLS1_RFC_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L  "TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L"
++# define TLS1_RFC_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S  "TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S"
++# define TLS1_RFC_GOSTR341112_256_WITH_MAGMA_MGM_L       "TLS_GOSTR341112_256_WITH_MAGMA_MGM_L"
++# define TLS1_RFC_GOSTR341112_256_WITH_MAGMA_MGM_S       "TLS_GOSTR341112_256_WITH_MAGMA_MGM_S"
+ 
+ 
+ /*
+diff --git a/openssl/ssl/record/methods/tls13_meth.c b/openssl/ssl/record/methods/tls13_meth.c
+index 6bbba84..40cbc0c 100644
+--- a/openssl/ssl/record/methods/tls13_meth.c
++++ b/openssl/ssl/record/methods/tls13_meth.c
+@@ -78,6 +78,18 @@ static int tls13_set_crypto_state(OSSL_RECORD_LAYER *rl, int level,
+         ERR_raise(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR);
+         return OSSL_RECORD_RETURN_FATAL;
+     }
++
++    if (!rl->isdtls && rl->tlstree) {
++        int res = 0;
++
++        if (rl->tlstree & TLS1_TLSTREE_S)
++            res = EVP_CIPHER_CTX_ctrl(ciph_ctx, EVP_CTRL_SET_TLSTREE_PARAMS, 0, "strong");
++        else if (rl->tlstree & TLS1_TLSTREE_L)
++            res = EVP_CIPHER_CTX_ctrl(ciph_ctx, EVP_CTRL_SET_TLSTREE_PARAMS, 0, "light");
++
++        if (res <= 0)
++            return OSSL_RECORD_RETURN_FATAL;
++    }
+  end:
+     return OSSL_RECORD_RETURN_SUCCESS;
+ }
+@@ -162,6 +174,11 @@ static int tls13_cipher(OSSL_RECORD_LAYER *rl, TLS_RL_RECORD *recs,
+     for (loop = 0; loop < SEQ_NUM_SIZE; loop++)
+         nonce[offset + loop] = staticiv[offset + loop] ^ seq[loop];
+ 
++    if (!rl->isdtls && rl->tlstree && EVP_CIPHER_CTX_ctrl(enc_ctx, EVP_CTRL_TLSTREE, 0, seq) <= 0) {
++        RLAYERfatal(rl, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
++        return 0;
++    }
++
+     if (!tls_increment_sequence_ctr(rl)) {
+         /* RLAYERfatal already called */
+         return 0;
+diff --git a/openssl/ssl/record/rec_layer_s3.c b/openssl/ssl/record/rec_layer_s3.c
+index cce236b..48fedcb 100644
+--- a/openssl/ssl/record/rec_layer_s3.c
++++ b/openssl/ssl/record/rec_layer_s3.c
+@@ -1310,6 +1310,10 @@ int ssl_set_new_record_layer(SSL_CONNECTION *s, int version,
+             tlstree = 1;
+     }
+ 
++    if (SSL_CONNECTION_IS_TLS13(s))
++        tlstree = (s->s3.tmp.new_cipher->algorithm2 & TLS1_TLSTREE_L)
++            | (s->s3.tmp.new_cipher->algorithm2 & TLS1_TLSTREE_S);
++
+     if (use_etm)
+         *set++ = OSSL_PARAM_construct_int(OSSL_LIBSSL_RECORD_LAYER_PARAM_USE_ETM,
+                                           &use_etm);
+diff --git a/openssl/ssl/s3_lib.c b/openssl/ssl/s3_lib.c
+index 86d8198..19edb89 100644
+--- a/openssl/ssl/s3_lib.c
++++ b/openssl/ssl/s3_lib.c
+@@ -146,6 +146,72 @@ static SSL_CIPHER tls13_ciphers[] = {
+         384,
+     },
+ #endif
++#ifndef OPENSSL_NO_GOST
++    {
++        1,
++        TLS1_RFC_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L,
++        TLS1_RFC_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L,
++        TLS1_3_CK_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L,
++        SSL_kANY,
++        SSL_aANY,
++        SSL_KUZNYECHIK_MGM,
++        SSL_AEAD,
++        TLS1_3_VERSION, TLS1_3_VERSION,
++        0, 0,
++        SSL_HIGH,
++        SSL_HANDSHAKE_MAC_GOST12_256 | TLS1_PRF_GOST12_256 | TLS1_TLSTREE | TLS1_TLSTREE_L,
++        256,
++        256,
++    },
++    {
++        1,
++        TLS1_RFC_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S,
++        TLS1_RFC_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S,
++        TLS1_3_CK_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S,
++        SSL_kANY,
++        SSL_aANY,
++        SSL_KUZNYECHIK_MGM,
++        SSL_AEAD,
++        TLS1_3_VERSION, TLS1_3_VERSION,
++        0, 0,
++        SSL_HIGH,
++        SSL_HANDSHAKE_MAC_GOST12_256 | TLS1_PRF_GOST12_256 | TLS1_TLSTREE | TLS1_TLSTREE_S,
++        256,
++        256,
++    },
++    {
++        1,
++        TLS1_RFC_GOSTR341112_256_WITH_MAGMA_MGM_L,
++        TLS1_RFC_GOSTR341112_256_WITH_MAGMA_MGM_L,
++        TLS1_3_CK_GOSTR341112_256_WITH_MAGMA_MGM_L,
++        SSL_kANY,
++        SSL_aANY,
++        SSL_MAGMA_MGM,
++        SSL_AEAD,
++        TLS1_3_VERSION, TLS1_3_VERSION,
++        0, 0,
++        SSL_HIGH,
++        SSL_HANDSHAKE_MAC_GOST12_256 | TLS1_PRF_GOST12_256 | TLS1_TLSTREE | TLS1_TLSTREE_L,
++        256,
++        256,
++    },
++    {
++        1,
++        TLS1_RFC_GOSTR341112_256_WITH_MAGMA_MGM_S,
++        TLS1_RFC_GOSTR341112_256_WITH_MAGMA_MGM_S,
++        TLS1_3_CK_GOSTR341112_256_WITH_MAGMA_MGM_S,
++        SSL_kANY,
++        SSL_aANY,
++        SSL_MAGMA_MGM,
++        SSL_AEAD,
++        TLS1_3_VERSION, TLS1_3_VERSION,
++        0, 0,
++        SSL_HIGH,
++        SSL_HANDSHAKE_MAC_GOST12_256 | TLS1_PRF_GOST12_256 | TLS1_TLSTREE | TLS1_TLSTREE_S,
++        256,
++        256,
++    },
++#endif
+ };
+ 
+ /*
+diff --git a/openssl/ssl/ssl_ciph.c b/openssl/ssl/ssl_ciph.c
+index e5d6237..78dd7de 100644
+--- a/openssl/ssl/ssl_ciph.c
++++ b/openssl/ssl/ssl_ciph.c
+@@ -54,8 +54,10 @@ static const ssl_cipher_table ssl_cipher_table_cipher[SSL_ENC_NUM_IDX] = {
+     {SSL_CHACHA20POLY1305, NID_chacha20_poly1305}, /* SSL_ENC_CHACHA_IDX 19 */
+     {SSL_ARIA128GCM, NID_aria_128_gcm}, /* SSL_ENC_ARIA128GCM_IDX 20 */
+     {SSL_ARIA256GCM, NID_aria_256_gcm}, /* SSL_ENC_ARIA256GCM_IDX 21 */
+-    {SSL_MAGMA, NID_magma_ctr_acpkm}, /* SSL_ENC_MAGMA_IDX */
+-    {SSL_KUZNYECHIK, NID_kuznyechik_ctr_acpkm}, /* SSL_ENC_KUZNYECHIK_IDX */
++    {SSL_MAGMA, NID_magma_ctr_acpkm}, /* SSL_ENC_MAGMA_IDX 22 */
++    {SSL_KUZNYECHIK, NID_kuznyechik_ctr_acpkm}, /* SSL_ENC_KUZNYECHIK_IDX 23 */
++    {SSL_MAGMA_MGM, NID_magma_mgm}, /* SSL_ENC_MAGMA_MGM_IDX 24 */
++    {SSL_KUZNYECHIK_MGM, NID_kuznyechik_mgm}, /* SSL_ENC_KUZNYECHIK_MGM_IDX 25 */
+ };
+ 
+ /* NB: make sure indices in this table matches values above */
+@@ -310,6 +312,23 @@ static int get_optional_pkey_id(const char *pkey_name)
+ 
+ #endif
+ 
++/* Checks to see if algorithms are fetchable */
++#define IS_FETCHABLE(type, TYPE)                                         \
++    static int is_ ## type ## _fetchable(SSL_CTX *ctx, const char *name) \
++    {                                                                    \
++        TYPE *impl;                                                      \
++                                                                         \
++        ERR_set_mark();                                                  \
++        impl = TYPE ## _fetch(ctx->libctx, name, ctx->propq);            \
++        ERR_pop_to_mark();                                               \
++        if (impl == NULL)                                                \
++            return 0;                                                    \
++        TYPE ## _free(impl);                                             \
++        return 1;                                                        \
++    }
++
++IS_FETCHABLE(keymgmt, EVP_KEYMGMT)
++
+ int ssl_load_ciphers(SSL_CTX *ctx)
+ {
+     size_t i;
+@@ -418,11 +437,14 @@ int ssl_load_ciphers(SSL_CTX *ctx)
+     else
+         ctx->disabled_mac_mask |= SSL_KUZNYECHIKOMAC;
+ 
+-    if (!get_optional_pkey_id(SN_id_GostR3410_2001))
++    if (!get_optional_pkey_id(SN_id_GostR3410_2001)
++        && !is_keymgmt_fetchable(ctx, SN_id_GostR3410_2001))
+         ctx->disabled_auth_mask |= SSL_aGOST01 | SSL_aGOST12;
+-    if (!get_optional_pkey_id(SN_id_GostR3410_2012_256))
++    if (!get_optional_pkey_id(SN_id_GostR3410_2012_256)
++        && !is_keymgmt_fetchable(ctx, SN_id_GostR3410_2012_256))
+         ctx->disabled_auth_mask |= SSL_aGOST12;
+-    if (!get_optional_pkey_id(SN_id_GostR3410_2012_512))
++    if (!get_optional_pkey_id(SN_id_GostR3410_2012_512)
++        && !is_keymgmt_fetchable(ctx, SN_id_GostR3410_2012_512))
+         ctx->disabled_auth_mask |= SSL_aGOST12;
+     /*
+      * Disable GOST key exchange if no GOST signature algs are available *
+@@ -1827,9 +1849,15 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
+     case SSL_MAGMA:
+         enc = "MAGMA";
+         break;
++    case SSL_MAGMA_MGM:
++        enc = "MAGMAMGM";
++        break;
+     case SSL_KUZNYECHIK:
+         enc = "KUZNYECHIK";
+         break;
++    case SSL_KUZNYECHIK_MGM:
++        enc = "KUZNYECHIKMGM";
++        break;
+     case SSL_CHACHA20POLY1305:
+         enc = "CHACHA20/POLY1305(256)";
+         break;
+diff --git a/openssl/ssl/ssl_local.h b/openssl/ssl/ssl_local.h
+index 277be30..bf36ac7 100644
+--- a/openssl/ssl/ssl_local.h
++++ b/openssl/ssl/ssl_local.h
+@@ -153,6 +153,8 @@
+ # define SSL_ARIA256GCM          0x00200000U
+ # define SSL_MAGMA               0x00400000U
+ # define SSL_KUZNYECHIK          0x00800000U
++# define SSL_MAGMA_MGM           0x01000000U
++# define SSL_KUZNYECHIK_MGM      0x02000000U
+ 
+ # define SSL_AESGCM              (SSL_AES128GCM | SSL_AES256GCM)
+ # define SSL_AESCCM              (SSL_AES128CCM | SSL_AES256CCM | SSL_AES128CCM8 | SSL_AES256CCM8)
+@@ -235,7 +237,9 @@
+  * TLSTREE cipher/mac key derivation from draft-smyshlyaev-tls12-gost-suites
+  * (currently this also  goes into algorithm2)
+  */
+-# define TLS1_TLSTREE 0x20000
++# define TLS1_TLSTREE    0x20000
++# define TLS1_TLSTREE_S  0x40000
++# define TLS1_TLSTREE_L  0x80000
+ 
+ /* Ciphersuite supported in QUIC */
+ # define SSL_QUIC                0x00040000U
+@@ -335,31 +339,33 @@
+ # define SSL_PKEY_ED448          8
+ # define SSL_PKEY_NUM            9
+ 
+-# define SSL_ENC_DES_IDX         0
+-# define SSL_ENC_3DES_IDX        1
+-# define SSL_ENC_RC4_IDX         2
+-# define SSL_ENC_RC2_IDX         3
+-# define SSL_ENC_IDEA_IDX        4
+-# define SSL_ENC_NULL_IDX        5
+-# define SSL_ENC_AES128_IDX      6
+-# define SSL_ENC_AES256_IDX      7
+-# define SSL_ENC_CAMELLIA128_IDX 8
+-# define SSL_ENC_CAMELLIA256_IDX 9
+-# define SSL_ENC_GOST89_IDX      10
+-# define SSL_ENC_SEED_IDX        11
+-# define SSL_ENC_AES128GCM_IDX   12
+-# define SSL_ENC_AES256GCM_IDX   13
+-# define SSL_ENC_AES128CCM_IDX   14
+-# define SSL_ENC_AES256CCM_IDX   15
+-# define SSL_ENC_AES128CCM8_IDX  16
+-# define SSL_ENC_AES256CCM8_IDX  17
+-# define SSL_ENC_GOST8912_IDX    18
+-# define SSL_ENC_CHACHA_IDX      19
+-# define SSL_ENC_ARIA128GCM_IDX  20
+-# define SSL_ENC_ARIA256GCM_IDX  21
+-# define SSL_ENC_MAGMA_IDX       22
+-# define SSL_ENC_KUZNYECHIK_IDX  23
+-# define SSL_ENC_NUM_IDX         24
++# define SSL_ENC_DES_IDX             0
++# define SSL_ENC_3DES_IDX            1
++# define SSL_ENC_RC4_IDX             2
++# define SSL_ENC_RC2_IDX             3
++# define SSL_ENC_IDEA_IDX            4
++# define SSL_ENC_NULL_IDX            5
++# define SSL_ENC_AES128_IDX          6
++# define SSL_ENC_AES256_IDX          7
++# define SSL_ENC_CAMELLIA128_IDX     8
++# define SSL_ENC_CAMELLIA256_IDX     9
++# define SSL_ENC_GOST89_IDX          10
++# define SSL_ENC_SEED_IDX            11
++# define SSL_ENC_AES128GCM_IDX       12
++# define SSL_ENC_AES256GCM_IDX       13
++# define SSL_ENC_AES128CCM_IDX       14
++# define SSL_ENC_AES256CCM_IDX       15
++# define SSL_ENC_AES128CCM8_IDX      16
++# define SSL_ENC_AES256CCM8_IDX      17
++# define SSL_ENC_GOST8912_IDX        18
++# define SSL_ENC_CHACHA_IDX          19
++# define SSL_ENC_ARIA128GCM_IDX      20
++# define SSL_ENC_ARIA256GCM_IDX      21
++# define SSL_ENC_MAGMA_IDX           22
++# define SSL_ENC_KUZNYECHIK_IDX      23
++# define SSL_ENC_MAGMA_MGM_IDX       24
++# define SSL_ENC_KUZNYECHIK_MGM_IDX  25
++# define SSL_ENC_NUM_IDX             26
+ 
+ /*-
+  * SSL_kRSA <- RSA_ENC
+diff --git a/openssl/ssl/statem/statem_lib.c b/openssl/ssl/statem/statem_lib.c
+index a52b8af..6437f66 100644
+--- a/openssl/ssl/statem/statem_lib.c
++++ b/openssl/ssl/statem/statem_lib.c
+@@ -501,10 +501,10 @@ MSG_PROCESS_RETURN tls_process_cert_verify(SSL_CONNECTION *s, PACKET *pkt)
+ #ifndef OPENSSL_NO_GOST
+     if (!SSL_USE_SIGALGS(s)
+         && ((PACKET_remaining(pkt) == 64
+-             && (EVP_PKEY_get_id(pkey) == NID_id_GostR3410_2001
+-                 || EVP_PKEY_get_id(pkey) == NID_id_GostR3410_2012_256))
++             && (EVP_PKEY_is_a(pkey, SN_id_GostR3410_2001)
++                 || EVP_PKEY_is_a(pkey, SN_id_GostR3410_2012_256)))
+             || (PACKET_remaining(pkt) == 128
+-                && EVP_PKEY_get_id(pkey) == NID_id_GostR3410_2012_512))) {
++                && EVP_PKEY_is_a(pkey, SN_id_GostR3410_2012_512)))) {
+         len = PACKET_remaining(pkt);
+     } else
+ #endif
+@@ -539,10 +539,9 @@ MSG_PROCESS_RETURN tls_process_cert_verify(SSL_CONNECTION *s, PACKET *pkt)
+     }
+ #ifndef OPENSSL_NO_GOST
+     {
+-        int pktype = EVP_PKEY_get_id(pkey);
+-        if (pktype == NID_id_GostR3410_2001
+-            || pktype == NID_id_GostR3410_2012_256
+-            || pktype == NID_id_GostR3410_2012_512) {
++        if (EVP_PKEY_is_a(pkey, SN_id_GostR3410_2001)
++            || EVP_PKEY_is_a(pkey, SN_id_GostR3410_2012_256)
++            || EVP_PKEY_is_a(pkey, SN_id_GostR3410_2012_512)) {
+             if ((gost_data = OPENSSL_malloc(len)) == NULL)
+                 goto err;
+             BUF_reverse(gost_data, data, len);
+@@ -1931,8 +1930,6 @@ static int is_tls13_capable(const SSL_CONNECTION *s)
+         switch (i) {
+         case SSL_PKEY_DSA_SIGN:
+         case SSL_PKEY_GOST01:
+-        case SSL_PKEY_GOST12_256:
+-        case SSL_PKEY_GOST12_512:
+             continue;
+         default:
+             break;
+@@ -1949,6 +1946,15 @@ static int is_tls13_capable(const SSL_CONNECTION *s)
+         curve = ssl_get_EC_curve_nid(s->cert->pkeys[SSL_PKEY_ECC].privatekey);
+         if (tls_check_sigalg_curve(s, curve))
+             return 1;
++
++        /*
++         * TODO: There must be an opportunity to check that the sig algs are
++         * consistent with the keys in case if the sig algs are provider-based.
++         * For example, OSSL_FUNC_keymgmt_get_params could return the list of
++         * sig alg code points supported by the key, and this list could be
++         * checked against the sig algs code points stored in
++         * SSL_CTX.sigalg_lookup_cache
++         */
+     }
+ 
+     return 0;
+diff --git a/openssl/ssl/t1_lib.c b/openssl/ssl/t1_lib.c
+index bd85167..9b3b821 100644
+--- a/openssl/ssl/t1_lib.c
++++ b/openssl/ssl/t1_lib.c
+@@ -1565,14 +1565,19 @@ int ssl_setup_sigalgs(SSL_CTX *ctx)
+     /* Now complete cache and tls12_sigalgs list with provider sig information */
+     cache_idx = OSSL_NELEM(sigalg_lookup_tbl);
+     for (i = 0; i < ctx->sigalg_list_len; i++) {
++        size_t idx;
+         TLS_SIGALG_INFO si = ctx->sigalg_list[i];
++
++        if (!ssl_cert_lookup_by_nid(OBJ_txt2nid(si.sigalg_name), &idx, ctx))
++            goto err;
++
+         cache[cache_idx].name = si.name;
+         cache[cache_idx].sigalg = si.code_point;
+         tls12_sigalgs_list[cache_idx] = si.code_point;
+         cache[cache_idx].hash = si.hash_name?OBJ_txt2nid(si.hash_name):NID_undef;
+         cache[cache_idx].hash_idx = ssl_get_md_idx(cache[cache_idx].hash);
+         cache[cache_idx].sig = OBJ_txt2nid(si.sigalg_name);
+-        cache[cache_idx].sig_idx = i + SSL_PKEY_NUM;
++        cache[cache_idx].sig_idx = idx;
+         cache[cache_idx].sigandhash = OBJ_txt2nid(si.sigalg_name);
+         cache[cache_idx].curve = NID_undef;
+         /* all provided sigalgs are enabled by load */
+@@ -2601,10 +2606,8 @@ static int tls12_sigalg_allowed(const SSL_CONNECTION *s, int op,
+     if (ssl_cert_is_disabled(SSL_CONNECTION_GET_CTX(s), lu->sig_idx))
+         return 0;
+ 
+-    if (lu->sig == NID_id_GostR3410_2012_256
+-            || lu->sig == NID_id_GostR3410_2012_512
+-            || lu->sig == NID_id_GostR3410_2001) {
+-        /* We never allow GOST sig algs on the server with TLSv1.3 */
++    if (lu->sig == NID_id_GostR3410_2001) {
++        /* We never allow GOST2001 sig algs on the server with TLSv1.3 */
+         if (s->server && SSL_CONNECTION_IS_TLS13(s))
+             return 0;
+         if (!s->server
+@@ -2640,6 +2643,18 @@ static int tls12_sigalg_allowed(const SSL_CONNECTION *s, int op,
+         }
+     }
+ 
++    /* TLS1.2 GOST sig algs could not be negotiated for the use in TLS1.3 */
++    if ((lu->sig == NID_id_GostR3410_2012_256 || lu->sig == NID_id_GostR3410_2012_512)
++        && (((s->server && SSL_CONNECTION_IS_TLS13(s)))
++            || (!s->server
++                && SSL_CONNECTION_GET_SSL(s)->method->version == TLS_ANY_VERSION
++                && s->s3.tmp.min_ver >= TLS1_3_VERSION))
++        && (strcmp(lu->name, TLSEXT_SIGALG_gostr34102012_256_intrinsic_name) == 0
++            || strcmp(lu->name, TLSEXT_SIGALG_gostr34102012_512_intrinsic_name) == 0
++            || strcmp(lu->name, TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256_name) == 0
++            || strcmp(lu->name, TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512_name) == 0))
++        return 0;
++
+     /* Finally see if security callback allows it */
+     secbits = sigalg_security_bits(SSL_CONNECTION_GET_CTX(s), lu);
+     sigalgstr[0] = (lu->sigalg >> 8) & 0xff;
+@@ -2994,9 +3009,12 @@ static int sig_cb(const char *elem, int len, void *arg)
+         if (sarg->ctx != NULL) {
+             /* Check if a provider supports the sigalg */
+             for (i = 0; i < sarg->ctx->sigalg_list_len; i++) {
+-                if (sarg->ctx->sigalg_list[i].sigalg_name != NULL
+-                    && strcmp(etmp,
+-                              sarg->ctx->sigalg_list[i].sigalg_name) == 0) {
++                if ((sarg->ctx->sigalg_list[i].sigalg_name != NULL
++                     && strcmp(etmp,
++                               sarg->ctx->sigalg_list[i].sigalg_name) == 0)
++                    || (sarg->ctx->sigalg_list[i].name != NULL
++                        && strcmp(etmp,
++                                  sarg->ctx->sigalg_list[i].name) == 0)) {
+                     sarg->sigalgs[sarg->sigalgcnt++] =
+                         sarg->ctx->sigalg_list[i].code_point;
+                     break;
+diff --git a/openssl/ssl/tls13_enc.c b/openssl/ssl/tls13_enc.c
+index 7846c73..ca81bb3 100644
+--- a/openssl/ssl/tls13_enc.c
++++ b/openssl/ssl/tls13_enc.c
+@@ -386,26 +386,26 @@ static int derive_secret_key_and_iv(SSL_CONNECTION *s, const EVP_MD *md,
+         *ivlen = *taglen = (size_t)mac_mdleni;
+         *keylen = s->s3.tmp.new_mac_secret_size;
+     } else {
++        uint32_t algenc;
+ 
+         *keylen = EVP_CIPHER_get_key_length(ciph);
+ 
++        if (s->s3.tmp.new_cipher != NULL) {
++            algenc = s->s3.tmp.new_cipher->algorithm_enc;
++        } else if (s->session->cipher != NULL) {
++            /* We've not selected a cipher yet - we must be doing early data */
++            algenc = s->session->cipher->algorithm_enc;
++        } else if (s->psksession != NULL && s->psksession->cipher != NULL) {
++            /* We must be doing early data with out-of-band PSK */
++            algenc = s->psksession->cipher->algorithm_enc;
++        } else {
++            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_EVP_LIB);
++            return 0;
++        }
++
+         mode = EVP_CIPHER_get_mode(ciph);
+         if (mode == EVP_CIPH_CCM_MODE) {
+-            uint32_t algenc;
+-
+             *ivlen = EVP_CCM_TLS_IV_LEN;
+-            if (s->s3.tmp.new_cipher != NULL) {
+-                algenc = s->s3.tmp.new_cipher->algorithm_enc;
+-            } else if (s->session->cipher != NULL) {
+-                /* We've not selected a cipher yet - we must be doing early data */
+-                algenc = s->session->cipher->algorithm_enc;
+-            } else if (s->psksession != NULL && s->psksession->cipher != NULL) {
+-                /* We must be doing early data with out-of-band PSK */
+-                algenc = s->psksession->cipher->algorithm_enc;
+-            } else {
+-                SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_EVP_LIB);
+-                return 0;
+-            }
+             if (algenc & (SSL_AES128CCM8 | SSL_AES256CCM8))
+                 *taglen = EVP_CCM8_TLS_TAG_LEN;
+             else
+@@ -415,6 +415,12 @@ static int derive_secret_key_and_iv(SSL_CONNECTION *s, const EVP_MD *md,
+ 
+             if (mode == EVP_CIPH_GCM_MODE) {
+                 *taglen = EVP_GCM_TLS_TAG_LEN;
++#ifndef OPENSSL_NO_GOST
++            } else if (algenc & SSL_MAGMA_MGM) {
++                *taglen = EVP_MAGMA_TLS_TAG_LEN;
++            } else if (algenc & SSL_KUZNYECHIK_MGM) {
++                *taglen = EVP_KUZNYECHIK_TLS_TAG_LEN;
++#endif
+             } else {
+                 /* CHACHA20P-POLY1305 */
+                 *taglen = EVP_CHACHAPOLY_TLS_TAG_LEN;
+diff --git a/openssl/util/perl/OpenSSL/paramnames.pm b/openssl/util/perl/OpenSSL/paramnames.pm
+index 163a61d..dafcf6c 100644
+--- a/openssl/util/perl/OpenSSL/paramnames.pm
++++ b/openssl/util/perl/OpenSSL/paramnames.pm
+@@ -158,6 +158,9 @@ my %params = (
+     'CIPHER_PARAM_TLS1_MULTIBLOCK_ENC_IN' =>             "tls1multi_encin",     # octet_string
+     'CIPHER_PARAM_TLS1_MULTIBLOCK_ENC_LEN' =>            "tls1multi_enclen",    # size_t
+ 
++    'CIPHER_PARAM_TLSTREE' =>                             "tlstree",            # octet_string
++    'CIPHER_PARAM_TLSTREE_MODE' =>                        "tlstree_mode",        # octet_string
++
+ # digest parameters
+     'DIGEST_PARAM_XOFLEN' =>       "xoflen",       # size_t
+     'DIGEST_PARAM_SSL3_MS' =>      "ssl3-ms",      # octet string

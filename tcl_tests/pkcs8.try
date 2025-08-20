@@ -2,6 +2,12 @@
 lappend auto_path [file dirname [info script]]
 package require ossltest
 cd $::test::dir
+
+set is_provider 0
+switch -exact [test_target_name] {
+	"openprov" { set is_provider 1 }
+}
+
 start_tests "тесты на команду pkcs8" 
 set key "-----BEGIN PRIVATE KEY-----
 MEUCAQAwHAYGKoUDAgITMBIGByqFAwICIwEGByqFAwICHgEEIgIgSZ82qYpu6RQj
@@ -25,7 +31,7 @@ test "Конвертируем в DER и проверяем, что ключ т�
 
 
 save_env2 {CRYPT_PARAMS GOST_PBE_HMAC}
-test "Зашифровываем незашифрованный ключ gost2001, параметры CryptoPro-A" {
+test -skip {$is_provider} "Зашифровываем незашифрованный ключ gost2001, параметры CryptoPro-A" {
 	makeFile pkcs8-1A.key $key
 	set env(CRYPT_PARAMS) "id-Gost28147-89-CryptoPro-A-ParamSet"
 	set env(GOST_PBE_HMAC) "md_gost94"
@@ -34,19 +40,19 @@ test "Зашифровываем незашифрованный ключ gost200
 } 0 1
 restore_env2 {CRYPT_PARAMS GOST_PBE_HMAC}
 	
-test -skip {![file exists encA.key]} "Проверяем OID-ы PBE" {
+test -skip {$is_provider || ![file exists encA.key]} "Проверяем OID-ы PBE" {
 	set res [extract_oids encA.key]
 	regexp "HMAC GOST 34\.11-94" $res && regexp "GOST .*89"
 } 0 1
 
-test "Расшифровываем зашифрованный ключ gost2001" {
+test -skip {$is_provider} "Расшифровываем зашифрованный ключ gost2001" {
 	set unencrypted [openssl [list pkcs8 -passin pass:qwertyu -topk8 -nocrypt -in encA.key]]
 	openssl [list pkey -text -noout << $unencrypted]
 	
 } 0 $etalon
 
 save_env2 {CRYPT_PARAMS GOST_PBE_HMAC}
-test "Зашифровываем незашифрованный ключ gost2001, параметры CryptoPro-B" {
+test -skip {$is_provider} "Зашифровываем незашифрованный ключ gost2001, параметры CryptoPro-B" {
 	makeFile pkcs8-1B.key $key
 	set env(CRYPT_PARAMS) "id-Gost28147-89-CryptoPro-B-ParamSet"
 	set env(GOST_PBE_HMAC) "md_gost94"
@@ -55,20 +61,20 @@ test "Зашифровываем незашифрованный ключ gost200
 } 0 1
 restore_env2 {CRYPT_PARAMS GOST_PBE_HMAC}
 	
-test -skip {![file exists encB.key]} "Проверяем OID-ы PBE" {
+test -skip {$is_provider || ![file exists encB.key]} "Проверяем OID-ы PBE" {
 	set res [extract_oids encB.key]
 	regexp "HMAC GOST 34\.11-94" $res && regexp "GOST .*89"
 } 0 1
 
 
-test "Расшифровываем зашифрованный ключ gost2001" {
+test -skip {$is_provider} "Расшифровываем зашифрованный ключ gost2001" {
 	set unencrypted [openssl [list pkcs8 -passin pass:qwertyu -topk8 -nocrypt -in encB.key]]
 	openssl [list pkey -text -noout << $unencrypted]
 	
 } 0 $etalon
 
 
-test "Расшифровываем ключ, созданный mkkey" {
+test -skip {$is_provider} "Расшифровываем ключ, созданный mkkey" {
 	makeFile pkcs8-2.key "-----BEGIN ENCRYPTED PRIVATE KEY-----
 MIGvMFUGCSqGSIb3DQEFDTBIMCcGCSqGSIb3DQEFDDAaBAjIvbrnGmGbTAIC
 CAAwCgYGKoUDAgIKBQAwHQYGKoUDAgIVMBMECOtWtCMQo3dzBgcqhQMCAh8B
@@ -80,7 +86,7 @@ bxdi6rTNsYqxWm26qUHz6Op5SvCm0y+f8zE9cACQ5KQnFvNlojHvzmjO+Q==
 	openssl [list pkey -text -noout << $unencrypted]
 } 0 $etalon
 
-test "Расшифровываем ключ, созданный mkkey, русский пароль" {
+test -skip {$is_provider} "Расшифровываем ключ, созданный mkkey, русский пароль" {
 	set env(PASS) [encoding convertfrom [encoding convertto utf-8 [rus "йцукенг"]]]
 	makeFile pkcs8-3.key "-----BEGIN ENCRYPTED PRIVATE KEY-----
 MIGvMFUGCSqGSIb3DQEFDTBIMCcGCSqGSIb3DQEFDDAaBAgSfbLQ+fNe0AIC
@@ -114,7 +120,7 @@ test "Конвертируем в DER и проверяем, что ключ т�
 } 0 $etalon
 
 save_env2 {CRYPT_PARAMS GOST_PBE_HMAC}
-test "Зашифровываем незашифрованный ключ gost2012_256, параметры TK26 (умолчательные)" {
+test -skip {$is_provider} "Зашифровываем незашифрованный ключ gost2012_256, параметры TK26 (умолчательные)" {
 	makeFile pkcs8-256.key $key256
 	catch {unset env(CRYPT_PARAMS)}
 	catch {unset env(GOST_PBE_HMAC)}
@@ -123,12 +129,12 @@ test "Зашифровываем незашифрованный ключ gost201
 } 0 1
 restore_env2 {CRYPT_PARAMS GOST_PBE_HMAC}
 	
-test -skip {![file exists enc256.key]} "Проверяем OID-ы PBE" {
+test -skip {$is_provider || ![file exists enc256.key]} "Проверяем OID-ы PBE" {
 	set res [extract_oids enc256.key]
 	regexp "HMAC GOST 34\.11-2012" $res && regexp "GOST .*89"
 } 0 1
 
-test "Расшифровываем зашифрованный ключ gost2012_256" {
+test -skip {$is_provider} "Расшифровываем зашифрованный ключ gost2012_256" {
 	set unencrypted [openssl [list pkcs8 -passin pass:qwertyu -topk8 -nocrypt -in enc256.key]]
 	openssl [list pkey -text -noout << $unencrypted]
 	
@@ -156,7 +162,7 @@ test "Конвертируем в DER и проверяем, что ключ т�
 	openssl [list pkey -inform DER -text -noout -in pkcs8-512.der]
 } 0 $etalon
 
-test "Зашифровываем незашифрованный ключ gost2012_512, параметры TK26 (умолчательные)" {
+test -skip {$is_provider} "Зашифровываем незашифрованный ключ gost2012_512, параметры TK26 (умолчательные)" {
 	makeFile pkcs8-512.key $key512
 	catch {unset env(CRYPT_PARAMS)}
 	set env(GOST_PBE_HMAC) "md_gost12_512"
@@ -165,12 +171,12 @@ test "Зашифровываем незашифрованный ключ gost201
 } 0 1
 restore_env2 {CRYPT_PARAMS GOST_PBE_HMAC}
 	
-test -skip {![file exists enc512.key]} "Проверяем OID-ы PBE" {
+test -skip {$is_provider || ![file exists enc512.key]} "Проверяем OID-ы PBE" {
 	set res [extract_oids enc512.key]
 	regexp "HMAC GOST 34\.11-2012" $res && regexp "GOST .*89"
 } 0 1
 
-test "Расшифровываем зашифрованный ключ gost2012 512 bit" {
+test -skip {$is_provider} "Расшифровываем зашифрованный ключ gost2012 512 bit" {
 	set unencrypted [openssl [list pkcs8 -passin pass:qwertyu -topk8 -nocrypt -in enc512.key]]
 	openssl [list pkey -text -noout << $unencrypted]
 	

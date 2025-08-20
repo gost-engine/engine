@@ -1,0 +1,221 @@
+#!/usr/bin/tclsh
+# -*- coding: cp1251 -*-
+lappend auto_path [file dirname [info script]]
+package require ossltest
+
+array set protos {
+	TLSv1.3 -tls1_3
+}
+
+array set groups {
+	GC256A 256
+	GC256B 256
+	GC256C 256
+	GC256D 256
+	GC512A 512
+	GC512B 512
+	GC512C 512
+}
+
+cd $::test::dir
+
+start_tests "TLS 1.3 tests"
+
+if {![info exists ::env(TLS13_PATCHED_OPENSSL)] || !$::env(TLS13_PATCHED_OPENSSL) == 1} {
+	log "Test skipped. Use patched openssl to run the test. Set env variable TLS13_PATCHED_OPENSSL to run the test."
+	end_tests
+    return
+}
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [test_target_name] {
+		"openprov" {set alg_list { gost2012_256:TCA gost2012_256:TCB gost2012_256:TCC gost2012_256:TCD gost2012_512:A gost2012_512:B gost2012_512:C }}
+	}
+}
+
+array set alg_to_rfc {
+	"gost2012_256:TCA" "gostr34102012_256a"
+	"gost2012_256:TCB" "gostr34102012_256b"
+	"gost2012_256:TCC" "gostr34102012_256c"
+	"gost2012_256:TCD" "gostr34102012_256d"
+	"gost2012_512:A"   "gostr34102012_512a"
+	"gost2012_512:B"   "gostr34102012_512b"
+	"gost2012_512:C"   "gostr34102012_512c"
+}
+
+set suites {TLS_GOSTR341112_256_WITH_MAGMA_MGM_L TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L TLS_GOSTR341112_256_WITH_MAGMA_MGM_S TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S}
+
+set proto_list {"TLSv1.3"}
+set expected_proto "TLSv1.3"
+
+if {![file exists sslCA/cacert.pem]} {
+	makeCA sslCA gost2012_256:A
+} else {
+	set ::test::ca sslCA
+}
+
+proc sclient_args {ciphersuites_str groups_str {additional_args {}}} {
+	return [list \
+		-connect localhost:4433 -CAfile $::test::ca/cacert.pem -verify_return_error \
+		-verify 1 -state -ciphersuites $ciphersuites_str -curves $groups_str {*}$additional_args]
+}
+
+proc sclient_auth_args {cert key ciphersuites_str groups_str {additional_args {}}} {
+	return [sclient_args $ciphersuites_str $groups_str [list -cert $cert -key $key {*}$additional_args]]
+}
+
+proc sserver_args {cert key ciphersuites_str proto_str {additional_args {}}} {
+	return [list \
+		-no_dhe -www -cert $cert -key $key -ciphersuites $ciphersuites_str $proto_str {*}$additional_args]
+}
+
+set run_all 0
+if {[info exists env(GOST_TEST_RUN_EXTENDED)]} {
+	set run_all 1
+}
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+
+	test -skip {[file exist localhost_$alg_fn/cert.pem]} \
+		"Создаем серверный сертификат $alg" {
+		makeRegisteredUser localhost_$alg_fn $alg CN localhost OU $alg_fn
+	} 0 1
+
+	test -skip {[file exists ssl_user_$alg_fn/cert.pem]} \
+		"Создаем клиентский сертификат $alg" {
+		makeRegisteredUser ssl_user_$alg_fn $alg CN ssl_user OU $alg_fn
+	} 0 1
+}
+
+foreach suite $suites {
+	test "Get GOST TLS1.3 ciphers" {
+		set ciphers_output [openssl [list ciphers -tls1_3 -ciphersuites $suite]]
+		regexp "\\y$suite\\y" $ciphers_output match
+	} 0 1
+}
+
+set full_alg_list $alg_list
+
+if {!$run_all} {
+	set proto_list [get_sample $proto_list 1]
+	set suite_sample_count 2
+	set alg_sample_count 5
+	set group_sample_count 2
+
+	set suites [get_sample $suites $suite_sample_count]
+	set alg_list [get_sample $alg_list $alg_sample_count]
+	set group_list [get_sample [array names groups] $group_sample_count]
+} else {
+	set group_list [array names groups]
+}
+
+foreach proto $proto_list {
+ foreach group $group_list {
+	foreach alg $alg_list {
+		set alg_fn [string map {":" "_"} $alg]
+
+		foreach suite $suites {
+			set raw_name [lindex [split $suite @] 0]
+			set server_cert localhost_$alg_fn/cert.pem
+			set server_key localhost_$alg_fn/seckey.pem
+
+			test "Handshake $group $suite $proto" {
+				set list [client_server \
+					[sclient_args $suite $group {}] \
+					[sserver_args $server_cert $server_key $suite $protos($proto)] \
+					{}]
+				if {[regexp -lineanchor \
+				{^Server Temp Key: <NULL>, (\d+) bits.*^\s*New,\s+(\S+),\s+Cipher\s+is\s+(\S+)\s*$} \
+				[lindex $list 0] -> group_name result_proto result_cipher]} {
+					list [lindex $list 2] $group_name $result_proto $result_cipher
+				} else {
+					lindex $list 1
+				}
+			} 0 [list 0 $groups($group) $proto $raw_name]
+
+			test "Get page $group $suite $proto" {
+				set list [client_server \
+					[sclient_args $suite $group {-ign_eof}] \
+					[sserver_args $server_cert $server_key $suite $protos($proto)] \
+					"GET /\n\n"]
+				grep "^New," [lindex $list 0]
+			} 0 "New, $expected_proto, Cipher is $raw_name\nNew, $expected_proto, Cipher is $raw_name\n"
+
+			test "Multi-ciphersuites server $proto, $group client" {
+				set list [client_server \
+					[sclient_args $suite $group] \
+					[sserver_args $server_cert $server_key $suite:TLS_AES_256_GCM_SHA384 $protos($proto)] \
+					{}]
+				if {[regexp -lineanchor \
+			  {^Server Temp Key: <NULL>, (\d+) bits.*^\s*New,\s+(\S+),\s+Cipher\s+is\s+(\S+)\s*$} \
+				[lindex $list 0] -> group_name result_proto result_cipher]} {
+					list [lindex $list 2] $group_name $result_proto $result_cipher
+				} else {
+					lindex $list 1
+				}
+			} 0 [list 0 $groups($group) $proto $suite]
+
+			if {[string match *gost* $alg]} {
+				set alg_cli_list [list $alg gost2012_256:TCB gost2012_512:B]
+			} else {
+				set alg_cli_list $alg
+			}
+
+			foreach alg_cli $alg_cli_list {
+				set alg_cli_fn [string map {":" "_"} $alg_cli]
+
+				set user_cert ssl_user_$alg_cli_fn/cert.pem
+				set user_key ssl_user_$alg_cli_fn/seckey.pem
+
+				test "Server $alg, client certificate $alg_cli $proto $group" {
+					set list [client_server \
+						[sclient_auth_args $user_cert $user_key $suite $group {-ign_eof}]\
+						[sserver_args $server_cert $server_key $suite:TLS_AES_256_GCM_SHA384 $protos($proto) \
+							{-Verify 3}] \
+						"GET /\n"]
+					list [lindex $list 2] [grep "^New," [lindex $list 0]]
+				} 0 [list 0 [string repeat "New, $expected_proto, Cipher is $raw_name\n" 2]]
+
+
+				# TODO: Fix the test below when the following bug is fixed:
+				# on client side it is possible to specify key with a paramset
+				# that does not match sigalg.
+
+				set mismatching_alg ""
+				foreach other_alg $full_alg_list {
+					if {[string first ":" $alg] != -1 && [string first ":" $other_alg] != -1} {
+						set cli_group [lindex [split $alg ":"] 0]
+						set other_group [lindex [split $other_alg ":"] 0]
+
+						if {$other_alg != $alg && $cli_group == $other_group} {
+							set mismatching_alg $other_alg
+							break ;
+						}
+					}
+				}
+				set mm_alg_fn [string map {":" "_"} $mismatching_alg]
+				set mm_server_cert localhost_$mm_alg_fn/cert.pem
+				set mm_server_key localhost_$mm_alg_fn/seckey.pem
+				set mm_user_cert ssl_user_$mm_alg_fn/cert.pem
+				set mm_user_key ssl_user_$mm_alg_fn/seckey.pem
+
+				test "Mismatching sigalgs: client sigalgs $alg_to_rfc($alg), key $mismatching_alg, \
+					server $mismatching_alg $proto $group" {
+					set list [client_server \
+						[sclient_auth_args $mm_user_cert $mm_user_key $suite $group \
+							[list -ign_eof -sigalgs $alg_to_rfc($alg)]] \
+						[sserver_args $mm_server_cert $mm_server_key $suite:TLS_AES_256_GCM_SHA384 $protos($proto) \
+							{-Verify 3}] \
+						"GET /\n"]
+					list [lindex $list 2] [grep "^New," [lindex $list 0]]
+				} 0 [list 0 [string repeat "New, $expected_proto, Cipher is $raw_name\n" 2]]
+			}
+		}
+	}
+ }
+}
+
+end_tests
