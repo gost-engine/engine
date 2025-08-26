@@ -8,19 +8,26 @@ jobs:
             openssl-head: ${{ steps.openssl.outputs.head }}
         steps:
             - uses: actions/checkout@v2
+            - uses: actions/checkout@v2
               with:
                   repository: openssl/openssl
+                  path: openssl
+                  ref: openssl-3.4.2
                   fetch-depth: 0
-            - run: echo "::set-output name=head::$(git describe --always --long)"
+            - run: echo "::set-output name=head::$(git -C openssl describe --always --long)"
               id: openssl
             - uses: actions/cache@v4
               id: cache
               with:
-                  path: _dest
+                  path: openssl/_dest
                   key: ${{ runner.os }}-openssl-${{ steps.openssl.outputs.head }}
+            - name: Apply patches
+              run: |
+                  git apply patches/openssl-tls1.3.patch
             - uses: ilammy/msvc-dev-cmd@v1
             - name: Build OpenSSL
               if: steps.cache.outputs.cache-hit != 'true'
+              working-directory: openssl
               run: |
                   perl Configure no-makedepend no-tests no-asm VC-WIN64A
                   perl configdata.pm --dump
@@ -36,13 +43,13 @@ jobs:
                   submodules: true
             - uses: actions/cache@v4
               with:
-                  path: _dest
+                  path: openssl/_dest
                   key: ${{ runner.os }}-openssl-${{ needs.msvc-openssl.outputs.openssl-head }}
-            - run: cmake -DOPENSSL_ROOT_DIR="_dest\Program Files\OpenSSL" -DOPENSSL_ENGINES_DIR=bin .
+            - run: cmake -DOPENSSL_ROOT_DIR="openssl\_dest\Program Files\OpenSSL" -DOPENSSL_ENGINES_DIR=bin .
             - run: cmake --build .
             - name: Run tests
               run: |
-                  $env:PATH = "$env:PATH;$pwd\_dest\Program Files\OpenSSL\bin"
+                  $env:PATH = "$pwd\openssl\_dest\Program Files\OpenSSL\bin;$env:PATH"
                   $env:OPENSSL_ENGINES = "$pwd\bin\Debug"
                   $env:OPENSSL_MODULES = "$pwd\bin\Debug"
                   ctest -C Debug --output-on-failure

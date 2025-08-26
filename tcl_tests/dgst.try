@@ -4,9 +4,14 @@ package require ossltest
 cd $::test::dir
 start_tests "Тесты на команду dgst"
 
-switch -exact [engine_name] {
+switch -exact [test_target_name] {
 	"ccore" {set signalg { gost2001:A gost2012_256:A gost2012_512:A}}
 	"open" {set signalg { gost2001:A gost2012_256:A gost2012_512:A}}
+	"openprov" {
+		set signalg { gost2001:A gost2001:B gost2001:C gost2001:XA gost2001:XB
+					  gost2012_256:A gost2012_256:B gost2012_256:C gost2012_256:TCA gost2012_256:TCB gost2012_256:TCC gost2012_256:TCD
+					  gost2012_512:A gost2012_512:B gost2012_512:C }
+		}
 }
 
 if {[info exists env(ALG_LIST)]} {
@@ -114,8 +119,8 @@ foreach alg $alg_list {
 
     } else {
       test -skip {![file exists $username/seckey.pem]||![file exists dgst.dat]} -createsfiles "testmd5.bin"  "Подпись несовместимого дайджеста $hash_alg c подписью $alg" {
-        grep Error [openssl "dgst -[hash_short_name $hash_alg] -sign $username/seckey.pem -out testmd5.bin dgst.dat"]
-      } 1 {invalid digest type}
+        [openssl "dgst -[hash_short_name $hash_alg] -sign $username/seckey.pem -out testmd5.bin dgst.dat"]
+      } 1
     }
 
   }

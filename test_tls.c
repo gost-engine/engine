@@ -173,6 +173,8 @@ int test(const char *algname, const char *paramset)
     T(SSL_CTX_use_certificate(sctx, ck.cert));
     T(SSL_CTX_use_PrivateKey(sctx, ck.pkey));
     T(SSL_CTX_check_private_key(sctx));
+    T(SSL_CTX_set_min_proto_version(sctx, TLS1_2_VERSION));
+    T(SSL_CTX_set_max_proto_version(sctx, TLS1_2_VERSION));
 
     T(cctx = SSL_CTX_new(TLS_client_method()));
 

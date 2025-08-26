@@ -17,6 +17,7 @@
 #include "e_gost_err.h"
 #include "gost_lcl.h"
 #include "gost-engine.h"
+#include <assert.h>
 
 #include "gost_grasshopper_cipher.h"
 
@@ -429,6 +430,16 @@ int populate_gost_engine(ENGINE* e) {
             goto end;
         if (!register_pmeth_gost(minfo->nid, minfo->pmeth, 0))
             goto end;
+    }
+    int i;
+
+    for (i = 0; i < OSSL_NELEM(gost_digest_array); i++) {
+        const EVP_MD *md = GOST_init_digest(gost_digest_array[i]);
+
+        if (!EVP_add_digest(md))
+            goto end;
+
+        assert(EVP_get_digestbynid(gost_digest_array[i]->nid) != NULL);
     }
 
     ret = 1;

@@ -77,26 +77,33 @@ fi
 TCLSH="$TCLSH -encoding utf-8"
 
 echo "PWD: $PWD"
-: ${OPENSSL_CONF:=$PWD/openssl-gost.cnf}
+: ${OPENSSL_CONF:=$PWD/openssl-gost-engine.cnf}
 echo "OPENSSL_CONF: $OPENSSL_CONF"
 export OPENSSL_CONF
+
 echo "ENGINE_DIR: $ENGINE_DIR"
 : ${OPENSSL_ENGINES:=$ENGINE_DIR}
 echo "OPENSSL_ENGINES: $OPENSSL_ENGINES"
 export OPENSSL_ENGINES
+
+echo "PROVIDER_DIR: $OPENSSL_MODULES_DIR"
+: ${OPENSSL_MODULES:=$OPENSSL_MODULES_DIR}
+echo "OPENSSL_MODULES: $OPENSSL_MODULES"
+export OPENSSL_MODULES
+
 APP_SUFFIX=`basename $OPENSSL_APP .exe|sed s/openssl//`
 [ -n "$OPENSSL_APP" ]&& export OPENSSL_APP
-ENGINE_NAME=`$TCLSH getengine.tcl`
-export ENGINE_NAME
+TEST_TARGET_NAME=`$TCLSH get_test_target_name.tcl`
+export TEST_TARGET_NAME
 [ -z "$TESTDIR" ] && TESTDIR=`pwd`
-TESTDIR=${TESTDIR}/`hostname`-$ENGINE_NAME
+TESTDIR=${TESTDIR}/`hostname`-$TEST_TARGET_NAME
 [ -n "$APP_SUFFIX" ] && TESTDIR=${TESTDIR}-${APP_SUFFIX}
 [ -d ${TESTDIR} ] && rm -rf ${TESTDIR}
 mkdir -p ${TESTDIR}
 cp oidfile ${TESTDIR}
 export TESTDIR
 
-case "$ENGINE_NAME" in
+case "$TEST_TARGET_NAME" in
 	gostkc3)
 		BASE_TEST="1"
 		;;
@@ -108,8 +115,11 @@ case "$ENGINE_NAME" in
 		BASE_TESTS="engine dgst mac pkcs8 enc req-genpkey req-newkey ca smime smime2 smimeenc cms cms2 cmstc262019 cmsenc pkcs12 nopath ocsp ts ssl smime_io cms_io smimeenc_io cmsenc_io"
 		OTHER_DIR=`echo $TESTDIR |sed 's/gost/cryptocom/'`
 		;;
+	gostprov)
+		BASE_TESTS="provider enc ca dgst tls13 pkcs8 req-newkey req-genpkey mac"
+		;;
 	*)
-		echo "No GOST=providing engine found" 1>&2
+		echo "No GOST-providing engine/provider found" 1>&2
 		exit 1;
 esac
 if [ -x copy_param ];  then
@@ -169,11 +179,11 @@ if [ -n "WINCLIENT_TESTS" ]; then
 		$TCLSH wcli.try $t || fail=9
 	done
 fi
-if [ -d $OTHER_DIR ]; then
+if [ -n "$OTHER_DIR" -a -d "$OTHER_DIR" ]; then
 	OTHER_DIR=../${OTHER_DIR} $TCLSH interop.try
 fi
 if [ -d OtherVersion ] ; then
-	case "$ENGINE_NAME" in
+	case "$TEST_TARGET_NAME" in
 		gostkc3)
 			;;
 		cryptocom)
@@ -183,7 +193,7 @@ if [ -d OtherVersion ] ; then
 			OTHER_DIR=../OtherVersion ALG_LIST="gost2001:A gost2001:B gost2001:C" ENC_LIST="gost2001:A:1.2.643.2.2.31.3 gost2001:B:1.2.643.2.2.31.4 gost2001:C:1.2.643.2.2.31.2 gost2001:A:" $TCLSH interop.try
 			;;
 		*)
-			echo "No GOST=providing engine found" 1>&2
+			echo "No GOST-providing module found" 1>&2
 			exit 1;
 	esac
 fi

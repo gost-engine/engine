@@ -37,20 +37,48 @@ MACs:
 -   kuznyechik-mac
 -   kuznyechik-ctr-acpkm-omac
 
+Keymgmt:
+
+- id-GostR3410-2001 ("GOST R 34.10-2001", "1.2.643.2.2.19")
+- id-GostR3410-2001DH ("GOST R 34.10-2001 DH", "1.2.643.2.2.98")
+- gost2012_256 ("GOST R 34.10-2012 with 256 bit modulus", "1.2.643.7.1.1.1.1")
+- gost2012_512 ("GOST R 34.10-2012 with 512 bit modulus", "1.2.643.7.1.1.1.2")
+
+Encoder:
+- id-GostR3410-2001 ("GOST R 34.10-2001", "1.2.643.2.2.19") with structure format = pem/der/text
+- id-GostR3410-2001DH ("GOST R 34.10-2001 DH", "1.2.643.2.2.98") with structure format = pem/der/text
+- gost2012_256 ("GOST R 34.10-2012 with 256 bit modulus", "1.2.643.7.1.1.1.1") with structure format = pem/der/text
+- gost2012_512 ("GOST R 34.10-2012 with 512 bit modulus", "1.2.643.7.1.1.1.2") with structure format = pem/der/text
+
+PrivateKeyInfo can only be saved in pkcs8 format without encryption.
+
+Decoder:
+- id-GostR3410-2001 ("GOST R 34.10-2001", "1.2.643.2.2.19") with structure format = der
+- id-GostR3410-2001DH ("GOST R 34.10-2001 DH", "1.2.643.2.2.98") with structure format = der
+- gost2012_256 ("GOST R 34.10-2012 with 256 bit modulus", "1.2.643.7.1.1.1.1") with structure format = der
+- gost2012_512 ("GOST R 34.10-2012 with 512 bit modulus", "1.2.643.7.1.1.1.2") with structure format = der
+
+pem2der decoder already implemented by OpenSSL default provider.
+
+PrivateKeyInfo can only be loaded in pkcs8 format without decryption.
+
+Signature:
+- SN_id_GostR3410_2001, "id-GostR3411-94-with-GostR3410-2001", "GOST R 34.11-94 with GOST R 34.10-2001", "1.2.643.2.2.3"
+- SN_id_GostR3410_2012_256, "id-tc26-signwithdigest-gost3410-2012-256", "GOST R 34.10-2012 with GOST R 34.11-2012 (256 bit)", "1.2.643.7.1.1.3.2"
+- gost2012_256, "id-tc26-signwithdigest-gost3410-2012-512", "GOST R 34.10-2012 with GOST R 34.11-2012 (512 bit)", "1.2.643.7.1.1.3.3"
+
+Keyexchange:
+- ECDHE
+
+TLS1.3:
+- OpenSSL patch has been implemented that allows to connect TLS1.3 using a provider.
+
 ## TODO, not requiring additional OpenSSL support
 
--   Basic support for GOST keys, i.e. implementations of KEYMGMT
-    (including key generation), DECODER and DECODER.
-
 -   Support for these operations using GOST keys:
-
     -   ASYM_CIPHER (encryption and decryption using GOST keys)
-    -   SIGNATURE (signing and verifying using GOST keys)
     
 ## TODO, which requires additional OpenSSL support
-
--   TLSTREE support.  This may require additional changes in libssl.
-    Needs investigation.
 
 -   PKCS7 and CMS support.  This requires OpenSSL PKCS7 and CMS code
     to change for better interfacing with providers.

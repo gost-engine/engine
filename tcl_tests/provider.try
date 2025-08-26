@@ -1,0 +1,48 @@
+#!/usr/bin/tclsh
+
+lappend auto_path [file dirname [info script]]
+package require ossltest
+
+cd $::test::dir 
+start_tests "Проверка алгоритмов GOST в провайдере"
+
+test "Проверка наличия алгоритмов GOST в провайдере" {
+    set output [openssl "list --cipher-algorithms"]
+
+    if {![regexp -all {@ gostprov} $output]} {
+        error "Алгоритмы GOST не найдены в выводе --cipher-algorithms"
+    }
+    
+    set expected_algs {
+        "{ 1.2.643.2.2.21, GOST 28147-89, gost89 } @ gostprov"
+        "{ 1.2.643.7.1.1.5.2.2, kuznyechik-ctr-acpkm-omac } @ gostprov"
+        "{ 1.2.643.7.1.1.5.2.1, kuznyechik-ctr-acpkm } @ gostprov"
+        "{ 1.2.643.7.1.1.5.1.1, magma-ctr-acpkm } @ gostprov"
+        "{ 1.2.643.7.1.1.5.1.2, magma-ctr-acpkm-omac } @ gostprov"
+        "gost89-cnt @ gostprov"
+        "gost89-cnt-12 @ gostprov"
+        "gost89-cbc @ gostprov"
+        "kuznyechik-ecb @ gostprov"
+        "kuznyechik-cbc @ gostprov"
+        "kuznyechik-cfb @ gostprov"
+        "kuznyechik-ofb @ gostprov"
+        "kuznyechik-ctr @ gostprov"
+        "magma-cbc @ gostprov"
+        "magma-ctr @ gostprov"
+        "magma-mgm @ gostprov"
+        "kuznyechik-mgm @ gostprov"
+    }
+
+    set output_lines {}
+    foreach line [split $output \n] {
+      lappend output_lines [string trim $line]
+    }
+
+    foreach alg $expected_algs {
+        if {$alg ni $output_lines} {
+            error "Алгоритм '$alg' отсутствует в выводе --cipher-algorithms"
+        }
+    }
+} 0
+
+end_tests

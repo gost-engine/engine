@@ -20,7 +20,7 @@ get_hosts [lindex $argv 0]
 cd $::test::dir
 start_tests "TLS-соединение с сервером [lindex $argv 0]"
 
-if {[engine_name] eq "ccore"} {
+if {[test_target_name] eq "ccore"} {
 	array unset hosts gost94*
 }
 

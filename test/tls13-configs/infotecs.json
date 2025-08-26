@@ -1,0 +1,190 @@
+[
+  {
+    "name": "Infotecs",
+    "skip": false,
+    "host": "91.244.183.22",
+    "ca": [
+      "-----BEGIN CERTIFICATE-----",
+      "MIICcDCCAh2gAwIBAgIQFWZq8KR5sZRF3z1wqYxUlDAKBggqhQMHAQEDAjB5MQsw",
+      "CQYDVQQGEwJSVTEPMA0GA1UECBMGTW9zY293MREwDwYDVQQHEwhSb29tIDItMzEe",
+      "MBwGA1UECxMVQ3J5cHRvZ3JhcHlEZXBhcnRtZW50MREwDwYDVQQKEwhJbmZvdGVj",
+      "czETMBEGA1UEAxMKQ1JZUFRPNC1DQTAgFw0xOTExMDgwMjU4MjBaGA8yMDY5MTEw",
+      "ODAzMDgwM1oweTELMAkGA1UEBhMCUlUxDzANBgNVBAgTBk1vc2NvdzERMA8GA1UE",
+      "BxMIUm9vbSAyLTMxHjAcBgNVBAsTFUNyeXB0b2dyYXB5RGVwYXJ0bWVudDERMA8G",
+      "A1UEChMISW5mb3RlY3MxEzARBgNVBAMTCkNSWVBUTzQtQ0EwZjAfBggqhQMHAQEB",
+      "ATATBgcqhQMCAiMBBggqhQMHAQECAgNDAARAVCk2ydYf2zuj1dd0gwQiSaxqcTK/",
+      "o987avmYKyHWzwZRGzPUOpkW/7xHgqRbgEqh77KhXkttvayvevc63pNjW6N4MHYw",
+      "CwYDVR0PBAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFOOsXFhoPf1/",
+      "svgUsBqEFya6ezufMBIGCSsGAQQBgjcVAQQFAgMBAAEwIwYJKwYBBAGCNxUCBBYE",
+      "FMA4xxW2VZcnLXQdYH4dAypxPLr7MAoGCCqFAwcBAQMCA0EAuQRaslNHZRwLli/U",
+      "86dH8BtHJ6gPLN2CFahrrgROFyQbNBWAQBsCEgjw6UBgW60U7uzYMwaKmvBaFPEq",
+      "pluXLg==",
+      "-----END CERTIFICATE-----"
+    ],
+    "curves": [
+      "GC256A",
+      "GC256B",
+      "GC256C",
+      "GC256D",
+      "GC512A",
+      "GC512B",
+      "GC512C"
+    ],
+    "ciphersuites": [
+      "TLS_GOSTR341112_256_WITH_MAGMA_MGM_L",
+      "TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L",
+      "TLS_GOSTR341112_256_WITH_MAGMA_MGM_S",
+      "TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S"
+    ],
+    "auth": true,
+    "expect_auth_success": true,
+    "supported_client_sigalgs": [
+      "gostr34102012_256a",
+      "gostr34102012_256b",
+      "gostr34102012_256c",
+      "gostr34102012_256d",
+      "gostr34102012_512a",
+      "gostr34102012_512b",
+      "gostr34102012_512c"
+    ],
+    "endpoints": [
+      {
+        "port": 15003,
+        "sigalgs": [
+          "gostr34102012_256a"
+        ]
+      },
+      {
+        "port": 15013,
+        "sigalgs": [
+          "gostr34102012_256b"
+        ]
+      },
+      {
+        "port": 15023,
+        "sigalgs": [
+          "gostr34102012_256c"
+        ]
+      },
+      {
+        "port": 15033,
+        "sigalgs": [
+          "gostr34102012_256d"
+        ]
+      },
+      {
+        "port": 15073,
+        "sigalgs": [
+          "gostr34102012_512a"
+        ]
+      },
+      {
+        "port": 15083,
+        "sigalgs": [
+          "gostr34102012_512b"
+        ]
+      },
+      {
+        "port": 15093,
+        "sigalgs": [
+          "gostr34102012_512c"
+        ]
+      },
+      {
+        "port": 15002,
+        "sigalgs": [
+          "gostr34102012_256a"
+        ],
+        "auth": false
+      },
+      {
+        "port": 15012,
+        "sigalgs": [
+          "gostr34102012_256b"
+        ],
+        "auth": false
+      },
+      {
+        "port": 15022,
+        "sigalgs": [
+          "gostr34102012_256c"
+        ],
+        "auth": false
+      },
+      {
+        "port": 15032,
+        "sigalgs": [
+          "gostr34102012_256d"
+        ],
+        "auth": false
+      },
+      {
+        "port": 15072,
+        "sigalgs": [
+          "gostr34102012_512a"
+        ],
+        "auth": false,
+        "supported_client_sigalgs": [
+          "gostr34102012_512a"
+        ]
+      },
+      {
+        "port": 15082,
+        "sigalgs": [
+          "gostr34102012_512b"
+        ],
+        "auth": false
+      },
+      {
+        "port": 15092,
+        "sigalgs": [
+          "gostr34102012_512c"
+        ],
+        "auth": false
+      }
+    ],
+    "user": [
+      {
+        "sigalg": "gostr34102012_512a",
+        "key": [
+          "-----BEGIN PRIVATE KEY-----",
+          "MGgCAQAwIQYIKoUDBwEBAQIwFQYJKoUDBwECAQIBBggqhQMHAQECAwRAErXiIIvv",
+          "u2tngjox1+6GflZUoLcNwGdwXATDeKxhnOwg1rb9elc0mbvIocXRnRmwbXGytlLW",
+          "vpbSqadDor4P1A==",
+          "-----END PRIVATE KEY-----"
+        ],
+        "cert": [
+          "-----BEGIN CERTIFICATE-----",
+          "MIIFCTCCBLagAwIBAgIQAdv7vv6FK+AAAOmsAAUAATAKBggqhQMHAQEDAjCB6jEs",
+          "MCoGA1UECQwj0YPQuy7QntGC0YDQsNC00L3QsNGPLCAy0JEg0YHRgtGALjExCzAJ",
+          "BgNVBAYTAlJVMRkwFwYDVQQHDBDQsy4g0JzQvtGB0LrQstCwMTAwLgYDVQQLDCfQ",
+          "o9C00L7RgdGC0L7QstC10YDRj9GO0YnQuNC5INGG0LXQvdGC0YAxLzAtBgNVBAoM",
+          "JtCi0LXRgdGC0L7QstGL0Lkg0KPQpiDQmNC90YTQvtCi0LXQmtChMS8wLQYDVQQD",
+          "DCbQotC10YHRgtC+0LLRi9C5INCj0KYg0JjQvdGE0L7QotC10JrQoTAeFw0yNTA3",
+          "MjMxMDQ2MDBaFw0yNTEyMDkyMDU5NTlaMBMxETAPBgNVBAMMCE5ldyBVc2VyMIGq",
+          "MCEGCCqFAwcBAQECMBUGCSqFAwcBAgECAQYIKoUDBwEBAgMDgYQABIGAsTeeRPKQ",
+          "veMIzP3UKIBfANrihEAOblFCPkxdOm2TEVCMkNcgC945xSnBMx3oEe+OVDqUOZPq",
+          "hDP6j886saIUWwnkIvuP7WoBe1QEh23y31n7SwCe0JaqGDLg9OVGtk2qUQBFP3Y3",
+          "LK4Yy+oe3Qj1CG4rnxIOOL5uMmbP09AH/W2BCQAwMDA1MDAwMaOCArUwggKxMB0G",
+          "A1UdDgQWBBTGivt2al/MErN1WJ0vmHZ5ZWrdCTAdBgNVHSAEFjAUMAgGBiqFA2Rx",
+          "ATAIBgYqhQNkcQIwGQYFKoUDZG8EEAwOVmlQTmV0IENTUCA0LjQwgbMGBSqFA2Rw",
+          "BIGpMIGmDA5WaVBOZXQgQ1NQIDQuNAwm0KLQtdGB0YLQvtCy0YvQuSDQo9CmINCY",
+          "0L3RhNC+0KLQtdCa0KEMNtCX0LDQutC70Y7Rh9C10L3QuNC1IOKEljE0OS8zLzIv",
+          "MS0yMDU5INC+0YIgMTcuMDguMjAyMgw00JfQsNC60LvRjtGH0LXQvdC40LUg4oSW",
+          "IDE0OS83LzYtMjUyINC+0YIgMDQuMDcuMjAyMzA+BggrBgEFBQcBAQQyMDAwLgYI",
+          "KwYBBQUHMAKGImh0dHA6Ly90ZXN0Y2VydC5pbmZvdGVjcy5ydS9DQS5kZXIwNAYD",
+          "VR0fBC0wKzApoCegJYYjaHR0cDovL3Rlc3RjZXJ0LmluZm90ZWNzLnJ1L1NPUy5j",
+          "cmwwggEoBgNVHSMEggEfMIIBG4AUZIMCNzuDIxnzogrocUY6fz89Ib+hgfCkge0w",
+          "geoxLDAqBgNVBAkMI9GD0Lsu0J7RgtGA0LDQtNC90LDRjywgMtCRINGB0YLRgC4x",
+          "MQswCQYDVQQGEwJSVTEZMBcGA1UEBwwQ0LMuINCc0L7RgdC60LLQsDEwMC4GA1UE",
+          "Cwwn0KPQtNC+0YHRgtC+0LLQtdGA0Y/RjtGJ0LjQuSDRhtC10L3RgtGAMS8wLQYD",
+          "VQQKDCbQotC10YHRgtC+0LLRi9C5INCj0KYg0JjQvdGE0L7QotC10JrQoTEvMC0G",
+          "A1UEAwwm0KLQtdGB0YLQvtCy0YvQuSDQo9CmINCY0L3RhNC+0KLQtdCa0KGCEAHb",
+          "Qj5MiT5wAADNpgAFAAEwCgYIKoUDBwEBAwIDQQDwFJsxJveNXoba8l5PjptqW6Vp",
+          "+cKOYP0NI1vKIWI91WCp2XxicRHKDoRJgyIGj1zR+D+ddQFMOGn4eeUQSvsE",
+          "-----END CERTIFICATE-----"
+        ]
+      }
+    ]
+  }
+]

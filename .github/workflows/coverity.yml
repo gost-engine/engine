@@ -10,8 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'gost-engine' || github.event_name == 'workflow_dispatch' }}
     env:
-      OPENSSL_BRANCH: openssl-3.0
+      OPENSSL_BRANCH: openssl-3.4.2
       USE_RPATH: yes
+      PATCH_OPENSSL: 1
+      GOST_PROVIDER_ENABLE_ONLINE_TESTS: 0
 
     steps:
     - uses: actions/checkout@v2

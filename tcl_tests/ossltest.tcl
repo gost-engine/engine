@@ -106,7 +106,24 @@ proc check_builtin_engine {} {
 	}
 	return $found
 }	
-	
+
+# Получение случайно подвыборки из доступного списка
+proc get_sample {list count} {
+    set result {}
+    set n [llength $list]
+    if {$count >= $n} {
+        return $list
+    }
+    unset -nocomplain seen;
+    while {[llength $result] < $count} {
+        set idx [expr {int(rand() * $n)}]
+        if {![info exists seen($idx)]} {
+            lappend result [lindex $list $idx]
+            set seen($idx) 1
+        }
+    }
+    return $result
+}
 
 # Вызывает команду openssl.
 # Посылает в лог вывод на stdout и на stderr, возвращает его же.
@@ -299,7 +316,7 @@ proc generate_key {params filename} {
 		set exesuffix ""
 	}
 	log "Keyname is $keyname"
-#	if {[engine_name] eq "open"} {
+#	if {[test_target_name] eq "open"} {
 		log "Calling openssl cmd to create private key"
 		openssl "genpkey  $optname -out $filename"
 #	} elseif {[info exists ::env(OBJ)] && [file executable ../$::env(OBJ)/keytest$exesuffix]&& $alg eq "gost2001"} {
@@ -844,7 +861,7 @@ proc open_server {server_args} {
 
 	global output finished
 	#puts -nonewline stderr  "Waiting for server startup..."
-	while {![regexp "\nACCEPT\n" $output($server)]} {
+	while {![regexp "ACCEPT" $output($server)]} {
 		vwait output($server)
 		if {[info exists finished($server)]} {
 			#puts stderr "error"
@@ -1054,15 +1071,16 @@ proc der_from_pem {pem} {
 	}
 }
 
-proc engine_name {} {
+proc test_target_name {} {
 	global env
-	if {[info exists env(ENGINE_NAME)]} {
-		switch -exact $env(ENGINE_NAME) {
+	if {[info exists env(TEST_TARGET_NAME)]} {
+		switch -exact $env(TEST_TARGET_NAME) {
 			"open" {return "open"}
 			"gost" {return "open"}
+			"gostprov" {return "openprov"}
 			"cryptocom" {return "ccore"}
 			"ccore" {return "ccore"}
-			default {error "Unknown engine '$env(ENGINE_NAME)'"}
+			default {error "Unknown engine '$env(TEST_TARGET_NAME)'"}
 		}
 	} else {
 		return "ccore"

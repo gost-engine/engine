@@ -1,43 +1,48 @@
 #!/usr/bin/perl
 use Test2::V0;
-skip_all('TODO: add pkey support in provider')
-    unless $ARGV[0] eq 'engine';
+my @valid_target = qw(engine provider);
+my $target = $ARGV[0];
+
+unless (grep { $_ eq $target } @valid_target) {
+    skip_all("Unknown test mode '$target' – expected one of @valid_target");
+}
 plan(2);
 use Cwd 'abs_path';
 
-#
-# If this variable is set, engine would be loaded via configuration
-# file. Otherwise - via command line
-# 
-my $use_config = 1;
-
 # prepare data for 
 
-
+my $openssl_bin = $ENV{OPENSSL_PROGRAM} || "openssl";
 my $engine=$ENV{'ENGINE_NAME'}||"gost";
+my $provider=$ENV{'PROVIDER_NAME'}||"gostprov";
 
 # Reopen STDERR to eliminate extra output
 open STDERR, ">>","tests.err";
 
 my $F;
-my $eng_param;
 
 open $F,">","test.cnf";
-if (defined($use_config) && $use_config) {
-    $eng_param = "";
-    open $F,">","test.cnf";
+if ($target eq 'engine') {
     print $F <<EOCFG;
 openssl_conf = openssl_def
 [openssl_def]
 engines = engines
 [engines]
-${engine}=gost_conf
+${engine} = gost_conf
 [gost_conf]
 default_algorithms = ALL
-
 EOCFG
-} else {
-    $eng_param = "-engine $engine"
+}
+elsif ($target eq 'provider') {
+    print $F <<EOCFG;
+openssl_conf = openssl_def
+[openssl_def]
+providers = providers
+[providers]
+${provider} = provider_conf
+default = provider_conf
+[provider_conf]
+activate = 1
+EOCFG
 }
 close $F;
 $ENV{'OPENSSL_CONF'}=abs_path('test.cnf');
@@ -126,16 +131,16 @@ ENjS+gA=
         print $F $seckey;
         close $F;
         #1.  Прочитать секретный ключ и напечатать публичный и секретный ключи
-        is(`openssl pkey -noout -text -in tmp.pem`,$sectext . $pubtext,
+        is(`$openssl_bin  pkey -noout -text -in tmp.pem`,$sectext . $pubtext,
             "Print key pair $alg:$paramset");
         #2. Прочитать секретный ключ и вывести публичный (все алгоритмы)
-        is(`openssl pkey -pubout -in tmp.pem`,$pubkey,
+        is(`$openssl_bin  pkey -pubout -in tmp.pem`,$pubkey,
             "Compute public key $alg:$paramset");
         open $F,">","tmp.pem";
         print $F $pubkey;
         close $F;
         #3. Прочитать публичный и напечать его в виде текста
-        is(`openssl pkey -pubin -noout -in tmp.pem -text_pub`,$pubtext,
+        is(`$openssl_bin  pkey -pubin -noout -in tmp.pem -text_pub`,$pubtext,
             "Read and print public key $alg:$paramset");
     }
     #unlink "tmp.pem";
@@ -229,6 +234,7 @@ MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEBBCDVwXdvq1zdBBmzVjG1WOBQR/dkwCzF6KSIiVkf
 -----END PRIVATE KEY-----',
 'c019d8939e12740a328625cea86efa3b39170412772b3c110536410bdd58a854',
 'e9f7c57547fa0cd3c9942c62f9c74a553626d5f9810975a476825cd6f22a4e86',
+'21c41441319adddafa29983dd2d970c1760a1c127c486edd31720ec8151c1055',
 '-----BEGIN PUBLIC KEY-----
 MF4wFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEBA0MABEB3WS+MEcXnrMCdavPRgF28U5PDlV1atDh1ADUFxoB/f80OjqQ0T7cGQtk/2nWCGDX7uUrBGA8dql8Bnw9Sgn5+
 -----END PUBLIC KEY-----'],
@@ -241,7 +247,8 @@ MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQECBCDQ6G51VK2+96rvFyG/dRqWOFNJA33jQajAnzra
 MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQECBCCvvOUfoyljV0zfUrfEj1nOgBbelamj+eXgl0qxDJjDDA==
 -----END PRIVATE KEY-----',
 '6f7c5716c08fca79725beb4afaf2a48fd2fa547536d267f2b869b6ced5fddfa4',
-'c9b2ad43f1aa70185f94dbc207ab4a147002f8aac5cf2fcec9d771a36f5f7a91'],
+'c9b2ad43f1aa70185f94dbc207ab4a147002f8aac5cf2fcec9d771a36f5f7a91',
+'21499f455c53ccf80f9a4c24d6370c2aa0c405e266ca9345fa373f13c9c763c5'],
 'id-tc26-gost-3410-2012-256-paramSetC'=>
 ['-----BEGIN PRIVATE KEY-----
 MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEDBCDq9XGURfLDPrDiMNPUcunrvUwI46FBO2EU+ok8a1DANw==
@@ -251,7 +258,8 @@ MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEDBCDq9XGURfLDPrDiMNPUcunrvUwI46FBO2EU+ok8
 MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEDBCAWm69+rfnGTDZ24MR29IcjMsuPhjBQT6zxPvUYQBrGLg==
 -----END PRIVATE KEY-----',
 '27e3afdcb9f191b0465ae7d28245cee6ca44d537a7c67d938933cf2012ec71a6',
-'43c9f321b3659ee5108f0bcd5527f403d445f486c9e492768f46a82359ee0385'],
+'43c9f321b3659ee5108f0bcd5527f403d445f486c9e492768f46a82359ee0385',
+'40b6d4df162db8c8639fc55fc8e02e70137b8c46b0891d8990f81cb3452b0eb9'],
 'id-tc26-gost-3410-2012-256-paramSetD'=>
 ['-----BEGIN PRIVATE KEY-----
 MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEEBCBnmzl1MutYiAXBmZa3GW5sK6Kznpt6V5i+xAl36RDhXQ==
@@ -261,7 +269,8 @@ MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEEBCBnmzl1MutYiAXBmZa3GW5sK6Kznpt6V5i+xAl3
 MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEEBCBpp7anU1gMcaK/BzAQzAbUHXW2kuh6h9t67i67eIfAgQ==
 -----END PRIVATE KEY-----',
 '902a174ace21dc8ecf94e6a7e84cde115f902484e2c37d1d2652b1ef0a402dfc',
-'3af2a69e68cd444acc269e75edb90dfe01b8f3d9f97fe7c8b36841df9a2771a1'],
+'3af2a69e68cd444acc269e75edb90dfe01b8f3d9f97fe7c8b36841df9a2771a1',
+'4971dad44d16df7c246daba399039264eec11bb99cb35390455df3736d1b5d4d'],
 'id-tc26-gost-3410-2012-512-paramSetA'=>
 ['-----BEGIN PRIVATE KEY-----
 MGgCAQAwIQYIKoUDBwEBAQIwFQYJKoUDBwECAQIBBggqhQMHAQECAwRAVbz5k/8Zj8XbTEtlv9bK9i8FaIbm+NN9kCp2wCbiaw6AXvdBiQlMj7hSGv7AdW928VRszq9Elwc63VQcYzdnkw==
@@ -271,7 +280,8 @@ MGgCAQAwIQYIKoUDBwEBAQIwFQYJKoUDBwECAQIBBggqhQMHAQECAwRAVbz5k/8Zj8XbTEtlv9bK9i8F
 MGgCAQAwIQYIKoUDBwEBAQIwFQYJKoUDBwECAQIBBggqhQMHAQECAwRASeoodGB639ETkSEfOLTFkTozKEpMVAlFPgvK6fOlD9u1/ITUXBoERea2R+HG3YNi81wTMqT0Njq9WnbQvgIx6g==
 -----END PRIVATE KEY-----',
 'e88ba18821e6a86787cb225ea9b731821efb9e07bdcfb7b0b8f78c70d4e88c2b',
-'4d032ae84928991a48d83fc462da4d21173d8e832a3b30df71a6974f66e377a8'],
+'4d032ae84928991a48d83fc462da4d21173d8e832a3b30df71a6974f66e377a8',
+'4329d5fbc3d5dd87d2633967d098042549ed9dbf76fe5adb27399a151b4a44d2'],
 'id-tc26-gost-3410-2012-512-paramSetB'=>
 ['-----BEGIN PRIVATE KEY-----
 MGgCAQAwIQYIKoUDBwEBAQIwFQYJKoUDBwECAQICBggqhQMHAQECAwRAvQKu1fl21NUXvdWlYtRs3Bs4ZW9vQlV1rf1D1rfRUdxjuC2A3xdD9RoUupzK6EeNFkhTMbZ+euQTXwPFN6ykbA==
@@ -281,7 +291,8 @@ MGgCAQAwIQYIKoUDBwEBAQIwFQYJKoUDBwECAQICBggqhQMHAQECAwRAvQKu1fl21NUXvdWlYtRs3Bs4
 MGgCAQAwIQYIKoUDBwEBAQIwFQYJKoUDBwECAQICBggqhQMHAQECAwRA+I8I9E0Fz0cKG21QHn7VluHB9j348leFmeXLfGUS+jLqllemtCObR7KLW3bkzH+EiqXbLNMm+JLsmeGv4/nvYQ==
 -----END PRIVATE KEY-----',
 'f7071ed951ac98570a5f9d299bf5a61d3dcb8082e8733b1571164ce6b54b2d8f',
-'f37881bf843ecee4f0935c4f7653d4cb48b8db6a50394f89792dad899765d7d9'],
+'f37881bf843ecee4f0935c4f7653d4cb48b8db6a50394f89792dad899765d7d9',
+'1e2b8e4beffe40bd9f94110f624f3d5f07ace14b7952f306b22010b51fec15e3'],
 'id-tc26-gost-3410-2012-512-paramSetC'=>
 ['-----BEGIN PRIVATE KEY-----
 MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEA79FKW7MqF4pQJJvpAhKd9YkwsFXBzcaUhYt3N1KuJV6n5aJ4+kaJfuT3YbhtwWWzNIsIdXUZRaBEGO2cEwysa
@@ -292,6 +303,7 @@ MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEAiCNNQAMnur4EG8eSDpr5WjJaoHquSsK3wydCr
 -----END PRIVATE KEY-----',
 '6e1db0da8832660fbf761119e41d356a1599686a157c9a598b8e18b56cb09791',
 '2df0dfa8d437689d41fad965f13ea28ce27c29dd84514b376ea6ad9f0c7e3ece',
+'cd8deae809dc76bc9f77765e3e73b822832ccb073caded0ae579b41a7da55cdb',
 '-----BEGIN PUBLIC KEY-----
 MIGgMBcGCCqFAwcBAQECMAsGCSqFAwcBAgECAwOBhAAEgYCPdAER26Ym73DSUXBamTLJcntdV3oZ7RRx/+Ijf13GnF36o36i8tEC13uJqOOmujEkAGPtui6yE4iJNVU0uM6yHmIEM5H0c81Sd/VQD8yXW1hyGAZvTMc+U/6oa30YU9YY7+t759d1CIVznPmq9C+VbAApyDCMFjuYnKD/nChsGA==
 -----END PUBLIC KEY-----'],
@@ -304,7 +316,8 @@ MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEBBCD5+u2ebYwQ9iDYWHmif4XeGgj2OijJuq4YsbTN
 MD4CAQAwFwYIKoUDBwEBAQEwCwYJKoUDBwECAQEBBCBmDDZsVa8VwTVme8jfzdgPAAAAAAAAAAAAAAAAAAAAQA==
 -----END PRIVATE KEY-----',
 '29132b8efb7b21a15133e51c70599031ea813cca86edb0985e86f331493b3d73',
-'7206480037eb130595c0ed350046af8c96b0fc5bfb4030be65dbf3e207a25de2'],
+'7206480037eb130595c0ed350046af8c96b0fc5bfb4030be65dbf3e207a25de2',
+'6e19ffd60b0fbbfc7657ea4c113b3ffe6aedb789ffbdb25cdb14dfedf400e312'],
 'id-tc26-gost-3410-2012-512-paramSetC-rangetest'=>
 ['-----BEGIN PRIVATE KEY-----
 MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEA79FKW7MqF4pQJJvpAhKd9YkwsFXBzcaUhYt3N1KuJV6n5aJ4+kaJfuT3YbhtwWWzNIsIdXUZRaBEGO2cEwysa
@@ -314,37 +327,44 @@ MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEA79FKW7MqF4pQJJvpAhKd9YkwsFXBzcaUhYt3N
 MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEDsI/BH7zxilCahaafnqe3ILFBHUf+pM0wAqwZlpNuMyf////////////////////////////////////////8/
 -----END PRIVATE KEY-----',
 'fbcd6e72572335d291be497b7bfb264138ab7b2ecca00bc7a9fd90ad7557c0cc',
-'8e5b7bd8b3680d3dc33627c5bed85fdeb4e1ba67307714eb260412ddbb4bb87e']
+'8e5b7bd8b3680d3dc33627c5bed85fdeb4e1ba67307714eb260412ddbb4bb87e',
+'3fbc1dc5b1922f17864871d57bdabd58e342b3e1bfcb39b9cff7b63b680bfcf0']
 );
-    plan(64);
+    plan(94);
+    my $pkeyopt = $target eq 'engine' ? "-pkeyopt ukmhex:0100000000000000" : "";
     while(my($id, $v) = each %derives) {
-        my ($alice,$alicehash,$bob,$bobhash,$secrethash,$malice) = @$v;
+        my ($alice,$alicehash,$bob,$bobhash,$secrethashvko,$secrethashecdhe,$malice) = @$v;
+        my $expected_secret_hash = $target eq 'engine' ? $secrethashvko : $secrethashecdhe;
         # Alice: keygen
         open $F,">",'alice.prv';
         print $F $alice;
         close $F;
-        system("openssl pkey -in alice.prv -out alice.pub.der -pubout -outform DER");
-        like(`openssl dgst -sha256 -r alice.pub.der`, qr/^$alicehash/, "Compute public key:$id:Alice");
+        system("$openssl_bin pkey -in alice.prv -out alice.pub.der -pubout -outform DER");
+        like(`$openssl_bin dgst -sha256 -r alice.pub.der`, qr/^$alicehash/, "Compute public key:$id:Alice");
         # Bob: keygen
         open $F,">",'bob.prv';
         print $F $bob;
         close $F;
-        system("openssl pkey -in bob.prv -out bob.pub.der -pubout -outform DER");
-        like(`openssl dgst -sha256 -r bob.pub.der`, qr/^$bobhash/, "Compute public key:$id:Bob");
-        # Alice: derive
-        system("openssl pkeyutl -derive -inkey alice.prv -keyform PEM -peerkey bob.pub.der -peerform DER -pkeyopt ukmhex:0100000000000000 -out secret_a.bin");
-        like(`openssl dgst -sha256 -r secret_a.bin`, qr/^$secrethash/, "Compute shared key:$id:Alice:Bob");
-        # Bob: derive
-        system("openssl pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey alice.pub.der -peerform DER -pkeyopt ukmhex:0100000000000000 -out secret_b.bin");
-        like(`openssl dgst -sha256 -r secret_b.bin`, qr/^$secrethash/, "Compute shared key:$id:Bob:Alice");
+        system("$openssl_bin pkey -in bob.prv -out bob.pub.der -pubout -outform DER");
+        like(`$openssl_bin dgst -sha256 -r bob.pub.der`, qr/^$bobhash/, "Compute public key:$id:Bob");
+        SKIP: {
+            skip "Provider doesn't support derive for GOST2001 paramsets", 4
+                if $target eq 'provider' && $id =~ m/^id-GostR3410-2001-/;
+            # Alice: derive
+            ok(system("$openssl_bin pkeyutl -derive -inkey alice.prv -keyform PEM -peerkey bob.pub.der -peerform DER $pkeyopt -out secret_a.bin") == 0,"Derive succeeded for Alice");
+            like(`$openssl_bin dgst -sha256 -r secret_a.bin`,qr/^\Q$expected_secret_hash\E/,"Compute shared key:$id:Alice:Bob");
+            # Bob: derive
+            ok(system("$openssl_bin pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey alice.pub.der -peerform DER $pkeyopt -out secret_b.bin") == 0,"Derive succeeded for Bob");
+            like(`$openssl_bin dgst -sha256 -r secret_b.bin`,qr/^\Q$expected_secret_hash\E/,"Compute shared key:$id:Bob:Alice");
+        }
         if (defined $malice && $malice ne "") {
             # Malice: negative test -- this PEM is in the small subgroup
             open $F,">",'malice.pub';
             print $F $malice;
             close $F;
             # NB system should return true on failure, so this is a negative test
-            ok(system("openssl pkeyutl -derive -inkey alice.prv -keyform PEM -peerkey malice.pub -peerform PEM -pkeyopt ukmhex:0100000000000000 -out secret_m.bin"), "Compute shared key:$id:Alice:Malice");
-            ok(system("openssl pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey malice.pub -peerform PEM -pkeyopt ukmhex:0100000000000000 -out secret_m.bin"), "Compute shared key:$id:Bob:Malice");
+            ok(system("$openssl_bin pkeyutl -derive -inkey alice.prv -keyform PEM -peerkey malice.pub -peerform PEM $pkeyopt -out secret_m.bin"), "Compute shared key:$id:Alice:Malice");
+            ok(system("$openssl_bin pkeyutl -derive -inkey bob.prv -keyform PEM -peerkey malice.pub -peerform PEM $pkeyopt -out secret_m.bin"), "Compute shared key:$id:Bob:Malice");
         }
     }
     unlink "alice.prv";

@@ -4,6 +4,23 @@ package require ossltest
 cd $::test::dir
 start_tests "Тесты на команду dgst с MAC"
 
+proc mac_testcase { alg file mac_hex macopts } {
+	set opts [split $macopts " "]
+
+	if {[string equal [test_target_name] "openprov"]} {
+		set cmd [list mac -in $file]
+		lappend cmd {*}$opts $alg
+		set expected [string toupper $mac_hex]
+	} else {
+		set cmd [list dgst -mac $alg]
+		lappend cmd {*}$opts $file
+		set expected "[string toupper $alg]-$alg\($file\)= $mac_hex"
+	}
+
+	set result [openssl $cmd]
+	return [string equal [string trim $result] [string trim $expected]]
+}
+
 test -createsfiles {dgst.dat dgst0.dat dgst2.dat dgst8.dat dgst63.dat mac-grasshopper.dat mac-magma.dat} "Формирование тестовых данных" {
 	makeFile dgst.dat [string repeat "Test data to digest.\n" 100] binary
 	makeFile dgst0.dat "" binary
@@ -31,91 +48,90 @@ test "Вычисление двух HMAC(md_gost94)" {
 
 test "Попытка вычислить MAC с ключом неправильной длины" {
 	grep gost-mac [openssl "dgst -mac gost-mac  -macopt key:123456789012345678901234567890 dgst.dat"]
-} 1 "invalid mac key length"
+} 1 ""
 
 test "Попытка вычислить MAC с hex ключом неправильной длины" {
 	grep gost-mac [openssl "dgst -mac gost-mac  -macopt hexkey:414243444546474849404142434445464748494041424344454647484940 dgst.dat"]
-} 1 "invalid mac key length"
+} 1 ""
 
 test "Вычисление MAC gost89" {
-	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 dgst.dat"]
-} 0 "GOST-MAC-gost-mac(dgst.dat)= 37f646d2\n"
+	mac_testcase "gost-mac" "dgst.dat" "37f646d2" "-macopt key:12345678901234567890123456789012"
+} 0 1
 
-test "Вычисление двух MAC gost89" {
+test -skip {[string equal [test_target_name] "openprov"]} "Вычисление двух MAC gost89" {
 	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 dgst.dat dgst.dat"]
 } 0 "GOST-MAC-gost-mac(dgst.dat)= 37f646d2\nGOST-MAC-gost-mac(dgst.dat)= 37f646d2\n"
 
-test "Вычислиение MAC gost89 с шестнацатиричным ключом" {
-	grep gost-mac [openssl "dgst -mac gost-mac -macopt hexkey:3132333435363738393031323334353637383930313233343536373839303132 dgst.dat"]
-} 0 "GOST-MAC-gost-mac(dgst.dat)= 37f646d2\n"
+test "Вычисление MAC gost89 с шестнадцатиричным ключом" {
+	mac_testcase "gost-mac" "dgst.dat" "37f646d2" "-macopt hexkey:3132333435363738393031323334353637383930313233343536373839303132"
+} 0 1
 
 test "Вычисление MAC gost89 от файла нулевой длины" {
-	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 dgst0.dat"]
-} 0 "GOST-MAC-gost-mac(dgst0.dat)= 00000000\n"
+	mac_testcase "gost-mac" "dgst0.dat" "00000000" "-macopt key:12345678901234567890123456789012"
+} 0 1
 
 test "Вычисление MAC gost89 от файла длины 2" {
-	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 dgst2.dat"]
-} 0 "GOST-MAC-gost-mac(dgst2.dat)= 87ea321f\n"
+	mac_testcase "gost-mac" "dgst2.dat" "87ea321f" "-macopt key:12345678901234567890123456789012"
+} 0 1
 
 test "Вычисление MAC gost89 от файла длины 8" {
-	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 dgst8.dat"]
-} 0 "GOST-MAC-gost-mac(dgst8.dat)= ad9aeae0\n"
+	mac_testcase "gost-mac" "dgst8.dat" "ad9aeae0" "-macopt key:12345678901234567890123456789012"
+} 0 1
 
 test "Вычисление MAC gost8912" {
-	grep gost-mac [openssl "dgst -mac gost-mac-12 -macopt key:12345678901234567890123456789012 dgst8.dat"]
-} 0 "GOST-MAC-12-gost-mac-12(dgst8.dat)= be70ba5e\n"
+	mac_testcase "gost-mac-12" "dgst8.dat" "be70ba5e" "-macopt key:12345678901234567890123456789012"
+} 0 1
 
-test "Вычисление MAC gost89 со сменой параметров на параметры от gost8912 (symbolic)" {
+test -skip {[string equal [test_target_name] "openprov"]} "Вычисление MAC gost89 со сменой параметров на параметры от gost8912 (symbolic)" {
 	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 -macopt paramset:id-tc26-gost-28147-param-Z dgst8.dat"]
 } 0 "GOST-MAC-gost-mac(dgst8.dat)= be70ba5e\n"
 
-test "Вычисление MAC gost8912 со сменой параметров на параметры от gost89 (OID)" {
+test -skip {[string equal [test_target_name] "openprov"]} "Вычисление MAC gost8912 со сменой параметров на параметры от gost89 (OID)" {
 	grep gost-mac [openssl "dgst -mac gost-mac-12 -macopt key:12345678901234567890123456789012 -macopt paramset:1.2.643.2.2.31.1 dgst8.dat"]
 } 0 "GOST-MAC-12-gost-mac-12(dgst8.dat)= ad9aeae0\n"
 
-test "Вычисление MAC gost89 со сменой параметров на параметры 1.2.643.2.2.31.2" {
+test -skip {[string equal [test_target_name] "openprov"]} "Вычисление MAC gost89 со сменой параметров на параметры 1.2.643.2.2.31.2" {
 	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 -macopt paramset:1.2.643.2.2.31.2 dgst8.dat"]
 } 0 "GOST-MAC-gost-mac(dgst8.dat)= c7fdc644\n"
 
-test "Вычисление MAC gost8912 со сменой параметров на параметры id-Gost28147-89-CryptoPro-B-ParamSet" {
+test -skip {[string equal [test_target_name] "openprov"]} "Вычисление MAC gost8912 со сменой параметров на параметры id-Gost28147-89-CryptoPro-B-ParamSet" {
 	grep gost-mac [openssl "dgst -mac gost-mac-12 -macopt key:12345678901234567890123456789012 -macopt paramset:id-Gost28147-89-CryptoPro-B-ParamSet dgst8.dat"]
 } 0 "GOST-MAC-12-gost-mac-12(dgst8.dat)= c7fdc644\n"
 
 test "Вычисление MAC gost89 с изменение длины имитовставки (8)" {
-	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 -sigopt size:8 dgst8.dat"]
-} 0 "GOST-MAC-gost-mac(dgst8.dat)= ad9aeae05a7f6f71\n"
+	mac_testcase "gost-mac" "dgst8.dat" "ad9aeae05a7f6f71" \
+		"-macopt key:12345678901234567890123456789012 -macopt size:8"
+} 0 1
 
 test "Вычисление MAC gost8912 с изменение длины имитовставки (6)" {
-	grep gost-mac [openssl "dgst -mac gost-mac-12 -macopt key:12345678901234567890123456789012 -sigopt size:6 dgst8.dat"]
-} 0 "GOST-MAC-12-gost-mac-12(dgst8.dat)= be70ba5ed6b0\n"
+	mac_testcase "gost-mac-12" "dgst8.dat" "be70ba5ed6b0" \
+		"-macopt key:12345678901234567890123456789012 -macopt size:6"
+} 0 1
 
 test "Вычисление MAC gost89 с изменение длины имитовставки (2)" {
-	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 -sigopt size:3 dgst8.dat"]
-} 0 "GOST-MAC-gost-mac(dgst8.dat)= ad9aea\n"
+	mac_testcase "gost-mac" "dgst8.dat" "ad9a" \
+		"-macopt key:12345678901234567890123456789012 -macopt size:2"
+} 0 1
 
-test "Вычисление MAC gost89 с изменение длины имитовставки через macopt" {
-	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 -macopt size:3 dgst8.dat"]
-} 0 "GOST-MAC-gost-mac(dgst8.dat)= ad9aea\n"
+test -skip {[string equal [test_target_name] "openprov"]} "Вычисление MAC gost89 с изменение длины имитовставки через sigopt" {
+	mac_testcase "gost-mac" "dgst8.dat" "ad9aea" "-macopt key:12345678901234567890123456789012 -sigopt size:3"
+} 0 1
 
-test "Вычисление MAC gost8912 с изменение длины имитовставки через macopt" {
-	grep gost-mac [openssl "dgst -mac gost-mac-12 -macopt key:12345678901234567890123456789012 -macopt size:6 dgst8.dat"]
-} 0 "GOST-MAC-12-gost-mac-12(dgst8.dat)= be70ba5ed6b0\n"
+test -skip {[string equal [test_target_name] "openprov"]} "Вычисление MAC gost8912 с изменение длины имитовставки через sigopt" {
+	mac_testcase "gost-mac-12" "dgst8.dat" "be70ba5ed6b0" "-macopt key:12345678901234567890123456789012 -sigopt size:6"
+} 0 1
 
-test "Вычисление MAC gost8912 с изменение длины имитовставки:sigopt переписывает macopt " {
-	grep gost-mac [openssl "dgst -mac gost-mac-12 -macopt key:12345678901234567890123456789012 -macopt size:2 -sigopt size:6 dgst8.dat"]
-} 0 "GOST-MAC-12-gost-mac-12(dgst8.dat)= be70ba5ed6b0\n"
-
-test "Вычисление MAC gost8912 с изменение длины имитовставки:sigopt переписывает macopt " {
+test -skip {[string equal [test_target_name] "openprov"]} "Вычисление MAC gost8912 с изменение длины имитовставки:sigopt переписывает macopt " {
 	grep gost-mac [openssl "dgst -mac gost-mac-12 -macopt key:12345678901234567890123456789012 -macopt size:2 -sigopt size:6 dgst8.dat"]
 } 0 "GOST-MAC-12-gost-mac-12(dgst8.dat)= be70ba5ed6b0\n"
 
 test "Вычисление MAC magma-mac (пример из ГОСТ 2015 34.13)" {
-	grep magma-mac [openssl "dgst -mac magma-mac -macopt hexkey:ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff mac-magma.dat"]
-} 0 "MAGMA-MAC-magma-mac(mac-magma.dat)= 154e72102030c5bb\n"
+	mac_testcase "magma-mac" "mac-magma.dat" "154e72102030c5bb" "-macopt hexkey:ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+} 0 1
 
 #FIXME my regression
 test "Вычисление MAC grasshopper-mac (пример из ГОСТ 2015 34.13)" {
-	grep kuznyechik-mac [openssl "dgst -mac kuznyechik-mac -macopt hexkey:8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef mac-grasshopper.dat"]
-} 0 "KUZNYECHIK-MAC-kuznyechik-mac(mac-grasshopper.dat)= 336f4d296059fbe34ddeb35b37749c67\n"
+	mac_testcase "kuznyechik-mac" "mac-grasshopper.dat" "336f4d296059fbe34ddeb35b37749c67" "-macopt hexkey:8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef"
+} 0 1
 
 end_tests

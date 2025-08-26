@@ -8,7 +8,7 @@ include(CheckCSourceRuns)
 
 enable_testing()
 
-find_package(OpenSSL 3.0 REQUIRED)
+find_package(OpenSSL 3.4 REQUIRED)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'RelWithDebInfo' as none was specified.")
@@ -29,12 +29,12 @@ if (CMAKE_C_COMPILER_ID MATCHES "Clang")
   set(CMAKE_C_FLAGS_RELEASE -O2)
   set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -ggdb")
-  add_compile_options(-Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -Qunused-arguments -Wno-deprecated-declarations)
+  add_compile_options(-Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -Qunused-arguments -Wno-deprecated-declarations -Wno-error=\#warnings)
 elseif(CMAKE_C_COMPILER_ID MATCHES "GNU")
   set(CMAKE_C_FLAGS_RELEASE -O2)
   set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -ggdb")
-  add_compile_options(-Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -Wno-error=unknown-pragmas -Wno-error=pragmas -Wno-deprecated-declarations)
+  add_compile_options(-Werror -Wall -Wno-unused-parameter -Wno-unused-function -Wno-missing-braces -Wno-error=unknown-pragmas -Wno-error=pragmas -Wno-deprecated-declarations -Wno-error=cpp)
 elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
   add_definitions(-D_CRT_DEPRECATED_NO_WARNINGS)
@@ -204,15 +204,25 @@ set(GOST_ENGINE_SOURCE_FILES
 
 set(GOST_PROV_SOURCE_FILES
         gost_prov.c
+        gost_prov.h
         gost_prov_cipher.c
         gost_prov_digest.c
         gost_prov_mac.c
+        gost_prov_keymgmt.c
+        gost_prov_encoder.c
+        gost_prov_signature.c
+        gost_prov_decoder.c
+        gost_prov_keyexch.c
+        gost_prov_tls.c
+        gost_prov_tls.h
         )
 
 set(TEST_ENVIRONMENT_COMMON
+        TLS13_PATCHED_OPENSSL=${TLS13_PATCHED_OPENSSL}
         CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
         PERL5LIB=${CMAKE_CURRENT_SOURCE_DIR}/test
         OPENSSL_PROGRAM=${OPENSSL_PROGRAM}
+        OPENSSL_MODULES=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         OPENSSL_CRYPTO_LIBRARY=${OPENSSL_CRYPTO_LIBRARY}
         )
 
@@ -247,6 +257,13 @@ set_tests_properties(ciphers-with-provider
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
 # test_curves is an internals testing program, it doesn't need a test env
+
+add_executable(test_ecdhe test_ecdhe.c)
+target_link_libraries(test_ecdhe gost_core gost_err)
+add_test(NAME ecdhe COMMAND test_ecdhe)
+set_tests_properties(ecdhe
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+
 add_executable(test_curves test_curves.c)
 target_link_libraries(test_curves gost_core gost_err)
 add_test(NAME curves COMMAND test_curves)
@@ -295,14 +312,17 @@ add_executable(test_gost89 test_gost89.c)
 target_link_libraries(test_gost89 gost_core gost_err)
 add_test(NAME gost89 COMMAND test_gost89)
 
-add_executable(test_mgm test_mgm.c)
-target_link_libraries(test_mgm OpenSSL::Crypto)
-add_test(NAME mgm-with-engine COMMAND test_mgm)
-set_tests_properties(mgm-with-engine
-  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
-add_test(NAME mgm-with-provider COMMAND test_mgm)
-set_tests_properties(mgm-with-provider
-  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
+if(TLS13_PATCHED_OPENSSL)
+  add_executable(test_mgm test_mgm.c)
+  target_link_libraries(test_mgm OpenSSL::Crypto)
+  add_test(NAME mgm-with-engine COMMAND test_mgm)
+  set_tests_properties(mgm-with-engine
+    PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+  add_test(NAME mgm-with-provider COMMAND test_mgm)
+  set_tests_properties(mgm-with-provider
+    PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
+  set_property(TARGET test_mgm APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
+endif()
 
 if(NOT SKIP_PERL_TESTS)
     execute_process(COMMAND perl -MTest2::V0 -e ""
@@ -330,6 +350,7 @@ set(BINARY_TESTS_TARGETS
         test_digest
         test_ciphers
         test_curves
+        test_ecdhe
         test_params
         test_derive
         test_sign
@@ -337,7 +358,6 @@ set(BINARY_TESTS_TARGETS
         test_keyexpimp
         test_gost89
         test_tls
-        test_mgm
         )
 set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
 
@@ -410,12 +430,23 @@ add_custom_target(tags
     COMMAND ctags -R . ${OPENSSL_ROOT_DIR}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-add_custom_target(tcl_tests
+add_custom_target(tcl_tests_provider
+    COMMAND OPENSSL_LIBCRYPTO=${OPENSSL_CRYPTO_LIBRARY}
+            OPENSSL_APP=${OPENSSL_PROGRAM}
+            TESTSRC=${CMAKE_SOURCE_DIR}/tcl_tests
+            TESTDIR=${CMAKE_BINARY_DIR}/tcl_tests_provider
+            OPENSSL_MODULES_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+            OPENSSL_CONF=${CMAKE_SOURCE_DIR}/tcl_tests/openssl-gost-provider.cnf
+            sh ./runtest.sh
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
+
+add_custom_target(tcl_tests_engine
     COMMAND OPENSSL_LIBCRYPTO=${OPENSSL_CRYPTO_LIBRARY}
             OPENSSL_APP=${OPENSSL_PROGRAM}
             TESTSRC=${CMAKE_SOURCE_DIR}/tcl_tests
             TESTDIR=${CMAKE_BINARY_DIR}/tcl_tests
             ENGINE_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+            OPENSSL_CONF=${CMAKE_SOURCE_DIR}/tcl_tests/openssl-gost-engine.cnf
             sh ./runtest.sh
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
 

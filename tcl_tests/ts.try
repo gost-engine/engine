@@ -65,7 +65,7 @@ set serial_num 0
 if {[info exists env(ALG_LIST)]} {
 	set alg_list $env(ALG_LIST)
 } else {
-	switch -exact [engine_name] {
+	switch -exact [test_target_name] {
 		"ccore" {set alg_list {gost2001:A gost2012_256:A gost2012_512:A}}
 		"open" {set alg_list {gost2001:A gost2012_256:A gost2012_512:A}}
 	}

@@ -9,7 +9,7 @@ start_tests "Тесты на команду ca"
 if {[info exists env(ALG_LIST)]} {
 	set alg_pair_list $env(ALG_LIST)
 } else {
-	switch -exact [engine_name] {
+	switch -exact [test_target_name] {
 		"ccore" {set alg_pair_list {gost2001:A {gost2001:B} gost2012_256:A {gost2012_256:C} gost2012_512:B {gost2012_256:B gost2012_512:A}}}
 		"open" {
 			set alg_pair_list {
@@ -18,6 +18,28 @@ if {[info exists env(ALG_LIST)]} {
 				gost2012_256:TCA {gost2012_256:A gost2012_512:A}
 				gost2012_512:A {gost2012_256:A gost2012_256:TCA gost2012_512:A gost2012_512:C}
 				gost2012_512:C {gost2012_256:B gost2012_256:TCB gost2012_512:B gost2012_512:C}
+			}
+		}
+		"openprov" {
+			set all_algorithms {
+				gost2001:A gost2001:B gost2001:C gost2001:XA gost2001:XB
+				gost2012_256:A gost2012_256:B gost2012_256:C gost2012_256:TCA gost2012_256:TCB gost2012_256:TCC gost2012_256:TCD
+				gost2012_512:A gost2012_512:B gost2012_512:C
+			}
+
+			set run_all 0
+			if {[info exists env(GOST_TEST_RUN_EXTENDED)]} {
+			    set run_all 1
+			}
+
+			if {!$run_all} {
+				set alg_sample_count 5
+				set all_algorithms [get_sample $all_algorithms $alg_sample_count]
+			}
+
+			set alg_pair_list {}
+			foreach ca_alg $all_algorithms {
+				lappend alg_pair_list $ca_alg $all_algorithms
 			}
 		}
 	}
