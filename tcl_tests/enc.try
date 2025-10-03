@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh/
+#!/usr/bin/tclsh
 lappend auto_path [file dirname [info script]] 
 package require ossltest
 set plain0 [getFile plain.enc]
