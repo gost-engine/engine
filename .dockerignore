@@ -1,0 +1,43 @@
+# Build directories
+docker/
+build/
+bin/
+obj/
+*.tmp
+
+# Version control
+.git/
+.gitignore
+.gitmodules
+.gitattributes
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation
+*.md
+LICENSE
+INSTALL*
+CHANGELOG*
+
+# Temporary files
+*.log
+*.cache
+.cache/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Ignore everything except source code
+# but explicitly include what we need
+!*/
+!*.c
+!*.h
+!*.cmake
+!CMakeLists.txt
+!cmake/

@@ -1,0 +1,53 @@
+FROM debian:trixie-slim
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    make \
+    cmake \
+    openssl \
+    libssl-dev \
+    gcc 
+
+WORKDIR /usr/local/src/engine
+
+COPY CMakeLists.txt .
+COPY *.c *.h gost.ec gostsum.1 gost12sum.1 LICENSE .
+COPY benchmark/ benchmark/
+COPY etalon/    etalon/
+COPY libprov/   libprov/
+COPY patches/   patches/
+COPY tcl_tests/ tcl_tests/
+COPY test/      test/ 
+
+# via openssl version -a
+ARG OPENSSLDIR="/usr/lib/ssl"
+ARG ENGINESDIR="/usr/lib/x86_64-linux-gnu/engines-3"
+
+RUN mkdir build \
+  && cd build \
+  && cmake \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DOPENSSL_ENGINES_DIR=${ENGINESDIR} \
+    .. \
+  && cmake --build . --target install --config Release \
+  && cd bin \
+  && cp gostsum gost12sum /usr/local/bin \
+  && rm -rf /usr/local/src/engine
+
+
+WORKDIR /
+
+# Enable engine
+COPY example.conf "${OPENSSLDIR}/gost.cnf"
+RUN sed -i "s|dynamic_path\s*=.*$|dynamic_path = ${ENGINESDIR}/gost.so|" "${OPENSSLDIR}/gost.cnf" \
+ && sed -i "11i .include ${OPENSSLDIR}/gost.cnf" "${OPENSSLDIR}/openssl.cnf"
+
+RUN apt-get remove -y \
+      build-essential \
+      make \
+      cmake \
+      libssl-dev \
+      gcc  \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* 
