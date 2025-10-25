@@ -133,3 +133,64 @@ Value of this parameter can be either short name, defined in OpenSSL
 [RFC 4357][1].
 
 [1]:https://tools.ietf.org/html/rfc4357 "RFC 4357"
+
+
+Docker Image Building
+========================
+
+Overview
+--------
+
+This article describes how to build Docker images with a pre-built OpenSSL GOST engine for various Linux distributions.
+
+Available Images
+
+- alpine - Minimal image based on Alpine Linux
+- debian - Image based on Debian Trixie
+
+Prerequisites
+
+- Docker
+- GNU Make (optional)
+
+Building with Make
+
+To build a specific image:
+
+    $ cd docker
+    $ make alpine
+    $ make debian
+
+This will create images tagged as `gost-engine:<version>-<distro>`.
+
+Building without Make
+---------------------
+To build images manually using Docker:
+
+    $ cd docker
+    $ docker build -f docker/Dockerfile.alpine -t gost-engine:latest-alpine .
+    $ docker build -f docker/Dockerfile.debian -t gost-engine:latest-debian .
+
+Verification
+------------
+After building, verify that the images work correctly:
+
+    $ cd docker
+    $ docker run --rm gost-engine:latest-alpine openssl version
+    $ docker run --rm gost-engine:latest-alpine openssl engine -t gost
+
+The images include:
+
+- OpenSSL with GOST engine support
+- gostsum and gost12sum utilities
+- Pre-configured openssl.cnf with GOST enabled
+
+Image Contents
+--------------
+Each image contains:
+- OpenSSL with GOST engine
+- GOST cipher support
+- Command-line utilities
+- Proper CA certificates configuration
+
+The images are optimized for size and include only runtime dependencies.

@@ -1,0 +1,53 @@
+FROM alpine:latest
+
+
+RUN apk update \
+    && apk add --no-cache openssl \
+    && apk add --no-cache --virtual .build-deps \
+      cmake \
+      make \
+      gcc \
+      g++ \
+      musl-dev \
+      openssl-dev \
+      git \
+      linux-headers
+
+WORKDIR /usr/local/src/engine
+
+COPY CMakeLists.txt .
+COPY *.c *.h gost.ec gostsum.1 gost12sum.1 LICENSE .
+COPY benchmark/ benchmark/
+COPY etalon/    etalon/
+COPY libprov/   libprov/
+COPY patches/   patches/
+COPY tcl_tests/ tcl_tests/
+COPY test/      test/ 
+
+# via openssl version -a
+ARG OPENSSLDIR="/etc/ssl"
+ARG ENGINESDIR="/usr/lib/engines-3"
+
+
+RUN mkdir build \
+  && cd build \
+  && cmake \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DOPENSSL_ENGINES_DIR=${ENGINESDIR} \
+    .. \
+  && cmake --build . --target install --config Release \
+  && cd bin \
+  && cp gostsum gost12sum /usr/local/bin \
+  && rm -rf /usr/local/src/engine
+
+
+WORKDIR / 
+
+# Enable engine
+COPY example.conf "${OPENSSLDIR}/gost.cnf"
+RUN sed -i "s|dynamic_path\s*=.*$|dynamic_path = ${ENGINESDIR}/gost.so|" "${OPENSSLDIR}/gost.cnf" \
+ && sed -i "11i .include ${OPENSSLDIR}/gost.cnf" "${OPENSSLDIR}/openssl.cnf"
+
+RUN apk del .build-deps \
+    && rm -rf /var/cache/apk/* \
+    && rm -rf /usr/local/src/engine
