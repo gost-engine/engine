@@ -331,33 +331,55 @@ static int gost_engine_destroy(ENGINE* e) {
  * Following is the glue that populates the ENGINE structure and that
  * binds it to OpenSSL libraries
  */
-
 static GOST_NID_JOB *missing_NIDs[] = {
     &kuznyechik_mgm_NID,
     &magma_mgm_NID,
 };
 
+static int create_new_nid_for_gost_nid_job(GOST_NID_JOB *job) {
+    int nid = OBJ_new_nid(1);
+    ASN1_OBJECT *obj =
+        ASN1_OBJECT_create(nid, NULL, 0, job->sn, job->ln);
+
+    if (!obj || OBJ_add_object(obj) == NID_undef) {
+        OPENSSL_free(obj);
+        return 0;
+    }
+
+    job->asn1 = obj;
+    job->callback(nid);
+
+    return 1;
+}
+
 static int create_NIDs() {
-    int i;
-    int new_nid = OBJ_new_nid(OSSL_NELEM(missing_NIDs));
+    int i, nid;
+
     for (i = 0; i < OSSL_NELEM(missing_NIDs); i++) {
         GOST_NID_JOB *job = missing_NIDs[i];
-        ASN1_OBJECT *obj =
-            ASN1_OBJECT_create(new_nid + i, NULL, 0, job->sn, job->ln);
-        job->asn1 = obj;
-        if (!obj || OBJ_add_object(obj) == NID_undef) {
-            OPENSSL_free(obj);
+
+        nid = OBJ_sn2nid(job->sn);
+        if (nid != NID_undef) {
+            job->callback(nid);
+            continue;
+        }
+
+        if (!create_new_nid_for_gost_nid_job(job)) {
             return 0;
         }
-        (*missing_NIDs[i]->callback)(new_nid + i);
     }
     return 1;
 }
 
-static void free_NIDs() {
+static void free_NIDs(void) {
     int i;
+
     for (i = 0; i < OSSL_NELEM(missing_NIDs); i++) {
-        ASN1_OBJECT_free(missing_NIDs[i]->asn1);
+        GOST_NID_JOB *job = missing_NIDs[i];
+        if (job->asn1) {
+            ASN1_OBJECT_free(job->asn1);
+            job->asn1 = NULL;
+        }
     }
 }
 

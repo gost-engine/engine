@@ -25,8 +25,8 @@
 OSSL_CIPHER_PARAM_TLSTREE definition in OpenSSL is expected.")
 # else
 #  warning "Gost-engine is built against not fully supported version of OpenSSL. \
-NID_kuznyechik_mgm definition in OpenSSL is expected. No kuznyechik mgm functionality is \
-guaranteed."
+OSSL_CIPHER_PARAM_TLSTREE definition in OpenSSL is expected. TLSTREE is not supported by \
+the provider for cipher operations."
 # endif
 # define OSSL_CIPHER_PARAM_TLSTREE "tlstree"
 #endif
@@ -37,8 +37,8 @@ guaranteed."
 OSSL_CIPHER_PARAM_TLSTREE_MODE definition in OpenSSL is expected.")
 # else
 #  warning "Gost-engine is built against not fully supported version of OpenSSL. \
-NID_kuznyechik_mgm definition in OpenSSL is expected. No kuznyechik mgm functionality is \
-guaranteed."
+OSSL_CIPHER_PARAM_TLSTREE_MODE definition in OpenSSL is expected. TLSTREE modes are not supported by \
+the provider for encryption/decryption operations. ."
 # endif
 # define OSSL_CIPHER_PARAM_TLSTREE_MODE "tlstree_mode"
 #endif

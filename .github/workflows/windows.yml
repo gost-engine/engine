@@ -12,7 +12,7 @@ jobs:
               with:
                   repository: openssl/openssl
                   path: openssl
-                  ref: openssl-3.4.2
+                  ref: openssl-3.6
                   fetch-depth: 0
             - run: echo "::set-output name=head::$(git -C openssl describe --always --long)"
               id: openssl
@@ -49,7 +49,7 @@ jobs:
             - run: cmake --build .
             - name: Run tests
               run: |
-                  $env:PATH = "$pwd\openssl\_dest\Program Files\OpenSSL\bin;$env:PATH"
                   $env:OPENSSL_ENGINES = "$pwd\bin\Debug"
                   $env:OPENSSL_MODULES = "$pwd\bin\Debug"
+                  Copy-Item -Path "$pwd\openssl\_dest\Program Files\OpenSSL\bin\*.dll" -Destination "$pwd\bin\Debug"
                   ctest -C Debug --output-on-failure
