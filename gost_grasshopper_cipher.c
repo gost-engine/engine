@@ -1105,7 +1105,7 @@ static int gost_grasshopper_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void 
     case EVP_CTRL_TLSTREE:
         {
             unsigned char newkey[32];
-            if (gost_tlstree(NID_kuznyechik_mgm,
+            if (gost_tlstree(OBJ_sn2nid(SN_kuznyechik_mgm),
                     mctx->ks.gh_ks.master_key.k.b, newkey,
                     (const unsigned char *)ptr, mctx->tlstree_mode)
                   > 0) {

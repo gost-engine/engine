@@ -251,7 +251,7 @@ GOST_cipher magma_ecb_cipher = {
     .do_cipher = magma_cipher_do_ecb,
 };
 
- GOST_cipher magma_mgm_cipher = {
+GOST_cipher magma_mgm_cipher = {
     .nid = NID_undef,
     .template = &magma_template_cipher,
     .block_size = 1,
@@ -264,7 +264,7 @@ GOST_cipher magma_ecb_cipher = {
     .ctrl = gost_magma_mgm_ctrl,
     .cleanup = gost_magma_mgm_cleanup,
     .ctx_size = sizeof(gost_mgm_ctx)
- };
+};
 
 static void magma_NID_callback (int nid)
 {
@@ -1164,7 +1164,7 @@ static int gost_magma_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void *ptr)
     case EVP_CTRL_TLSTREE:
         {
             unsigned char newkey[32];
-            if (gost_tlstree(NID_magma_mgm,
+            if (gost_tlstree(OBJ_sn2nid(SN_magma_mgm),
                     (const unsigned char *)mctx->ks.g_ks.cctx.master_key,
                     newkey, (const unsigned char *)ptr, mctx->tlstree_mode)
                   > 0) {

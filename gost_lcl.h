@@ -37,32 +37,6 @@ EVP_CTRL_SET_TLSTREE_PARAMS definition in OpenSSL is expected."
 #  define EVP_CTRL_SET_TLSTREE_PARAMS 0xFF
 # endif
 
-# ifndef NID_magma_mgm
-#  if defined(_MSC_VER)
-#   pragma message("Gost-engine is built against not fully supported version of OpenSSL. \
-NID_magma_mgm definition in OpenSSL is expected. No magma mgm functionality is \
-guaranteed.")
-#  else
-#   warning "Gost-engine is built against not fully supported version of OpenSSL. \
-NID_magma_mgm definition in OpenSSL is expected. No magma mgm functionality is \
-guaranteed."
-#  endif
-#  define NID_magma_mgm ((int)(INT_MAX - 1))
-# endif
-
-# ifndef NID_kuznyechik_mgm
-#  if defined(_MSC_VER)
-#   pragma message("Gost-engine is built against not fully supported version of OpenSSL. \
-NID_kuznyechik_mgm definition in OpenSSL is expected. No magma mgm functionality is \
-guaranteed.")
-#  else
-#   warning "Gost-engine is built against not fully supported version of OpenSSL. \
-NID_kuznyechik_mgm definition in OpenSSL is expected. No kuznyechik mgm functionality is \
-guaranteed."
-#  endif
-#  define NID_kuznyechik_mgm ((int)(INT_MAX - 2))
-# endif
-
 /* Control commands */
 # define GOST_PARAM_CRYPT_PARAMS 0
 # define GOST_PARAM_PBE_PARAMS 1

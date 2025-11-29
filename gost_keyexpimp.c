@@ -12,6 +12,8 @@
 #include <openssl/buffer.h>
 
 #include "gost_lcl.h"
+#include "gost_gost2015.h"
+#include "gost_grasshopper_cipher.h"
 #include "e_gost_err.h"
 
 static uint32_t be32(uint32_t host)
@@ -267,51 +269,40 @@ int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
     unsigned char ko1[32], ko2[32];
     int ret;
 
-    switch (cipher_nid) {
-    case NID_magma_cbc:
+    if (cipher_nid == NID_magma_cbc) {
         c1 = 0x00000000C0FFFFFF;
         c2 = 0x000000FEFFFFFFFF;
         c3 = 0x00F0FFFFFFFFFFFF;
-        break;
-    case NID_grasshopper_cbc:
+    } else if (cipher_nid == NID_grasshopper_cbc) {
         c1 = 0x00000000FFFFFFFF;
         c2 = 0x0000F8FFFFFFFFFF;
         c3 = 0xC0FFFFFFFFFFFFFF;
-        break;
-    case NID_magma_mgm:
-        switch (mode) {
-        case TLSTREE_MODE_S:    // TLS_GOSTR341112_256_WITH_MAGMA_MGM_S
+    } else if (cipher_nid == magma_mgm_cipher.nid) {
+        if (mode == TLSTREE_MODE_S) {    // TLS_GOSTR341112_256_WITH_MAGMA_MGM_S
             c1 = 0x000000fcffffffff;
             c2 = 0x00e0ffffffffffff;
             c3 = 0xffffffffffffffff;
-            break;
-        case TLSTREE_MODE_L:    // TLS_GOSTR341112_256_WITH_MAGMA_MGM_L
+        } else if (mode == TLSTREE_MODE_L) { // TLS_GOSTR341112_256_WITH_MAGMA_MGM_L
             c1 = 0x000000000000e0ff;
             c2 = 0x000000c0ffffffff;
             c3 = 0x80ffffffffffffff;
-            break;
-        default:
+        } else {
             return 0;
         }
-        break;
-    case NID_kuznyechik_mgm:
-        switch (mode) {
-        case TLSTREE_MODE_S:    // TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S
+    } else if (cipher_nid == grasshopper_mgm_cipher.nid) {
+        if (mode == TLSTREE_MODE_S) {    // TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S
             c1 = 0x000000e0ffffffff;
             c2 = 0x0000ffffffffffff;
             c3 = 0xf8ffffffffffffff;
-            break;
-        case TLSTREE_MODE_L:    // TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L
+        } else if (mode == TLSTREE_MODE_L) { // TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L
             c1 = 0x00000000000000f8;
             c2 = 0x00000000f0ffffff;
             c3 = 0x00e0ffffffffffff;
-            break;
-        default:
+        } else {
             return 0;
         }
-        break;
-    default:
-        return 0;
+    } else {
+        return 0; /* неизвестный cipher_nid */
     }
 #ifndef L_ENDIAN
     BUF_reverse((unsigned char *)&seq, tlsseq, 8);

@@ -48,6 +48,10 @@ if (ASAN)
   set(SKIP_PERL_TESTS 1)
 endif()
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(SKIP_PERL_TESTS 1)
+endif()
+
 set(CMAKE_C_STANDARD 90)
 CHECK_FUNCTION_EXISTS(clock_gettime HAVE_CLOCK_GETTIME_C)
 CHECK_LIBRARY_EXISTS(rt clock_gettime "" HAVE_CLOCK_GETTIME_RT)
@@ -322,6 +326,12 @@ if(TLS13_PATCHED_OPENSSL)
   set_tests_properties(mgm-with-provider
     PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
   set_property(TARGET test_mgm APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
+
+  add_executable(test_tls13handshake test_tls13handshake.c)
+  target_link_libraries(test_tls13handshake OpenSSL::Crypto OpenSSL::SSL)
+  add_test(NAME test-tls13handshake-with-provider COMMAND test_tls13handshake)
+  set_tests_properties(test-tls13handshake-with-provider
+    PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 endif()
 
 if(NOT SKIP_PERL_TESTS)

@@ -8,13 +8,13 @@ array set protos {
 }
 
 array set groups {
-	GC256A 256
-	GC256B 256
-	GC256C 256
-	GC256D 256
-	GC512A 512
-	GC512B 512
-	GC512C 512
+	GC256A gost2012_256
+	GC256B gost2012_256
+	GC256C gost2012_256
+	GC256D gost2012_256
+	GC512A gost2012_512
+	GC512B gost2012_512
+	GC512C gost2012_512
 }
 
 cd $::test::dir
@@ -66,9 +66,9 @@ proc sclient_auth_args {cert key ciphersuites_str groups_str {additional_args {}
 	return [sclient_args $ciphersuites_str $groups_str [list -cert $cert -key $key {*}$additional_args]]
 }
 
-proc sserver_args {cert key ciphersuites_str proto_str {additional_args {}}} {
+proc sserver_args {cert key ciphersuites_str groups_str proto_str {additional_args {}}} {
 	return [list \
-		-no_dhe -www -cert $cert -key $key -ciphersuites $ciphersuites_str $proto_str {*}$additional_args]
+		-curves $groups_str -no_dhe -www -cert $cert -key $key -ciphersuites $ciphersuites_str $proto_str {*}$additional_args]
 }
 
 set run_all 0
@@ -125,10 +125,10 @@ foreach proto $proto_list {
 			test "Handshake $group $suite $proto" {
 				set list [client_server \
 					[sclient_args $suite $group {}] \
-					[sserver_args $server_cert $server_key $suite $protos($proto)] \
+					[sserver_args $server_cert $server_key $suite $group $protos($proto)] \
 					{}]
 				if {[regexp -lineanchor \
-				{^Server Temp Key: <NULL>, (\d+) bits.*^\s*New,\s+(\S+),\s+Cipher\s+is\s+(\S+)\s*$} \
+				{^Peer Temp Key: (\S+).*\n^New,\s+(\S+),\s+Cipher\s+is\s+(\S+)} \
 				[lindex $list 0] -> group_name result_proto result_cipher]} {
 					list [lindex $list 2] $group_name $result_proto $result_cipher
 				} else {
@@ -139,7 +139,7 @@ foreach proto $proto_list {
 			test "Get page $group $suite $proto" {
 				set list [client_server \
 					[sclient_args $suite $group {-ign_eof}] \
-					[sserver_args $server_cert $server_key $suite $protos($proto)] \
+					[sserver_args $server_cert $server_key $suite $group $protos($proto)] \
 					"GET /\n\n"]
 				grep "^New," [lindex $list 0]
 			} 0 "New, $expected_proto, Cipher is $raw_name\nNew, $expected_proto, Cipher is $raw_name\n"
@@ -147,10 +147,10 @@ foreach proto $proto_list {
 			test "Multi-ciphersuites server $proto, $group client" {
 				set list [client_server \
 					[sclient_args $suite $group] \
-					[sserver_args $server_cert $server_key $suite:TLS_AES_256_GCM_SHA384 $protos($proto)] \
+					[sserver_args $server_cert $server_key $suite:TLS_AES_256_GCM_SHA384 $group $protos($proto)] \
 					{}]
 				if {[regexp -lineanchor \
-			  {^Server Temp Key: <NULL>, (\d+) bits.*^\s*New,\s+(\S+),\s+Cipher\s+is\s+(\S+)\s*$} \
+			  {^Peer Temp Key: (\S+).*\n^New,\s+(\S+),\s+Cipher\s+is\s+(\S+)} \
 				[lindex $list 0] -> group_name result_proto result_cipher]} {
 					list [lindex $list 2] $group_name $result_proto $result_cipher
 				} else {
@@ -173,7 +173,7 @@ foreach proto $proto_list {
 				test "Server $alg, client certificate $alg_cli $proto $group" {
 					set list [client_server \
 						[sclient_auth_args $user_cert $user_key $suite $group {-ign_eof}]\
-						[sserver_args $server_cert $server_key $suite:TLS_AES_256_GCM_SHA384 $protos($proto) \
+						[sserver_args $server_cert $server_key $suite:TLS_AES_256_GCM_SHA384 $group $protos($proto) \
 							{-Verify 3}] \
 						"GET /\n"]
 					list [lindex $list 2] [grep "^New," [lindex $list 0]]
@@ -207,7 +207,7 @@ foreach proto $proto_list {
 					set list [client_server \
 						[sclient_auth_args $mm_user_cert $mm_user_key $suite $group \
 							[list -ign_eof -sigalgs $alg_to_rfc($alg)]] \
-						[sserver_args $mm_server_cert $mm_server_key $suite:TLS_AES_256_GCM_SHA384 $protos($proto) \
+						[sserver_args $mm_server_cert $mm_server_key $suite:TLS_AES_256_GCM_SHA384 $group $protos($proto) \
 							{-Verify 3}] \
 						"GET /\n"]
 					list [lindex $list 2] [grep "^New," [lindex $list 0]]

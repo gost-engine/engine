@@ -20,6 +20,7 @@
 #include <openssl/hmac.h>
 #include <openssl/obj_mac.h>
 #include "gost_lcl.h"
+#include "gost_gost2015.h"
 #include "e_gost_err.h"
 #include "gost_grasshopper_cipher.h"
 
@@ -70,6 +71,13 @@ static int initialize_openssl(ENGINE **eng)
     T(*eng = ENGINE_by_id("gost"));
     T(ENGINE_init(*eng));
     T(ENGINE_set_default(*eng, ENGINE_METHOD_ALL));
+
+   /*
+    * The GOST_NID_JOB structs statically linked into the test start uninitialized,
+    * so we must assign their NIDs manually.
+    */
+    kuznyechik_mgm_NID.callback(OBJ_sn2nid(SN_kuznyechik_mgm));
+    magma_mgm_NID.callback(OBJ_sn2nid(SN_magma_mgm));
     return 0;
 }
 
@@ -210,19 +218,19 @@ int main(void)
         goto cleanup;
 
     ret = gost_tlstree(NID_grasshopper_cbc, kroot, out, tlsseq, TLSTREE_MODE_NONE);
-    err = expect_eq("Gost TLSTREE - grasshopper", ret, out, tlstree_gh_etalon, 32);
+    err = expect_eq("Gost TLSTREE_MODE_NONE - grasshopper", ret, out, tlstree_gh_etalon, 32);
     if (err)
         goto cleanup;
 
     tlsseq[7] = 7;
-    ret = gost_tlstree(NID_kuznyechik_mgm, kroot_kuzn_s, out, tlsseq, TLSTREE_MODE_S);
-    err = expect_eq("Gost TLSTREE - kuznyechik", ret, out, tlstree_kuzn_s_etalon, 32);
+    ret = gost_tlstree(OBJ_sn2nid(SN_kuznyechik_mgm), kroot_kuzn_s, out, tlsseq, TLSTREE_MODE_S);
+    err = expect_eq("Gost TLSTREE_MODE_S - grasshopper", ret, out, tlstree_kuzn_s_etalon, 32);
     if (err)
         goto cleanup;
 
     tlsseq[7] = 7;
-    ret = gost_tlstree(NID_magma_mgm, kroot_magma_l, out, tlsseq, TLSTREE_MODE_L);
-    err = expect_eq("Gost TLSTREE - magma", ret, out, tlstree_magma_l_etalon, 32);
+    ret = gost_tlstree(OBJ_sn2nid(SN_magma_mgm), kroot_magma_l, out, tlsseq, TLSTREE_MODE_L);
+    err = expect_eq("Gost TLSTREE_MODE_L - magma", ret, out, tlstree_magma_l_etalon, 32);
     if (err)
         goto cleanup;
 

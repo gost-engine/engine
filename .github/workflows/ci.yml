@@ -2,7 +2,7 @@ name: CI
 on: [push, pull_request]
 
 env:
-    OPENSSL_BRANCH: openssl-3.4.2
+    OPENSSL_BRANCH: openssl-3.6
     USE_RPATH: yes
     PATCH_OPENSSL: 0
     GOST_PROVIDER_ENABLE_ONLINE_TESTS: 1
