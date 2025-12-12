@@ -1,8 +1,12 @@
 name: CI
-on: [push, pull_request]
+on:
+    push:
+    pull_request:
+    schedule:
+        - cron: '0 2 * * 0'
 
 env:
-    OPENSSL_BRANCH: openssl-3.6
+    OPENSSL_BRANCH: openssl-3.6.0
     USE_RPATH: yes
     PATCH_OPENSSL: 0
     GOST_PROVIDER_ENABLE_ONLINE_TESTS: 1
@@ -10,6 +14,7 @@ env:
 jobs:
     gcc-openssl-stable:
         runs-on: ubuntu-latest
+        if: ${{ github.event_name != 'schedule' }}
         env:
             PATCH_OPENSSL: 1
         steps:
@@ -21,6 +26,7 @@ jobs:
 
     clang-openssl-stable:
         runs-on: ubuntu-latest
+        if: ${{ github.event_name != 'schedule' }}
         env:
             CC: clang
             PATCH_OPENSSL: 1
@@ -33,6 +39,7 @@ jobs:
 
     macos-openssl-stable:
         runs-on: macos-latest
+        if: ${{ github.event_name != 'schedule' }}
         env:
             USE_RPATH:
             PATCH_OPENSSL: 1
@@ -46,6 +53,7 @@ jobs:
 
     gcc-openssl-master:
         runs-on: ubuntu-latest
+        if: ${{ github.event_name == 'schedule' }}
         env:
             OPENSSL_BRANCH: master
         steps:
@@ -57,6 +65,7 @@ jobs:
 
     macos-openssl-master:
         runs-on: macos-latest
+        if: ${{ github.event_name == 'schedule' }}
         env:
             OPENSSL_BRANCH: master
             USE_RPATH:
@@ -69,6 +78,7 @@ jobs:
 
     gcc-asan-openssl-master:
         runs-on: ubuntu-latest
+        if: ${{ github.event_name == 'schedule' }}
         env:
             OPENSSL_BRANCH: master
             ASAN: -DASAN=1
@@ -81,6 +91,7 @@ jobs:
 
     macos-asan-openssl-master:
         runs-on: macos-latest
+        if: ${{ github.event_name == 'schedule' }}
         env:
             OPENSSL_BRANCH: master
             ASAN: -DASAN=1
@@ -94,6 +105,7 @@ jobs:
 
     gcc-openssl-stable-x86:
         runs-on: ubuntu-latest
+        if: ${{ github.event_name == 'schedule' }}
         env:
             CFLAGS: -m32
             LDFLAGS: -m32

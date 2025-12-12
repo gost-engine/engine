@@ -12,7 +12,7 @@ jobs:
               with:
                   repository: openssl/openssl
                   path: openssl
-                  ref: openssl-3.6
+                  ref: openssl-3.6.0
                   fetch-depth: 0
             - run: echo "::set-output name=head::$(git -C openssl describe --always --long)"
               id: openssl

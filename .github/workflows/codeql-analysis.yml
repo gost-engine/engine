@@ -1,7 +1,7 @@
 name: "CodeQL"
 
 env:
-  OPENSSL_BRANCH: openssl-3.6
+  OPENSSL_BRANCH: openssl-3.6.0
   #RPATH: "-Wl,-rpath=${PREFIX}/lib"
   #PREFIX: ${HOME}/opt
   #PATH: ${PREFIX}/bin:${PATH}
