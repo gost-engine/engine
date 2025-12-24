@@ -457,6 +457,9 @@ endif()
 
 if(GOST_PROVIDER_ENABLE)
   # The GOST provider uses this
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libprov/CMakeLists.txt")
+    message(FATAL_ERROR "libprov submodule not found. Run 'git submodule update --init' to initialize it, or set GOST_PROVIDER_ENABLE=OFF to build without provider support.")
+  endif()
   add_subdirectory(libprov)
 
   # The GOST provider in module form
