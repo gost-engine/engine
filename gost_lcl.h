@@ -15,7 +15,9 @@
 # include <openssl/evp.h>
 # include <openssl/asn1t.h>
 # include <openssl/x509.h>
-# include <openssl/engine.h>
+# ifndef OPENSSL_NO_ENGINE
+#  include <openssl/engine.h>
+# endif
 # include <openssl/ec.h>
 # include <openssl/asn1.h>
 # include "gost89.h"
@@ -42,9 +44,11 @@ EVP_CTRL_SET_TLSTREE_PARAMS definition in OpenSSL is expected."
 # define GOST_PARAM_PBE_PARAMS 1
 # define GOST_PARAM_PK_FORMAT 2
 # define GOST_PARAM_MAX 3
-# define GOST_CTRL_CRYPT_PARAMS (ENGINE_CMD_BASE+GOST_PARAM_CRYPT_PARAMS)
-# define GOST_CTRL_PBE_PARAMS   (ENGINE_CMD_BASE+GOST_PARAM_PBE_PARAMS)
-# define GOST_CTRL_PK_FORMAT   (ENGINE_CMD_BASE+GOST_PARAM_PK_FORMAT)
+# ifndef OPENSSL_NO_ENGINE
+#  define GOST_CTRL_CRYPT_PARAMS (ENGINE_CMD_BASE+GOST_PARAM_CRYPT_PARAMS)
+#  define GOST_CTRL_PBE_PARAMS   (ENGINE_CMD_BASE+GOST_PARAM_PBE_PARAMS)
+#  define GOST_CTRL_PK_FORMAT   (ENGINE_CMD_BASE+GOST_PARAM_PK_FORMAT)
+# endif
 
 typedef struct R3410_ec {
     int nid;
@@ -63,8 +67,10 @@ extern R3410_ec_params R3410_2001_paramset[],
 
 void free_cached_groups(void);
 
+# ifndef OPENSSL_NO_ENGINE
 extern const ENGINE_CMD_DEFN gost_cmds[];
 int gost_control_func(ENGINE *e, int cmd, long i, void *p, void (*f) (void));
+# endif
 const char *get_gost_engine_param(int param);
 int gost_set_default_param(int param, const char *value);
 void gost_param_free(void);
