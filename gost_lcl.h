@@ -78,7 +78,9 @@ void gost_param_free(void);
 /* method registration */
 int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
                         const char *pemstr, const char *info);
+# ifndef OPENSSL_NO_ENGINE
 int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
+# endif
 
 /* Gost-specific pmeth control-function parameters */
 /* For GOST R34.10 parameters */
