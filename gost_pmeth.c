@@ -19,6 +19,8 @@
 #include "gost_lcl.h"
 #include "e_gost_err.h"
 
+#ifndef OPENSSL_NO_ENGINE
+
 #define ossl3_const
 #ifdef OPENSSL_VERSION_MAJOR
 #undef ossl3_const
@@ -1270,3 +1272,4 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags)
 
     return 1;
 }
+#endif /* OPENSSL_NO_ENGINE */

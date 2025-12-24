@@ -53,7 +53,7 @@ jobs:
 
     gcc-openssl-master:
         runs-on: ubuntu-latest
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'pull_request' }}
         env:
             OPENSSL_BRANCH: master
         steps:
@@ -65,7 +65,7 @@ jobs:
 
     macos-openssl-master:
         runs-on: macos-latest
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'pull_request' }}
         env:
             OPENSSL_BRANCH: master
             USE_RPATH:
@@ -78,7 +78,7 @@ jobs:
 
     gcc-asan-openssl-master:
         runs-on: ubuntu-latest
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'pull_request' }}
         env:
             OPENSSL_BRANCH: master
             ASAN: -DASAN=1
@@ -91,7 +91,7 @@ jobs:
 
     macos-asan-openssl-master:
         runs-on: macos-latest
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'pull_request' }}
         env:
             OPENSSL_BRANCH: master
             ASAN: -DASAN=1

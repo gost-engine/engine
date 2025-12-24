@@ -4,9 +4,9 @@ Building and Installation
 How to Build
 ------------
 
-To build and install OpenSSL GOST Engine, you will need
+To build and install OpenSSL GOST Engine and/or Provider, you will need
 
-* OpenSSL 3.0 development version
+* OpenSSL 3.0 or later development version
 * an ANSI C compiler
 * CMake (3.0 or newer, 3.18 recommended)
 
@@ -24,6 +24,38 @@ Instead of `Release` you can use `Debug`, `RelWithDebInfo` or `MinSizeRel` confi
 See [cmake docs](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) for details.
 You will find built binaries in `../bin` directory.
 
+Build Options
+-------------
+
+The build system provides two CMake options to control what gets built:
+
+* `GOST_ENGINE_ENABLE` - Build the GOST engine (default: ON when Engine API is available, OFF otherwise)
+* `GOST_PROVIDER_ENABLE` - Build the GOST provider (default: ON)
+
+### Building for OpenSSL 4.x
+
+OpenSSL 4.x removed the Engine API. To build for OpenSSL 4.x, disable the engine:
+
+    $ cmake -DCMAKE_BUILD_TYPE=Release -DGOST_ENGINE_ENABLE=OFF ..
+    $ cmake --build . --config Release
+
+### Building only the Engine (OpenSSL 3.x)
+
+If you only want to build the engine:
+
+    $ cmake -DCMAKE_BUILD_TYPE=Release -DGOST_PROVIDER_ENABLE=OFF ..
+    $ cmake --build . --config Release
+
+### Building both Engine and Provider (OpenSSL 3.x)
+
+By default, both are built when using OpenSSL 3.x:
+
+    $ cmake -DCMAKE_BUILD_TYPE=Release ..
+    $ cmake --build . --config Release
+
+Custom OpenSSL Installation
+---------------------------
+
 If you want to build against a specific OpenSSL instance (you will need it if
 you have more than one OpenSSL instance for example), you can use the `cmake`
 variable `OPENSSL_ROOT_DIR` to specify absolute path of the desirable OpenSSL
@@ -34,6 +66,9 @@ instance:
 Building against OpenSSL 3.0 requires openssl detection module
 (FindOpenSSL.cmake) from CMake 3.18 or higher. More earlier versions may have
 problems with it.
+
+Visual Studio
+-------------
 
 If you use Visual Studio, you can also set `CMAKE_INSTALL_PREFIX` variable
 to set install path, like this:

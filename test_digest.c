@@ -13,7 +13,9 @@
 # pragma warning(pop)
 #endif
 #include <openssl/opensslv.h>
-#include <openssl/engine.h>
+#ifndef OPENSSL_NO_ENGINE
+# include <openssl/engine.h>
+#endif
 #include <openssl/provider.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -944,6 +946,7 @@ static int do_synthetic_test(const struct hash_testvec *tv)
     return 0;
 }
 
+#ifndef OPENSSL_NO_ENGINE
 int engine_is_available(const char *name)
 {
     ENGINE *e = ENGINE_get_first();
@@ -956,6 +959,7 @@ int engine_is_available(const char *name)
     ENGINE_free(e);
     return e != NULL;
 }
+#endif
 
 void warn_if_untested(const EVP_MD *dgst, void *provider)
 {
@@ -974,6 +978,7 @@ void warn_if_untested(const EVP_MD *dgst, void *provider)
 
 void warn_all_untested(void)
 {
+#ifndef OPENSSL_NO_ENGINE
     if (engine_is_available("gost")) {
         ENGINE *eng;
 
@@ -990,6 +995,7 @@ void warn_all_untested(void)
         ENGINE_finish(eng);
         ENGINE_free(eng);
     }
+#endif
     if (OSSL_PROVIDER_available(NULL, "gostprov")) {
         OSSL_PROVIDER *prov;
 
