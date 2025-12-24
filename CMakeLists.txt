@@ -8,7 +8,7 @@ include(CheckCSourceRuns)
 
 enable_testing()
 
-find_package(OpenSSL 3.4 REQUIRED)
+find_package(OpenSSL 3.0 REQUIRED)
 
 # Detect if OpenSSL supports Engine API
 include(CheckCSourceCompiles)
