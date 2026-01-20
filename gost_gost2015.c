@@ -165,11 +165,6 @@ int gost2015_acpkm_omac_init(int nid, int enc, const unsigned char *inkey,
     if (md == NULL)
         return 0;
 
-    if (enc) {
-        if (RAND_bytes(kdf_seed, 8) != 1)
-            return 0;
-    }
-
     if (gost_kdftree2012_256(keys, 64, inkey, 32,
        (const unsigned char *)"kdf tree", 8, kdf_seed, 8, 1) <= 0)
         return 0;
