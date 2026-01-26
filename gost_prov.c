@@ -175,6 +175,10 @@ static const OSSL_DISPATCH provider_functions[] = {
 # define OSSL_provider_init GOST_provider_init
 #endif
 
+#if defined(_WIN32)
+#pragma comment(linker, "/EXPORT:OSSL_provider_init")
+#endif
+
 OPENSSL_EXPORT
 int OSSL_provider_init(const OSSL_CORE_HANDLE *core,
                        const OSSL_DISPATCH *in,

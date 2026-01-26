@@ -88,7 +88,6 @@ int main(int argc, char **argv)
         switch (c) {
         case 'h':
             help();
-            exit(0);
             break;
         case 'v':
             verbose = 1;
