@@ -470,6 +470,9 @@ if(GOST_PROVIDER_ENABLE)
     PREFIX "" OUTPUT_NAME "gostprov" SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX}
     COMPILE_DEFINITIONS "BUILDING_GOST_PROVIDER;OPENSSL_NO_DYNAMIC_ENGINE"
     )
+  if(MSVC)
+    target_link_options(gost_prov PRIVATE "/EXPORT:OSSL_provider_init")
+  endif()
   target_link_libraries(gost_prov PRIVATE gost_core libprov)
 
   if (NOT MSVC)
