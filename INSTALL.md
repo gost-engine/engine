@@ -10,6 +10,11 @@ To build and install OpenSSL GOST Engine, you will need
 * an ANSI C compiler
 * CMake (3.0 or newer, 3.18 recommended)
 
+* [Fedora 43: Disabling support of building OpenSSL engines](https://discussion.fedoraproject.org/t/f43-change-proposal-disabling-support-of-building-openssl-engines-system-wide) (`<openssl/engine.h>`)
+``` bash
+sudo dnf install openssl-devel-engine
+```
+
 Here is a quick build guide:
 
     $ git clone https://github.com/gost-engine/engine
