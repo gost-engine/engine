@@ -15,7 +15,6 @@
 #endif
 #include <string.h>
 #include <stdio.h>
-#include <string.h>
 #include <openssl/opensslv.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>

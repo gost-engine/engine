@@ -950,14 +950,17 @@ static int do_synthetic_test(const struct hash_testvec *tv)
 int engine_is_available(const char *name)
 {
     ENGINE *e = ENGINE_get_first();
+    int found = 0;
 
     while (e != NULL) {
-        if (strcmp(ENGINE_get_id(e), name) == 0)
+        if (strcmp(ENGINE_get_id(e), name) == 0) {
+            found = 1;
             break;
+        }
         e = ENGINE_get_next(e);
     }
     ENGINE_free(e);
-    return e != NULL;
+    return found;
 }
 #else
 int engine_is_available(const char *name)

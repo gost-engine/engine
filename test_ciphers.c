@@ -512,14 +512,17 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
 int engine_is_available(const char *name)
 {
     ENGINE *e = ENGINE_get_first();
+    int found = 0;
 
     while (e != NULL) {
-        if (strcmp(ENGINE_get_id(e), name) == 0)
+        if (strcmp(ENGINE_get_id(e), name) == 0) {
+            found = 1;
             break;
+        }
         e = ENGINE_get_next(e);
     }
     ENGINE_free(e);
-    return e != NULL;
+    return found;
 }
 #else
 int engine_is_available(const char *name)
