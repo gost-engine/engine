@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <string.h>
+#include <openssl/opensslv.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/obj_mac.h>
@@ -23,6 +24,11 @@
 #include "gost_gost2015.h"
 #include "e_gost_err.h"
 #include "gost_grasshopper_cipher.h"
+
+/* ENGINE API was removed in OpenSSL 4.0 */
+#if defined(OPENSSL_NO_ENGINE) || OPENSSL_VERSION_MAJOR >= 4
+# error "test_keyexpimp requires ENGINE support (OpenSSL < 4.0)"
+#endif
 
 #define T(e) \
     if (!(e)) { \
