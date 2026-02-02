@@ -10,7 +10,10 @@
 # include <openssl/applink.c>
 # pragma warning(pop)
 #endif
+#include <openssl/opensslv.h>
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_VERSION_MAJOR < 4
 #include <openssl/engine.h>
+#endif
 #include <openssl/provider.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -505,18 +508,29 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
     return ret;
 }
 
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_VERSION_MAJOR < 4
 int engine_is_available(const char *name)
 {
     ENGINE *e = ENGINE_get_first();
+    int found = 0;
 
     while (e != NULL) {
-        if (strcmp(ENGINE_get_id(e), name) == 0)
+        if (strcmp(ENGINE_get_id(e), name) == 0) {
+            found = 1;
             break;
+        }
         e = ENGINE_get_next(e);
     }
     ENGINE_free(e);
+    return found;
+}
+#else
+int engine_is_available(const char *name)
+{
+    (void)name;
     return 0;
 }
+#endif
 
 void warn_if_untested(const EVP_CIPHER *ciph, void *provider)
 {
@@ -535,6 +549,7 @@ void warn_if_untested(const EVP_CIPHER *ciph, void *provider)
 
 void warn_all_untested(void)
 {
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_VERSION_MAJOR < 4
     if (engine_is_available("gost")) {
         ENGINE *eng;
 
@@ -551,6 +566,7 @@ void warn_all_untested(void)
         ENGINE_finish(eng);
         ENGINE_free(eng);
     }
+#endif
     if (OSSL_PROVIDER_available(NULL, "gostprov")) {
         OSSL_PROVIDER *prov;
 

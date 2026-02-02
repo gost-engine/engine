@@ -5,6 +5,7 @@ include(GNUInstallDirs)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 include(CheckCSourceRuns)
+include(CheckCSourceCompiles)
 
 enable_testing()
 
@@ -97,6 +98,17 @@ if (NOT RELAXED_ALIGNMENT)
   add_definitions(-DSTRICT_ALIGNMENT)
 endif()
 
+# Check if ENGINE API is available (removed in OpenSSL 4.0)
+check_c_source_compiles("
+  #include <openssl/opensslv.h>
+  int main(void) {
+  #if defined(OPENSSL_NO_ENGINE) || OPENSSL_VERSION_MAJOR >= 4
+    #error ENGINE not available
+  #endif
+    return 0;
+  }
+  " HAVE_ENGINE)
+
 if(MSVC)
   set(BIN_DIRECTORY bin/$<CONFIG>/)
 else()
@@ -115,7 +127,13 @@ if ("${OPENSSL_ENGINES_DIR}" STREQUAL "")
 	include(FindPkgConfig)
 	pkg_get_variable(OPENSSL_ENGINES_DIR libcrypto enginesdir)
 	if ("${OPENSSL_ENGINES_DIR}" STREQUAL "")
-		message( FATAL_ERROR "Unable to discover the OpenSSL engines directory. Provide the path using -DOPENSSL_ENGINES_DIR" )
+		if(HAVE_ENGINE)
+			message( FATAL_ERROR "Unable to discover the OpenSSL engines directory. Provide the path using -DOPENSSL_ENGINES_DIR" )
+		else()
+			# ENGINE not available in this OpenSSL version, use a default path
+			set(OPENSSL_ENGINES_DIR "${CMAKE_INSTALL_FULL_LIBDIR}/engines")
+			message( STATUS "ENGINE not available in this OpenSSL version, using default engines directory: ${OPENSSL_ENGINES_DIR}" )
+		endif()
 	endif()
 endif()
 
@@ -306,10 +324,15 @@ set_tests_properties(context-with-provider
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
 # test_keyexpimp is an internals testing program, it doesn't need a test env
-add_executable(test_keyexpimp test_keyexpimp.c)
-#target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_core gost_err)
-add_test(NAME keyexpimp COMMAND test_keyexpimp)
+# It requires ENGINE support, so only build when ENGINE is available
+if(HAVE_ENGINE)
+  add_executable(test_keyexpimp test_keyexpimp.c)
+  #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
+  target_link_libraries(test_keyexpimp gost_core gost_err)
+  add_test(NAME keyexpimp COMMAND test_keyexpimp)
+else()
+  message(STATUS "Skipping test_keyexpimp (requires ENGINE support)")
+endif()
 
 # test_gost89 is an internals testing program, it doesn't need a test env
 add_executable(test_gost89 test_gost89.c)
@@ -365,10 +388,12 @@ set(BINARY_TESTS_TARGETS
         test_derive
         test_sign
         test_context
-        test_keyexpimp
         test_gost89
         test_tls
         )
+if(HAVE_ENGINE)
+  list(APPEND BINARY_TESTS_TARGETS test_keyexpimp)
+endif()
 set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
 
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
