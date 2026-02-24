@@ -8,6 +8,10 @@
  *       This file is distributed under the same license as OpenSSL   *
  *                                                                    *
  **********************************************************************/
+#ifdef __linux__
+# define _GNU_SOURCE
+# include <link.h>
+#endif
 #include <string.h>
 #include <openssl/crypto.h>
 #include <openssl/err.h>
@@ -497,8 +501,29 @@ static int bind_gost_engine(ENGINE* e) {
     return ret;
 }
 
+#ifdef __linux__
+static int libcrypto_so_count = 0;
+
+static int gost_dl_callback(struct dl_phdr_info *info, size_t size, void *data)
+{
+    if (strstr(info->dlpi_name, "libcrypto.so"))
+        libcrypto_so_count++;
+
+    return 0;
+}
+#endif
+
 static int check_gost_engine(ENGINE* e, const char* id)
 {
+#ifdef __linux__
+    /* Sanity check to prevent crash of gost.so loading by wrong libcrypto.so. */
+    dl_iterate_phdr(gost_dl_callback, NULL);
+    if (libcrypto_so_count > 1) {
+        fprintf(stderr, "error:%s:%d: Multiple instances of libcrypto.so, %s engine wont load to prevent crashes.\n",
+                __FILE__, __LINE__, id);
+        return 0;
+    }
+#endif
     if (id != NULL && strcmp(id, engine_gost_id) != 0)
         return 0;
     if (ameth_GostR3410_2001) {
