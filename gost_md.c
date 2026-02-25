@@ -20,7 +20,7 @@ static int gost_digest_final(EVP_MD_CTX *ctx, unsigned char *md);
 static int gost_digest_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from);
 static int gost_digest_cleanup(EVP_MD_CTX *ctx);
 
-GOST_digest GostR3411_94_digest = {
+GOST_digest GostR3411_94_digest_legacy = {
     .nid = NID_id_GostR3411_94,
     .result_size = 32,
     .input_blocksize = 32,

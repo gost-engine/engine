@@ -78,11 +78,9 @@ int gost_get_max_signature_size(const GOST_KEY_DATA *);
 
 void GOST_prov_deinit_mac_digests(void);
 void GOST_prov_deinit_ciphers(void);
-void GOST_prov_deinit_digests(void);
 
 extern const OSSL_ALGORITHM GOST_prov_macs[];
 extern const OSSL_ALGORITHM GOST_prov_ciphers[];
-extern const OSSL_ALGORITHM GOST_prov_digests[];
 extern const OSSL_ALGORITHM GOST_prov_keymgmt[];
 extern const OSSL_ALGORITHM GOST_prov_encoder[];
 extern const OSSL_ALGORITHM GOST_prov_signature[];

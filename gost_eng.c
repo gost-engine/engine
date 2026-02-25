@@ -73,10 +73,10 @@ static EVP_PKEY_ASN1_METHOD* ameth_GostR3410_2001 = NULL,
         * ameth_magma_mac_acpkm = NULL,  * ameth_grasshopper_mac_acpkm = NULL;
 
 GOST_digest *gost_digest_array[] = {
-    &GostR3411_94_digest,
+    &GostR3411_94_digest_legacy,
     &Gost28147_89_MAC_digest,
-    &GostR3411_2012_256_digest,
-    &GostR3411_2012_512_digest,
+    &GostR3411_2012_256_digest_legacy,
+    &GostR3411_2012_512_digest_legacy,
     &Gost28147_89_mac_12_digest,
     &magma_mac_digest,
     &grasshopper_mac_digest,

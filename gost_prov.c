@@ -11,6 +11,7 @@
 #include <openssl/core_names.h>
 #include "gost_prov.h"
 #include "gost_prov_tls.h"
+#include "gost_prov_digest.h"
 #include "gost_lcl.h"
 #include "prov/err.h"           /* libprov err functions */
 
@@ -183,6 +184,9 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *core,
 {
     if ((*vprovctx = provider_ctx_new(core, in)) == NULL)
         return 0;
+
+    GOST_prov_init_digests();
+
     *out = provider_functions;
     return 1;
 }
