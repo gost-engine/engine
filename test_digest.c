@@ -826,9 +826,9 @@ static int do_test(const struct hash_testvec *tv)
     EVP_MAC *mac = NULL;
 
     ERR_set_mark();
-    T((md = (EVP_MD *)EVP_get_digestbyname(tv->algname))
-      || (md = EVP_MD_fetch(NULL, tv->algname, NULL))
-      || (mac = EVP_MAC_fetch(NULL, tv->algname, NULL)));
+    T((md = EVP_MD_fetch(NULL, tv->algname, NULL))
+      || (mac = EVP_MAC_fetch(NULL, tv->algname, NULL))
+      || (md = (EVP_MD *)EVP_get_digestbyname(tv->algname)));
     ERR_pop_to_mark();
 
     printf(cBLUE "Test %s: %s: " cNORM, tv->algname, tv->name);
@@ -889,8 +889,8 @@ static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
 	    ibuf[shifts + len] = len & 0xff;
 
     EVP_MD *dgst;
-    T((dgst = (EVP_MD *)EVP_get_digestbyname(tv->algname))
-      || (dgst = EVP_MD_fetch(NULL, tv->algname, NULL)));
+    T((dgst = EVP_MD_fetch(NULL, tv->algname, NULL))
+      || (dgst = (EVP_MD *)EVP_get_digestbyname(tv->algname)));
     if (dgst && warn_md_impl_is_expected(dgst)) {
         EVP_MD_free(dgst);
         return 1;
