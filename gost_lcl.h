@@ -439,11 +439,11 @@ int internal_print_gost_ec_pub(BIO *out, const EC_KEY *ec, int indent, int pkey_
 int internal_print_gost_ec_param(BIO *out, const EC_KEY *ec, int indent);
 
 /* ENGINE implementation data */
-extern GOST_digest GostR3411_94_digest;
+extern GOST_digest GostR3411_94_digest_legacy;
 extern GOST_digest Gost28147_89_MAC_digest;
 extern GOST_digest Gost28147_89_mac_12_digest;
-extern GOST_digest GostR3411_2012_256_digest;
-extern GOST_digest GostR3411_2012_512_digest;
+extern GOST_digest GostR3411_2012_256_digest_legacy;
+extern GOST_digest GostR3411_2012_512_digest_legacy;
 extern GOST_digest magma_mac_digest;
 extern GOST_digest grasshopper_mac_digest;
 extern GOST_digest kuznyechik_ctracpkm_omac_digest;

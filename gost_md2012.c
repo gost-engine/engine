@@ -38,7 +38,7 @@ GOST_digest GostR3411_2012_template_digest = {
     .cleanup = gost_digest_cleanup,
 };
 
-GOST_digest GostR3411_2012_256_digest = {
+GOST_digest GostR3411_2012_256_digest_legacy = {
     .nid = NID_id_GostR3411_2012_256,
     .alias = "streebog256",
     .template = &GostR3411_2012_template_digest,
@@ -47,7 +47,7 @@ GOST_digest GostR3411_2012_256_digest = {
     .ctrl = gost_digest_ctrl_256,
 };
 
-GOST_digest GostR3411_2012_512_digest = {
+GOST_digest GostR3411_2012_512_digest_legacy = {
     .nid = NID_id_GostR3411_2012_512,
     .alias = "streebog512",
     .template = &GostR3411_2012_template_digest,

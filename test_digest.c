@@ -535,6 +535,34 @@ static const struct hash_testvec testvecs[] = {
     { 0 }
 };
 
+int engine_is_available(const char *name);
+
+int warn_md_impl_is_expected(EVP_MD* md) {
+    if (OSSL_PROVIDER_available(NULL, "gostprov") && !EVP_MD_get0_provider(md)) {
+        printf(cRED "Non-provided md during provider test" cNORM "\n");
+        return 1;
+    }
+    if (engine_is_available("gost") && EVP_MD_get0_provider(md)) {
+        printf(cRED "Provided md during engine test" cNORM "\n");
+        return 1;
+    }
+
+    return 0;
+}
+
+int warn_mac_impl_is_expected(EVP_MAC* md) {
+    if (OSSL_PROVIDER_available(NULL, "gostprov") && !EVP_MAC_get0_provider(md)) {
+        printf(cRED "Non-provided mac during provider test" cNORM "\n");
+        return 1;
+    }
+    if (engine_is_available("gost") && EVP_MAC_get0_provider(md)) {
+        printf(cRED "Provided mac during engine test" cNORM "\n");
+        return 1;
+    }
+
+    return 0;
+}
+
 static void hexdump(const void *ptr, size_t len)
 {
     const unsigned char *p = ptr;
@@ -798,12 +826,15 @@ static int do_test(const struct hash_testvec *tv)
     EVP_MAC *mac = NULL;
 
     ERR_set_mark();
-    T((md = (EVP_MD *)EVP_get_digestbyname(tv->algname))
-      || (md = EVP_MD_fetch(NULL, tv->algname, NULL))
-      || (mac = EVP_MAC_fetch(NULL, tv->algname, NULL)));
+    T((md = EVP_MD_fetch(NULL, tv->algname, NULL))
+      || (mac = EVP_MAC_fetch(NULL, tv->algname, NULL))
+      || (md = (EVP_MD *)EVP_get_digestbyname(tv->algname)));
     ERR_pop_to_mark();
 
     printf(cBLUE "Test %s: %s: " cNORM, tv->algname, tv->name);
+
+    ret |= md && warn_md_impl_is_expected(md);
+    ret |= mac && warn_mac_impl_is_expected(mac);
 
     /* Test alignment problems. */
     int shifts = 32;
@@ -858,8 +889,13 @@ static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
 	    ibuf[shifts + len] = len & 0xff;
 
     EVP_MD *dgst;
-    T((dgst = (EVP_MD *)EVP_get_digestbyname(tv->algname))
-      || (dgst = EVP_MD_fetch(NULL, tv->algname, NULL)));
+    T((dgst = EVP_MD_fetch(NULL, tv->algname, NULL))
+      || (dgst = (EVP_MD *)EVP_get_digestbyname(tv->algname)));
+    if (dgst && warn_md_impl_is_expected(dgst)) {
+        EVP_MD_free(dgst);
+        return 1;
+    }
+
     OPENSSL_assert(EVP_MD_is_a(dgst, tv->algname));
     EVP_MD_CTX *ctx, *ctx2;
     T(ctx  = EVP_MD_CTX_new());
