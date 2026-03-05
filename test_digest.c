@@ -880,24 +880,24 @@ static int do_test(const struct hash_testvec *tv)
  */
 static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
 {
-    unsigned char *ibuf, *md;
-    T(ibuf = OPENSSL_zalloc(SUPER_SIZE + shifts));
+    unsigned char *ibuf = NULL, *md_buf = NULL, *md = NULL;
+    unsigned int len, mdlen;
+    EVP_MD_CTX *ctx = NULL, *ctx2 = NULL;
+    EVP_MD *dgst = NULL;
+    int ret = 1;
 
+    T(ibuf = OPENSSL_zalloc(SUPER_SIZE + shifts));
     /* fill with pattern */
-    unsigned int len;
     for (len = 0; len < SUPER_SIZE; len++)
 	    ibuf[shifts + len] = len & 0xff;
 
-    EVP_MD *dgst;
     T((dgst = EVP_MD_fetch(NULL, tv->algname, NULL))
       || (dgst = (EVP_MD *)EVP_get_digestbyname(tv->algname)));
     if (dgst && warn_md_impl_is_expected(dgst)) {
-        EVP_MD_free(dgst);
-        return 1;
+        goto err;
     }
 
     OPENSSL_assert(EVP_MD_is_a(dgst, tv->algname));
-    EVP_MD_CTX *ctx, *ctx2;
     T(ctx  = EVP_MD_CTX_new());
     T(ctx2 = EVP_MD_CTX_new());
     T(EVP_DigestInit(ctx2, dgst));
@@ -906,10 +906,10 @@ static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
     OPENSSL_assert(EVP_MD_CTX_size(ctx2) == tv->outsize);
     OPENSSL_assert(EVP_MD_CTX_block_size(ctx2) == tv->block_size);
 
-    const unsigned int mdlen = EVP_MD_size(dgst);
+    mdlen = EVP_MD_size(dgst);
     OPENSSL_assert(mdlen == tv->outsize);
-    T(md = OPENSSL_zalloc(mdlen + shifts));
-    md += shifts; /* test for output digest alignment problems */
+    T(md_buf = OPENSSL_zalloc(mdlen + shifts));
+    md = md_buf + shifts; /* test for output digest alignment problems */
 
     /* digest cycles */
     for (len = 0; len < SUPER_SIZE; len++) {
@@ -928,13 +928,7 @@ static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
 	T(EVP_DigestUpdate(ctx2, md, mdlen));
     }
 
-    OPENSSL_free(ibuf);
-    EVP_MD_CTX_free(ctx);
-
     T(EVP_DigestFinal(ctx2, md, &len));
-    EVP_MD_CTX_free(ctx2);
-
-    EVP_MD_free(dgst);
 
     if (len != mdlen) {
 	printf(cRED "digest output len mismatch %u != %u (expected)" cNORM "\n",
@@ -953,12 +947,14 @@ static int do_synthetic_once(const struct hash_testvec *tv, unsigned int shifts)
 	goto err;
     }
 
-    OPENSSL_free(md - shifts);
-    return 0;
+    ret = 0;
 err:
-    OPENSSL_free(md - shifts);
+    EVP_MD_CTX_free(ctx);
+    EVP_MD_CTX_free(ctx2);
+    OPENSSL_free(md_buf);
+    OPENSSL_free(ibuf);
     EVP_MD_free(dgst);
-    return 1;
+    return ret;
 }
 
 /* do different block sizes and different memory offsets */
