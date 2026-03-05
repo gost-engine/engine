@@ -15,6 +15,7 @@
 #include "e_gost_err.h"
 #include "gost_lcl.h"
 #include "gost_gost2015.h"
+#include "gost_tls12_additional.h"
 
 #if !defined(CCGOST_DEBUG) && !defined(DEBUG)
 # ifndef NDEBUG
@@ -1164,7 +1165,7 @@ static int gost_magma_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void *ptr)
     case EVP_CTRL_TLSTREE:
         {
             unsigned char newkey[32];
-            if (gost_tlstree(OBJ_sn2nid(SN_magma_mgm),
+            if (gost_tlstree_magma_mgm(
                     (const unsigned char *)mctx->ks.g_ks.cctx.master_key,
                     newkey, (const unsigned char *)ptr, mctx->tlstree_mode)
                   > 0) {
@@ -1336,7 +1337,7 @@ static int magma_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
                 return -1;
             }
 
-            if (gost_tlstree(NID_magma_cbc, (const unsigned char *)c->master_key, newkey,
+            if (gost_tlstree_magma_cbc((const unsigned char *)c->master_key, newkey,
                              (const unsigned char *)seq, TLSTREE_MODE_NONE) > 0) {
                 memset(adjusted_iv, 0, 8);
                 memcpy(adjusted_iv, EVP_CIPHER_CTX_original_iv(ctx), 4);

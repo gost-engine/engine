@@ -22,6 +22,7 @@
 #include "e_gost_err.h"
 #include "gost_keywrap.h"
 #include "gost_lcl.h"
+#include "gost_tls12_additional.h"
 
 int internal_compute_ecdh(unsigned char *out, size_t *out_len,
                           const unsigned char *ukm, size_t ukm_size,

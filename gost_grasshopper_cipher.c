@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "gost_lcl.h"
+#include "gost_tls12_additional.h"
 #include "e_gost_err.h"
 
 enum GRASSHOPPER_CIPHER_TYPE {
@@ -1105,7 +1106,7 @@ static int gost_grasshopper_mgm_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void 
     case EVP_CTRL_TLSTREE:
         {
             unsigned char newkey[32];
-            if (gost_tlstree(OBJ_sn2nid(SN_kuznyechik_mgm),
+            if (gost_tlstree_grasshopper_mgm(
                     mctx->ks.gh_ks.master_key.k.b, newkey,
                     (const unsigned char *)ptr, mctx->tlstree_mode)
                   > 0) {
@@ -1174,7 +1175,7 @@ static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, v
               return -1;
           }
 
-          if (gost_tlstree(NID_grasshopper_cbc, c->master_key.k.b, newkey,
+          if (gost_tlstree_grasshopper_cbc(c->master_key.k.b, newkey,
                 (const unsigned char *)seq, TLSTREE_MODE_NONE) > 0) {
             memset(adjusted_iv, 0, 16);
             memcpy(adjusted_iv, EVP_CIPHER_CTX_original_iv(ctx), 8);

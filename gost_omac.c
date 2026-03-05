@@ -13,6 +13,7 @@
 
 #include "e_gost_err.h"
 #include "gost_lcl.h"
+#include "gost_tls12_additional.h"
 
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
@@ -241,16 +242,30 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
             if (c->key_set) {
                 unsigned char diversed_key[32];
                 int ret = 0;
-                if (gost_tlstree(OBJ_txt2nid(c->cipher_name),
-                                 c->key, diversed_key,
-                                 (const unsigned char *)ptr, TLSTREE_MODE_NONE)) {
-                    EVP_CIPHER *cipher;
-                    if ((cipher = (EVP_CIPHER *)EVP_get_cipherbyname(c->cipher_name))
-                        || (cipher = EVP_CIPHER_fetch(NULL, c->cipher_name, NULL)))
-                        ret = omac_key(c, cipher, diversed_key, 32);
-                    EVP_CIPHER_free(cipher);
-                    OPENSSL_cleanse(diversed_key, sizeof(diversed_key));
+                switch (OBJ_txt2nid(c->cipher_name)) {
+                case NID_magma_cbc:
+                    ret = gost_tlstree_magma_cbc(c->key, diversed_key,
+                                                 (const unsigned char *)ptr,
+                                                 TLSTREE_MODE_NONE);
+                    break;
+                case NID_grasshopper_cbc:
+                    ret = gost_tlstree_grasshopper_cbc(c->key, diversed_key,
+                                                       (const unsigned char *)ptr,
+                                                       TLSTREE_MODE_NONE);
+                    break;
+                default:
+                    return 0;
                 }
+                if (!ret)
+                    return 0;
+
+                EVP_CIPHER *cipher;
+                if ((cipher = (EVP_CIPHER *)EVP_get_cipherbyname(c->cipher_name))
+                    || (cipher = EVP_CIPHER_fetch(NULL, c->cipher_name, NULL)))
+                    ret = omac_key(c, cipher, diversed_key, 32);
+                EVP_CIPHER_free(cipher);
+                OPENSSL_cleanse(diversed_key, sizeof(diversed_key));
+
                 return ret;
             }
             GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_BAD_ORDER);

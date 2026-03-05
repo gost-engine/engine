@@ -20,6 +20,7 @@
 # include <openssl/asn1.h>
 # include "gost89.h"
 # include "gosthash.h"
+# include "gost_mac.h"
 
 /*
  * This definitions are added in the patch to OpenSSL 3.4.2 version to support
@@ -87,9 +88,6 @@ int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
 # define EVP_PKEY_CTRL_GOST_MAC_HEXKEY (EVP_PKEY_ALG_CTRL+3)
 # define EVP_PKEY_CTRL_MAC_LEN (EVP_PKEY_ALG_CTRL+5)
 # define EVP_PKEY_CTRL_SET_VKO (EVP_PKEY_ALG_CTRL+11)
-# define TLSTREE_MODE_NONE                                  0
-# define TLSTREE_MODE_S                                     1
-# define TLSTREE_MODE_L                                     2
 /* Pmeth internal representation */
 struct gost_pmeth_data {
     int sign_param_nid;         /* Should be set whenever parameters are
@@ -297,26 +295,6 @@ int VKO_compute_key(unsigned char *shared_key,
                     const unsigned char *ukm, const size_t ukm_size,
                     const int vko_dgst_nid);
 
-/* KDF TREE */
-int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
-                         const unsigned char *key, size_t keylen,
-                         const unsigned char *label, size_t label_len,
-                         const unsigned char *seed, size_t seed_len,
-                         const size_t representation);
-
-int gost_tlstree(int cipher_nid, const unsigned char *in, unsigned char *out,
-                 const unsigned char *tlsseq, int mode);
-/* KExp/KImp */
-int gost_kexp15(const unsigned char *shared_key, const int shared_len,
-                int cipher_nid, const unsigned char *cipher_key,
-                int mac_nid, unsigned char *mac_key,
-                const unsigned char *iv, const size_t ivlen,
-                unsigned char *out, int *out_len);
-int gost_kimp15(const unsigned char *expkey, const size_t expkeylen,
-                int cipher_nid, const unsigned char *cipher_key,
-                int mac_nid, unsigned char *mac_key,
-                const unsigned char *iv, const size_t ivlen,
-                unsigned char *shared_key);
 /*============== miscellaneous functions============================= */
 /*
  * Store bignum in byte array of given length, prepending by zeros if
