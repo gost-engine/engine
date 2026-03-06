@@ -8,6 +8,7 @@
 #include "gost_gost2015.h"
 #include "gost_grasshopper_defines.h"
 #include "gost_grasshopper_math.h"
+#include "gost_tls12_additional.h"
 #include "e_gost_err.h"
 #include <string.h>
 #include <openssl/rand.h>

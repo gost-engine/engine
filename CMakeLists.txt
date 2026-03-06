@@ -138,6 +138,12 @@ set(GOST_HASH_2012_SOURCE_FILES
         gosthash2012_sse2.h
         )
 
+set(GOST_TLS12_ADDITIONAL_SOURCE_FILES
+        gost_tls12_additional_kdftree.c
+        gost_tls12_additional_kexpimp.c
+        gost_tls12_additional_tlstree.c
+        )
+
 set(GOST_GRASSHOPPER_SOURCE_FILES
         gost_grasshopper.h
         gost_grasshopper_core.h
@@ -309,11 +315,14 @@ add_test(NAME context-with-provider COMMAND test_context)
 set_tests_properties(context-with-provider
   PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
-# test_keyexpimp is an internals testing program, it doesn't need a test env
-add_executable(test_keyexpimp test_keyexpimp.c)
-#target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_core gost_err)
-add_test(NAME keyexpimp COMMAND test_keyexpimp)
+add_executable(test_tls12additional test_tls12additional.c)
+target_link_libraries(test_tls12additional gost_err gosttls12additional OpenSSL::Crypto)
+add_test(NAME tls12additional-with-engine COMMAND test_tls12additional)
+set_tests_properties(tls12additional-with-engine
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+add_test(NAME tls12additional-with-provider COMMAND test_tls12additional)
+set_tests_properties(tls12additional-with-provider
+  PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_PROVIDER}")
 
 # test_gost89 is an internals testing program, it doesn't need a test env
 add_executable(test_gost89 test_gost89.c)
@@ -377,7 +386,7 @@ set(BINARY_TESTS_TARGETS
         test_derive
         test_sign
         test_context
-        test_keyexpimp
+        test_tls12additional
         test_gost89
         test_tls
         test_gosthash
@@ -397,9 +406,13 @@ add_library(gosthash2012 STATIC ${GOST_HASH_2012_SOURCE_FILES})
 set_target_properties(gosthash2012 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(gosthash2012 PRIVATE OpenSSL::Crypto)
 
+add_library(gosttls12additional STATIC ${GOST_TLS12_ADDITIONAL_SOURCE_FILES})
+set_target_properties(gosttls12additional PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(gosttls12additional PRIVATE OpenSSL::Crypto gost_err)
+
 add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
 set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(gost_core PRIVATE OpenSSL::Crypto gost89 gosthash gosthash2012)
+target_link_libraries(gost_core PRIVATE OpenSSL::Crypto gost89 gosthash gosthash2012 gosttls12additional)
 
 add_library(gost_err STATIC ${GOST_ERR_SOURCE_FILES})
 set_target_properties(gost_err PROPERTIES POSITION_INDEPENDENT_CODE ON)

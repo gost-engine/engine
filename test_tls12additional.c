@@ -16,13 +16,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <openssl/err.h>
 #include <openssl/evp.h>
-#include <openssl/hmac.h>
 #include <openssl/obj_mac.h>
-#include "gost_lcl.h"
-#include "gost_gost2015.h"
+
 #include "e_gost_err.h"
-#include "gost_grasshopper_cipher.h"
+#include "gost_tls12_additional.h"
 
 #define T(e) \
     if (!(e)) { \
@@ -57,34 +57,6 @@ static int expect_eq(const char *test_name, int ret, const unsigned char *result
         }
     }
     return 0;
-}
-
-static int initialize_openssl(ENGINE **eng)
-{
-#ifdef _MSC_VER
-    _putenv_s("OPENSSL_ENGINES", ENGINE_DIR);
-#else
-    setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
-#endif
-    OPENSSL_add_all_algorithms_conf();
-    ERR_load_crypto_strings();
-    T(*eng = ENGINE_by_id("gost"));
-    T(ENGINE_init(*eng));
-    T(ENGINE_set_default(*eng, ENGINE_METHOD_ALL));
-
-   /*
-    * The GOST_NID_JOB structs statically linked into the test start uninitialized,
-    * so we must assign their NIDs manually.
-    */
-    kuznyechik_mgm_NID.callback(OBJ_sn2nid(SN_kuznyechik_mgm));
-    magma_mgm_NID.callback(OBJ_sn2nid(SN_magma_mgm));
-    return 0;
-}
-
-static void cleanup_openssl(ENGINE *eng)
-{
-    ENGINE_finish(eng);
-    ENGINE_free(eng);
 }
 
 int main(void)
@@ -186,10 +158,7 @@ int main(void)
     unsigned char tlsseq[8];
     unsigned char out[32];
 
-    ENGINE *eng;
-    if (initialize_openssl(&eng) != 0) {
-        return 1;
-    }
+    OPENSSL_add_all_algorithms_conf();
 
     memset(buf, 0, sizeof(buf));
     memset(kroot, 0xFF, 32);
@@ -217,24 +186,23 @@ int main(void)
     if (err)
         goto cleanup;
 
-    ret = gost_tlstree(NID_grasshopper_cbc, kroot, out, tlsseq, TLSTREE_MODE_NONE);
+    ret = gost_tlstree_grasshopper_cbc(kroot, out, tlsseq, TLSTREE_MODE_NONE);
     err = expect_eq("Gost TLSTREE_MODE_NONE - grasshopper", ret, out, tlstree_gh_etalon, 32);
     if (err)
         goto cleanup;
 
     tlsseq[7] = 7;
-    ret = gost_tlstree(OBJ_sn2nid(SN_kuznyechik_mgm), kroot_kuzn_s, out, tlsseq, TLSTREE_MODE_S);
+    ret = gost_tlstree_grasshopper_mgm(kroot_kuzn_s, out, tlsseq, TLSTREE_MODE_S);
     err = expect_eq("Gost TLSTREE_MODE_S - grasshopper", ret, out, tlstree_kuzn_s_etalon, 32);
     if (err)
         goto cleanup;
 
     tlsseq[7] = 7;
-    ret = gost_tlstree(OBJ_sn2nid(SN_magma_mgm), kroot_magma_l, out, tlsseq, TLSTREE_MODE_L);
+    ret = gost_tlstree_magma_mgm(kroot_magma_l, out, tlsseq, TLSTREE_MODE_L);
     err = expect_eq("Gost TLSTREE_MODE_L - magma", ret, out, tlstree_magma_l_etalon, 32);
     if (err)
         goto cleanup;
 
 cleanup:
-    cleanup_openssl(eng);
     return err;
 }
