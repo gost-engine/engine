@@ -1678,10 +1678,4 @@ static int gost_imit_cleanup(EVP_MD_CTX *ctx)
     memset(EVP_MD_CTX_md_data(ctx), 0, sizeof(struct ossl_gost_imit_ctx));
     return 1;
 }
-
-/* Called directly by CMAC_ACPKM_Init() */
-const EVP_CIPHER *cipher_gost_magma_ctracpkm()
-{
-    return GOST_init_cipher(&magma_ctr_acpkm_cipher);
-}
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */

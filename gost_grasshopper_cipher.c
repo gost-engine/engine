@@ -1254,10 +1254,4 @@ static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX *ctx, int type, int arg, v
     }
     return 1;
 }
-
-/* Called directly by CMAC_ACPKM_Init() */
-const EVP_CIPHER *cipher_gost_grasshopper_ctracpkm()
-{
-    return GOST_init_cipher(&grasshopper_ctr_acpkm_cipher);
-}
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
