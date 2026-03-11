@@ -13,10 +13,9 @@
 
 #include "e_gost_err.h"
 #include "gost_lcl.h"
-#include "gost_grasshopper_defines.h"
-#include "gost_grasshopper_cipher.h"
 
-#define ACPKM_T_MAX (GRASSHOPPER_KEY_SIZE + GRASSHOPPER_BLOCK_SIZE)
+#define ACPKM_T_MAX (EVP_MAX_KEY_LENGTH + EVP_MAX_BLOCK_LENGTH)
+
 /*
  * CMAC code from crypto/cmac/cmac.c with ACPKM tweaks
  */
@@ -24,6 +23,7 @@ struct CMAC_ACPKM_CTX_st {
     /* Cipher context to use */
     EVP_CIPHER_CTX *cctx;
     /* CTR-ACPKM cipher */
+    EVP_CIPHER* fetched_acpkm;
     EVP_CIPHER_CTX *actx;
     unsigned char km[ACPKM_T_MAX]; /* Key material */
     /* Temporary block */
@@ -94,6 +94,7 @@ static void CMAC_ACPKM_CTX_free(CMAC_ACPKM_CTX *ctx)
         return;
     CMAC_ACPKM_CTX_cleanup(ctx);
     EVP_CIPHER_CTX_free(ctx->cctx);
+    EVP_CIPHER_free(ctx->fetched_acpkm);
     EVP_CIPHER_CTX_free(ctx->actx);
     OPENSSL_free(ctx);
 }
@@ -105,6 +106,11 @@ static int CMAC_ACPKM_CTX_copy(CMAC_ACPKM_CTX *out, const CMAC_ACPKM_CTX *in)
         return 0;
     if (!EVP_CIPHER_CTX_copy(out->cctx, in->cctx))
         return 0;
+    if (in->fetched_acpkm) {
+        if (!EVP_CIPHER_up_ref(in->fetched_acpkm))
+            return 0;
+    }
+    out->fetched_acpkm = in->fetched_acpkm;
     if (!EVP_CIPHER_CTX_copy(out->actx, in->actx))
         return 0;
     bl = EVP_CIPHER_CTX_block_size(in->cctx);
@@ -117,11 +123,22 @@ static int CMAC_ACPKM_CTX_copy(CMAC_ACPKM_CTX *out, const CMAC_ACPKM_CTX *in)
     return 1;
 }
 
+static const EVP_CIPHER* get_cipher(const char *cipher_name, EVP_CIPHER **fetched_cipher) {
+    const EVP_CIPHER* cipher = NULL;
+    cipher = EVP_get_cipherbyname(cipher_name);
+    if (cipher)
+        return cipher;
+
+    *fetched_cipher = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+    cipher = *fetched_cipher;
+    return cipher;
+}
+
 static int CMAC_ACPKM_Init(CMAC_ACPKM_CTX *ctx, const void *key, size_t keylen,
-                           const EVP_CIPHER *cipher, ENGINE *impl)
+                           const EVP_CIPHER *cipher)
 {
     /* All zeros means restart */
-    if (!key && !cipher && !impl && keylen == 0) {
+    if (!key && !cipher && keylen == 0) {
         /* Not initialised */
         if (ctx->nlast_block == -1)
             return 0;
@@ -136,28 +153,28 @@ static int CMAC_ACPKM_Init(CMAC_ACPKM_CTX *ctx, const void *key, size_t keylen,
     if (cipher) {
         const EVP_CIPHER *acpkm = NULL;
 
-        if (!EVP_EncryptInit_ex(ctx->cctx, cipher, impl, NULL, NULL))
+        if (!EVP_EncryptInit_ex(ctx->cctx, cipher, NULL, NULL, NULL))
             return 0;
         /* Unfortunately, EVP_CIPHER_is_a is bugged for an engine, EVP_CIPHER_nid is bugged for a provider. */
         if (EVP_CIPHER_nid(cipher) == NID_undef) {
             /* Looks like a provider */
             if (EVP_CIPHER_is_a(cipher, SN_magma_cbc))
-                acpkm = cipher_gost_magma_ctracpkm();
+                acpkm = get_cipher(SN_magma_ctr_acpkm, &(ctx->fetched_acpkm));
             else if (EVP_CIPHER_is_a(cipher, SN_grasshopper_cbc))
-                acpkm = cipher_gost_grasshopper_ctracpkm();
+                acpkm = get_cipher(SN_kuznyechik_ctr_acpkm, &(ctx->fetched_acpkm));
         }
         else {
             /* Looks like an engine */
             if (EVP_CIPHER_nid(cipher) == NID_magma_cbc)
-                acpkm = cipher_gost_magma_ctracpkm();
+                acpkm = get_cipher(SN_magma_ctr_acpkm, &(ctx->fetched_acpkm));
             else if (EVP_CIPHER_nid(cipher) == NID_grasshopper_cbc)
-                acpkm = cipher_gost_grasshopper_ctracpkm();
+                acpkm = get_cipher(SN_kuznyechik_ctr_acpkm, &(ctx->fetched_acpkm));
         }
 
         if (acpkm == NULL)
             return 0;
 
-        if (!EVP_EncryptInit_ex(ctx->actx, acpkm, impl, NULL, NULL))
+        if (!EVP_EncryptInit_ex(ctx->actx, acpkm, NULL, NULL, NULL))
             return 0;
     }
     /* Non-NULL key means initialisation is complete */
@@ -365,7 +382,7 @@ static int omac_acpkm_imit_update(EVP_MD_CTX *ctx, const void *data,
     return CMAC_ACPKM_Update(c->cmac_ctx, data, count);
 }
 
-int omac_acpkm_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
+static int omac_acpkm_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
 {
     OMAC_ACPKM_CTX *c = EVP_MD_CTX_md_data(ctx);
     unsigned char mac[MAX_GOST_OMAC_ACPKM_SIZE];
@@ -432,14 +449,14 @@ static int omac_acpkm_key(OMAC_ACPKM_CTX *c, const EVP_CIPHER *cipher,
         return 0;
     }
 
-    ret = CMAC_ACPKM_Init(c->cmac_ctx, key, key_size, cipher, NULL);
+    ret = CMAC_ACPKM_Init(c->cmac_ctx, key, key_size, cipher);
     if (ret > 0) {
         c->key_set = 1;
     }
     return 1;
 }
 
-int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
+static int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_MD_CTRL_KEY_LEN:
@@ -548,7 +565,7 @@ int omac_acpkm_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 GOST_digest kuznyechik_ctracpkm_omac_digest = {
     .nid = NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac,
     .result_size = MAX_GOST_OMAC_ACPKM_SIZE,
-    .input_blocksize = GRASSHOPPER_BLOCK_SIZE,
+    .input_blocksize = 16,
     .app_datasize = sizeof(OMAC_ACPKM_CTX),
     .flags = EVP_MD_FLAG_XOF,
     .init = grasshopper_omac_acpkm_init,
