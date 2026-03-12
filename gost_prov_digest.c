@@ -11,9 +11,7 @@
 #include <openssl/core.h>
 #include <openssl/core_dispatch.h>
 #include "gost_prov.h"
-#include "gost_prov_digest.h"
-#include "gost_digest_3411_94.h"
-#include "gost_digest_3411_2012.h"
+#include "gost_lcl.h"
 
 /*
  * Forward declarations of all OSSL_DISPATCH functions, to make sure they
@@ -27,33 +25,54 @@ static OSSL_FUNC_digest_final_fn digest_final;
 
 
 struct gost_prov_crypt_ctx_st {
+    /* Provider context */
     PROV_CTX *provctx;
-    const GOST_digest *descriptor;
+    /* OSSL_PARAM descriptors */
+    const OSSL_PARAM *known_params;
+    /* GOST_digest descriptor */
+    GOST_digest *descriptor;
 
-    GOST_digest_ctx *dctx;
+    /*
+     * Since existing functionality is designed for ENGINEs, the functions
+     * in this file are accomodated and are simply wrappers that use a local
+     * EVP_MD and EVP_MD_CTX.
+     * Future development should take a more direct approach and have the
+     * appropriate digest functions and digest data directly in this context.
+     */
+
+    /* The EVP_MD created from |descriptor| */
+    EVP_MD *digest;
+    /* The context for the EVP_MD functions */
+    EVP_MD_CTX *dctx;
 };
 typedef struct gost_prov_crypt_ctx_st GOST_CTX;
 
 static void digest_freectx(void *vgctx)
 {
     GOST_CTX *gctx = vgctx;
-    if (!gctx)
-        return;
 
-    GET_MEMBER(gctx->descriptor, free)(gctx->dctx);
+    /*
+     * We don't free gctx->digest here.
+     * That will be done by the provider teardown, via
+     * GOST_prov_deinit_digests() (defined at the bottom of this file).
+     */
+    EVP_MD_CTX_free(gctx->dctx);
     OPENSSL_free(gctx);
 }
 
-static GOST_CTX *digest_newctx(void *provctx, const GOST_digest *descriptor)
+static GOST_CTX *digest_newctx(void *provctx, GOST_digest *descriptor,
+                               const OSSL_PARAM *known_params)
 {
     GOST_CTX *gctx = NULL;
 
     if ((gctx = OPENSSL_zalloc(sizeof(*gctx))) != NULL) {
         gctx->provctx = provctx;
+        gctx->known_params = known_params;
         gctx->descriptor = descriptor;
-        
-        gctx->dctx = GET_MEMBER(gctx->descriptor, new)(gctx->descriptor);
-        if (gctx->dctx == NULL) {
+        gctx->digest = GOST_init_digest(descriptor);
+        gctx->dctx = EVP_MD_CTX_new();
+
+        if (gctx->digest == NULL || gctx->dctx == NULL) {
             digest_freectx(gctx);
             gctx = NULL;
         }
@@ -64,24 +83,24 @@ static GOST_CTX *digest_newctx(void *provctx, const GOST_digest *descriptor)
 static void *digest_dupctx(void *vsrc)
 {
     GOST_CTX *src = vsrc;
-    GOST_CTX *dst = digest_newctx(src->provctx, src->descriptor);
+    GOST_CTX *dst =
+        digest_newctx(src->provctx, src->descriptor, src->known_params);
 
     if (dst != NULL)
-        GET_MEMBER(src->descriptor, copy)(dst->dctx, src->dctx);
-
+        EVP_MD_CTX_copy(dst->dctx, src->dctx);
     return dst;
 }
 
-static int digest_get_params(const GOST_digest *descriptor, OSSL_PARAM params[])
+static int digest_get_params(EVP_MD *d, OSSL_PARAM params[])
 {
     OSSL_PARAM *p;
 
     if (((p = OSSL_PARAM_locate(params, "blocksize")) != NULL
-         && !OSSL_PARAM_set_size_t(p, GET_MEMBER(descriptor, input_blocksize)))
+         && !OSSL_PARAM_set_size_t(p, EVP_MD_block_size(d)))
         || ((p = OSSL_PARAM_locate(params, "size")) != NULL
-            && !OSSL_PARAM_set_size_t(p, GET_MEMBER(descriptor, result_size)))
+            && !OSSL_PARAM_set_size_t(p, EVP_MD_size(d)))
         || ((p = OSSL_PARAM_locate(params, "xof")) != NULL
-            && !OSSL_PARAM_set_size_t(p, GET_MEMBER(descriptor, flags) & EVP_MD_FLAG_XOF)))
+            && !OSSL_PARAM_set_size_t(p, EVP_MD_flags(d) & EVP_MD_FLAG_XOF)))
         return 0;
     return 1;
 }
@@ -90,33 +109,31 @@ static int digest_init(void *vgctx, const OSSL_PARAM unused_params[])
 {
     GOST_CTX *gctx = vgctx;
 
-    return GET_MEMBER(gctx->descriptor, init)(gctx->dctx) > 0;
+    return EVP_DigestInit_ex(gctx->dctx, gctx->digest, gctx->provctx->e) > 0;
 }
 
 static int digest_update(void *vgctx, const unsigned char *in, size_t inl)
 {
     GOST_CTX *gctx = vgctx;
 
-    return GET_MEMBER(gctx->descriptor, update)(gctx->dctx, in, inl) > 0;
+    return EVP_DigestUpdate(gctx->dctx, in, (int)inl) > 0;
 }
 
 static int digest_final(void *vgctx,
                         unsigned char *out, size_t *outl, size_t outsize)
 {
     GOST_CTX *gctx = vgctx;
-
-    if (outsize < GET_MEMBER(gctx->descriptor, result_size))
-        return 0;
-
-    int res = GET_MEMBER(gctx->descriptor, final)(gctx->dctx, out);
-
-    GET_MEMBER(gctx->descriptor, cleanup)(gctx->dctx);
+    unsigned int int_outl = outl != NULL ? *outl : 0;
+    int res = EVP_DigestFinal(gctx->dctx, out, &int_outl);
 
     if (res > 0 && outl != NULL)
-        *outl = GET_MEMBER(gctx->descriptor, result_size);
-
+        *outl = (size_t)int_outl;
     return res > 0;
 }
+
+static const OSSL_PARAM *known_GostR3411_94_digest_params;
+static const OSSL_PARAM *known_GostR3411_2012_256_digest_params;
+static const OSSL_PARAM *known_GostR3411_2012_512_digest_params;
 
 /*
  * These are named like the EVP_MD templates in gost_md.c etc, with the
@@ -128,12 +145,12 @@ typedef void (*fptr_t)(void);
     static OSSL_FUNC_digest_get_params_fn name##_get_params;            \
     static int name##_get_params(OSSL_PARAM *params)                    \
     {                                                                   \
-        return digest_get_params(&name, params);                        \
+        return digest_get_params(GOST_init_digest(&name), params);      \
     }                                                                   \
     static OSSL_FUNC_digest_newctx_fn name##_newctx;                    \
     static void *name##_newctx(void *provctx)                           \
     {                                                                   \
-        return digest_newctx(provctx, &name);                           \
+        return digest_newctx(provctx, &name, known_##name##_params);    \
     }                                                                   \
     static const OSSL_DISPATCH name##_functions[] = {                   \
         { OSSL_FUNC_DIGEST_GET_PARAMS, (fptr_t)name##_get_params },     \
@@ -169,22 +186,15 @@ const OSSL_ALGORITHM GOST_prov_digests[] = {
     { NULL , NULL, NULL }
 };
 
-static const GOST_digest *digests[] = {
-    &GostR3411_94_digest,
-    &GostR3411_2012_256_digest,
-    &GostR3411_2012_512_digest,
-};
-
-#define arraysize(l) (sizeof(l) / sizeof(l[0]))
-
-void GOST_prov_init_digests(void) {
-    size_t i;
-    for (i = 0; i < arraysize(digests); i++)
-        GET_MEMBER(digests[i], static_init)(digests[i]);
-}
-
 void GOST_prov_deinit_digests(void) {
+    static GOST_digest *list[] = {
+        &GostR3411_94_digest,
+        &GostR3411_2012_256_digest,
+        &GostR3411_2012_512_digest,
+    };
     size_t i;
-    for (i = 0; i < arraysize(digests); i++)
-        GET_MEMBER(digests[i], static_deinit)(digests[i]);
+#define elems(l) (sizeof(l) / sizeof(l[0]))
+
+    for (i = 0; i < elems(list); i++)
+        GOST_deinit_digest(list[i]);
 }
