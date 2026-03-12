@@ -178,6 +178,8 @@ set(GOST_CORE_SOURCE_FILES
         gost_lcl.h
         gost_params.c
         gost_keyexpimp.c
+        gost_digest.c
+        gost_digest_ctx.c
         )
 
 set(GOST_EC_SOURCE_FILES
@@ -207,6 +209,8 @@ set(GOST_LIB_SOURCE_FILES
 
 set(GOST_ENGINE_SOURCE_FILES
         gost_eng.c
+        gost_eng_digest.c
+        gost_eng_digest_define.c
         )
 
 set(GOST_PROV_SOURCE_FILES
@@ -393,7 +397,7 @@ target_link_libraries(gost89 PRIVATE OpenSSL::Crypto)
 
 add_library(gosthash STATIC ${GOST_HASH_SOURCE_FILES})
 set_target_properties(gosthash PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(gosthash PRIVATE OpenSSL::Crypto)
+target_link_libraries(gosthash PRIVATE OpenSSL::Crypto gost89)
 
 add_library(gosthash2012 STATIC ${GOST_HASH_2012_SOURCE_FILES})
 set_target_properties(gosthash2012 PROPERTIES POSITION_INDEPENDENT_CODE ON)

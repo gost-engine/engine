@@ -14,6 +14,7 @@
 #include "e_gost_err.h"
 #include "gost_lcl.h"
 #include "gost_tls12_additional.h"
+#include "gost_digest_details.h"
 
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
@@ -39,9 +40,13 @@ typedef struct omac_ctx {
 
 #define MAX_GOST_OMAC_SIZE 16
 
-static int omac_init(EVP_MD_CTX *ctx, const char *cipher_name)
+static int omac_init(GOST_digest_ctx *ctx, const char *cipher_name)
 {
-    OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
+    OMAC_CTX *c = GOST_digest_ctx_data(ctx);
+    if (c == NULL) {
+        return 0;
+    }
+
     memset(c, 0, sizeof(OMAC_CTX));
     c->cipher_name = cipher_name;
     c->key_set = 0;
@@ -59,19 +64,19 @@ static int omac_init(EVP_MD_CTX *ctx, const char *cipher_name)
     return 1;
 }
 
-static int magma_imit_init(EVP_MD_CTX *ctx)
+static int magma_imit_init(GOST_digest_ctx *ctx)
 {
     return omac_init(ctx, SN_magma_cbc);
 }
 
-static int grasshopper_imit_init(EVP_MD_CTX *ctx)
+static int grasshopper_imit_init(GOST_digest_ctx *ctx)
 {
     return omac_init(ctx, SN_grasshopper_cbc);
 }
 
-static int omac_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
+static int omac_imit_update(GOST_digest_ctx *ctx, const void *data, size_t count)
 {
-    OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
+    OMAC_CTX *c = GOST_digest_ctx_data(ctx);
     if (!c->key_set) {
         GOSTerr(GOST_F_OMAC_IMIT_UPDATE, GOST_R_MAC_KEY_NOT_SET);
         return 0;
@@ -80,9 +85,9 @@ static int omac_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
     return CMAC_Update(c->cmac_ctx, data, count);
 }
 
-static int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
+static int omac_imit_final(GOST_digest_ctx *ctx, unsigned char *md)
 {
-    OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
+    OMAC_CTX *c = GOST_digest_ctx_data(ctx);
     unsigned char mac[MAX_GOST_OMAC_SIZE];
     size_t mac_size = sizeof(mac);
 
@@ -97,10 +102,10 @@ static int omac_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
     return 1;
 }
 
-static int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
+static int omac_imit_copy(GOST_digest_ctx *to, const GOST_digest_ctx *from)
 {
-    OMAC_CTX *c_to = EVP_MD_CTX_md_data(to);
-    const OMAC_CTX *c_from = EVP_MD_CTX_md_data(from);
+    OMAC_CTX *c_to = GOST_digest_ctx_data(to);
+    const OMAC_CTX *c_from = GOST_digest_ctx_data(from);
 
     if (c_from && c_to) {
         c_to->dgst_size = c_from->dgst_size;
@@ -117,20 +122,23 @@ static int omac_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
         }
         return 1;
     }
-    if (c_to->cmac_ctx == c_from->cmac_ctx) {
+    if (c_to->cmac_ctx == c_from->cmac_ctx || !c_to->cmac_ctx) {
         c_to->cmac_ctx = CMAC_CTX_new();
+    }
+    if (!c_to->cmac_ctx) {
+        return 0;
     }
     return CMAC_CTX_copy(c_to->cmac_ctx, c_from->cmac_ctx);
 }
 
 /* Clean up imit ctx */
-static int omac_imit_cleanup(EVP_MD_CTX *ctx)
+static int omac_imit_cleanup(GOST_digest_ctx *ctx)
 {
-    OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
+    OMAC_CTX *c = GOST_digest_ctx_data(ctx);
 
     if (c) {
         CMAC_CTX_free(c->cmac_ctx);
-        memset(EVP_MD_CTX_md_data(ctx), 0, sizeof(OMAC_CTX));
+        memset(GOST_digest_ctx_data(ctx), 0, sizeof(OMAC_CTX));
     }
     return 1;
 }
@@ -154,8 +162,7 @@ static int omac_key(OMAC_CTX * c, const EVP_CIPHER *cipher,
     return 1;
 }
 
-/* Called directly by gost_kexp15() */
-int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
+static int omac_imit_ctrl(GOST_digest_ctx *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_MD_CTRL_KEY_LEN:
@@ -163,31 +170,34 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
         return 1;
     case EVP_MD_CTRL_SET_KEY:
         {
-            OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
-            const EVP_MD *md = EVP_MD_CTX_md(ctx);
+            OMAC_CTX *c = GOST_digest_ctx_data(ctx);
             EVP_CIPHER *cipher = NULL;
             int ret = 0;
+            const char* cipher_name = NULL;
 
-            if (c->cipher_name == NULL) {
-                if (EVP_MD_is_a(md, SN_magma_mac))
-                    c->cipher_name = SN_magma_cbc;
-                else if (EVP_MD_is_a(md, SN_grasshopper_mac))
-                    c->cipher_name = SN_grasshopper_cbc;
+            if (!c || c->cipher_name == NULL) {
+                if (GOST_digest_type(GOST_digest_ctx_digest(ctx)) == NID_magma_mac)
+                    cipher_name = SN_magma_cbc;
+                else if (GOST_digest_type(GOST_digest_ctx_digest(ctx)) == NID_grasshopper_mac)
+                    cipher_name = SN_grasshopper_cbc;
+            } else {
+                cipher_name = c->cipher_name;
             }
             if ((cipher =
-                 (EVP_CIPHER *)EVP_get_cipherbyname(c->cipher_name)) == NULL
+                 (EVP_CIPHER *)EVP_get_cipherbyname(cipher_name)) == NULL
                 && (cipher =
-                    EVP_CIPHER_fetch(NULL, c->cipher_name, NULL)) == NULL) {
+                    EVP_CIPHER_fetch(NULL, cipher_name, NULL)) == NULL) {
                 GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_CIPHER_NOT_FOUND);
                 goto set_key_end;
             }
 
-            if (EVP_MD_meth_get_init(EVP_MD_CTX_md(ctx)) (ctx) <= 0) {
+            if (GOST_digest_meth_get_init(GOST_digest_ctx_digest(ctx))(ctx) <= 0) {
                 GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
                 goto set_key_end;
             }
-            EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NO_INIT);
+            GOST_digest_ctx_set_flags(ctx, EVP_MD_CTX_FLAG_NO_INIT);
 
+            c = GOST_digest_ctx_data(ctx);
             if (c->key_set) {
                 GOSTerr(GOST_F_OMAC_IMIT_CTRL, GOST_R_BAD_ORDER);
                 goto set_key_end;
@@ -214,7 +224,7 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
         }
     case EVP_MD_CTRL_XOF_LEN:   /* Supported in OpenSSL */
         {
-            OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
+            OMAC_CTX *c = GOST_digest_ctx_data(ctx);
             switch (OBJ_txt2nid(c->cipher_name)) {
             case NID_magma_cbc:
                 if (arg < 1 || arg > 8) {
@@ -238,7 +248,7 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 #ifdef EVP_MD_CTRL_TLSTREE
     case EVP_MD_CTRL_TLSTREE:
         {
-            OMAC_CTX *c = EVP_MD_CTX_md_data(ctx);
+            OMAC_CTX *c = GOST_digest_ctx_data(ctx);
             if (c->key_set) {
                 unsigned char diversed_key[32];
                 int ret = 0;
@@ -279,7 +289,7 @@ int omac_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
 
 static GOST_digest omac_template_digest = {
     .input_blocksize = 8,
-    .app_datasize = sizeof(OMAC_CTX),
+    .algctx_size = sizeof(OMAC_CTX),
     .flags = EVP_MD_FLAG_XOF,
     .update = omac_imit_update,
     .final = omac_imit_final,
@@ -288,16 +298,16 @@ static GOST_digest omac_template_digest = {
     .ctrl = omac_imit_ctrl,
 };
 
-GOST_digest magma_mac_digest = {
+GOST_digest magma_omac_mac = {
     .nid = NID_magma_mac,
-    .template = &omac_template_digest,
+    .base = &omac_template_digest,
     .result_size = 8,
     .init = magma_imit_init,
 };
 
-GOST_digest grasshopper_mac_digest = {
+GOST_digest grasshopper_omac_mac = {
     .nid = NID_grasshopper_mac,
-    .template = &omac_template_digest,
+    .base = &omac_template_digest,
     .result_size = 16,
     .init = grasshopper_imit_init,
 };

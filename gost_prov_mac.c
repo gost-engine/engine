@@ -11,6 +11,7 @@
 #include <openssl/core.h>
 #include <openssl/core_dispatch.h>
 #include "gost_prov.h"
+#include "gost_digest.h"
 #include "gost_lcl.h"
 
 /*
@@ -56,22 +57,24 @@ struct gost_prov_mac_ctx_st {
      */
 
     /* The EVP_MD created from |descriptor| */
-    EVP_MD *digest;
+    const GOST_digest *digest;
     /* The context for the EVP_MD functions */
-    EVP_MD_CTX *dctx;
+    GOST_digest_ctx *dctx;
 };
 typedef struct gost_prov_mac_ctx_st GOST_CTX;
 
 static void mac_freectx(void *vgctx)
 {
     GOST_CTX *gctx = vgctx;
+    if (!gctx)
+        return;
 
     /*
      * We don't free gctx->digest here.
      * That will be done by the provider teardown, via
-     * GOST_prov_deinit_digests() (defined at the bottom of this file).
+     * GOST_prov_deinit_macs() (defined at the bottom of this file).
      */
-    EVP_MD_CTX_free(gctx->dctx);
+    GOST_digest_ctx_free(gctx->dctx);
     OPENSSL_free(gctx);
 }
 
@@ -83,13 +86,12 @@ static GOST_CTX *mac_newctx(void *provctx, const GOST_DESC *descriptor)
         gctx->provctx = provctx;
         gctx->descriptor = descriptor;
         gctx->mac_size = descriptor->initial_mac_size;
-        gctx->digest = GOST_init_digest(descriptor->digest_desc);
-        gctx->dctx = EVP_MD_CTX_new();
+        gctx->digest = GOST_digest_init(descriptor->digest_desc);
+        gctx->dctx = GOST_digest_ctx_new();
 
         if (gctx->digest == NULL
             || gctx->dctx == NULL
-            || EVP_DigestInit_ex(gctx->dctx, gctx->digest,
-                                 gctx->provctx->e) <= 0) {
+            || GOST_digest_ctx_init(gctx->dctx, gctx->digest) <= 0) {
             mac_freectx(gctx);
             gctx = NULL;
         }
@@ -100,11 +102,23 @@ static GOST_CTX *mac_newctx(void *provctx, const GOST_DESC *descriptor)
 static void *mac_dupctx(void *vsrc)
 {
     GOST_CTX *src = vsrc;
-    GOST_CTX *dst =
-        mac_newctx(src->provctx, src->descriptor);
+    if (src == NULL) {
+        return NULL;
+    }
 
-    if (dst != NULL)
-        EVP_MD_CTX_copy(dst->dctx, src->dctx);
+    GOST_CTX *dst = mac_newctx(src->provctx, src->descriptor);
+    if (dst == NULL) {
+        return dst;
+    }
+
+    if (GOST_digest_ctx_copy(dst->dctx, src->dctx) <= 0) {
+        mac_freectx(dst);
+        return NULL;
+    }
+
+    dst->mac_size = src->mac_size;
+    dst->xof_mode = src->xof_mode;
+
     return dst;
 }
 
@@ -115,7 +129,7 @@ static int mac_init(void *mctx, const unsigned char *key,
 
     return mac_set_ctx_params(gctx, params)
         && (key == NULL
-            || EVP_MD_CTX_ctrl(gctx->dctx, EVP_MD_CTRL_SET_KEY,
+            || GOST_digest_ctx_ctrl(gctx->dctx, EVP_MD_CTRL_SET_KEY,
                                (int)keylen, (void *)key) > 0);
 }
 
@@ -123,32 +137,33 @@ static int mac_update(void *mctx, const unsigned char *in, size_t inl)
 {
     GOST_CTX *gctx = mctx;
 
-    return EVP_DigestUpdate(gctx->dctx, in, inl) > 0;
+    return GOST_digest_ctx_update(gctx->dctx, in, inl) > 0;
 }
 
 static int mac_final(void *mctx, unsigned char *out, size_t *outl,
                      size_t outsize)
 {
     GOST_CTX *gctx = mctx;
-    unsigned int tmpoutl;
     int ret = 0;
-
-    /* This is strange code...  but it duplicates pkey_gost_mac_signctx() */
 
     if (outl == NULL)
         return 0;
 
-    /* for platforms where sizeof(int) != * sizeof(size_t) */
-    tmpoutl = *outl;
-
-    if (out != NULL) {
-        /* We ignore the error for GOST MDs that don't support setting
-           the size */
-        EVP_MD_CTX_ctrl(gctx->dctx, EVP_MD_CTRL_XOF_LEN, gctx->mac_size, NULL);
-        ret = EVP_DigestFinal_ex(gctx->dctx, out, &tmpoutl);
-    }
-    if (outl != NULL)
+    if (out == NULL) {
         *outl = (size_t)gctx->mac_size;
+        return 1;
+    }
+
+    if (outsize < gctx->mac_size)
+        return 0;
+
+    /* We ignore the error for GOST MDs that don't support setting the size */
+    GOST_digest_ctx_ctrl(gctx->dctx, EVP_MD_CTRL_XOF_LEN, gctx->mac_size, NULL);
+    ret = GOST_digest_ctx_final(gctx->dctx, out);
+    if (ret > 0) {
+        *outl = (size_t)gctx->mac_size;
+    }
+
     return ret;
 }
 
@@ -210,13 +225,13 @@ static int mac_get_ctx_params(void *mctx, OSSL_PARAM params[])
     if ((p = OSSL_PARAM_locate(params, "keylen")) != NULL) {
         unsigned int len = 0;
 
-        if (EVP_MD_CTX_ctrl(gctx->dctx, EVP_MD_CTRL_KEY_LEN, 0, &len) <= 0
+        if (GOST_digest_ctx_ctrl(gctx->dctx, EVP_MD_CTRL_KEY_LEN, 0, &len) <= 0
             || !OSSL_PARAM_set_size_t(p, len))
             return 0;
     }
 
     if ((p = OSSL_PARAM_locate(params, "xof")) != NULL
-        && (!(EVP_MD_flags(EVP_MD_CTX_md(gctx->dctx)) & EVP_MD_FLAG_XOF)
+        && (!(GOST_digest_flags(GOST_digest_ctx_digest(gctx->dctx)) & EVP_MD_FLAG_XOF)
             || !OSSL_PARAM_set_int(p, gctx->xof_mode)))
         return 0;
 
@@ -239,13 +254,13 @@ static int mac_set_ctx_params(void *mctx, const OSSL_PARAM params[])
         if (!OSSL_PARAM_get_octet_string_ptr(p, (const void **)&key, &keylen))
             return 0;
 
-        ret = EVP_MD_CTX_ctrl(gctx->dctx, EVP_MD_CTRL_SET_KEY,
+        ret = GOST_digest_ctx_ctrl(gctx->dctx, EVP_MD_CTRL_SET_KEY,
                               (int)keylen, (void *)key);
         if (ret <= 0 && ret != -2)
             return 0;
     }
     if ((p = OSSL_PARAM_locate_const(params, "xof")) != NULL
-        && (!(EVP_MD_flags(EVP_MD_CTX_md(gctx->dctx)) & EVP_MD_FLAG_XOF)
+        && (!(GOST_digest_flags(GOST_digest_ctx_digest(gctx->dctx)) & EVP_MD_FLAG_XOF)
             || !OSSL_PARAM_get_int(p, &gctx->xof_mode)))
         return 0;
     if ((p = OSSL_PARAM_locate_const(params, "key-mesh")) != NULL) {
@@ -266,29 +281,17 @@ static int mac_set_ctx_params(void *mctx, const OSSL_PARAM params[])
             }
         }
 
-        if (EVP_MD_CTX_ctrl(gctx->dctx, EVP_CTRL_KEY_MESH,
+        if (GOST_digest_ctx_ctrl(gctx->dctx, EVP_CTRL_KEY_MESH,
                             key_mesh, p_cipher_key_mesh) <= 0)
             return 0;
     }
     return 1;
 }
 
-/*
- * Macros to map the MAC algorithms to their respective GOST_digest
- * implementation where necessary.  Not needed for magma and grasshopper, as
- * they already have fitting names.
- */
-#define id_Gost28147_89_MAC_digest      Gost28147_89_MAC_digest
-#define gost_mac_12_digest              Gost28147_89_mac_12_digest
-#define id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_digest \
-    kuznyechik_ctracpkm_omac_digest
-#define id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac_digest \
-    magma_ctracpkm_omac_digest
-
 typedef void (*fptr_t)(void);
 #define MAKE_FUNCTIONS(name, macsize)                                   \
     const GOST_DESC name##_desc = {                                     \
-        &name##_digest,                                                 \
+        &name,                                                          \
         macsize,                                                        \
     };                                                                  \
     static OSSL_FUNC_mac_newctx_fn name##_newctx;                       \
@@ -324,45 +327,47 @@ typedef void (*fptr_t)(void);
         { OSSL_FUNC_MAC_SET_CTX_PARAMS, (fptr_t)mac_set_ctx_params },   \
     }
 
-/*
- * The name used here is the same as the NID name.  Some of the names are
- * horribly long, but that can't be helped...
- */
-MAKE_FUNCTIONS(id_Gost28147_89_MAC, 4);
-MAKE_FUNCTIONS(gost_mac_12, 4);
-MAKE_FUNCTIONS(magma_mac, 8);
-MAKE_FUNCTIONS(grasshopper_mac, 16);
-MAKE_FUNCTIONS(id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac, 16);
-MAKE_FUNCTIONS(id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac, 8);
+MAKE_FUNCTIONS(Gost28147_89_mac, 4);
+MAKE_FUNCTIONS(Gost28147_89_mac_12, 4);
+MAKE_FUNCTIONS(magma_omac_mac, 8);
+MAKE_FUNCTIONS(grasshopper_omac_mac, 16);
+MAKE_FUNCTIONS(grasshopper_ctracpkm_mac, 16);
+MAKE_FUNCTIONS(magma_ctracpkm_mac, 8);
 
 /* The OSSL_ALGORITHM for the provider's operation query function */
 const OSSL_ALGORITHM GOST_prov_macs[] = {
     { SN_id_Gost28147_89_MAC ":1.2.643.2.2.22", NULL,
-      id_Gost28147_89_MAC_functions, "GOST 28147-89 MAC" },
-    { SN_gost_mac_12, NULL, gost_mac_12_functions },
-    { SN_magma_mac, NULL, magma_mac_functions },
-    { SN_grasshopper_mac, NULL, grasshopper_mac_functions },
+      Gost28147_89_mac_functions, "GOST 28147-89 MAC" },
+    { SN_gost_mac_12, NULL, Gost28147_89_mac_12_functions },
+    { SN_magma_mac, NULL, magma_omac_mac_functions },
+    { SN_grasshopper_mac, NULL, grasshopper_omac_mac_functions },
     { SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac
       ":1.2.643.7.1.1.5.2.2", NULL,
-      id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac_functions },
+      grasshopper_ctracpkm_mac_functions },
     { SN_id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac
-      ":1.2.643.7.1.1.5.1.2", NULL,
-      id_tc26_cipher_gostr3412_2015_magma_ctracpkm_omac_functions },
+      ":1.2.643.7.1.1.5.1.2", NULL, magma_ctracpkm_mac_functions },
     { NULL , NULL, NULL }
 };
 
-void GOST_prov_deinit_mac_digests(void) {
-    static GOST_digest *list[] = {
-        &Gost28147_89_MAC_digest,
-        &Gost28147_89_mac_12_digest,
-        &magma_mac_digest,
-        &grasshopper_mac_digest,
-        &kuznyechik_ctracpkm_omac_digest,
-        &magma_ctracpkm_omac_digest
-    };
-    size_t i;
-#define elems(l) (sizeof(l) / sizeof(l[0]))
+static GOST_digest *digests[] = {
+    &Gost28147_89_mac,
+    &Gost28147_89_mac_12,
+    &magma_omac_mac,
+    &grasshopper_omac_mac,
+    &grasshopper_ctracpkm_mac,
+    &magma_ctracpkm_mac
+};
 
-    for (i = 0; i < elems(list); i++)
-        GOST_deinit_digest(list[i]);
+#define arraysize(l) (sizeof(l) / sizeof(l[0]))
+
+void GOST_prov_init_macs(void) {
+    size_t i;
+    for (i = 0; i < arraysize(digests); i++)
+        GOST_digest_init(digests[i]);
+}
+
+void GOST_prov_deinit_macs(void) {
+    size_t i;
+    for (i = 0; i < arraysize(digests); i++)
+        GOST_digest_deinit(digests[i]);
 }

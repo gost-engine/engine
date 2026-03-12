@@ -16,6 +16,7 @@
 #include "gost_lcl.h"
 #include "gost_gost2015.h"
 #include "gost_tls12_additional.h"
+#include "gost_digest_details.h"
 
 #if !defined(CCGOST_DEBUG) && !defined(DEBUG)
 # ifndef NDEBUG
@@ -290,23 +291,20 @@ GOST_cipher magma_cbc_cipher = {
 
 /* Implementation of GOST 28147-89 in MAC (imitovstavka) mode */
 /* Init functions which set specific parameters */
-static int gost_imit_init_cpa(EVP_MD_CTX *ctx);
-static int gost_imit_init_cp_12(EVP_MD_CTX *ctx);
-/* process block of data */
-static int gost_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count);
-/* Return computed value */
-static int gost_imit_final(EVP_MD_CTX *ctx, unsigned char *md);
-/* Copies context */
-static int gost_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from);
-static int gost_imit_cleanup(EVP_MD_CTX *ctx);
-/* Control function, knows how to set MAC key.*/
-static int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr);
+static int gost_imit_init_cpa(GOST_digest_ctx *ctx);
+static int gost_imit_init_cp_12(GOST_digest_ctx *ctx);
+static int gost_imit_update(GOST_digest_ctx *ctx, const void *data,
+                            size_t count);
+static int gost_imit_final(GOST_digest_ctx *ctx, unsigned char *md);
+static int gost_imit_copy(GOST_digest_ctx *to, const GOST_digest_ctx *from);
+static int gost_imit_cleanup(GOST_digest_ctx *ctx);
+static int gost_imit_ctrl(GOST_digest_ctx *ctx, int cmd, int p1, void *p2);
 
-GOST_digest Gost28147_89_MAC_digest = {
+GOST_digest Gost28147_89_mac = {
     .nid = NID_id_Gost28147_89_MAC,
     .result_size = 4,
     .input_blocksize = 8,
-    .app_datasize = sizeof(struct ossl_gost_imit_ctx),
+    .algctx_size = sizeof(struct ossl_gost_imit_ctx),
     .flags = EVP_MD_FLAG_XOF,
     .init = gost_imit_init_cpa,
     .update = gost_imit_update,
@@ -316,11 +314,11 @@ GOST_digest Gost28147_89_MAC_digest = {
     .ctrl = gost_imit_ctrl,
 };
 
-GOST_digest Gost28147_89_mac_12_digest = {
+GOST_digest Gost28147_89_mac_12 = {
     .nid = NID_gost_mac_12,
     .result_size = 4,
     .input_blocksize = 8,
-    .app_datasize = sizeof(struct ossl_gost_imit_ctx),
+    .algctx_size = sizeof(struct ossl_gost_imit_ctx),
     .flags = EVP_MD_FLAG_XOF,
     .init = gost_imit_init_cp_12,
     .update = gost_imit_update,
@@ -1512,9 +1510,9 @@ static int magma_get_asn1_parameters(EVP_CIPHER_CTX *ctx, ASN1_TYPE *params)
 	return 1;
 }
 
-static int gost_imit_init(EVP_MD_CTX *ctx, gost_subst_block * block)
+static int gost_imit_init(GOST_digest_ctx *ctx, gost_subst_block * block)
 {
-    struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
+    struct ossl_gost_imit_ctx *c = GOST_digest_ctx_data(ctx);
     memset(c->buffer, 0, sizeof(c->buffer));
     memset(c->partial_block, 0, sizeof(c->partial_block));
     c->count = 0;
@@ -1525,12 +1523,12 @@ static int gost_imit_init(EVP_MD_CTX *ctx, gost_subst_block * block)
     return 1;
 }
 
-static int gost_imit_init_cpa(EVP_MD_CTX *ctx)
+static int gost_imit_init_cpa(GOST_digest_ctx *ctx)
 {
     return gost_imit_init(ctx, &Gost28147_CryptoProParamSetA);
 }
 
-static int gost_imit_init_cp_12(EVP_MD_CTX *ctx)
+static int gost_imit_init_cp_12(GOST_digest_ctx *ctx)
 {
     return gost_imit_init(ctx, &Gost28147_TC26ParamSetZ);
 }
@@ -1551,9 +1549,9 @@ static void mac_block_mesh(struct ossl_gost_imit_ctx *c,
     c->count = c->count % 1024 + 8;
 }
 
-static int gost_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
+static int gost_imit_update(GOST_digest_ctx *ctx, const void *data, size_t count)
 {
-    struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
+    struct ossl_gost_imit_ctx *c = GOST_digest_ctx_data(ctx);
     const unsigned char *p = data;
     size_t bytes = count;
     if (!(c->key_set)) {
@@ -1584,9 +1582,9 @@ static int gost_imit_update(EVP_MD_CTX *ctx, const void *data, size_t count)
     return 1;
 }
 
-static int gost_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
+static int gost_imit_final(GOST_digest_ctx *ctx, unsigned char *md)
 {
-    struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
+    struct ossl_gost_imit_ctx *c = GOST_digest_ctx_data(ctx);
     if (!c->key_set) {
         GOSTerr(GOST_F_GOST_IMIT_FINAL, GOST_R_MAC_KEY_NOT_SET);
         return 0;
@@ -1607,7 +1605,7 @@ static int gost_imit_final(EVP_MD_CTX *ctx, unsigned char *md)
     return 1;
 }
 
-static int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
+static int gost_imit_ctrl(GOST_digest_ctx *ctx, int type, int arg, void *ptr)
 {
     switch (type) {
     case EVP_MD_CTRL_KEY_LEN:
@@ -1615,13 +1613,13 @@ static int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
         return 1;
     case EVP_MD_CTRL_SET_KEY:
         {
-            struct ossl_gost_imit_ctx *gost_imit_ctx = EVP_MD_CTX_md_data(ctx);
+            struct ossl_gost_imit_ctx *gost_imit_ctx = GOST_digest_ctx_data(ctx);
 
-            if (EVP_MD_meth_get_init(EVP_MD_CTX_md(ctx)) (ctx) <= 0) {
+            if (GOST_digest_meth_get_init(GOST_digest_ctx_digest(ctx))(ctx) <= 0) {
                 GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_MAC_KEY_NOT_SET);
                 return 0;
             }
-            EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NO_INIT);
+            GOST_digest_ctx_set_flags(ctx, EVP_MD_CTX_FLAG_NO_INIT);
 
             if (arg == 0) {
                 struct gost_mac_key *key = (struct gost_mac_key *)ptr;
@@ -1649,7 +1647,7 @@ static int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
         }
     case EVP_MD_CTRL_XOF_LEN:
         {
-            struct ossl_gost_imit_ctx *c = EVP_MD_CTX_md_data(ctx);
+            struct ossl_gost_imit_ctx *c = GOST_digest_ctx_data(ctx);
             if (arg < 1 || arg > 8) {
                 GOSTerr(GOST_F_GOST_IMIT_CTRL, GOST_R_INVALID_MAC_SIZE);
                 return 0;
@@ -1663,19 +1661,19 @@ static int gost_imit_ctrl(EVP_MD_CTX *ctx, int type, int arg, void *ptr)
     }
 }
 
-static int gost_imit_copy(EVP_MD_CTX *to, const EVP_MD_CTX *from)
+static int gost_imit_copy(GOST_digest_ctx *to, const GOST_digest_ctx *from)
 {
-    if (EVP_MD_CTX_md_data(to) && EVP_MD_CTX_md_data(from)) {
-        memcpy(EVP_MD_CTX_md_data(to), EVP_MD_CTX_md_data(from),
+    if (GOST_digest_ctx_data(to) && GOST_digest_ctx_data(from)) {
+        memcpy(GOST_digest_ctx_data(to), GOST_digest_ctx_data(from),
                sizeof(struct ossl_gost_imit_ctx));
     }
     return 1;
 }
 
 /* Clean up imit ctx */
-static int gost_imit_cleanup(EVP_MD_CTX *ctx)
+static int gost_imit_cleanup(GOST_digest_ctx *ctx)
 {
-    memset(EVP_MD_CTX_md_data(ctx), 0, sizeof(struct ossl_gost_imit_ctx));
+    OPENSSL_cleanse(GOST_digest_ctx_data(ctx), sizeof(struct ossl_gost_imit_ctx));
     return 1;
 }
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
