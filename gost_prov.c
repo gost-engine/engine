@@ -12,6 +12,7 @@
 #include "gost_prov.h"
 #include "gost_prov_tls.h"
 #include "gost_prov_digest.h"
+#include "gost_prov_mac.h"
 #include "gost_lcl.h"
 #include "prov/err.h"           /* libprov err functions */
 
@@ -137,7 +138,7 @@ static void gost_teardown(void *vprovctx)
 {
     GOST_prov_deinit_ciphers();
     GOST_prov_deinit_digests();
-    GOST_prov_deinit_mac_digests();
+    GOST_prov_deinit_macs();
     provider_ctx_free(vprovctx);
 }
 
@@ -186,6 +187,7 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *core,
         return 0;
 
     GOST_prov_init_digests();
+    GOST_prov_init_macs();
 
     *out = provider_functions;
     return 1;

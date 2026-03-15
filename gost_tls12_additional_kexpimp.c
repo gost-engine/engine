@@ -13,7 +13,7 @@
 #include <openssl/core_names.h>
 
 #include "gost_tls12_additional_kexpimp.h"
-#include "gost_mac.h"
+#include "gost_lcl.h"
 #include "e_gost_err.h"
 
 static int calculate_mac(int nid, unsigned char *mac_key,

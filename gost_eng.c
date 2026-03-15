@@ -17,6 +17,7 @@
 #include "e_gost_err.h"
 #include "gost_lcl.h"
 #include "gost-engine.h"
+#include "gost_eng_digest.h"
 #include <assert.h>
 
 #include "gost_grasshopper_cipher.h"
@@ -72,16 +73,16 @@ static EVP_PKEY_ASN1_METHOD* ameth_GostR3410_2001 = NULL,
         * ameth_magma_mac = NULL,  * ameth_grasshopper_mac = NULL,
         * ameth_magma_mac_acpkm = NULL,  * ameth_grasshopper_mac_acpkm = NULL;
 
-GOST_digest *gost_digest_array[] = {
-    &GostR3411_94_digest_legacy,
-    &Gost28147_89_MAC_digest,
-    &GostR3411_2012_256_digest_legacy,
-    &GostR3411_2012_512_digest_legacy,
-    &Gost28147_89_mac_12_digest,
-    &magma_mac_digest,
-    &grasshopper_mac_digest,
-    &kuznyechik_ctracpkm_omac_digest,
-    &magma_ctracpkm_omac_digest,
+GOST_eng_digest *gost_digest_array[] = {
+    &ENG_DIGEST_NAME(GostR3411_94_digest),
+    &ENG_DIGEST_NAME(Gost28147_89_mac),
+    &ENG_DIGEST_NAME(GostR3411_2012_256_digest),
+    &ENG_DIGEST_NAME(GostR3411_2012_512_digest),
+    &ENG_DIGEST_NAME(Gost28147_89_mac_12),
+    &ENG_DIGEST_NAME(magma_omac_mac),
+    &ENG_DIGEST_NAME(grasshopper_omac_mac),
+    &ENG_DIGEST_NAME(grasshopper_ctracpkm_mac),
+    &ENG_DIGEST_NAME(magma_ctracpkm_mac),
 };
 
 GOST_cipher *gost_cipher_array[] = {
@@ -207,13 +208,13 @@ static int gost_digests(ENGINE *e, const EVP_MD **digest,
 
         *nids = n;
         for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
-            *n++ = gost_digest_array[i]->nid;
+            *n++ = GOST_eng_digest_nid(gost_digest_array[i]);
         return i;
     }
 
     for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
-        if (nid == gost_digest_array[i]->nid) {
-            *digest = GOST_init_digest(gost_digest_array[i]);
+        if (nid == GOST_eng_digest_nid(gost_digest_array[i])) {
+            *digest = GOST_eng_digest_init(gost_digest_array[i]);
             return 1;
         }
     *digest = NULL;
@@ -305,7 +306,7 @@ static int gost_engine_destroy(ENGINE* e) {
     int i;
 
     for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
-        GOST_deinit_digest(gost_digest_array[i]);
+        GOST_eng_digest_deinit(gost_digest_array[i]);
     for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++)
         GOST_deinit_cipher(gost_cipher_array[i]);
 
@@ -456,12 +457,12 @@ int populate_gost_engine(ENGINE* e) {
     int i;
 
     for (i = 0; i < OSSL_NELEM(gost_digest_array); i++) {
-        const EVP_MD *md = GOST_init_digest(gost_digest_array[i]);
+        const EVP_MD *md = GOST_eng_digest_init(gost_digest_array[i]);
 
         if (!EVP_add_digest(md))
             goto end;
 
-        assert(EVP_get_digestbynid(gost_digest_array[i]->nid) != NULL);
+        assert(EVP_get_digestbynid(GOST_eng_digest_nid(gost_digest_array[i])) != NULL);
     }
 
     ret = 1;
@@ -485,7 +486,7 @@ static int bind_gost_engine(ENGINE* e) {
     }
 
     for (i = 0; i < OSSL_NELEM(gost_digest_array); i++) {
-        if (!EVP_add_digest(GOST_init_digest(gost_digest_array[i])))
+        if (!EVP_add_digest(GOST_eng_digest_init(gost_digest_array[i])))
             goto end;
     }
 

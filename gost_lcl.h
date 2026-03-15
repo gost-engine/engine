@@ -20,7 +20,7 @@
 # include <openssl/asn1.h>
 # include "gost89.h"
 # include "gosthash.h"
-# include "gost_mac.h"
+# include "gost_digest.h"
 
 /*
  * This definitions are added in the patch to OpenSSL 3.4.2 version to support
@@ -357,28 +357,6 @@ extern GOST_cipher grasshopper_ctr_acpkm_omac_cipher;
 extern GOST_cipher magma_kexp15_cipher;
 extern GOST_cipher kuznyechik_kexp15_cipher;
 
-
-struct gost_digest_st {
-    struct gost_digest_st *template;
-    int nid;
-    const char *alias;
-    EVP_MD *digest;
-    int result_size;
-    int input_blocksize;
-    int app_datasize;
-    int flags;
-    int (*init)(EVP_MD_CTX *ctx);
-    int (*update)(EVP_MD_CTX *ctx, const void *data, size_t count);
-    int (*final)(EVP_MD_CTX *ctx, unsigned char *md);
-    int (*copy)(EVP_MD_CTX *to, const EVP_MD_CTX *from);
-    int (*cleanup)(EVP_MD_CTX *ctx);
-    int (*ctrl)(EVP_MD_CTX *ctx, int cmd, int p1, void *p2);
-};
-typedef struct gost_digest_st GOST_digest;
-
-EVP_MD *GOST_init_digest(GOST_digest *d);
-void GOST_deinit_digest(GOST_digest *d);
-
 /* Internal functions */
 EC_KEY * internal_ec_paramgen(int sign_param_nid);
 int internal_ec_ctrl(struct gost_pmeth_data *pctx, int pkey_nid,
@@ -414,16 +392,15 @@ int internal_print_gost_priv(BIO *out, const EC_KEY *ec, int indent, int pkey_ni
 int internal_print_gost_ec_pub(BIO *out, const EC_KEY *ec, int indent, int pkey_nid);
 int internal_print_gost_ec_param(BIO *out, const EC_KEY *ec, int indent);
 
-/* ENGINE implementation data */
-extern GOST_digest GostR3411_94_digest_legacy;
-extern GOST_digest Gost28147_89_MAC_digest;
-extern GOST_digest Gost28147_89_mac_12_digest;
-extern GOST_digest GostR3411_2012_256_digest_legacy;
-extern GOST_digest GostR3411_2012_512_digest_legacy;
-extern GOST_digest magma_mac_digest;
-extern GOST_digest grasshopper_mac_digest;
-extern GOST_digest kuznyechik_ctracpkm_omac_digest;
-extern GOST_digest magma_ctracpkm_omac_digest;
+extern GOST_digest GostR3411_94_digest;
+extern GOST_digest Gost28147_89_mac;
+extern GOST_digest Gost28147_89_mac_12;
+extern GOST_digest GostR3411_2012_256_digest;
+extern GOST_digest GostR3411_2012_512_digest;
+extern GOST_digest magma_omac_mac;
+extern GOST_digest grasshopper_omac_mac;
+extern GOST_digest grasshopper_ctracpkm_mac;
+extern GOST_digest magma_ctracpkm_mac;
 
 
 /* job to initialize a missing NID */

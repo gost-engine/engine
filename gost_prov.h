@@ -76,10 +76,8 @@ typedef struct gost_key_data_st
 int gost_get_max_keyexch_size(const GOST_KEY_DATA *);
 int gost_get_max_signature_size(const GOST_KEY_DATA *);
 
-void GOST_prov_deinit_mac_digests(void);
 void GOST_prov_deinit_ciphers(void);
 
-extern const OSSL_ALGORITHM GOST_prov_macs[];
 extern const OSSL_ALGORITHM GOST_prov_ciphers[];
 extern const OSSL_ALGORITHM GOST_prov_keymgmt[];
 extern const OSSL_ALGORITHM GOST_prov_encoder[];

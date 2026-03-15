@@ -12,8 +12,7 @@
 #include <openssl/core_dispatch.h>
 #include "gost_prov.h"
 #include "gost_prov_digest.h"
-#include "gost_digest_3411_94.h"
-#include "gost_digest_3411_2012.h"
+#include "gost_lcl.h"
 
 /*
  * Forward declarations of all OSSL_DISPATCH functions, to make sure they
@@ -40,7 +39,7 @@ static void digest_freectx(void *vgctx)
     if (!gctx)
         return;
 
-    GET_MEMBER(gctx->descriptor, free)(gctx->dctx);
+    GOST_digest_ctx_free(gctx->dctx);
     OPENSSL_free(gctx);
 }
 
@@ -52,7 +51,7 @@ static GOST_CTX *digest_newctx(void *provctx, const GOST_digest *descriptor)
         gctx->provctx = provctx;
         gctx->descriptor = descriptor;
         
-        gctx->dctx = GET_MEMBER(gctx->descriptor, new)(gctx->descriptor);
+        gctx->dctx = GOST_digest_ctx_new();
         if (gctx->dctx == NULL) {
             digest_freectx(gctx);
             gctx = NULL;
@@ -67,7 +66,7 @@ static void *digest_dupctx(void *vsrc)
     GOST_CTX *dst = digest_newctx(src->provctx, src->descriptor);
 
     if (dst != NULL)
-        GET_MEMBER(src->descriptor, copy)(dst->dctx, src->dctx);
+        GOST_digest_ctx_copy(dst->dctx, src->dctx);
 
     return dst;
 }
@@ -77,11 +76,11 @@ static int digest_get_params(const GOST_digest *descriptor, OSSL_PARAM params[])
     OSSL_PARAM *p;
 
     if (((p = OSSL_PARAM_locate(params, "blocksize")) != NULL
-         && !OSSL_PARAM_set_size_t(p, GET_MEMBER(descriptor, input_blocksize)))
+         && !OSSL_PARAM_set_size_t(p, GOST_digest_block_size(descriptor)))
         || ((p = OSSL_PARAM_locate(params, "size")) != NULL
-            && !OSSL_PARAM_set_size_t(p, GET_MEMBER(descriptor, result_size)))
+            && !OSSL_PARAM_set_size_t(p, GOST_digest_size(descriptor)))
         || ((p = OSSL_PARAM_locate(params, "xof")) != NULL
-            && !OSSL_PARAM_set_size_t(p, GET_MEMBER(descriptor, flags) & EVP_MD_FLAG_XOF)))
+            && !OSSL_PARAM_set_size_t(p, GOST_digest_flags(descriptor) & EVP_MD_FLAG_XOF)))
         return 0;
     return 1;
 }
@@ -90,14 +89,14 @@ static int digest_init(void *vgctx, const OSSL_PARAM unused_params[])
 {
     GOST_CTX *gctx = vgctx;
 
-    return GET_MEMBER(gctx->descriptor, init)(gctx->dctx) > 0;
+    return GOST_digest_ctx_init(gctx->dctx, gctx->descriptor) > 0;
 }
 
 static int digest_update(void *vgctx, const unsigned char *in, size_t inl)
 {
     GOST_CTX *gctx = vgctx;
 
-    return GET_MEMBER(gctx->descriptor, update)(gctx->dctx, in, inl) > 0;
+    return GOST_digest_ctx_update(gctx->dctx, in, inl) > 0;
 }
 
 static int digest_final(void *vgctx,
@@ -105,15 +104,24 @@ static int digest_final(void *vgctx,
 {
     GOST_CTX *gctx = vgctx;
 
-    if (outsize < GET_MEMBER(gctx->descriptor, result_size))
+    if (outl == NULL) {
+        return 0;
+    }
+
+    if (out == NULL) {
+        *outl = GOST_digest_size(gctx->descriptor);
+        return 1;
+    }
+
+    if (outsize < GOST_digest_size(gctx->descriptor))
         return 0;
 
-    int res = GET_MEMBER(gctx->descriptor, final)(gctx->dctx, out);
+    int res = GOST_digest_ctx_final(gctx->dctx, out);
 
-    GET_MEMBER(gctx->descriptor, cleanup)(gctx->dctx);
+    GOST_digest_ctx_cleanup(gctx->dctx);
 
-    if (res > 0 && outl != NULL)
-        *outl = GET_MEMBER(gctx->descriptor, result_size);
+    if (res > 0)
+        *outl = GOST_digest_size(gctx->descriptor);
 
     return res > 0;
 }
@@ -169,7 +177,7 @@ const OSSL_ALGORITHM GOST_prov_digests[] = {
     { NULL , NULL, NULL }
 };
 
-static const GOST_digest *digests[] = {
+static GOST_digest *digests[] = {
     &GostR3411_94_digest,
     &GostR3411_2012_256_digest,
     &GostR3411_2012_512_digest,
@@ -180,11 +188,11 @@ static const GOST_digest *digests[] = {
 void GOST_prov_init_digests(void) {
     size_t i;
     for (i = 0; i < arraysize(digests); i++)
-        GET_MEMBER(digests[i], static_init)(digests[i]);
+        GOST_digest_init(digests[i]);
 }
 
 void GOST_prov_deinit_digests(void) {
     size_t i;
     for (i = 0; i < arraysize(digests); i++)
-        GET_MEMBER(digests[i], static_deinit)(digests[i]);
+        GOST_digest_deinit(digests[i]);
 }

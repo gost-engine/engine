@@ -162,7 +162,7 @@ set(GOST_ERR_SOURCE_FILES
         e_gost_err.h
         )
 
-set(GOST_LEGACY_CORE_SOURCE_FILES
+set(GOST_CORE_SOURCE_FILES
         gost_ameth.c
         gost_pmeth.c
         gost_ctl.c
@@ -178,14 +178,9 @@ set(GOST_LEGACY_CORE_SOURCE_FILES
         gost_lcl.h
         gost_params.c
         gost_keyexpimp.c
-        )
-
-set(GOST_NEW_CORE_DIGEST_SOURCE_FILES
-        gost_digest_3411_2012.c
-        gost_digest_3411_94.c
-        gost_digest_base.c
         gost_digest.c
-)
+        gost_digest_ctx.c
+        )
 
 set(GOST_EC_SOURCE_FILES
         gost_ec_keyx.c
@@ -206,7 +201,7 @@ set (GOST_OMAC_SOURCE_FILES
         )
 
 set(GOST_LIB_SOURCE_FILES
-        ${GOST_LEGACY_CORE_SOURCE_FILES}
+        ${GOST_CORE_SOURCE_FILES}
         ${GOST_GRASSHOPPER_SOURCE_FILES}
         ${GOST_EC_SOURCE_FILES}
         ${GOST_OMAC_SOURCE_FILES}
@@ -214,6 +209,8 @@ set(GOST_LIB_SOURCE_FILES
 
 set(GOST_ENGINE_SOURCE_FILES
         gost_eng.c
+        gost_eng_digest.c
+        gost_eng_digest_define.c
         )
 
 set(GOST_PROV_SOURCE_FILES
@@ -418,10 +415,6 @@ add_library(gost_err STATIC ${GOST_ERR_SOURCE_FILES})
 set_target_properties(gost_err PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(gost_err PRIVATE OpenSSL::Crypto)
 
-add_library(gost_new_core_digest STATIC ${GOST_NEW_CORE_DIGEST_SOURCE_FILES})
-set_target_properties(gost_new_core_digest PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(gost_new_core_digest PRIVATE OpenSSL::Crypto gosthash gosthash2012)
-
 # The GOST engine in module form
 add_library(gost_engine MODULE ${GOST_ENGINE_SOURCE_FILES})
 # Set the suffix explicitly to adapt to OpenSSL's idea of what a
@@ -451,7 +444,7 @@ set_target_properties(gost_prov PROPERTIES
   PREFIX "" OUTPUT_NAME "gostprov" SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX}
   COMPILE_DEFINITIONS "BUILDING_GOST_PROVIDER;OPENSSL_NO_DYNAMIC_ENGINE"
   )
-target_link_libraries(gost_prov PRIVATE gost_core gost_new_core_digest libprov)
+target_link_libraries(gost_prov PRIVATE gost_core libprov)
 
 if (NOT MSVC)
 # The GOST provider in library form
@@ -462,7 +455,7 @@ set_target_properties(lib_gost_prov PROPERTIES
   OUTPUT_NAME "gostprov"
   COMPILE_DEFINITIONS "BUILDING_GOST_PROVIDER;BUILDING_PROVIDER_AS_LIBRARY;OPENSSL_NO_DYNAMIC_ENGINE"
   )
-target_link_libraries(lib_gost_prov PRIVATE gost_core gost_new_core_digest libprov)
+target_link_libraries(lib_gost_prov PRIVATE gost_core libprov)
 endif()
 
 set(GOST_SUM_SOURCE_FILES

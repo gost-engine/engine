@@ -3,54 +3,35 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "utils_one_level_inheritance.h"
-
 struct gost_digest_st;
 typedef struct gost_digest_st GOST_digest;
 
 struct gost_digest_ctx_st;
 typedef struct gost_digest_ctx_st GOST_digest_ctx;
 
-typedef GOST_digest_ctx* (gost_digest_st_new_fn)(const GOST_digest *);
-typedef void (gost_digest_st_free_fn)(GOST_digest_ctx *);
+extern size_t GOST_digest_ctx_size;
 
-typedef int (gost_digest_st_init_fn)(GOST_digest_ctx *ctx);
-typedef int (gost_digest_st_update_fn)(GOST_digest_ctx *ctx, const void *data, size_t count);
-typedef int (gost_digest_st_final_fn)(GOST_digest_ctx *ctx, unsigned char *md);
-typedef int (gost_digest_st_copy_fn)(GOST_digest_ctx *to, const GOST_digest_ctx *from);
-typedef int (gost_digest_st_cleanup_fn)(GOST_digest_ctx *ctx);
-typedef int (gost_digest_st_ctrl_fn)(GOST_digest_ctx *ctx, int cmd, int p1, void *p2);
+// No GOST_digest instance may be used before GOST_digest_init call
+const GOST_digest* GOST_digest_init(GOST_digest* digest);
+void GOST_digest_deinit(GOST_digest* d);
+unsigned long GOST_digest_flags(const GOST_digest* d);
+int GOST_digest_type(const GOST_digest* d);
+int GOST_digest_block_size(const GOST_digest* d);
+int GOST_digest_size(const GOST_digest* d);
+int (*GOST_digest_meth_get_init(const GOST_digest *md))(GOST_digest_ctx *ctx);
 
-typedef void (gost_digest_st_static_init_fn)(const GOST_digest *);
-typedef void (gost_digest_st_static_deinit_fn)(const GOST_digest *);
+GOST_digest_ctx* GOST_digest_ctx_new();
+void GOST_digest_ctx_free(GOST_digest_ctx *ctx);
 
-struct gost_digest_st {
-    DECL_BASE(const struct gost_digest_st);
+int GOST_digest_ctx_init(GOST_digest_ctx *ctx, const GOST_digest *cls);
+int GOST_digest_ctx_update(GOST_digest_ctx *ctx, const void *data, size_t count);
+int GOST_digest_ctx_final(GOST_digest_ctx *ctx, unsigned char *md);
+int GOST_digest_ctx_copy(GOST_digest_ctx *to, const GOST_digest_ctx *from);
+int GOST_digest_ctx_cleanup(GOST_digest_ctx *ctx);
+int GOST_digest_ctx_ctrl(GOST_digest_ctx *ctx, int cmd, int p1, void *p2);
 
-    DECL_MEMBER(int, nid);
-    DECL_MEMBER(const char *, alias);
-    DECL_MEMBER(int, result_size);
-    DECL_MEMBER(int, input_blocksize);
-    DECL_MEMBER(int, flags);
-    DECL_MEMBER(const char *, micalg);
-    DECL_MEMBER(size_t, algctx_size);
-
-    DECL_MEMBER(gost_digest_st_new_fn *, new);
-    DECL_MEMBER(gost_digest_st_free_fn *, free);
-    DECL_MEMBER(gost_digest_st_init_fn *, init);
-    DECL_MEMBER(gost_digest_st_update_fn *, update);
-    DECL_MEMBER(gost_digest_st_final_fn *, final);
-    DECL_MEMBER(gost_digest_st_copy_fn *, copy);
-    DECL_MEMBER(gost_digest_st_cleanup_fn *, cleanup);
-    DECL_MEMBER(gost_digest_st_ctrl_fn *, ctrl);
-
-    DECL_MEMBER(gost_digest_st_static_init_fn *, static_init);
-    DECL_MEMBER(gost_digest_st_static_deinit_fn *, static_deinit);
-};
-
-struct gost_digest_ctx_st {
-    const GOST_digest* cls;
-    void* algctx;
-};
-
+const GOST_digest* GOST_digest_ctx_digest(GOST_digest_ctx *ctx);
 void* GOST_digest_ctx_data(const GOST_digest_ctx* ctx);
+void GOST_digest_ctx_set_flags(GOST_digest_ctx *ctx, unsigned long flags);
+void GOST_digest_ctx_reset_flags(GOST_digest_ctx *ctx, unsigned long flags);
+int GOST_digest_ctx_test_flags(const GOST_digest_ctx *ctx, unsigned long flags);
