@@ -68,8 +68,8 @@ static int x509_pub_decode_wrapper(EC_KEY *ec, int *key_type, const void *st)
 {
     return internal_pub_decode_ec(ec, key_type,
                                   ((x509_pubkey_st *)st)->algor,
-                                  ((x509_pubkey_st *)st)->public_key->data,
-                                  ((x509_pubkey_st *)st)->public_key->length);
+                                  ASN1_STRING_get0_data(((x509_pubkey_st *)st)->public_key),
+                                  ASN1_STRING_length(((x509_pubkey_st *)st)->public_key));
 }
 static void *x509_pub_read_bio_der_wrapper(BIO *bio, void **st)
 {

@@ -60,7 +60,7 @@ static int pkey_bits_gost(const EVP_PKEY *pk)
 static ASN1_STRING *internal_encode_algor_params(EC_KEY *key_ptr,
                                                  int key_type)
 {
-    ASN1_STRING *params = ASN1_STRING_new();
+    ASN1_STRING *params = ASN1_STRING_type_new(V_ASN1_SEQUENCE);
     GOST_KEY_PARAMS *gkp = GOST_KEY_PARAMS_new();
     int pkey_param_nid = NID_undef;
     int result = 0;
@@ -109,12 +109,13 @@ static ASN1_STRING *internal_encode_algor_params(EC_KEY *key_ptr,
     /*
      * gkp->cipher_params = OBJ_nid2obj(cipher_param_nid);
      */
-    params->length = i2d_GOST_KEY_PARAMS(gkp, &params->data);
-    if (params->length <= 0) {
+    uint8_t* outParam = NULL;
+    int paramLength = i2d_GOST_KEY_PARAMS(gkp, &outParam);
+    if (paramLength <= 0) {
         GOSTerr(GOST_F_ENCODE_GOST_ALGOR_PARAMS, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    params->type = V_ASN1_SEQUENCE;
+    ASN1_STRING_set0(params, outParam, paramLength);
     result = 1;
  err:
     if (gkp)
@@ -171,12 +172,12 @@ static int decode_gost_algor_params(EC_KEY *ec, int *key_type,
                 GOST_R_BAD_KEY_PARAMETERS_FORMAT);
         return 0;
     }
-    p = pval->data;
+    p = ASN1_STRING_get0_data(pval);
     pkey_nid = OBJ_obj2nid(palg_obj);
     if (!internal_is_gost_pkey_nid(pkey_nid))
         return 0;
     *key_type = pkey_nid;
-    gkp = d2i_GOST_KEY_PARAMS(NULL, &p, pval->length);
+    gkp = d2i_GOST_KEY_PARAMS(NULL, &p, ASN1_STRING_length(pval));
     if (!gkp) {
         GOSTerr(GOST_F_DECODE_GOST_ALGOR_PARAMS,
                 GOST_R_BAD_PKEY_PARAMETERS_FORMAT);
@@ -318,7 +319,7 @@ static int gost_cms_set_kari_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *
 
 	EVP_CIPHER_CTX_set_flags(CMS_RecipientInfo_kari_get0_ctx(ri), EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
 	if (EVP_DecryptInit_ex(CMS_RecipientInfo_kari_get0_ctx(ri), cipher, NULL,
-		shared_key, ukm->data+24) == 0)
+		shared_key, ASN1_STRING_get0_data(ukm)+24) == 0)
 			goto err;
 
 	ret = 1;
@@ -380,7 +381,7 @@ static int gost_cms_set_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
 static ASN1_STRING *gost_encode_cms_params(int ka_nid)
 {
 	ASN1_STRING *ret = NULL;
-	ASN1_STRING *params = ASN1_STRING_new();
+	ASN1_STRING *params = ASN1_STRING_type_new(V_ASN1_SEQUENCE);
 
 	/* It's a hack. We have only one OID here, so we can use
 	 * GOST_KEY_PARAMS which is a sequence of 3 OIDs,
@@ -393,14 +394,15 @@ static ASN1_STRING *gost_encode_cms_params(int ka_nid)
 	}
 
 	gkp->key_params = OBJ_nid2obj(ka_nid);
-	params->length = i2d_GOST_KEY_PARAMS(gkp, &params->data);
 
-	if (params->length < 0) {
+	uint8_t* outParam = NULL;
+	int paramLength = i2d_GOST_KEY_PARAMS(gkp, &outParam);
+	if (paramLength < 0) {
 		  GOSTerr(GOST_F_GOST_ENCODE_CMS_PARAMS, ERR_R_MALLOC_FAILURE);
 			goto end;
 	}
+	ASN1_STRING_set0(params, outParam, paramLength);
 
-	params->type = V_ASN1_SEQUENCE;
 	ret = params;
 
 end:
@@ -766,12 +768,17 @@ int internal_priv_decode(EC_KEY *ec, int *key_type,
     } else if (V_ASN1_OCTET_STRING == *p) {
         /* New format - Little endian octet string */
         ASN1_OCTET_STRING *s = d2i_ASN1_OCTET_STRING(NULL, &p, priv_len);
-        if (!s || ((s->length != 32) && (s->length != 64))) {
+        if (!s) {
+            GOSTerr(GOST_F_PRIV_DECODE_GOST, EVP_R_DECODE_ERROR);
+            return 0;
+        }
+        const int sLength = ASN1_STRING_length(s);
+        if ((sLength != 32) && (sLength != 64)) {
             ASN1_STRING_free(s);
             GOSTerr(GOST_F_PRIV_DECODE_GOST, EVP_R_DECODE_ERROR);
             return 0;
         }
-        pk_num = BN_lebin2bn(s->data, s->length, BN_secure_new());
+        pk_num = BN_lebin2bn(ASN1_STRING_get0_data(s), sLength, BN_secure_new());
         ASN1_STRING_free(s);
     } else if (V_ASN1_INTEGER == *p) {
         priv_key = d2i_ASN1_INTEGER(NULL, &p, priv_len);
@@ -789,14 +796,14 @@ int internal_priv_decode(EC_KEY *ec, int *key_type,
             return 0;
         }
 
-        priv_len = mgk->masked_priv_key->length;
+        priv_len = ASN1_STRING_length(mgk->masked_priv_key);
         if (priv_len % expected_key_len) {
             MASKED_GOST_KEY_free(mgk);
             GOSTerr(GOST_F_PRIV_DECODE_GOST, EVP_R_DECODE_ERROR);
             return 0;
         }
 
-        pk_num = internal_unmask_priv_key(ec, mgk->masked_priv_key->data,
+        pk_num = internal_unmask_priv_key(ec, ASN1_STRING_get0_data(mgk->masked_priv_key),
                                           expected_key_len,
                                           priv_len / expected_key_len - 1);
         MASKED_GOST_KEY_free(mgk);
@@ -1104,18 +1111,20 @@ int internal_pub_decode_ec(EC_KEY *ec, int *key_type, X509_ALGOR *palg,
 
     group = EC_KEY_get0_group(ec);
     octet = d2i_ASN1_OCTET_STRING(NULL, &pubkey_buf, pub_len);
+
     if (!octet) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto ret;
     }
-    databuf = OPENSSL_malloc(octet->length);
+    const int octetLength = ASN1_STRING_length(octet);
+    databuf = OPENSSL_malloc(octetLength);
     if (!databuf) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto ret;
     }
 
-    BUF_reverse(databuf, octet->data, octet->length);
-    len = octet->length / 2;
+    BUF_reverse(databuf, ASN1_STRING_get0_data(octet), octetLength);
+    len = octetLength / 2;
 
     Y = BN_bin2bn(databuf, len, NULL);
     X = BN_bin2bn(databuf + len, len, NULL);
