@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 #include "gost_grasshopper_defines.h"
+#include "gost_cipher_ctx.h"
 
 #include "gost_lcl.h"
 #include <openssl/evp.h>
@@ -42,71 +43,71 @@ static void gost_grasshopper_cipher_key(gost_grasshopper_cipher_ctx* c, const ui
 
 static void gost_grasshopper_cipher_destroy(gost_grasshopper_cipher_ctx* c);
 
-static int gost_grasshopper_cipher_init_ecb(EVP_CIPHER_CTX* ctx,
+static int gost_grasshopper_cipher_init_ecb(GOST_cipher_ctx* ctx,
     const unsigned char* key, const unsigned char* iv, int enc);
 
-static int gost_grasshopper_cipher_init_cbc(EVP_CIPHER_CTX* ctx,
+static int gost_grasshopper_cipher_init_cbc(GOST_cipher_ctx* ctx,
     const unsigned char* key, const unsigned char* iv, int enc);
 
-static int gost_grasshopper_cipher_init_ofb(EVP_CIPHER_CTX* ctx,
+static int gost_grasshopper_cipher_init_ofb(GOST_cipher_ctx* ctx,
     const unsigned char* key, const unsigned char* iv, int enc);
 
-static int gost_grasshopper_cipher_init_cfb(EVP_CIPHER_CTX* ctx,
+static int gost_grasshopper_cipher_init_cfb(GOST_cipher_ctx* ctx,
     const unsigned char* key, const unsigned char* iv, int enc);
 
-static int gost_grasshopper_cipher_init_ctr(EVP_CIPHER_CTX* ctx,
+static int gost_grasshopper_cipher_init_ctr(GOST_cipher_ctx* ctx,
     const unsigned char* key, const unsigned char* iv, int enc);
 
-static int gost_grasshopper_cipher_init_ctracpkm(EVP_CIPHER_CTX* ctx,
+static int gost_grasshopper_cipher_init_ctracpkm(GOST_cipher_ctx* ctx,
     const unsigned char* key, const unsigned char* iv, int enc);
 
-static int gost_grasshopper_cipher_init_ctracpkm_omac(EVP_CIPHER_CTX* ctx,
+static int gost_grasshopper_cipher_init_ctracpkm_omac(GOST_cipher_ctx* ctx,
     const unsigned char* key, const unsigned char* iv, int enc);
 
-static int gost_grasshopper_cipher_init_mgm(EVP_CIPHER_CTX* ctx,
+static int gost_grasshopper_cipher_init_mgm(GOST_cipher_ctx* ctx,
     const unsigned char* key, const unsigned char* iv, int enc);
 
-static int gost_grasshopper_cipher_init(EVP_CIPHER_CTX* ctx, const unsigned char* key,
+static int gost_grasshopper_cipher_init(GOST_cipher_ctx* ctx, const unsigned char* key,
     const unsigned char* iv, int enc);
 
-static int gost_grasshopper_cipher_do(EVP_CIPHER_CTX* ctx, unsigned char* out,
+static int gost_grasshopper_cipher_do(GOST_cipher_ctx* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
-static int gost_grasshopper_cipher_do_ecb(EVP_CIPHER_CTX* ctx, unsigned char* out,
+static int gost_grasshopper_cipher_do_ecb(GOST_cipher_ctx* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
-static int gost_grasshopper_cipher_do_cbc(EVP_CIPHER_CTX* ctx, unsigned char* out,
+static int gost_grasshopper_cipher_do_cbc(GOST_cipher_ctx* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
-static int gost_grasshopper_cipher_do_ofb(EVP_CIPHER_CTX* ctx, unsigned char* out,
+static int gost_grasshopper_cipher_do_ofb(GOST_cipher_ctx* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
-static int gost_grasshopper_cipher_do_cfb(EVP_CIPHER_CTX* ctx, unsigned char* out,
+static int gost_grasshopper_cipher_do_cfb(GOST_cipher_ctx* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
-static int gost_grasshopper_cipher_do_ctr(EVP_CIPHER_CTX* ctx, unsigned char* out,
+static int gost_grasshopper_cipher_do_ctr(GOST_cipher_ctx* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
-static int gost_grasshopper_cipher_do_ctracpkm(EVP_CIPHER_CTX* ctx, unsigned char* out,
+static int gost_grasshopper_cipher_do_ctracpkm(GOST_cipher_ctx* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
-static int gost_grasshopper_cipher_do_ctracpkm_omac(EVP_CIPHER_CTX* ctx, unsigned char* out,
+static int gost_grasshopper_cipher_do_ctracpkm_omac(GOST_cipher_ctx* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
-static int gost_grasshopper_cipher_do_mgm(EVP_CIPHER_CTX* ctx, unsigned char* out,
+static int gost_grasshopper_cipher_do_mgm(GOST_cipher_ctx* ctx, unsigned char* out,
     const unsigned char* in, size_t inl);
 
-static int gost_grasshopper_cipher_cleanup(EVP_CIPHER_CTX* ctx);
+static int gost_grasshopper_cipher_cleanup(GOST_cipher_ctx* ctx);
 
-static int gost_grasshopper_mgm_cleanup(EVP_CIPHER_CTX *c);
+static int gost_grasshopper_mgm_cleanup(GOST_cipher_ctx *c);
 
-static int gost_grasshopper_set_asn1_parameters(EVP_CIPHER_CTX* ctx, ASN1_TYPE* params);
+static int gost_grasshopper_set_asn1_parameters(GOST_cipher_ctx* ctx, ASN1_TYPE* params);
 
-static int gost_grasshopper_get_asn1_parameters(EVP_CIPHER_CTX* ctx, ASN1_TYPE* params);
+static int gost_grasshopper_get_asn1_parameters(GOST_cipher_ctx* ctx, ASN1_TYPE* params);
 
-static int gost_grasshopper_cipher_ctl(EVP_CIPHER_CTX* ctx, int type, int arg, void* ptr);
+static int gost_grasshopper_cipher_ctl(GOST_cipher_ctx* ctx, int type, int arg, void* ptr);
 
-static int gost_grasshopper_mgm_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
+static int gost_grasshopper_mgm_ctrl(GOST_cipher_ctx *ctx, int type, int arg, void *ptr);
 
 #if defined(__cplusplus)
 }

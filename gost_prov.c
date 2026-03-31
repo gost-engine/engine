@@ -48,14 +48,11 @@ void ERR_GOST_error(int function, int reason, char *file, int line)
 static void provider_ctx_free(PROV_CTX *ctx)
 {
     if (ctx != NULL) {
-        ENGINE_free(ctx->e);
         proverr_free_handle(ctx->proverr_handle);
         OSSL_LIB_CTX_free(ctx->libctx);
     }
     OPENSSL_free(ctx);
 }
-
-extern int populate_gost_engine(ENGINE *e);
 static PROV_CTX *provider_ctx_new(const OSSL_CORE_HANDLE *core,
                                   const OSSL_DISPATCH *in)
 {
@@ -63,9 +60,7 @@ static PROV_CTX *provider_ctx_new(const OSSL_CORE_HANDLE *core,
 
     if ((ctx = OPENSSL_zalloc(sizeof(*ctx))) != NULL
         && (ctx->proverr_handle = proverr_new_handle(core, in)) != NULL
-        && (ctx->libctx = OSSL_LIB_CTX_new_child(core, in)) != NULL
-        && (ctx->e = ENGINE_new()) != NULL
-        && populate_gost_engine(ctx->e)) {
+        && (ctx->libctx = OSSL_LIB_CTX_new_child(core, in)) != NULL) {
         ctx->core_handle = core;
 
         /* Ugly hack */
@@ -136,7 +131,6 @@ static const OSSL_ITEM *gost_get_reason_strings(void *provctx)
 /* The function that tears down this provider */
 static void gost_teardown(void *vprovctx)
 {
-    GOST_prov_deinit_ciphers();
     GOST_prov_deinit_digests();
     GOST_prov_deinit_macs();
     provider_ctx_free(vprovctx);

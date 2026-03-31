@@ -21,6 +21,7 @@
 # include "gost89.h"
 # include "gosthash.h"
 # include "gost_digest.h"
+# include "gost_cipher.h"
 
 /*
  * This definitions are added in the patch to OpenSSL 3.4.2 version to support
@@ -311,30 +312,6 @@ BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey);
 /* Decrements 8-byte sequence */ 
 int decrement_sequence(unsigned char *seq, int decrement);
 
-/* Struct describing cipher and used for init/deinit.*/
-struct gost_cipher_st {
-    struct gost_cipher_st *template; /* template struct */
-    int nid;
-    EVP_CIPHER *cipher;
-    int block_size;     /* (bytes) */
-    int key_len;        /* (bytes) */
-    int iv_len;
-    int flags;
-    int (*init) (EVP_CIPHER_CTX *ctx, const unsigned char *key,
-                 const unsigned char *iv, int enc);
-    int (*do_cipher)(EVP_CIPHER_CTX *ctx, unsigned char *out,
-                     const unsigned char *in, size_t inl);
-    int (*cleanup)(EVP_CIPHER_CTX *);
-    int ctx_size;
-    int (*set_asn1_parameters)(EVP_CIPHER_CTX *, ASN1_TYPE *);
-    int (*get_asn1_parameters)(EVP_CIPHER_CTX *, ASN1_TYPE *);
-    int (*ctrl)(EVP_CIPHER_CTX *, int type, int arg, void *ptr);
-};
-typedef struct gost_cipher_st GOST_cipher;
-
-EVP_CIPHER *GOST_init_cipher(GOST_cipher *c);
-void GOST_deinit_cipher(GOST_cipher *c);
-
 /* ENGINE implementation data */
 extern GOST_cipher Gost28147_89_cipher;
 extern GOST_cipher Gost28147_89_cbc_cipher;
@@ -418,3 +395,4 @@ extern GOST_NID_JOB kuznyechik_mgm_NID;
 
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
+

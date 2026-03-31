@@ -1,0 +1,34 @@
+diff --git a/openssl/crypto/asn1/a_verify.c b/openssl/crypto/asn1/a_verify.c
+index f6cac80..4378625 100644
+--- a/openssl/crypto/asn1/a_verify.c
++++ b/openssl/crypto/asn1/a_verify.c
+@@ -112,6 +112,7 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
+                          EVP_MD_CTX *ctx)
+ {
+     EVP_PKEY *pkey;
++    EVP_MD *fetched_type = NULL;
+     unsigned char *buf_in = NULL;
+     int ret = -1, inl = 0;
+     int mdnid, pknid;
+@@ -180,6 +181,13 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
+ 
+             if (mdnid != NID_undef) {
+                 type = EVP_get_digestbynid(mdnid);
++                if (type == NULL) {
++                    const char *mdname = OBJ_nid2sn(mdnid);
++
++                    if (mdname != NULL)
++                        fetched_type = EVP_MD_fetch(NULL, mdname, NULL);
++                    type = fetched_type;
++                }
+                 if (type == NULL) {
+                     ERR_raise_data(ERR_LIB_ASN1,
+                                    ASN1_R_UNKNOWN_MESSAGE_DIGEST_ALGORITHM,
+@@ -220,6 +228,7 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
+     }
+     ret = 1;
+  err:
++    EVP_MD_free(fetched_type);
+     OPENSSL_clear_free(buf_in, inll);
+     return ret;
+ }

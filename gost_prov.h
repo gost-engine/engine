@@ -10,7 +10,7 @@
  **********************************************************************/
 
 #include <openssl/core.h>
-#include <openssl/engine.h>
+#include <openssl/core_dispatch.h>
 
 /* OID constants for GOST algorithms */
 #define OID_id_GostR3410_2001        "1.2.643.2.2.19"
@@ -54,15 +54,6 @@ struct provider_ctx_st {
     OSSL_LIB_CTX *libctx;
     const OSSL_CORE_HANDLE *core_handle;
     struct proverr_functions_st *proverr_handle;
-
-    /*
-     * "internal" GOST engine, which is the implementation that all the
-     * provider functions will use to access the crypto functionality.
-     * This is pure hackery, but allows us to quickly wrap all the ENGINE
-     * function with provider wrappers.  There is no other supported way
-     * to do this.
-     */
-    ENGINE *e;
 };
 typedef struct provider_ctx_st PROV_CTX;
 
@@ -75,8 +66,6 @@ typedef struct gost_key_data_st
 
 int gost_get_max_keyexch_size(const GOST_KEY_DATA *);
 int gost_get_max_signature_size(const GOST_KEY_DATA *);
-
-void GOST_prov_deinit_ciphers(void);
 
 extern const OSSL_ALGORITHM GOST_prov_ciphers[];
 extern const OSSL_ALGORITHM GOST_prov_keymgmt[];

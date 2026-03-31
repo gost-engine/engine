@@ -13,9 +13,9 @@
 #include <string.h>
 #include <openssl/rand.h>
 
-int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx, size_t mac_size,
-    unsigned char *encrypted_mac,
-    int (*do_cipher) (EVP_CIPHER_CTX *ctx,
+int gost2015_final_call(GOST_cipher_ctx *ctx, EVP_MD_CTX *omac_ctx,
+    size_t mac_size, unsigned char *encrypted_mac,
+    int (*do_cipher) (GOST_cipher_ctx *ctx,
     unsigned char *out,
     const unsigned char *in,
     size_t inl))
@@ -23,7 +23,7 @@ int gost2015_final_call(EVP_CIPHER_CTX *ctx, EVP_MD_CTX *omac_ctx, size_t mac_si
     unsigned char calculated_mac[KUZNYECHIK_MAC_MAX_SIZE];
     memset(calculated_mac, 0, KUZNYECHIK_MAC_MAX_SIZE);
 
-    if (EVP_CIPHER_CTX_encrypting(ctx)) {
+    if (GOST_cipher_ctx_encrypting(ctx)) {
         EVP_DigestSignFinal(omac_ctx, calculated_mac, &mac_size);
 
         if (do_cipher(ctx, encrypted_mac, calculated_mac, mac_size) <= 0) {
