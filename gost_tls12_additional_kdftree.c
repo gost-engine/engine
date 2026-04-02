@@ -42,7 +42,13 @@ int gost_kdftree2012_256(unsigned char *keyout, size_t keyout_len,
     };
 
     mac = EVP_MAC_fetch(NULL, OSSL_MAC_NAME_HMAC, NULL);
-    if (mac == NULL || (ctx = EVP_MAC_CTX_new(mac)) == NULL) {
+    if (mac == NULL) {
+        GOSTerr(GOST_F_GOST_KDFTREE2012_256, ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+
+    ctx = EVP_MAC_CTX_new(mac);
+    if (ctx == NULL) {
         GOSTerr(GOST_F_GOST_KDFTREE2012_256, ERR_R_MALLOC_FAILURE);
         EVP_MAC_free(mac);
         return 0;
