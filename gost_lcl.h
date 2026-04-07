@@ -71,10 +71,6 @@ const char *get_gost_engine_param(int param);
 int gost_set_default_param(int param, const char *value);
 void gost_param_free(void);
 
-/* method registration */
-int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
-                        const char *pemstr, const char *info);
-
 /* Gost-specific pmeth control-function parameters */
 /* For GOST R34.10 parameters */
 # define param_ctrl_string "paramset"
