@@ -2,7 +2,43 @@ name: CI (windows)
 on: [push, pull_request]
 
 jobs:
-    msvc-openssl:
+    msvc-openssl-3-6-0-patch:
+        runs-on: windows-latest
+        outputs:
+            openssl-head: ${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/checkout@v2
+              with:
+                  repository: openssl/openssl
+                  path: openssl
+                  ref: openssl-3.6.0
+                  fetch-depth: 0
+            - run: echo "::set-output name=head::$(git -C openssl describe --always --long)"
+              id: openssl
+            - run: echo "::set-output name=id::$(git rev-parse HEAD:patches)"
+              id: patches
+            - uses: actions/cache@v4
+              id: cache
+              with:
+                  path: openssl/_dest
+                  key: ${{ runner.os }}-openssl-${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}
+            - name: Apply patches
+              run: |
+                  git apply patches/openssl-tls1.3.patch
+                  git apply patches/openssl-asn1_item_verify_ctx.patch
+                  git apply patches/openssl-x509_sig_info_init.patch
+            - uses: ilammy/msvc-dev-cmd@v1
+            - name: Build OpenSSL
+              if: steps.cache.outputs.cache-hit != 'true'
+              working-directory: openssl
+              run: |
+                  perl Configure no-makedepend no-tests no-asm VC-WIN64A
+                  perl configdata.pm --dump
+                  nmake /S build_libs build_programs
+                  nmake /S install_sw DESTDIR=_dest
+
+    msvc-openssl-3-6-0:
         runs-on: windows-latest
         outputs:
             openssl-head: ${{ steps.openssl.outputs.head }}
@@ -21,11 +57,6 @@ jobs:
               with:
                   path: openssl/_dest
                   key: ${{ runner.os }}-openssl-${{ steps.openssl.outputs.head }}
-            - name: Apply patches
-              run: |
-                  git apply patches/openssl-tls1.3.patch
-                  git apply patches/openssl-asn1_item_verify_ctx.patch
-                  git apply patches/openssl-x509_sig_info_init.patch
             - uses: ilammy/msvc-dev-cmd@v1
             - name: Build OpenSSL
               if: steps.cache.outputs.cache-hit != 'true'
@@ -36,8 +67,66 @@ jobs:
                   nmake /S build_libs build_programs
                   nmake /S install_sw DESTDIR=_dest
 
-    msvc-engine:
-        needs: msvc-openssl
+    msvc-openssl-4-0-0:
+        runs-on: windows-latest
+        outputs:
+            openssl-head: ${{ steps.openssl.outputs.head }}
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/checkout@v2
+              with:
+                  repository: openssl/openssl
+                  path: openssl
+                  ref: openssl-4.0.0
+                  fetch-depth: 0
+            - run: echo "::set-output name=head::$(git -C openssl describe --always --long)"
+              id: openssl
+            - uses: actions/cache@v4
+              id: cache
+              with:
+                  path: openssl/_dest
+                  key: ${{ runner.os }}-openssl-${{ steps.openssl.outputs.head }}
+            - uses: ilammy/msvc-dev-cmd@v1
+            - name: Build OpenSSL
+              if: steps.cache.outputs.cache-hit != 'true'
+              working-directory: openssl
+              run: |
+                  perl Configure no-makedepend no-tests no-asm VC-WIN64A
+                  perl configdata.pm --dump
+                  nmake /S build_libs build_programs
+                  nmake /S install_sw DESTDIR=_dest
+
+    msvc-openssl-master:
+        runs-on: windows-latest
+        outputs:
+            openssl-head: ${{ steps.openssl.outputs.head }}
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/checkout@v2
+              with:
+                  repository: openssl/openssl
+                  path: openssl
+                  ref: master
+                  fetch-depth: 0
+            - run: echo "::set-output name=head::$(git -C openssl describe --always --long)"
+              id: openssl
+            - uses: actions/cache@v4
+              id: cache
+              with:
+                  path: openssl/_dest
+                  key: ${{ runner.os }}-openssl-${{ steps.openssl.outputs.head }}
+            - uses: ilammy/msvc-dev-cmd@v1
+            - name: Build OpenSSL
+              if: steps.cache.outputs.cache-hit != 'true'
+              working-directory: openssl
+              run: |
+                  perl Configure no-makedepend no-tests no-asm VC-WIN64A
+                  perl configdata.pm --dump
+                  nmake /S build_libs build_programs
+                  nmake /S install_sw DESTDIR=_dest
+
+    msvc-engine-openssl-3-6-0:
+        needs: msvc-openssl-3-6-0
         runs-on: windows-latest
         steps:
             - uses: actions/checkout@v2
@@ -46,7 +135,67 @@ jobs:
             - uses: actions/cache@v4
               with:
                   path: openssl/_dest
-                  key: ${{ runner.os }}-openssl-${{ needs.msvc-openssl.outputs.openssl-head }}
+                  key: ${{ runner.os }}-openssl-${{ needs.msvc-openssl-3-6-0.outputs.openssl-head }}
+            - run: cmake -DOPENSSL_ROOT_DIR="openssl\_dest\Program Files\OpenSSL" -DOPENSSL_ENGINES_DIR=bin -DGOST_BUILD_PROVIDER=0 .
+            - run: cmake --build .
+            - name: Run tests
+              run: |
+                  $env:OPENSSL_ENGINES = "$pwd\bin\Debug"
+                  $env:OPENSSL_MODULES = "$pwd\bin\Debug"
+                  Copy-Item -Path "$pwd\openssl\_dest\Program Files\OpenSSL\bin\*.dll" -Destination "$pwd\bin\Debug"
+                  ctest -C Debug --output-on-failure
+
+    msvc-provider-openssl-3-6-0-patch:
+        needs: msvc-openssl-3-6-0-patch
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - uses: actions/cache@v4
+              with:
+                  path: openssl/_dest
+                  key: ${{ runner.os }}-openssl-${{ needs.msvc-openssl-3-6-0-patch.outputs.openssl-head }}
+            - run: cmake -DOPENSSL_ROOT_DIR="openssl\_dest\Program Files\OpenSSL" -DOPENSSL_ENGINES_DIR=bin -DGOST_BUILD_ENGINE=OFF .
+            - run: cmake --build .
+            - name: Run tests
+              run: |
+                  $env:OPENSSL_ENGINES = "$pwd\bin\Debug"
+                  $env:OPENSSL_MODULES = "$pwd\bin\Debug"
+                  Copy-Item -Path "$pwd\openssl\_dest\Program Files\OpenSSL\bin\*.dll" -Destination "$pwd\bin\Debug"
+                  ctest -C Debug --output-on-failure
+
+    msvc-provider-openssl-4-0-0:
+        needs: msvc-openssl-4-0-0
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - uses: actions/cache@v4
+              with:
+                  path: openssl/_dest
+                  key: ${{ runner.os }}-openssl-${{ needs.msvc-openssl-4-0-0.outputs.openssl-head }}
+            - run: cmake -DOPENSSL_ROOT_DIR="openssl\_dest\Program Files\OpenSSL" -DOPENSSL_ENGINES_DIR=bin .
+            - run: cmake --build .
+            - name: Run tests
+              run: |
+                  $env:OPENSSL_ENGINES = "$pwd\bin\Debug"
+                  $env:OPENSSL_MODULES = "$pwd\bin\Debug"
+                  Copy-Item -Path "$pwd\openssl\_dest\Program Files\OpenSSL\bin\*.dll" -Destination "$pwd\bin\Debug"
+                  ctest -C Debug --output-on-failure
+
+    msvc-provider-openssl-master:
+        needs: msvc-openssl-master
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - uses: actions/cache@v4
+              with:
+                  path: openssl/_dest
+                  key: ${{ runner.os }}-openssl-${{ needs.msvc-openssl-master.outputs.openssl-head }}
             - run: cmake -DOPENSSL_ROOT_DIR="openssl\_dest\Program Files\OpenSSL" -DOPENSSL_ENGINES_DIR=bin .
             - run: cmake --build .
             - name: Run tests

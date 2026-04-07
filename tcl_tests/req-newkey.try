@@ -6,6 +6,7 @@ if {[info exists env(PKG_PATH)]} {
 }
 package require ossltest
 package require asn 0.4.1
+package require is_openssl_bug
 cd $::test::dir
 
 switch -exact [test_target_name] {
@@ -21,6 +22,13 @@ switch -exact [test_target_name] {
 		set no_param_set "Error generating"
 		set invalid_paramset "parameter error"
 	}
+}
+
+proc is_known_bug_with_provider {} {
+	return [expr {
+		[string equal [test_target_name] "openprov"] && \
+		[is_openssl_bug::asn1_item_verify_with_provider]
+	}]
 }
 
 start_tests "Создание ключей и заявок, команда req -newkey"
@@ -97,7 +105,7 @@ gost2012_512:RSAencryption: "Недопустимое имя объекта" 1 i
 	} $code $result
 	log "errorInfo: $errorInfo"
 
-	test -skip {![file exists test.req]} "Заявка подписана корректно" {
+	test -skip {[is_known_bug_with_provider] || ![file exists test.req]} "Заявка подписана корректно" {
 		grep "verif" [openssl "req -verify -in test.req"]
 	} 0 "Certificate request self-signature verify OK\n"
 }

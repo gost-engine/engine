@@ -680,6 +680,7 @@ static int test_provider_padded_decrypt(const EVP_CIPHER *type, const char *name
 
 int engine_is_available(const char *name)
 {
+#if HAVE_ENGINE
     ENGINE *e = ENGINE_get_first();
 
     while (e != NULL) {
@@ -688,7 +689,10 @@ int engine_is_available(const char *name)
         e = ENGINE_get_next(e);
     }
     ENGINE_free(e);
+    return e != NULL;
+#else // !HAVE_ENGINE
     return 0;
+#endif // HAVE_ENGINE
 }
 
 void warn_if_untested(const EVP_CIPHER *ciph, void *provider)
@@ -708,6 +712,7 @@ void warn_if_untested(const EVP_CIPHER *ciph, void *provider)
 
 void warn_all_untested(void)
 {
+#if HAVE_ENGINE
     if (engine_is_available("gost")) {
         ENGINE *eng;
 
@@ -724,6 +729,7 @@ void warn_all_untested(void)
         ENGINE_finish(eng);
         ENGINE_free(eng);
     }
+#endif
     if (OSSL_PROVIDER_available(NULL, "gostprov")) {
         OSSL_PROVIDER *prov;
 

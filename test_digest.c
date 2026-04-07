@@ -546,7 +546,6 @@ int warn_md_impl_is_expected(EVP_MD* md) {
         printf(cRED "Provided md during engine test" cNORM "\n");
         return 1;
     }
-
     return 0;
 }
 
@@ -559,7 +558,6 @@ int warn_mac_impl_is_expected(EVP_MAC* md) {
         printf(cRED "Provided mac during engine test" cNORM "\n");
         return 1;
     }
-
     return 0;
 }
 
@@ -978,6 +976,7 @@ static int do_synthetic_test(const struct hash_testvec *tv)
 
 int engine_is_available(const char *name)
 {
+#if HAVE_ENGINE
     ENGINE *e = ENGINE_get_first();
 
     while (e != NULL) {
@@ -987,6 +986,9 @@ int engine_is_available(const char *name)
     }
     ENGINE_free(e);
     return e != NULL;
+#else // !HAVE_ENGINE
+    return 0;
+#endif // HAVE_ENGINE
 }
 
 void warn_if_untested(const EVP_MD *dgst, void *provider)
@@ -1006,6 +1008,7 @@ void warn_if_untested(const EVP_MD *dgst, void *provider)
 
 void warn_all_untested(void)
 {
+#if HAVE_ENGINE
     if (engine_is_available("gost")) {
         ENGINE *eng;
 
@@ -1022,6 +1025,7 @@ void warn_all_untested(void)
         ENGINE_finish(eng);
         ENGINE_free(eng);
     }
+#endif // HAVE_ENGINE
     if (OSSL_PROVIDER_available(NULL, "gostprov")) {
         OSSL_PROVIDER *prov;
 
