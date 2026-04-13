@@ -12,6 +12,7 @@
 #endif
 #include <openssl/engine.h>
 #include <openssl/provider.h>
+#include <openssl/core_names.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
@@ -505,6 +506,178 @@ static int test_stream(const EVP_CIPHER *type, const char *name,
     return ret;
 }
 
+static unsigned int expected_mode_for_cipher(const char *name)
+{
+    if (strcmp(name, SN_id_Gost28147_89) == 0
+        || strcmp(name, SN_grasshopper_cfb) == 0)
+        return EVP_CIPH_CFB_MODE;
+    if (strcmp(name, SN_gost89_cnt) == 0
+        || strcmp(name, SN_gost89_cnt_12) == 0
+        || strcmp(name, SN_grasshopper_ofb) == 0)
+        return EVP_CIPH_OFB_MODE;
+    if (strcmp(name, SN_grasshopper_ecb) == 0)
+        return EVP_CIPH_ECB_MODE;
+    if (strcmp(name, SN_gost89_cbc) == 0
+        || strcmp(name, SN_grasshopper_cbc) == 0
+        || strcmp(name, SN_magma_cbc) == 0)
+        return EVP_CIPH_CBC_MODE;
+    if (strcmp(name, SN_grasshopper_ctr) == 0
+        || strcmp(name, SN_magma_ctr) == 0
+        || strcmp(name, SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm) == 0)
+        return EVP_CIPH_CTR_MODE;
+
+    return 0;
+}
+
+static int test_provider_mode_param(const EVP_CIPHER *type, const char *name,
+                                    unsigned int expected_mode)
+{
+    OSSL_PARAM params[] = {
+        OSSL_PARAM_END, OSSL_PARAM_END
+    };
+    unsigned int mode = 0;
+    int test = 0;
+
+    if (EVP_CIPHER_get0_provider(type) == NULL)
+        return 0;
+
+    params[0] = OSSL_PARAM_construct_uint(OSSL_CIPHER_PARAM_MODE, &mode);
+    printf("Provider mode param test [%s]: ", name);
+    T(EVP_CIPHER_get_params((EVP_CIPHER *)type, params));
+    TEST_ASSERT(mode != expected_mode);
+    return mode != expected_mode;
+}
+
+static int test_provider_alg_id_param(const EVP_CIPHER *type, const char *name,
+                                      const unsigned char *key,
+                                      const unsigned char *iv)
+{
+    EVP_CIPHER_CTX *ctx;
+    OSSL_PARAM params[] = {
+        OSSL_PARAM_END, OSSL_PARAM_END
+    };
+    ASN1_TYPE *algid = NULL;
+    unsigned char der[256];
+    const unsigned char *p = der;
+    int ret = 0, test;
+
+    if (EVP_CIPHER_get0_provider(type) == NULL)
+        return 0;
+
+    ctx = EVP_CIPHER_CTX_new();
+    T(ctx != NULL);
+    printf("Provider alg_id_param test [%s]: ", name);
+
+    params[0] = OSSL_PARAM_construct_octet_string("alg_id_param", der, sizeof(der));
+    T(EVP_CipherInit_ex(ctx, type, NULL, key, iv, 1));
+    T(EVP_CIPHER_CTX_get_params(ctx, params));
+    T(params[0].return_size > 0 && params[0].return_size <= sizeof(der));
+    T((algid = d2i_ASN1_TYPE(NULL, &p, (long)params[0].return_size)) != NULL);
+
+    TEST_ASSERT(0);
+    EVP_CIPHER_CTX_free(ctx);
+    ASN1_TYPE_free(algid);
+    return ret | test;
+}
+
+static int test_provider_padded_decrypt_case(const EVP_CIPHER *type,
+                                             const char *name,
+                                             const unsigned char *key,
+                                             const unsigned char *iv,
+                                             const unsigned char *pt,
+                                             size_t ptlen,
+                                             const size_t *chunks,
+                                             size_t chunk_count)
+{
+    EVP_CIPHER_CTX *enc;
+    EVP_CIPHER_CTX *dec;
+    unsigned char ct[128];
+    unsigned char out[128];
+    size_t offset;
+    int ctlen = 0, tmplen = 0;
+    int outlen = 0, part = 0, final = 0;
+    int ret = 0, test;
+    size_t i;
+
+    enc = EVP_CIPHER_CTX_new();
+    dec = EVP_CIPHER_CTX_new();
+    T(enc != NULL && dec != NULL);
+    T(sizeof(ct) >= ptlen + (size_t)EVP_CIPHER_block_size(type));
+
+    T(EVP_CipherInit_ex(enc, type, NULL, key, iv, 1));
+    T(EVP_CipherUpdate(enc, ct, &ctlen, pt, (int)ptlen));
+    T(EVP_CipherFinal_ex(enc, ct + ctlen, &tmplen));
+    ctlen += tmplen;
+
+    memset(out, 0, sizeof(out));
+    T(EVP_CipherInit_ex(dec, type, NULL, key, iv, 0));
+    offset = 0;
+    outlen = 0;
+    for (i = 0; i < chunk_count; i++) {
+        T(offset + chunks[i] <= (size_t)ctlen);
+        T(EVP_CipherUpdate(dec, out + outlen, &part, ct + offset, (int)chunks[i]));
+        outlen += part;
+        offset += chunks[i];
+    }
+    T(offset == (size_t)ctlen);
+    T(EVP_CipherFinal_ex(dec, out + outlen, &final));
+    outlen += final;
+
+    TEST_ASSERT((size_t)outlen != ptlen || memcmp(out, pt, ptlen));
+    ret |= test;
+
+    EVP_CIPHER_CTX_free(enc);
+    EVP_CIPHER_CTX_free(dec);
+    return ret;
+}
+
+static int test_provider_padded_decrypt(const EVP_CIPHER *type, const char *name,
+                                        int block_size,
+                                        const unsigned char *key,
+                                        const unsigned char *iv)
+{
+    unsigned char pt_short[31];
+    unsigned char pt_long[63];
+    size_t short_chunks[2];
+    size_t long_chunks[2];
+    size_t mixed_chunks[3];
+    size_t ctlen;
+    int ret = 0;
+    size_t i;
+
+    if (EVP_CIPHER_get0_provider(type) == NULL || EVP_CIPHER_block_size(type) == 1)
+        return 0;
+
+    for (i = 0; i < sizeof(pt_short); i++)
+        pt_short[i] = (unsigned char)(0x10 + i);
+    for (i = 0; i < sizeof(pt_long); i++)
+        pt_long[i] = (unsigned char)(0x80 + i);
+
+    printf("Provider padded decrypt regressions [%s]\n", name);
+
+    short_chunks[0] = (size_t)block_size - 1;
+    short_chunks[1] = 1;
+    ret |= test_provider_padded_decrypt_case(type, name, key, iv,
+                                             pt_short, (size_t)block_size - 3,
+                                             short_chunks, 2);
+
+    ctlen = (size_t)(block_size * 2);
+    long_chunks[0] = ctlen - 1;
+    long_chunks[1] = 1;
+    ret |= test_provider_padded_decrypt_case(type, name, key, iv,
+                                             pt_long, (size_t)(block_size * 2 - 1),
+                                             long_chunks, 2);
+
+    mixed_chunks[0] = 1;
+    mixed_chunks[1] = (size_t)block_size - 2;
+    mixed_chunks[2] = ctlen - mixed_chunks[0] - mixed_chunks[1];
+    ret |= test_provider_padded_decrypt_case(type, name, key, iv,
+                                             pt_long, (size_t)(block_size * 2 - 1),
+                                             mixed_chunks, 3);
+
+    return ret;
+}
+
 int engine_is_available(const char *name)
 {
     ENGINE *e = ENGINE_get_first();
@@ -594,6 +767,17 @@ int main(int argc, char **argv)
 	    ret |= test_stream(ciph, t->algname,
 		t->plaintext, t->key, t->expected, t->size,
 		t->iv, t->iv_size, t->acpkm);
+        if (EVP_CIPHER_get0_provider(ciph) != NULL) {
+            ret |= test_provider_mode_param(ciph, t->algname,
+                                            expected_mode_for_cipher(t->algname));
+            if (strcmp(t->algname, SN_grasshopper_ctr) == 0
+                || strcmp(t->algname,
+                          SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm) == 0) {
+                ret |= test_provider_alg_id_param(ciph, t->algname, t->key, t->iv);
+            }
+            ret |= test_provider_padded_decrypt(ciph, t->algname, t->block,
+                                                t->key, t->iv);
+        }
 
 	EVP_CIPHER_free(ciph);
     }

@@ -18,6 +18,7 @@
 #include "gost_lcl.h"
 #include "gost-engine.h"
 #include "gost_eng_digest.h"
+#include "gost_eng_cipher.h"
 #include <assert.h>
 
 #include "gost_grasshopper_cipher.h"
@@ -85,27 +86,27 @@ GOST_eng_digest *gost_digest_array[] = {
     &ENG_DIGEST_NAME(magma_ctracpkm_mac),
 };
 
-GOST_cipher *gost_cipher_array[] = {
-    &Gost28147_89_cipher,
-    &Gost28147_89_cnt_cipher,
-    &Gost28147_89_cnt_12_cipher,
-    &Gost28147_89_cbc_cipher,
-    &grasshopper_ecb_cipher,
-    &grasshopper_cbc_cipher,
-    &grasshopper_cfb_cipher,
-    &grasshopper_ofb_cipher,
-    &grasshopper_ctr_cipher,
-    &magma_ecb_cipher,
-    &grasshopper_mgm_cipher,
-    &magma_cbc_cipher,
-    &magma_ctr_cipher,
-    &magma_ctr_acpkm_cipher,
-    &magma_ctr_acpkm_omac_cipher,
-    &magma_mgm_cipher,
-    &grasshopper_ctr_acpkm_cipher,
-    &grasshopper_ctr_acpkm_omac_cipher,
-    &magma_kexp15_cipher,
-    &kuznyechik_kexp15_cipher,
+GOST_eng_cipher *gost_cipher_array[] = {
+    &ENG_CIPHER_NAME(Gost28147_89_cipher),
+    &ENG_CIPHER_NAME(Gost28147_89_cnt_cipher),
+    &ENG_CIPHER_NAME(Gost28147_89_cnt_12_cipher),
+    &ENG_CIPHER_NAME(Gost28147_89_cbc_cipher),
+    &ENG_CIPHER_NAME(grasshopper_ecb_cipher),
+    &ENG_CIPHER_NAME(grasshopper_cbc_cipher),
+    &ENG_CIPHER_NAME(grasshopper_cfb_cipher),
+    &ENG_CIPHER_NAME(grasshopper_ofb_cipher),
+    &ENG_CIPHER_NAME(grasshopper_ctr_cipher),
+    &ENG_CIPHER_NAME(magma_ecb_cipher),
+    &ENG_CIPHER_NAME(grasshopper_mgm_cipher),
+    &ENG_CIPHER_NAME(magma_cbc_cipher),
+    &ENG_CIPHER_NAME(magma_ctr_cipher),
+    &ENG_CIPHER_NAME(magma_ctr_acpkm_cipher),
+    &ENG_CIPHER_NAME(magma_ctr_acpkm_omac_cipher),
+    &ENG_CIPHER_NAME(magma_mgm_cipher),
+    &ENG_CIPHER_NAME(grasshopper_ctr_acpkm_cipher),
+    &ENG_CIPHER_NAME(grasshopper_ctr_acpkm_omac_cipher),
+    &ENG_CIPHER_NAME(magma_kexp15_cipher),
+    &ENG_CIPHER_NAME(kuznyechik_kexp15_cipher),
 };
 
 static struct gost_meth_minfo {
@@ -232,13 +233,13 @@ static int gost_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
 
         *nids = n;
         for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++)
-            *n++ = gost_cipher_array[i]->nid;
+            *n++ = GOST_eng_cipher_nid(gost_cipher_array[i]);
         return i;
     }
 
     for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++)
-        if (nid == gost_cipher_array[i]->nid) {
-            *cipher = GOST_init_cipher(gost_cipher_array[i]);
+        if (nid == GOST_eng_cipher_nid(gost_cipher_array[i])) {
+            *cipher = GOST_eng_cipher_init(gost_cipher_array[i]);
             return 1;
         }
     *cipher = NULL;
@@ -308,7 +309,7 @@ static int gost_engine_destroy(ENGINE* e) {
     for (i = 0; i < OSSL_NELEM(gost_digest_array); i++)
         GOST_eng_digest_deinit(gost_digest_array[i]);
     for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++)
-        GOST_deinit_cipher(gost_cipher_array[i]);
+        GOST_eng_cipher_deinit(gost_cipher_array[i]);
 
     gost_param_free();
 
@@ -481,7 +482,7 @@ static int bind_gost_engine(ENGINE* e) {
 
     int i;
     for (i = 0; i < OSSL_NELEM(gost_cipher_array); i++) {
-        if (!EVP_add_cipher(GOST_init_cipher(gost_cipher_array[i])))
+        if (!EVP_add_cipher(GOST_eng_cipher_init(gost_cipher_array[i])))
             goto end;
     }
 
