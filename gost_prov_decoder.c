@@ -1,5 +1,6 @@
 #include <openssl/core_names.h>
 #include <openssl/core_object.h>
+#include <openssl/pem.h>
 #include "gost_prov.h"
 #include "gost_lcl.h"
 #include <openssl/asn1t.h>

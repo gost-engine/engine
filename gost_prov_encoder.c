@@ -1,4 +1,6 @@
 #include <openssl/core_dispatch.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
 #include "gost_prov.h"
 #include "gost_lcl.h"
 

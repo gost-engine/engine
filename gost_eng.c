@@ -20,6 +20,7 @@
 #include "gost_eng_ameth.h"
 #include "gost_eng_digest.h"
 #include "gost_eng_cipher.h"
+#include "gost_eng_cmd.h"
 #include "gost_eng_pmeth.h"
 #include <assert.h>
 

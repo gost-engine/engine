@@ -11,6 +11,7 @@
 #include "gost_tls12_additional.h"
 #include "e_gost_err.h"
 #include <string.h>
+#include <openssl/err.h>
 #include <openssl/rand.h>
 
 int gost2015_final_call(GOST_cipher_ctx *ctx, EVP_MD_CTX *omac_ctx,

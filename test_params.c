@@ -16,6 +16,7 @@
 #include "gost_lcl.h"
 #include <openssl/evp.h>
 #include <openssl/rand.h>
+#include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <openssl/obj_mac.h>
