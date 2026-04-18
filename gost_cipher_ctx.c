@@ -1,5 +1,6 @@
 #include "gost_cipher_ctx.h"
 
+#include <assert.h>
 #include <limits.h>
 #include <stdint.h>
 #include <string.h>
@@ -260,8 +261,10 @@ int GOST_cipher_ctx_iv_length(const GOST_cipher_ctx *ctx)
                   & EVP_CIPH_CUSTOM_IV_LENGTH) != 0) {
             rv = GOST_cipher_ctx_ctrl((GOST_cipher_ctx *)ctx, EVP_CTRL_GET_IVLEN,
                                      0, &len);
-            if (rv <= 0)
-                return -1;
+            if (rv <= 0) {
+                assert(0 && "Bad cipher definition");
+                return 0;
+            }
         }
 
         ((GOST_cipher_ctx *)ctx)->iv_len = len;
