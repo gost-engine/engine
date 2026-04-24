@@ -282,7 +282,7 @@ static int pkey_gost_magma_mac_ctrl_str(EVP_PKEY_CTX* ctx,
 static int pkey_gost_grasshopper_mac_ctrl_str(EVP_PKEY_CTX* ctx,
     const char* type, const char* value)
 {
-    return pkey_gost_omac_ctrl_str(ctx, type, value, 8);
+    return pkey_gost_omac_ctrl_str(ctx, type, value, 16);
 }
 
 static int pkey_gost_mac_signctx(EVP_PKEY_CTX* ctx, unsigned char* sig,
