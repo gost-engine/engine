@@ -11,6 +11,7 @@
 #include "gost_tls12_additional.h"
 #include "e_gost_err.h"
 #include <string.h>
+#include <openssl/err.h>
 #include <openssl/rand.h>
 
 int gost2015_final_call(GOST_cipher_ctx *ctx, EVP_MD_CTX *omac_ctx,
@@ -56,7 +57,7 @@ int gost2015_get_asn1_params(const ASN1_TYPE *params, size_t ukm_size,
     int iv_len = 16;
     GOST2015_CIPHER_PARAMS *gcp = NULL;
 
-    unsigned char *p = NULL;
+    const unsigned char *p = NULL;
 
     memset(iv, 0, iv_len);
 
@@ -66,23 +67,23 @@ int gost2015_get_asn1_params(const ASN1_TYPE *params, size_t ukm_size,
         return 0;
     }
 
-    p = params->value.sequence->data;
+    p = ASN1_STRING_get0_data(params->value.sequence);
     /* Извлекаем структуру параметров */
-    gcp = d2i_GOST2015_CIPHER_PARAMS(NULL, (const unsigned char **)&p, params->value.sequence->length);
+    gcp = d2i_GOST2015_CIPHER_PARAMS(NULL, &p, ASN1_STRING_length(params->value.sequence));
     if (gcp == NULL) {
         GOSTerr(GOST_F_GOST2015_GET_ASN1_PARAMS, GOST_R_INVALID_CIPHER_PARAMS);
         return 0;
     }
 
     /* Проверяем длину синхропосылки */
-    if (gcp->ukm->length != (int)ukm_size) {
+    if (ASN1_STRING_length(gcp->ukm) != (int)ukm_size) {
         GOSTerr(GOST_F_GOST2015_GET_ASN1_PARAMS, GOST_R_INVALID_CIPHER_PARAMS);
         GOST2015_CIPHER_PARAMS_free(gcp);
         return 0;
     }
 
-    memcpy(iv, gcp->ukm->data, ukm_offset);
-    memcpy(kdf_seed, gcp->ukm->data+ukm_offset, KDF_SEED_SIZE);
+    memcpy(iv, ASN1_STRING_get0_data(gcp->ukm), ukm_offset);
+    memcpy(kdf_seed, ASN1_STRING_get0_data(gcp->ukm)+ukm_offset, KDF_SEED_SIZE);
 
     GOST2015_CIPHER_PARAMS_free(gcp);
     return 1;
@@ -136,13 +137,13 @@ int gost2015_process_unprotected_attributes(
     int encryption, size_t mac_len, unsigned char *final_tag)
 {
     if (encryption == 0) /*Decrypting*/ {
-        ASN1_OCTET_STRING *osExpectedMac = X509at_get0_data_by_OBJ(attrs,
+        const ASN1_OCTET_STRING *osExpectedMac = X509at_get0_data_by_OBJ(attrs,
             OBJ_txt2obj(OID_GOST_CMS_MAC, 1), -3, V_ASN1_OCTET_STRING);
 
-        if (!osExpectedMac || osExpectedMac->length != (int)mac_len)
+        if (!osExpectedMac || ASN1_STRING_length(osExpectedMac) != (int)mac_len)
             return -1;
 
-        memcpy(final_tag, osExpectedMac->data, osExpectedMac->length);
+        memcpy(final_tag, ASN1_STRING_get0_data(osExpectedMac), ASN1_STRING_length(osExpectedMac));
     } else {
         if (attrs == NULL)
             return -1;

@@ -16,6 +16,7 @@
 #ifndef OPENSSL_NO_CMS
 # include <openssl/cms.h>
 #endif
+#include "gost_ameth.h"
 #include "gost_lcl.h"
 #include "e_gost_err.h"
 
@@ -50,7 +51,7 @@ static int internal_pkey_bits(int key_type)
     return -1;
 }
 
-static int pkey_bits_gost(const EVP_PKEY *pk)
+int pkey_bits_gost(const EVP_PKEY *pk)
 {
     int key_type = (pk == NULL) ? NID_undef : EVP_PKEY_base_id(pk);
 
@@ -60,7 +61,7 @@ static int pkey_bits_gost(const EVP_PKEY *pk)
 static ASN1_STRING *internal_encode_algor_params(EC_KEY *key_ptr,
                                                  int key_type)
 {
-    ASN1_STRING *params = ASN1_STRING_new();
+    ASN1_STRING *params = ASN1_STRING_type_new(V_ASN1_SEQUENCE);
     GOST_KEY_PARAMS *gkp = GOST_KEY_PARAMS_new();
     int pkey_param_nid = NID_undef;
     int result = 0;
@@ -109,12 +110,13 @@ static ASN1_STRING *internal_encode_algor_params(EC_KEY *key_ptr,
     /*
      * gkp->cipher_params = OBJ_nid2obj(cipher_param_nid);
      */
-    params->length = i2d_GOST_KEY_PARAMS(gkp, &params->data);
-    if (params->length <= 0) {
+    uint8_t* out_param = NULL;
+    int param_length = i2d_GOST_KEY_PARAMS(gkp, &out_param);
+    if (param_length <= 0) {
         GOSTerr(GOST_F_ENCODE_GOST_ALGOR_PARAMS, ERR_R_MALLOC_FAILURE);
         goto err;
     }
-    params->type = V_ASN1_SEQUENCE;
+    ASN1_STRING_set0(params, out_param, param_length);
     result = 1;
  err:
     if (gkp)
@@ -171,12 +173,12 @@ static int decode_gost_algor_params(EC_KEY *ec, int *key_type,
                 GOST_R_BAD_KEY_PARAMETERS_FORMAT);
         return 0;
     }
-    p = pval->data;
+    p = ASN1_STRING_get0_data(pval);
     pkey_nid = OBJ_obj2nid(palg_obj);
     if (!internal_is_gost_pkey_nid(pkey_nid))
         return 0;
     *key_type = pkey_nid;
-    gkp = d2i_GOST_KEY_PARAMS(NULL, &p, pval->length);
+    gkp = d2i_GOST_KEY_PARAMS(NULL, &p, ASN1_STRING_length(pval));
     if (!gkp) {
         GOSTerr(GOST_F_DECODE_GOST_ALGOR_PARAMS,
                 GOST_R_BAD_PKEY_PARAMETERS_FORMAT);
@@ -231,7 +233,7 @@ BIGNUM *gost_get0_priv_key(const EVP_PKEY *pkey)
  * GOST CMS processing functions
  */
 /* FIXME reaarange declarations */
-static int pub_decode_gost_ec(EVP_PKEY *pk, const X509_PUBKEY *pub);
+int pub_decode_gost_ec(EVP_PKEY *pk, const X509_PUBKEY *pub);
 
 static int gost_cms_set_kari_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
 {
@@ -318,7 +320,7 @@ static int gost_cms_set_kari_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *
 
 	EVP_CIPHER_CTX_set_flags(CMS_RecipientInfo_kari_get0_ctx(ri), EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
 	if (EVP_DecryptInit_ex(CMS_RecipientInfo_kari_get0_ctx(ri), cipher, NULL,
-		shared_key, ukm->data+24) == 0)
+		shared_key, ASN1_STRING_get0_data(ukm)+24) == 0)
 			goto err;
 
 	ret = 1;
@@ -380,7 +382,7 @@ static int gost_cms_set_shared_info(EVP_PKEY_CTX *pctx, CMS_RecipientInfo *ri)
 static ASN1_STRING *gost_encode_cms_params(int ka_nid)
 {
 	ASN1_STRING *ret = NULL;
-	ASN1_STRING *params = ASN1_STRING_new();
+	ASN1_STRING *params = ASN1_STRING_type_new(V_ASN1_SEQUENCE);
 
 	/* It's a hack. We have only one OID here, so we can use
 	 * GOST_KEY_PARAMS which is a sequence of 3 OIDs,
@@ -393,14 +395,15 @@ static ASN1_STRING *gost_encode_cms_params(int ka_nid)
 	}
 
 	gkp->key_params = OBJ_nid2obj(ka_nid);
-	params->length = i2d_GOST_KEY_PARAMS(gkp, &params->data);
 
-	if (params->length < 0) {
+	uint8_t* out_param = NULL;
+	int param_length = i2d_GOST_KEY_PARAMS(gkp, &out_param);
+	if (param_length < 0) {
 		  GOSTerr(GOST_F_GOST_ENCODE_CMS_PARAMS, ERR_R_MALLOC_FAILURE);
 			goto end;
 	}
+	ASN1_STRING_set0(params, out_param, param_length);
 
-	params->type = V_ASN1_SEQUENCE;
 	ret = params;
 
 end:
@@ -412,7 +415,7 @@ end:
 	return ret;
 }
 
-static int gost_set_raw_pub_key(EVP_PKEY *pk, const unsigned char *pub, size_t len)
+int gost_set_raw_pub_key(EVP_PKEY *pk, const unsigned char *pub, size_t len)
 {
     int ret = 0;
     BIGNUM *X = NULL;
@@ -456,7 +459,7 @@ end:
     return ret;
 }
 
-static int gost_get_raw_priv_key(const EVP_PKEY *pk, unsigned char *priv, size_t *len)
+int gost_get_raw_priv_key(const EVP_PKEY *pk, unsigned char *priv, size_t *len)
 {
     const EC_KEY *ec;
     const EC_GROUP *group;
@@ -488,7 +491,7 @@ static int gost_get_raw_priv_key(const EVP_PKEY *pk, unsigned char *priv, size_t
     return 1;
 }
 
-static int gost_get_raw_pub_key(const EVP_PKEY *pk, unsigned char *pub, size_t *len)
+int gost_get_raw_pub_key(const EVP_PKEY *pk, unsigned char *pub, size_t *len)
 {
     int ret = 0;
     BIGNUM *X = NULL;
@@ -544,7 +547,7 @@ static int gost_get_raw_pub_key(const EVP_PKEY *pk, unsigned char *pub, size_t *
 /*
  * Control function
  */
-static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
+int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 {
     int nid = EVP_PKEY_base_id(pkey), md_nid = NID_undef;
     X509_ALGOR *alg1 = NULL, *alg2 = NULL;
@@ -688,7 +691,7 @@ static int pkey_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 }
 
 /* --------------------- free functions * ------------------------------*/
-static void pkey_free_gost_ec(EVP_PKEY *key)
+void pkey_free_gost_ec(EVP_PKEY *key)
 {
     EC_KEY_free((EC_KEY *)EVP_PKEY_get0(key));
 }
@@ -766,12 +769,17 @@ int internal_priv_decode(EC_KEY *ec, int *key_type,
     } else if (V_ASN1_OCTET_STRING == *p) {
         /* New format - Little endian octet string */
         ASN1_OCTET_STRING *s = d2i_ASN1_OCTET_STRING(NULL, &p, priv_len);
-        if (!s || ((s->length != 32) && (s->length != 64))) {
+        if (!s) {
+            GOSTerr(GOST_F_PRIV_DECODE_GOST, EVP_R_DECODE_ERROR);
+            return 0;
+        }
+        const int s_length = ASN1_STRING_length(s);
+        if ((s_length != 32) && (s_length != 64)) {
             ASN1_STRING_free(s);
             GOSTerr(GOST_F_PRIV_DECODE_GOST, EVP_R_DECODE_ERROR);
             return 0;
         }
-        pk_num = BN_lebin2bn(s->data, s->length, BN_secure_new());
+        pk_num = BN_lebin2bn(ASN1_STRING_get0_data(s), s_length, BN_secure_new());
         ASN1_STRING_free(s);
     } else if (V_ASN1_INTEGER == *p) {
         priv_key = d2i_ASN1_INTEGER(NULL, &p, priv_len);
@@ -789,14 +797,14 @@ int internal_priv_decode(EC_KEY *ec, int *key_type,
             return 0;
         }
 
-        priv_len = mgk->masked_priv_key->length;
+        priv_len = ASN1_STRING_length(mgk->masked_priv_key);
         if (priv_len % expected_key_len) {
             MASKED_GOST_KEY_free(mgk);
             GOSTerr(GOST_F_PRIV_DECODE_GOST, EVP_R_DECODE_ERROR);
             return 0;
         }
 
-        pk_num = internal_unmask_priv_key(ec, mgk->masked_priv_key->data,
+        pk_num = internal_unmask_priv_key(ec, ASN1_STRING_get0_data(mgk->masked_priv_key),
                                           expected_key_len,
                                           priv_len / expected_key_len - 1);
         MASKED_GOST_KEY_free(mgk);
@@ -815,7 +823,7 @@ int internal_priv_decode(EC_KEY *ec, int *key_type,
     return ret;
 }
 
-static int priv_decode_gost(EVP_PKEY *pk, const PKCS8_PRIV_KEY_INFO *p8inf)
+int priv_decode_gost(EVP_PKEY *pk, const PKCS8_PRIV_KEY_INFO *p8inf)
 {
     int ret = 0;
     int key_type = NID_undef;
@@ -893,7 +901,7 @@ int internal_priv_encode(PKCS8_PRIV_KEY_INFO *p8, EC_KEY *ec, int key_type)
                            buf, key_len);
 }
 
-static int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
+int priv_encode_gost(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pk)
 {
     int key_type = (pk == NULL) ? NID_undef : EVP_PKEY_base_id(pk);
     EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pk);
@@ -1002,26 +1010,26 @@ static int print_gost_ec(BIO *out, const EVP_PKEY *pkey, int indent,
     return internal_print_gost_ec_param(out, ec, indent);
 }
 
-static int param_print_gost_ec(BIO *out, const EVP_PKEY *pkey, int indent,
+int param_print_gost_ec(BIO *out, const EVP_PKEY *pkey, int indent,
                                ASN1_PCTX *pctx)
 {
     return print_gost_ec(out, pkey, indent, pctx, 0);
 }
 
-static int pub_print_gost_ec(BIO *out, const EVP_PKEY *pkey, int indent,
+int pub_print_gost_ec(BIO *out, const EVP_PKEY *pkey, int indent,
                              ASN1_PCTX *pctx)
 {
     return print_gost_ec(out, pkey, indent, pctx, 1);
 }
 
-static int priv_print_gost_ec(BIO *out, const EVP_PKEY *pkey, int indent,
+int priv_print_gost_ec(BIO *out, const EVP_PKEY *pkey, int indent,
                               ASN1_PCTX *pctx)
 {
     return print_gost_ec(out, pkey, indent, pctx, 2);
 }
 
 /* ---------------------------------------------------------------------*/
-static int param_missing_gost_ec(const EVP_PKEY *pk)
+int param_missing_gost_ec(const EVP_PKEY *pk)
 {
     const EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pk);
     if (!ec)
@@ -1031,7 +1039,7 @@ static int param_missing_gost_ec(const EVP_PKEY *pk)
     return 0;
 }
 
-static int param_copy_gost_ec(EVP_PKEY *to, const EVP_PKEY *from)
+int param_copy_gost_ec(EVP_PKEY *to, const EVP_PKEY *from)
 {
     EC_KEY *eto = EVP_PKEY_get0(to);
     const EC_KEY *efrom = EVP_PKEY_get0((EVP_PKEY *)from);
@@ -1065,7 +1073,7 @@ static int param_copy_gost_ec(EVP_PKEY *to, const EVP_PKEY *from)
     return 1;
 }
 
-static int param_cmp_gost_ec(const EVP_PKEY *a, const EVP_PKEY *b)
+int param_cmp_gost_ec(const EVP_PKEY *a, const EVP_PKEY *b)
 {
     const EC_GROUP *group_a, *group_b;
     EC_KEY *ec_a = EVP_PKEY_get0((EVP_PKEY *)a);
@@ -1104,18 +1112,20 @@ int internal_pub_decode_ec(EC_KEY *ec, int *key_type, X509_ALGOR *palg,
 
     group = EC_KEY_get0_group(ec);
     octet = d2i_ASN1_OCTET_STRING(NULL, &pubkey_buf, pub_len);
+
     if (!octet) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto ret;
     }
-    databuf = OPENSSL_malloc(octet->length);
+    const int octet_length = ASN1_STRING_length(octet);
+    databuf = OPENSSL_malloc(octet_length);
     if (!databuf) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto ret;
     }
 
-    BUF_reverse(databuf, octet->data, octet->length);
-    len = octet->length / 2;
+    BUF_reverse(databuf, ASN1_STRING_get0_data(octet), octet_length);
+    len = octet_length / 2;
 
     Y = BN_bin2bn(databuf, len, NULL);
     X = BN_bin2bn(databuf + len, len, NULL);
@@ -1142,7 +1152,7 @@ ret:
     return retval;
 }
 
-static int pub_decode_gost_ec(EVP_PKEY *pk, const X509_PUBKEY *pub)
+int pub_decode_gost_ec(EVP_PKEY *pk, const X509_PUBKEY *pub)
 {
     int ret = 0;
     int key_type = NID_undef;
@@ -1273,7 +1283,7 @@ int internal_pub_encode_ec(X509_PUBKEY *pub, EC_KEY *ec, int key_type)
     return ret;
 }
 
-static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
+int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
 {
     EC_KEY *ec = EVP_PKEY_get0((EVP_PKEY *)pk);
     int key_type = (pk == NULL) ? NID_undef : EVP_PKEY_base_id(pk);
@@ -1283,7 +1293,7 @@ static int pub_encode_gost_ec(X509_PUBKEY *pub, const EVP_PKEY *pk)
     return internal_pub_encode_ec(pub, ec, key_type);
 }
 
-static int pub_cmp_gost_ec(const EVP_PKEY *a, const EVP_PKEY *b)
+int pub_cmp_gost_ec(const EVP_PKEY *a, const EVP_PKEY *b)
 {
     const EC_KEY *ea = EVP_PKEY_get0((EVP_PKEY *)a);
     const EC_KEY *eb = EVP_PKEY_get0((EVP_PKEY *)b);
@@ -1297,7 +1307,7 @@ static int pub_cmp_gost_ec(const EVP_PKEY *a, const EVP_PKEY *b)
     return (0 == EC_POINT_cmp(EC_KEY_get0_group(ea), ka, kb, NULL));
 }
 
-static int pkey_size_gost(const EVP_PKEY *pk)
+int pkey_size_gost(const EVP_PKEY *pk)
 {
     if (!pk)
         return -1;
@@ -1316,12 +1326,12 @@ static int pkey_size_gost(const EVP_PKEY *pk)
 }
 
 /* ---------------------- ASN1 METHOD for GOST MAC  -------------------*/
-static void mackey_free_gost(EVP_PKEY *pk)
+void mackey_free_gost(EVP_PKEY *pk)
 {
     OPENSSL_free(EVP_PKEY_get0(pk));
 }
 
-static int mac_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
+int mac_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 {
     switch (op) {
     case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
@@ -1333,7 +1343,7 @@ static int mac_ctrl_gost(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     return -2;
 }
 
-static int mac_ctrl_gost_12(EVP_PKEY *pkey, int op, long arg1, void *arg2)
+int mac_ctrl_gost_12(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 {
     switch (op) {
     case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
@@ -1345,7 +1355,7 @@ static int mac_ctrl_gost_12(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     return -2;
 }
 
-static int mac_ctrl_magma(EVP_PKEY *pkey, int op, long arg1, void *arg2)
+int mac_ctrl_magma(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 {
     switch (op) {
     case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
@@ -1357,7 +1367,7 @@ static int mac_ctrl_magma(EVP_PKEY *pkey, int op, long arg1, void *arg2)
     return -2;
 }
 
-static int mac_ctrl_grasshopper(EVP_PKEY *pkey, int op, long arg1, void *arg2)
+int mac_ctrl_grasshopper(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 {
     switch (op) {
     case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
@@ -1376,7 +1386,7 @@ int internal_gost2001_param_encode(const EC_KEY *ec, unsigned char **pder)
     return i2d_ASN1_OBJECT(OBJ_nid2obj(nid), pder);
 }
 
-static int gost2001_param_encode(const EVP_PKEY *pkey, unsigned char **pder)
+int gost2001_param_encode(const EVP_PKEY *pkey, unsigned char **pder)
 {
     EC_KEY *ec = EVP_PKEY_get0(pkey);
 
@@ -1398,7 +1408,7 @@ int internal_gost2001_param_decode(EC_KEY *ec, const unsigned char **pder,
     return fill_GOST_EC_params(ec, nid);
 }
 
-static int gost2001_param_decode(EVP_PKEY *pkey, const unsigned char **pder,
+int gost2001_param_decode(EVP_PKEY *pkey, const unsigned char **pder,
                                  int derlen)
 {
     int ret = 0;
@@ -1417,75 +1427,4 @@ exit:
     if (!ret)
         EC_KEY_free(ec);
     return ret;
-}
-
-/* ----------------------------------------------------------------------*/
-int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
-                        const char *pemstr, const char *info)
-{
-    *ameth = EVP_PKEY_asn1_new(nid, ASN1_PKEY_SIGPARAM_NULL, pemstr, info);
-    if (!*ameth)
-        return 0;
-    switch (nid) {
-    case NID_id_GostR3410_2001:
-    case NID_id_GostR3410_2001DH:
-        EVP_PKEY_asn1_set_free(*ameth, pkey_free_gost_ec);
-        EVP_PKEY_asn1_set_private(*ameth,
-                                  priv_decode_gost, priv_encode_gost,
-                                  priv_print_gost_ec);
-
-        EVP_PKEY_asn1_set_param(*ameth,
-                                gost2001_param_decode, gost2001_param_encode,
-                                param_missing_gost_ec, param_copy_gost_ec,
-                                param_cmp_gost_ec, param_print_gost_ec);
-        EVP_PKEY_asn1_set_public(*ameth,
-                                 pub_decode_gost_ec, pub_encode_gost_ec,
-                                 pub_cmp_gost_ec, pub_print_gost_ec,
-                                 pkey_size_gost, pkey_bits_gost);
-
-        EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
-        EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);
-        break;
-    case NID_id_GostR3410_2012_256:
-    case NID_id_GostR3410_2012_512:
-        EVP_PKEY_asn1_set_free(*ameth, pkey_free_gost_ec);
-        EVP_PKEY_asn1_set_private(*ameth,
-                                  priv_decode_gost, priv_encode_gost,
-                                  priv_print_gost_ec);
-
-        EVP_PKEY_asn1_set_param(*ameth,
-                                NULL, NULL,
-                                param_missing_gost_ec, param_copy_gost_ec,
-                                param_cmp_gost_ec, NULL);
-
-        EVP_PKEY_asn1_set_public(*ameth,
-                                 pub_decode_gost_ec, pub_encode_gost_ec,
-                                 pub_cmp_gost_ec, pub_print_gost_ec,
-                                 pkey_size_gost, pkey_bits_gost);
-
-        EVP_PKEY_asn1_set_set_pub_key(*ameth, gost_set_raw_pub_key);
-        EVP_PKEY_asn1_set_get_priv_key(*ameth, gost_get_raw_priv_key);
-        EVP_PKEY_asn1_set_get_pub_key(*ameth, gost_get_raw_pub_key);
-
-        EVP_PKEY_asn1_set_ctrl(*ameth, pkey_ctrl_gost);
-        EVP_PKEY_asn1_set_security_bits(*ameth, pkey_bits_gost);
-        break;
-    case NID_id_Gost28147_89_MAC:
-        EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
-        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost);
-        break;
-    case NID_gost_mac_12:
-        EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
-        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_gost_12);
-        break;
-    case NID_magma_mac:
-        EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
-        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_magma);
-        break;
-    case NID_grasshopper_mac:
-        EVP_PKEY_asn1_set_free(*ameth, mackey_free_gost);
-        EVP_PKEY_asn1_set_ctrl(*ameth, mac_ctrl_grasshopper);
-        break;
-    }
-    return 1;
 }

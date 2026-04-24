@@ -1380,7 +1380,7 @@ static int gost89_get_asn1_parameters(GOST_cipher_ctx *ctx, ASN1_TYPE *params)
 {
     int len;
     GOST_CIPHER_PARAMS *gcp = NULL;
-    unsigned char *p;
+    const unsigned char *p;
     struct ossl_gost_cipher_ctx *c = GOST_cipher_ctx_get_cipher_data(ctx);
     int nid;
 
@@ -1388,12 +1388,12 @@ static int gost89_get_asn1_parameters(GOST_cipher_ctx *ctx, ASN1_TYPE *params)
         return -1;
     }
 
-    p = params->value.sequence->data;
+    p = ASN1_STRING_get0_data(params->value.sequence);
 
     gcp = d2i_GOST_CIPHER_PARAMS(NULL, (const unsigned char **)&p,
-                                 params->value.sequence->length);
+                                 ASN1_STRING_length(params->value.sequence));
 
-    len = gcp->iv->length;
+    len = ASN1_STRING_length(gcp->iv);
     if (len != GOST_cipher_ctx_iv_length(ctx)) {
         GOST_CIPHER_PARAMS_free(gcp);
         GOSTerr(GOST_F_GOST89_GET_ASN1_PARAMETERS, GOST_R_INVALID_IV_LENGTH);
@@ -1413,7 +1413,7 @@ static int gost89_get_asn1_parameters(GOST_cipher_ctx *ctx, ASN1_TYPE *params)
         return -1;
     }
     /*XXX missing non-const accessor */
-    memcpy((unsigned char *)GOST_cipher_ctx_original_iv(ctx), gcp->iv->data,
+    memcpy((unsigned char *)GOST_cipher_ctx_original_iv(ctx), ASN1_STRING_get0_data(gcp->iv),
            GOST_cipher_ctx_iv_length(ctx));
 
     GOST_CIPHER_PARAMS_free(gcp);

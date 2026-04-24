@@ -634,12 +634,12 @@ static int pkey_GOST_ECcp_decrypt(EVP_PKEY_CTX *pctx, unsigned char *key,
     }
 
     gost_init(&ctx, param->sblock);
-    OPENSSL_assert(gkt->key_agreement_info->eph_iv->length == 8);
-    memcpy(wrappedKey, gkt->key_agreement_info->eph_iv->data, 8);
-    OPENSSL_assert(gkt->key_info->encrypted_key->length == 32);
-    memcpy(wrappedKey + 8, gkt->key_info->encrypted_key->data, 32);
-    OPENSSL_assert(gkt->key_info->imit->length == 4);
-    memcpy(wrappedKey + 40, gkt->key_info->imit->data, 4);
+    OPENSSL_assert(ASN1_STRING_length(gkt->key_agreement_info->eph_iv) == 8);
+    memcpy(wrappedKey, ASN1_STRING_get0_data(gkt->key_agreement_info->eph_iv), 8);
+    OPENSSL_assert(ASN1_STRING_length(gkt->key_info->encrypted_key) == 32);
+    memcpy(wrappedKey + 8, ASN1_STRING_get0_data(gkt->key_info->encrypted_key), 32);
+    OPENSSL_assert(ASN1_STRING_length(gkt->key_info->imit) == 4);
+    memcpy(wrappedKey + 40, ASN1_STRING_get0_data(gkt->key_info->imit), 4);
 
     EVP_PKEY_get_default_digest_nid(priv, &dgst_nid);
     if (dgst_nid == NID_id_GostR3411_2012_512)

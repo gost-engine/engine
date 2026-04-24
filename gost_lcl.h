@@ -15,7 +15,6 @@
 # include <openssl/evp.h>
 # include <openssl/asn1t.h>
 # include <openssl/x509.h>
-# include <openssl/engine.h>
 # include <openssl/ec.h>
 # include <openssl/asn1.h>
 # include "gost89.h"
@@ -65,16 +64,9 @@ extern R3410_ec_params R3410_2001_paramset[],
 
 void free_cached_groups(void);
 
-extern const ENGINE_CMD_DEFN gost_cmds[];
-int gost_control_func(ENGINE *e, int cmd, long i, void *p, void (*f) (void));
 const char *get_gost_engine_param(int param);
 int gost_set_default_param(int param, const char *value);
 void gost_param_free(void);
-
-/* method registration */
-int register_ameth_gost(int nid, EVP_PKEY_ASN1_METHOD **ameth,
-                        const char *pemstr, const char *info);
-int register_pmeth_gost(int id, EVP_PKEY_METHOD **pmeth, int flags);
 
 /* Gost-specific pmeth control-function parameters */
 /* For GOST R34.10 parameters */

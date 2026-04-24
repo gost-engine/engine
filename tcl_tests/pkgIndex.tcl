@@ -4,3 +4,4 @@ package ifneeded fgetopt 0.1 [list source -encoding utf-8 [file join $dir fgetop
 package ifneeded asn 0.7.1 [list source -encoding utf-8 [file join $dir asn.tcl]]
 package ifneeded base64 2.3.2 [list source -encoding utf-8 [file join $dir base64.tcl]]
 package ifneeded ossltest 0.7 [list source -encoding utf-8 [file join $dir ossltest.tcl]]
+package ifneeded is_openssl_bug 0.1 [list source -encoding utf-8 [file join $dir is_openssl_bug.tcl]]

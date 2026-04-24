@@ -9,6 +9,7 @@
 
 #include <openssl/core_dispatch.h>
 #include <openssl/core_names.h>
+#include <openssl/err.h>
 #include "gost_prov.h"
 #include "gost_prov_tls.h"
 #include "gost_prov_digest.h"

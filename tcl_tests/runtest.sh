@@ -125,6 +125,7 @@ esac
 if [ -x copy_param ];  then
 	BASE_TESTS="$BASE_TESTS apache"
 fi
+
 PKCS7_COMPATIBILITY_TESTS="smime_cs cmsenc_cs cmsenc_sc"
 SERVER_TESTS="cp20 cp21 csp36r4 csp39 csp4 csp4r3 csp5"
 CLIENT_TESTS="cp20 cp21"

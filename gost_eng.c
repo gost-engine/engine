@@ -17,8 +17,11 @@
 #include "e_gost_err.h"
 #include "gost_lcl.h"
 #include "gost-engine.h"
+#include "gost_eng_ameth.h"
 #include "gost_eng_digest.h"
 #include "gost_eng_cipher.h"
+#include "gost_eng_cmd.h"
+#include "gost_eng_pmeth.h"
 #include <assert.h>
 
 #include "gost_grasshopper_cipher.h"

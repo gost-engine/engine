@@ -12,11 +12,11 @@ env:
     GOST_PROVIDER_ENABLE_ONLINE_TESTS: 1
 
 jobs:
-    gcc-openssl-stable:
+    gcc-engine-openssl-3-6-0:
         runs-on: ubuntu-latest
         if: ${{ github.event_name != 'schedule' }}
         env:
-            PATCH_OPENSSL: 1
+            GOST_BUILD_PROVIDER: OFF
         steps:
             - uses: actions/checkout@v2
               with:
@@ -24,12 +24,53 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    clang-openssl-stable:
+    clang-engine-openssl-3-6-0:
+        runs-on: ubuntu-latest
+        if: ${{ github.event_name != 'schedule' }}
+        env:
+            CC: clang
+            GOST_BUILD_PROVIDER: OFF
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    macos-engine-openssl-3-6-0:
+        runs-on: macos-latest
+        if: ${{ github.event_name != 'schedule' }}
+        env:
+            USE_RPATH:
+            GOST_PROVIDER_ENABLE_ONLINE_TESTS: 0 # macOS runner has no network access to infotecs TLS1.3 server
+            GOST_BUILD_PROVIDER: OFF
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    gcc-provider-openssl-3-6-0-patch:
+        runs-on: ubuntu-latest
+        if: ${{ github.event_name != 'schedule' }}
+        env:
+            PATCH_OPENSSL: 1
+            GOST_BUILD_ENGINE: OFF
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    clang-provider-openssl-3-6-0-patch:
         runs-on: ubuntu-latest
         if: ${{ github.event_name != 'schedule' }}
         env:
             CC: clang
             PATCH_OPENSSL: 1
+            GOST_BUILD_ENGINE: OFF
         steps:
             - uses: actions/checkout@v2
               with:
@@ -37,12 +78,51 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    macos-openssl-stable:
+    macos-provider-openssl-3-6-0-patch:
         runs-on: macos-latest
         if: ${{ github.event_name != 'schedule' }}
         env:
             USE_RPATH:
+            GOST_PROVIDER_ENABLE_ONLINE_TESTS: 0 # macOS runner has no network access to infotecs TLS1.3 server
             PATCH_OPENSSL: 1
+            GOST_BUILD_ENGINE: OFF
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    gcc-provider-openssl-master:
+        runs-on: ubuntu-latest
+        env:
+            OPENSSL_BRANCH: master
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    clang-provider-openssl-4-0-0:
+        runs-on: ubuntu-latest
+        if: ${{ github.event_name != 'schedule' }}
+        env:
+            CC: clang
+            OPENSSL_BRANCH: openssl-4.0.0
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - run: .github/before_script.sh
+            - run: .github/script.sh
+
+    macos-provider-openssl-4-0-0:
+        runs-on: macos-latest
+        if: ${{ github.event_name != 'schedule' }}
+        env:
+            OPENSSL_BRANCH: openssl-4.0.0
+            USE_RPATH:
             GOST_PROVIDER_ENABLE_ONLINE_TESTS: 0 # macOS runner has no network access to infotecs TLS1.3 server
         steps:
             - uses: actions/checkout@v2
@@ -51,36 +131,10 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    gcc-openssl-master:
+    gcc-asan-openssl-4-0-0:
         runs-on: ubuntu-latest
-        if: ${{ github.event_name == 'schedule' }}
         env:
-            OPENSSL_BRANCH: master
-        steps:
-            - uses: actions/checkout@v2
-              with:
-                  submodules: true
-            - run: .github/before_script.sh
-            - run: .github/script.sh
-
-    macos-openssl-master:
-        runs-on: macos-latest
-        if: ${{ github.event_name == 'schedule' }}
-        env:
-            OPENSSL_BRANCH: master
-            USE_RPATH:
-        steps:
-            - uses: actions/checkout@v2
-              with:
-                  submodules: true
-            - run: .github/before_script.sh
-            - run: .github/script.sh
-
-    gcc-asan-openssl-master:
-        runs-on: ubuntu-latest
-        if: ${{ github.event_name == 'schedule' }}
-        env:
-            OPENSSL_BRANCH: master
+            OPENSSL_BRANCH: openssl-4.0.0
             ASAN: -DASAN=1
         steps:
             - uses: actions/checkout@v2
@@ -89,11 +143,10 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    macos-asan-openssl-master:
+    macos-asan-openssl-4-0-0:
         runs-on: macos-latest
-        if: ${{ github.event_name == 'schedule' }}
         env:
-            OPENSSL_BRANCH: master
+            OPENSSL_BRANCH: openssl-4.0.0
             ASAN: -DASAN=1
             USE_RPATH:
         steps:
@@ -103,7 +156,7 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    gcc-openssl-stable-x86:
+    gcc-openssl-3-6-0-x86:
         runs-on: ubuntu-latest
         if: ${{ github.event_name == 'schedule' }}
         env:
@@ -119,3 +172,18 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
+    gcc-openssl-4-0-0-x86:
+        runs-on: ubuntu-latest
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+            CFLAGS: -m32
+            LDFLAGS: -m32
+            SETARCH: "setarch i386"
+            APT_INSTALL: gcc-multilib
+            OPENSSL_BRANCH: openssl-4.0.0
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: true
+            - run: .github/before_script.sh
+            - run: .github/script.sh
