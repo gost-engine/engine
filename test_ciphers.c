@@ -595,7 +595,8 @@ static int test_engine_asn1_acpkm_reinit(const EVP_CIPHER *type, const char *nam
     size_t i;
 
     if (EVP_CIPHER_get0_provider(type) != NULL
-        || strcmp(name, SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm) != 0)
+        || (strcmp(name, SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm) != 0
+            && strcmp(name, SN_magma_ctr_acpkm) != 0))
         return 0;
 
     enc = EVP_CIPHER_CTX_new();
@@ -839,6 +840,18 @@ int main(int argc, char **argv)
         ret |= test_engine_asn1_acpkm_reinit(ciph, t->algname, t->key, t->iv);
 
 	EVP_CIPHER_free(ciph);
+    }
+    {
+        EVP_CIPHER *ciph;
+
+        ERR_set_mark();
+        T((ciph = (EVP_CIPHER *)EVP_get_cipherbyname(SN_magma_ctr_acpkm))
+          || (ciph = EVP_CIPHER_fetch(NULL, SN_magma_ctr_acpkm, NULL)));
+        ERR_pop_to_mark();
+
+        ret |= test_engine_asn1_acpkm_reinit(ciph, SN_magma_ctr_acpkm,
+                                             Km, iv_ctr);
+        EVP_CIPHER_free(ciph);
     }
 
     warn_all_untested();
