@@ -334,7 +334,8 @@ gost_grasshopper_cipher_init_ctracpkm(GOST_cipher_ctx
     /* NB: setting type makes EVP do_cipher callback useless */
     c->c.type = GRASSHOPPER_CIPHER_CTRACPKM;
     GOST_cipher_ctx_set_num(ctx, 0);
-    c->section_size = 4096;
+    if (!c->section_size_set)
+        c->section_size = 4096;
 
     return gost_grasshopper_cipher_init(ctx, key, iv, enc);
 }
@@ -350,7 +351,8 @@ gost_grasshopper_cipher_init_ctracpkm_omac(GOST_cipher_ctx
     /* NB: setting type makes EVP do_cipher callback useless */
     c->c.type = GRASSHOPPER_CIPHER_CTRACPKMOMAC;
     GOST_cipher_ctx_set_num(ctx, 0);
-    c->section_size = 4096;
+    if (!c->section_size_set)
+        c->section_size = 4096;
 
     if (key) {
         unsigned char cipher_key[32];
@@ -1005,6 +1007,7 @@ static int gost_grasshopper_set_asn1_parameters(GOST_cipher_ctx *ctx, ASN1_TYPE 
 
         /* CMS implies 256kb section_size */
         ctr->section_size = 256*1024;
+        ctr->section_size_set = 1;
 
         return gost2015_set_asn1_params(params,
                GOST_cipher_ctx_original_iv(ctx), 8, ctr->kdf_seed);
@@ -1030,6 +1033,7 @@ gost_grasshopper_get_asn1_parameters(GOST_cipher_ctx *ctx, ASN1_TYPE *params)
 
         /* CMS implies 256kb section_size */
         ctr->section_size = 256*1024;
+        ctr->section_size_set = 1;
         return 1;
     }
     return 0;
@@ -1171,6 +1175,7 @@ static int gost_grasshopper_cipher_ctl(GOST_cipher_ctx *ctx, int type, int arg, 
                || (arg % GRASSHOPPER_BLOCK_SIZE))
                 return -1;
             c->section_size = arg;
+            c->section_size_set = 1;
             break;
         }
     case EVP_CTRL_TLSTREE:

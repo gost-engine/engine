@@ -580,6 +580,58 @@ static int test_provider_alg_id_param(const EVP_CIPHER *type, const char *name,
     return ret | test;
 }
 
+static int test_engine_asn1_acpkm_reinit(const EVP_CIPHER *type, const char *name,
+                                         const unsigned char *key,
+                                         const unsigned char *iv)
+{
+    EVP_CIPHER_CTX *enc;
+    EVP_CIPHER_CTX *dec;
+    ASN1_TYPE *params;
+    unsigned char pt[8192];
+    unsigned char ct[8192];
+    unsigned char out[8192];
+    int outlen = 0, tmplen = 0, total = 0;
+    int ret = 0, test;
+    size_t i;
+
+    if (EVP_CIPHER_get0_provider(type) != NULL
+        || strcmp(name, SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm) != 0)
+        return 0;
+
+    enc = EVP_CIPHER_CTX_new();
+    dec = EVP_CIPHER_CTX_new();
+    params = ASN1_TYPE_new();
+    T(enc != NULL && dec != NULL && params != NULL);
+
+    for (i = 0; i < sizeof(pt); i++)
+        pt[i] = (unsigned char)(i & 0xff);
+
+    printf("Engine ASN1 ACPKM reinit test [%s]: ", name);
+    T(EVP_CipherInit_ex(enc, type, NULL, key, iv, 1));
+    T(EVP_CIPHER_param_to_asn1(enc, params) > 0);
+    T(EVP_CipherUpdate(enc, ct, &outlen, pt, (int)sizeof(pt)));
+    total = outlen;
+    T(EVP_CipherFinal_ex(enc, ct + total, &tmplen));
+    total += tmplen;
+    T(total == (int)sizeof(pt));
+
+    T(EVP_CipherInit_ex(dec, type, NULL, NULL, NULL, 0));
+    T(EVP_CIPHER_asn1_to_param(dec, params) > 0);
+    T(EVP_CipherInit_ex(dec, NULL, NULL, key, NULL, 0));
+    T(EVP_CipherUpdate(dec, out, &outlen, ct, total));
+    total = outlen;
+    T(EVP_CipherFinal_ex(dec, out + total, &tmplen));
+    total += tmplen;
+
+    TEST_ASSERT(total != (int)sizeof(pt) || memcmp(out, pt, sizeof(pt)));
+    ret |= test;
+
+    EVP_CIPHER_CTX_free(enc);
+    EVP_CIPHER_CTX_free(dec);
+    ASN1_TYPE_free(params);
+    return ret;
+}
+
 static int test_provider_padded_decrypt_case(const EVP_CIPHER *type,
                                              const char *name,
                                              const unsigned char *key,
@@ -784,6 +836,7 @@ int main(int argc, char **argv)
             ret |= test_provider_padded_decrypt(ciph, t->algname, t->block,
                                                 t->key, t->iv);
         }
+        ret |= test_engine_asn1_acpkm_reinit(ciph, t->algname, t->key, t->iv);
 
 	EVP_CIPHER_free(ciph);
     }
