@@ -7,17 +7,28 @@ include(CheckFunctionExists)
 include(CheckCSourceRuns)
 include(CheckCSourceCompiles)
 
+if(NOT DEFINED OPENSSL_ROOT_DIR)
+  message(FATAL_ERROR "OPENSSL_ROOT_DIR is required")
+endif()
+
 find_package(OpenSSL 3.4 REQUIRED)
+
+get_filename_component(GOST_OPENSSL_ROOT "${OPENSSL_ROOT_DIR}" REALPATH)
+get_filename_component(GOST_OPENSSL_INCLUDE "${OPENSSL_INCLUDE_DIR}" REALPATH)
+get_filename_component(GOST_OPENSSL_CRYPTO "${OPENSSL_CRYPTO_LIBRARY}" REALPATH)
+get_filename_component(GOST_OPENSSL_SSL "${OPENSSL_SSL_LIBRARY}" REALPATH)
+foreach(path IN ITEMS GOST_OPENSSL_INCLUDE GOST_OPENSSL_CRYPTO GOST_OPENSSL_SSL)
+  string(FIND "${${path}}/" "${GOST_OPENSSL_ROOT}/" pos)
+  if(NOT pos EQUAL 0)
+    message(FATAL_ERROR "OpenSSL path escapes OPENSSL_ROOT_DIR: ${${path}}")
+  endif()
+endforeach()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'RelWithDebInfo' as none was specified.")
   set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
 endif()
 
-if (NOT DEFINED OPENSSL_ROOT_DIR)
-  get_filename_component(OPENSSL_ROOT_DIR ${OPENSSL_INCLUDE_DIR} DIRECTORY)
-  message(STATUS "Setting OpenSSL root: ${OPENSSL_ROOT_DIR}")
-endif()
 find_program(OPENSSL_PROGRAM openssl
   PATHS ${OPENSSL_ROOT_DIR} PATH_SUFFIXES apps bin NO_DEFAULT_PATH)
 message(STATUS "Found OpenSSL application: ${OPENSSL_PROGRAM}")
@@ -27,16 +38,17 @@ set(OPENSSL_MODULES_DIR ${CMAKE_INSTALL_LIBDIR}/ossl-modules)
 include("cmake/utils.cmake")
 check_have_engine_api(HAVE_ENGINE_API)
 
-option(GOST_BUILD_ENGINE   "Build gost engine module"   ${HAVE_ENGINE_API})
-option(GOST_BUILD_PROVIDER "Build gost provider module" ON)
+option(GOST_BUILD_ENGINE        "Build gost engine module"         ${HAVE_ENGINE_API})
+option(GOST_BUILD_STATIC_ENGINE "Build gost engine static library" OFF)
+option(GOST_BUILD_PROVIDER      "Build gost provider module"       ON)
 
-if(GOST_BUILD_ENGINE AND NOT HAVE_ENGINE_API)
+if((GOST_BUILD_ENGINE OR GOST_BUILD_STATIC_ENGINE) AND NOT HAVE_ENGINE_API)
   message(FATAL_ERROR
-    "GOST_BUILD_ENGINE=ON, but libcrypto has no ENGINE API. "
-    "Rebuild OpenSSL without no-engine, or pass -DGOST_BUILD_ENGINE=OFF.")
+    "GOST engine requested, but libcrypto has no ENGINE API. "
+    "Rebuild OpenSSL without no-engine, or disable GOST engine builds.")
 endif()
 
-if(NOT GOST_BUILD_ENGINE)
+if(NOT GOST_BUILD_ENGINE AND NOT GOST_BUILD_STATIC_ENGINE)
   # We may depend on ENGINE API only if there is an engine target
   add_compile_definitions(OPENSSL_NO_ENGINE)
   set(HAVE_ENGINE_API FALSE)
@@ -130,12 +142,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 
 # Remove when https://gitlab.kitware.com/cmake/cmake/issues/18525 is addressed
 set(OPENSSL_ENGINES_DIR "" CACHE PATH "OpenSSL Engines Directory")
-if ("${OPENSSL_ENGINES_DIR}" STREQUAL "")
-	include(FindPkgConfig)
-	pkg_get_variable(OPENSSL_ENGINES_DIR libcrypto enginesdir)
-	if ("${OPENSSL_ENGINES_DIR}" STREQUAL "")
-		message( FATAL_ERROR "Unable to discover the OpenSSL engines directory. Provide the path using -DOPENSSL_ENGINES_DIR" )
-	endif()
+if("${OPENSSL_ENGINES_DIR}" STREQUAL "")
+  message(FATAL_ERROR "OPENSSL_ENGINES_DIR is required")
 endif()
 
 set(GOST_89_SOURCE_FILES
@@ -274,7 +282,7 @@ add_custom_target(tags
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-if(GOST_BUILD_ENGINE)
+if(GOST_BUILD_ENGINE OR GOST_BUILD_STATIC_ENGINE)
   include(engine)
 endif()
 if(GOST_BUILD_PROVIDER)

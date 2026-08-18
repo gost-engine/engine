@@ -534,20 +534,25 @@ IMPLEMENT_DYNAMIC_CHECK_FN()
 #else
 
 /*
- * When building gost-engine as a shared library, the application that uses
- * it must manually call ENGINE_load_gost() for it to bind itself into the
- * libcrypto libraries.
+ * When building gost-engine as a library, the application that uses it must
+ * manually call ENGINE_load_gost() for it to bind itself into libcrypto.
  */
-void ENGINE_load_gost(void) {
-    ENGINE* toadd;
-    int ret = 0;
+void ENGINE_load_gost(void)
+{
+    ENGINE *e;
 
-    if ((toadd = ENGINE_new()) != NULL
-        && (ret = make_gost_engine(toadd, engine_gost_id)) > 0)
-        ENGINE_add(toadd);
-    ENGINE_free(toadd);
-    if (ret > 0)
-        ERR_clear_error();
+    e = ENGINE_new();
+    if (e == NULL) {
+        return;
+    }
+    if (!make_gost_engine(e, engine_gost_id) ||
+        !ENGINE_add(e) || !ENGINE_register_pkey_asn1_meths(e)) {
+        goto out;
+    }
+    ERR_clear_error();
+
+out:
+    ENGINE_free(e);
 }
 #endif
 #endif
