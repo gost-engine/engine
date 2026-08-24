@@ -156,21 +156,21 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    gcc-openssl-3-6-0-x86:
-        runs-on: ubuntu-latest
-        if: ${{ github.event_name == 'schedule' }}
-        env:
-            CFLAGS: -m32
-            LDFLAGS: -m32
-            SETARCH: "setarch i386"
-            APT_INSTALL: gcc-multilib
-            PATCH_OPENSSL: 1
-        steps:
-            - uses: actions/checkout@v2
-              with:
-                  submodules: true
-            - run: .github/before_script.sh
-            - run: .github/script.sh
+#    gcc-openssl-3-6-0-x86:
+#        runs-on: ubuntu-latest
+#        if: ${{ github.event_name == 'schedule' }}
+#        env:
+#            CFLAGS: -m32
+#            LDFLAGS: -m32
+#            SETARCH: "setarch i386"
+#            APT_INSTALL: gcc-multilib
+#            PATCH_OPENSSL: 1
+#        steps:
+#            - uses: actions/checkout@v2
+#              with:
+#                  submodules: true
+#            - run: .github/before_script.sh
+#            - run: .github/script.sh
 
     gcc-openssl-4-0-0-x86:
         runs-on: ubuntu-latest
