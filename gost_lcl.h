@@ -217,6 +217,7 @@ struct ossl_gost_cipher_ctx {
     int paramNID;
     unsigned int count;
     int key_meshing;
+    int key_meshing_set;
     unsigned char kdf_seed[8];
     unsigned char tag[8];
     gost_ctx cctx;
@@ -387,4 +388,3 @@ extern GOST_NID_JOB kuznyechik_mgm_NID;
 
 #endif
 /* vim: set expandtab cinoptions=\:0,l1,t0,g0,(0 sw=4 : */
-

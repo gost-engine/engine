@@ -427,11 +427,18 @@ static int magma_cipher_init(GOST_cipher_ctx *ctx, const unsigned char *key,
                       const unsigned char *iv, int enc)
 {
     struct ossl_gost_cipher_ctx *c = GOST_cipher_ctx_get_cipher_data(ctx);
+    int key_meshing = c->key_meshing;
+    int key_meshing_set = c->key_meshing_set;
+
     /* FIXME this is just initializtion check */
     if (GOST_cipher_ctx_get_app_data(ctx) == NULL) {
         if (!gost_cipher_set_param(c, NID_id_tc26_gost_28147_param_Z))
             return 0;
         GOST_cipher_ctx_set_app_data(ctx, GOST_cipher_ctx_get_cipher_data(ctx));
+        if (key_meshing_set) {
+            c->key_meshing = key_meshing;
+            c->key_meshing_set = key_meshing_set;
+        }
 
         if (enc) {
             if (init_zero_kdf_seed(c->kdf_seed) == 0)
@@ -452,9 +459,11 @@ static int magma_cipher_init(GOST_cipher_ctx *ctx, const unsigned char *key,
 
     if (GOST_cipher_ctx_nid(ctx) == NID_magma_ctr_acpkm
      || GOST_cipher_ctx_nid(ctx) == NID_magma_ctr_acpkm_omac) {
-       c->key_meshing = 1024;
+       if (!c->key_meshing_set)
+           c->key_meshing = 1024;
     } else {
        c->key_meshing = 0;
+       c->key_meshing_set = 0;
     }
 
     c->count = 0;
@@ -1155,6 +1164,7 @@ static int gost_cipher_ctl(GOST_cipher_ctx *ctx, int type, int arg, void *ptr)
                 GOST_cipher_ctx_get_cipher_data(ctx);
             int nid;
             int cur_meshing;
+            int cur_meshing_set;
             int ret;
 
             if (c == NULL) {
@@ -1171,8 +1181,10 @@ static int gost_cipher_ctl(GOST_cipher_ctx *ctx, int type, int arg, void *ptr)
             }
 
             cur_meshing = c->key_meshing;
+            cur_meshing_set = c->key_meshing_set;
             ret = gost_cipher_set_param(c, nid);
             c->key_meshing = cur_meshing;
+            c->key_meshing_set = cur_meshing_set;
             return ret;
         } else {
             return 0;
@@ -1191,6 +1203,7 @@ static int gost_cipher_ctl(GOST_cipher_ctx *ctx, int type, int arg, void *ptr)
             }
 
             c->key_meshing = arg;
+            c->key_meshing_set = 1;
             return 1;
         }
     default:
@@ -1260,6 +1273,7 @@ static int magma_cipher_ctl(GOST_cipher_ctx *ctx, int type, int arg, void *ptr)
             }
 
             c->key_meshing = arg;
+            c->key_meshing_set = 1;
             return 1;
         }
     case EVP_CTRL_TLSTREE:
@@ -1472,6 +1486,7 @@ static int magma_set_asn1_parameters (GOST_cipher_ctx *ctx, ASN1_TYPE *params)
 {
   struct ossl_gost_cipher_ctx *c = GOST_cipher_ctx_get_cipher_data(ctx);
 	c->key_meshing = 8192;
+	c->key_meshing_set = 1;
 
 	/*
 	 * Same lazy kdf_seed init as in gost_grasshopper_set_asn1_parameters:
@@ -1493,6 +1508,7 @@ static int magma_get_asn1_parameters(GOST_cipher_ctx *ctx, ASN1_TYPE *params)
 	unsigned char iv[16];
 
 	c->key_meshing = 8192;
+	c->key_meshing_set = 1;
 
 	if (gost2015_get_asn1_params(params, MAGMA_UKM_LEN, iv, 4, c->kdf_seed) == 0)
 	    return -1;
