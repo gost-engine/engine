@@ -36,6 +36,10 @@ int gost_get_max_signature_size(const GOST_KEY_DATA *key_data)
  */
 static OSSL_FUNC_signature_newctx_fn signature_newctx;
 static OSSL_FUNC_signature_freectx_fn signature_free;
+static OSSL_FUNC_signature_sign_init_fn signature_sign_init;
+static OSSL_FUNC_signature_sign_fn signature_sign;
+static OSSL_FUNC_signature_verify_init_fn signature_verify_init;
+static OSSL_FUNC_signature_verify_fn signature_verify;
 static OSSL_FUNC_signature_digest_sign_init_fn signature_digest_sign_init;
 static OSSL_FUNC_signature_digest_sign_update_fn signature_digest_sign_update;
 static OSSL_FUNC_signature_digest_sign_final_fn signature_digest_sign_final;
@@ -44,6 +48,8 @@ static OSSL_FUNC_signature_digest_verify_update_fn signature_digest_verify_updat
 static OSSL_FUNC_signature_digest_verify_final_fn signature_digest_verify_final;
 static OSSL_FUNC_signature_get_ctx_params_fn signature_get_ctx_params;
 static OSSL_FUNC_signature_gettable_ctx_params_fn signature_gettable_ctx_params;
+static OSSL_FUNC_signature_set_ctx_params_fn signature_set_ctx_params;
+static OSSL_FUNC_signature_settable_ctx_params_fn signature_settable_ctx_params;
 
 typedef struct {
     PROV_CTX *provctx;
@@ -384,12 +390,128 @@ static int signature_digest_verify_final(void *vctx, const unsigned char *sig,
     return internal_pkey_ec_cp_verify(ctx->key_data->ec, sig, siglen, digest, dlen);
 }
 
+/*
+ * Raw sign/verify (pre-hashed TBS).
+ *
+ * Used by OpenSSL when applications hash first and then call EVP_PKEY_sign /
+ * EVP_PKEY_verify with EVP_PKEY_CTX_set_signature_md() — e.g. Node.js
+ * createSign()/SignFinal (Node_SignFinal). Without these entry points the
+ * provider only exposes DIGEST_SIGN/DIGEST_VERIFY and OpenSSL returns
+ * EVP_R_PROVIDER_SIGNATURE_NOT_SUPPORTED.
+ */
+static int signature_sign_init(void *vctx, void *provkey,
+                               const OSSL_PARAM params[])
+{
+    return signature_signverify_init(vctx, provkey, params, SIGN_OPERATION);
+}
+
+static int signature_verify_init(void *vctx, void *provkey,
+                                 const OSSL_PARAM params[])
+{
+    return signature_signverify_init(vctx, provkey, params, VERIFY_OPERATION);
+}
+
+static int signature_check_tbs_len(GOST_SIGNATURE_CTX *ctx, size_t tbslen)
+{
+    if (ctx->md != NULL) {
+        int mdlen = EVP_MD_get_size(ctx->md);
+
+        if (mdlen <= 0 || tbslen != (size_t)mdlen)
+            return 0;
+        return 1;
+    }
+
+    /*
+     * If the digest was not set on the context, accept the usual GOST digest
+     * lengths so callers that only supply the raw hash still work.
+     */
+    switch (ctx->key_data->type) {
+    case NID_id_GostR3410_2001:
+    case NID_id_GostR3410_2001DH:
+    case NID_id_GostR3410_2012_256:
+        return tbslen == 32;
+    case NID_id_GostR3410_2012_512:
+        return tbslen == 64;
+    default:
+        return 0;
+    }
+}
+
+static int signature_sign(void *vctx, unsigned char *sig, size_t *siglen,
+                          size_t sigsize, const unsigned char *tbs,
+                          size_t tbslen)
+{
+    GOST_SIGNATURE_CTX *ctx = vctx;
+
+    if (ctx == NULL
+        || ctx->operation != SIGN_OPERATION
+        || ctx->key_data == NULL
+        || ctx->key_data->ec == NULL
+        || siglen == NULL
+        || tbs == NULL)
+        return 0;
+
+    if (!signature_check_tbs_len(ctx, tbslen))
+        return 0;
+
+    /* Size query */
+    if (sig == NULL) {
+        int max_size = gost_get_max_signature_size(ctx->key_data);
+
+        if (max_size <= 0)
+            return 0;
+        *siglen = (size_t)max_size;
+        return 1;
+    }
+
+    *siglen = sigsize;
+    return internal_pkey_ec_cp_sign(ctx->key_data->ec, ctx->key_data->type, sig,
+                                    siglen, tbs, tbslen);
+}
+
+static int signature_verify(void *vctx, const unsigned char *sig, size_t siglen,
+                            const unsigned char *tbs, size_t tbslen)
+{
+    GOST_SIGNATURE_CTX *ctx = vctx;
+
+    if (ctx == NULL
+        || ctx->operation != VERIFY_OPERATION
+        || ctx->key_data == NULL
+        || ctx->key_data->ec == NULL
+        || sig == NULL
+        || tbs == NULL)
+        return 0;
+
+    if (!signature_check_tbs_len(ctx, tbslen))
+        return 0;
+
+    return internal_pkey_ec_cp_verify(ctx->key_data->ec, sig, siglen, tbs,
+                                      tbslen);
+}
+
+static const OSSL_PARAM signature_settable_params[] = {
+    OSSL_PARAM_utf8_string(OSSL_SIGNATURE_PARAM_DIGEST, NULL, 0),
+    OSSL_PARAM_utf8_string(OSSL_SIGNATURE_PARAM_PROPERTIES, NULL, 0),
+    OSSL_PARAM_END
+};
+
+static const OSSL_PARAM *signature_settable_ctx_params(void *vctx, void *provctx)
+{
+    return signature_settable_params;
+}
+
 typedef void (*fptr_t)(void);
 static const OSSL_DISPATCH id_signature_functions[] = {
     { OSSL_FUNC_SIGNATURE_NEWCTX, (fptr_t)signature_newctx },
     { OSSL_FUNC_SIGNATURE_FREECTX, (fptr_t)signature_free },
+    { OSSL_FUNC_SIGNATURE_SIGN_INIT, (fptr_t)signature_sign_init },
+    { OSSL_FUNC_SIGNATURE_SIGN, (fptr_t)signature_sign },
+    { OSSL_FUNC_SIGNATURE_VERIFY_INIT, (fptr_t)signature_verify_init },
+    { OSSL_FUNC_SIGNATURE_VERIFY, (fptr_t)signature_verify },
     { OSSL_FUNC_SIGNATURE_GET_CTX_PARAMS, (fptr_t)signature_get_ctx_params },
     { OSSL_FUNC_SIGNATURE_GETTABLE_CTX_PARAMS, (fptr_t)signature_gettable_ctx_params},
+    { OSSL_FUNC_SIGNATURE_SET_CTX_PARAMS, (fptr_t)signature_set_ctx_params },
+    { OSSL_FUNC_SIGNATURE_SETTABLE_CTX_PARAMS, (fptr_t)signature_settable_ctx_params },
     { OSSL_FUNC_SIGNATURE_DIGEST_SIGN_INIT, (fptr_t)signature_digest_sign_init },
     { OSSL_FUNC_SIGNATURE_DIGEST_SIGN_UPDATE, (fptr_t)signature_digest_sign_update },
     { OSSL_FUNC_SIGNATURE_DIGEST_SIGN_FINAL, (fptr_t)signature_digest_sign_final },
