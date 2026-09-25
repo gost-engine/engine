@@ -104,6 +104,8 @@ add_integration_test(NAME test_tls12additional ${WITH_ENGINE} ${WITH_PROVIDER}
 add_integration_test(NAME test_ecdhe ${WITH_ENGINE}
                      LINK_LIBS OpenSSL::Crypto gost_core gost_core_additional_for_unittests)
 add_integration_test(NAME test_pkcs12_rfc9337 ${WITH_ENGINE} ${WITH_PROVIDER})
+add_integration_test(NAME test_raw_sign_prehash ${WITH_PROVIDER}
+                     LINK_LIBS OpenSSL::Crypto)
 
 if (GOST_BUILD_ENGINE AND GOST_BUILD_PROVIDER)
     # Phase 16d: confirm engine.cnf and provider.cnf produce
