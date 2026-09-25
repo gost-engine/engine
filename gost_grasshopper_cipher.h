@@ -34,6 +34,7 @@ typedef struct {
     grasshopper_w128_t partial_buffer;
     unsigned int section_size;  /* After how much bytes mesh the key,
 				   if 0 never mesh and work like plain ctr. */
+    unsigned int section_size_set;
     unsigned char kdf_seed[8];
 		unsigned char tag[16];
 		EVP_MD_CTX *omac_ctx;
