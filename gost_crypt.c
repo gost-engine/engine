@@ -1268,7 +1268,7 @@ static int magma_cipher_ctl(GOST_cipher_ctx *ctx, int type, int arg, void *ptr)
             struct ossl_gost_cipher_ctx *c =
                 GOST_cipher_ctx_get_cipher_data(ctx);
 
-            if (c == NULL) {
+            if (c == NULL || arg < 0) {
                 return -1;
             }
 

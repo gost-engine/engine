@@ -1171,7 +1171,7 @@ static int gost_grasshopper_cipher_ctl(GOST_cipher_ctx *ctx, int type, int arg, 
                 GOST_cipher_ctx_get_cipher_data(ctx);
             if ((c->c.type != GRASSHOPPER_CIPHER_CTRACPKM &&
                 c->c.type != GRASSHOPPER_CIPHER_CTRACPKMOMAC)
-                || (arg == 0)
+                || (arg <= 0)
                || (arg % GRASSHOPPER_BLOCK_SIZE))
                 return -1;
             c->section_size = arg;

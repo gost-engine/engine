@@ -18,6 +18,9 @@
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <string.h>
+#include <limits.h>
+#include "gost_lcl.h"
+#include "gost_grasshopper_cipher.h"
 
 #if defined _MSC_VER
 # include <malloc.h>
@@ -49,6 +52,8 @@
 #ifdef __GNUC__
 /* Pragma to allow commenting out some tests. */
 # pragma GCC diagnostic ignored "-Wunused-const-variable"
+/* gost_grasshopper_cipher.h declares static functions it never defines. */
+# pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
 /*
@@ -580,56 +585,178 @@ static int test_provider_alg_id_param(const EVP_CIPHER *type, const char *name,
     return ret | test;
 }
 
+#define ACPKM_CHECK(e) \
+    do { \
+        if (!(e)) { \
+            ERR_print_errors_fp(stderr); \
+            fprintf(stderr, "%s:%d: check failed: %s\n", \
+                    __FILE__, __LINE__, #e); \
+            fail = 1; \
+            goto end; \
+        } \
+    } while (0)
+
+static int is_kuz_name(const char *name)
+{
+    return strcmp(name, SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm) == 0;
+}
+
+/* Read the ACPKM section size (bytes) and its "explicitly set" flag. */
+static void get_acpkm_section(EVP_CIPHER_CTX *ctx, int is_kuz,
+                              size_t *section, int *is_set)
+{
+    if (is_kuz) {
+        const gost_grasshopper_cipher_ctx_ctr *c =
+            EVP_CIPHER_CTX_get_cipher_data(ctx);
+        *section = c->section_size;
+        *is_set = c->section_size_set;
+    } else {
+        const struct ossl_gost_cipher_ctx *c =
+            EVP_CIPHER_CTX_get_cipher_data(ctx);
+        *section = (size_t)c->key_meshing;
+        *is_set = c->key_meshing_set;
+    }
+}
+
+static int test_engine_asn1_acpkm_reinit_len(const EVP_CIPHER *type,
+                                             const char *name, int is_kuz,
+                                             size_t boundary, size_t len,
+                                             const unsigned char *key,
+                                             const unsigned char *iv)
+{
+    EVP_CIPHER_CTX *enc = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX *dec = EVP_CIPHER_CTX_new();
+    ASN1_TYPE *params = ASN1_TYPE_new();
+    unsigned char *pt = OPENSSL_malloc(len);
+    unsigned char *ct = OPENSSL_malloc(len + 16);
+    unsigned char *out = OPENSSL_malloc(len + 16);
+    size_t section = 0, split, i;
+    int is_set = 0, outlen = 0, tmplen = 0, total = 0, fail = 0;
+
+    printf("Engine ASN1 ACPKM reinit test [%s, %lu bytes]: ", name, (unsigned long)len);
+    ACPKM_CHECK(enc && dec && params && pt && ct && out);
+    for (i = 0; i < len; i++)
+        pt[i] = (unsigned char)(i * 7 + 1);
+
+    ACPKM_CHECK(EVP_CipherInit_ex(enc, type, NULL, key, iv, 1));
+    ACPKM_CHECK(EVP_CIPHER_param_to_asn1(enc, params) > 0);
+    get_acpkm_section(enc, is_kuz, &section, &is_set);
+    ACPKM_CHECK(section == boundary && is_set);
+    ACPKM_CHECK(EVP_CipherUpdate(enc, ct, &outlen, pt, (int)len));
+    total = outlen;
+    ACPKM_CHECK(EVP_CipherFinal_ex(enc, ct + total, &tmplen));
+    total += tmplen;
+    ACPKM_CHECK((size_t)total == len);
+
+    ACPKM_CHECK(EVP_CipherInit_ex(dec, type, NULL, NULL, NULL, 0));
+    ACPKM_CHECK(EVP_CIPHER_asn1_to_param(dec, params) > 0);
+    get_acpkm_section(dec, is_kuz, &section, &is_set);
+    ACPKM_CHECK(section == boundary && is_set);
+    ACPKM_CHECK(EVP_CipherInit_ex(dec, NULL, NULL, key, NULL, 0));
+    /* The value must survive the key (re)initialization. */
+    get_acpkm_section(dec, is_kuz, &section, &is_set);
+    ACPKM_CHECK(section == boundary && is_set);
+
+    /* Feed data split right before the section border when it is reached. */
+    split = len > boundary ? boundary - 1 : len / 2;
+    ACPKM_CHECK(EVP_CipherUpdate(dec, out, &outlen, ct, (int)split));
+    total = outlen;
+    ACPKM_CHECK(EVP_CipherUpdate(dec, out + total, &outlen, ct + split,
+                                 (int)(len - split)));
+    total += outlen;
+    ACPKM_CHECK(EVP_CipherFinal_ex(dec, out + total, &tmplen));
+    total += tmplen;
+    ACPKM_CHECK((size_t)total == len && memcmp(out, pt, len) == 0);
+
+end:
+    if (fail)
+        printf(cRED "Test FAILED" cNORM "\n");
+    else
+        printf(cGREEN "Test passed" cNORM "\n");
+    EVP_CIPHER_CTX_free(enc);
+    EVP_CIPHER_CTX_free(dec);
+    ASN1_TYPE_free(params);
+    OPENSSL_free(pt);
+    OPENSSL_free(ct);
+    OPENSSL_free(out);
+    return fail;
+}
+
+static int test_engine_acpkm_invalid_section(const EVP_CIPHER *type,
+                                             const char *name, int is_kuz,
+                                             const unsigned char *key,
+                                             const unsigned char *iv)
+{
+    static const int bad_kuz[] = { 0, 1, 17, -16, INT_MIN };
+    static const int bad_magma[] = { -1, INT_MIN };
+    const int *bad = is_kuz ? bad_kuz : bad_magma;
+    const size_t nbad = is_kuz ? sizeof(bad_kuz) / sizeof(bad_kuz[0])
+                               : sizeof(bad_magma) / sizeof(bad_magma[0]);
+    const int good = is_kuz ? 64 : 2048;
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    unsigned char buf[64] = { 0 }, res[64 + 16];
+    size_t before, after, i;
+    int before_set, after_set, outlen = 0, fail = 0;
+
+    printf("Engine ACPKM invalid section size test [%s]: ", name);
+    ACPKM_CHECK(ctx != NULL);
+    ACPKM_CHECK(EVP_CipherInit_ex(ctx, type, NULL, key, iv, 1));
+    get_acpkm_section(ctx, is_kuz, &before, &before_set);
+
+    for (i = 0; i < nbad; i++) {
+        ACPKM_CHECK(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, bad[i], NULL) <= 0);
+        ERR_clear_error();
+        get_acpkm_section(ctx, is_kuz, &after, &after_set);
+        ACPKM_CHECK(after == before && after_set == before_set);
+    }
+    /* The context must still be usable after the rejected values. */
+    ACPKM_CHECK(EVP_CipherUpdate(ctx, res, &outlen, buf, sizeof(buf)));
+
+    /* Fresh context: a valid value is accepted and stored as is. */
+    EVP_CIPHER_CTX_free(ctx);
+    ctx = EVP_CIPHER_CTX_new();
+    ACPKM_CHECK(ctx != NULL);
+    ACPKM_CHECK(EVP_CipherInit_ex(ctx, type, NULL, key, iv, 1));
+    ACPKM_CHECK(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_KEY_MESH, good, NULL) > 0);
+    get_acpkm_section(ctx, is_kuz, &after, &after_set);
+    ACPKM_CHECK(after == (size_t)good && after_set);
+
+end:
+    if (fail)
+        printf(cRED "Test FAILED" cNORM "\n");
+    else
+        printf(cGREEN "Test passed" cNORM "\n");
+    EVP_CIPHER_CTX_free(ctx);
+    return fail;
+}
+
 static int test_engine_asn1_acpkm_reinit(const EVP_CIPHER *type, const char *name,
                                          const unsigned char *key,
                                          const unsigned char *iv)
 {
-    EVP_CIPHER_CTX *enc;
-    EVP_CIPHER_CTX *dec;
-    ASN1_TYPE *params;
-    unsigned char pt[8192];
-    unsigned char ct[8192];
-    unsigned char out[8192];
-    int outlen = 0, tmplen = 0, total = 0;
-    int ret = 0, test;
+    int is_kuz, ret = 0;
+    /* Section size implied by CMS (RFC 9189 / R 1323565.1.017) */
+    const size_t boundary = is_kuz_name(name) ? 256 * 1024 : 8192;
+    const size_t step = is_kuz_name(name) ? 16 : 8;
+    size_t lens[6];
     size_t i;
 
     if (EVP_CIPHER_get0_provider(type) != NULL
-        || (strcmp(name, SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm) != 0
-            && strcmp(name, SN_magma_ctr_acpkm) != 0))
+        || (!is_kuz_name(name) && strcmp(name, SN_magma_ctr_acpkm) != 0))
         return 0;
+    is_kuz = is_kuz_name(name);
 
-    enc = EVP_CIPHER_CTX_new();
-    dec = EVP_CIPHER_CTX_new();
-    params = ASN1_TYPE_new();
-    T(enc != NULL && dec != NULL && params != NULL);
+    lens[0] = 8192 + step;
+    lens[1] = boundary - step;
+    lens[2] = boundary - 1;
+    lens[3] = boundary;
+    lens[4] = boundary + 1;
+    lens[5] = boundary + step;
 
-    for (i = 0; i < sizeof(pt); i++)
-        pt[i] = (unsigned char)(i & 0xff);
-
-    printf("Engine ASN1 ACPKM reinit test [%s]: ", name);
-    T(EVP_CipherInit_ex(enc, type, NULL, key, iv, 1));
-    T(EVP_CIPHER_param_to_asn1(enc, params) > 0);
-    T(EVP_CipherUpdate(enc, ct, &outlen, pt, (int)sizeof(pt)));
-    total = outlen;
-    T(EVP_CipherFinal_ex(enc, ct + total, &tmplen));
-    total += tmplen;
-    T(total == (int)sizeof(pt));
-
-    T(EVP_CipherInit_ex(dec, type, NULL, NULL, NULL, 0));
-    T(EVP_CIPHER_asn1_to_param(dec, params) > 0);
-    T(EVP_CipherInit_ex(dec, NULL, NULL, key, NULL, 0));
-    T(EVP_CipherUpdate(dec, out, &outlen, ct, total));
-    total = outlen;
-    T(EVP_CipherFinal_ex(dec, out + total, &tmplen));
-    total += tmplen;
-
-    TEST_ASSERT(total != (int)sizeof(pt) || memcmp(out, pt, sizeof(pt)));
-    ret |= test;
-
-    EVP_CIPHER_CTX_free(enc);
-    EVP_CIPHER_CTX_free(dec);
-    ASN1_TYPE_free(params);
+    for (i = 0; i < sizeof(lens) / sizeof(lens[0]); i++)
+        ret |= test_engine_asn1_acpkm_reinit_len(type, name, is_kuz, boundary,
+                                                 lens[i], key, iv);
+    ret |= test_engine_acpkm_invalid_section(type, name, is_kuz, key, iv);
     return ret;
 }
 
