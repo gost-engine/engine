@@ -5,7 +5,7 @@ jobs:
     msvc-openssl-3-6-0-patch:
         runs-on: windows-latest
         outputs:
-            openssl-head: ${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}-${{ hashFiles('.github/workflows/windows.yml') }}
+            openssl-head: ${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}-${{ steps.workflow.outputs.id }}
         steps:
             - uses: actions/checkout@v2
             - uses: actions/checkout@v2
@@ -18,11 +18,13 @@ jobs:
               id: openssl
             - run: echo "::set-output name=id::$(git rev-parse HEAD:patches)"
               id: patches
+            - run: echo "id=$(git rev-parse HEAD:.github/workflows/windows.yml)" >> $env:GITHUB_OUTPUT
+              id: workflow
             - uses: actions/cache@v4
               id: cache
               with:
                   path: openssl/_dest
-                  key: ${{ runner.os }}-openssl-${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}-${{ hashFiles('.github/workflows/windows.yml') }}
+                  key: ${{ runner.os }}-openssl-${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}-${{ steps.workflow.outputs.id }}
             - name: Apply patches
               run: |
                   git apply patches/openssl-tls1.3.patch
@@ -71,7 +73,7 @@ jobs:
     msvc-openssl-4-0-0:
         runs-on: windows-latest
         outputs:
-            openssl-head: ${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}-${{ hashFiles('.github/workflows/windows.yml') }}
+            openssl-head: ${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}-${{ steps.workflow.outputs.id }}
         steps:
             - uses: actions/checkout@v2
             - uses: actions/checkout@v2
@@ -84,11 +86,13 @@ jobs:
               id: openssl
             - run: echo "::set-output name=id::$(git rev-parse HEAD:patches)"
               id: patches
+            - run: echo "id=$(git rev-parse HEAD:.github/workflows/windows.yml)" >> $env:GITHUB_OUTPUT
+              id: workflow
             - uses: actions/cache@v4
               id: cache
               with:
                   path: openssl/_dest
-                  key: ${{ runner.os }}-openssl-${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}-${{ hashFiles('.github/workflows/windows.yml') }}
+                  key: ${{ runner.os }}-openssl-${{ steps.openssl.outputs.head }}-${{ steps.patches.outputs.id }}-${{ steps.workflow.outputs.id }}
             - name: Apply patches
               run: |
                   git apply patches/pkcs12/openssl-pkcs12-provider-pbe-4.0.patch
