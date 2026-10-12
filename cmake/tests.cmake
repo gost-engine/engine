@@ -107,24 +107,26 @@ add_integration_test(NAME test_pkcs12_rfc9337 ${WITH_ENGINE} ${WITH_PROVIDER})
 add_integration_test(NAME test_raw_sign_prehash ${WITH_PROVIDER}
                      LINK_LIBS OpenSSL::Crypto)
 
-if (GOST_BUILD_ENGINE AND GOST_BUILD_PROVIDER)
-    # Phase 16d: confirm engine.cnf and provider.cnf produce
-    # structurally equivalent PFXes (same OIDs + length fields, no
-    # divergence in PBES2/PBKDF2/cipher-params/MAC layout).
-    add_test(NAME test_pkcs12_rfc9337_cross_mode
-             COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/test/pkcs12_cross_mode_parity.sh
-                     $<TARGET_FILE:test_pkcs12_rfc9337>
-                     ${CMAKE_CURRENT_SOURCE_DIR}/test/engine.cnf
-                     ${CMAKE_CURRENT_SOURCE_DIR}/test/provider.cnf)
-    set_tests_properties(test_pkcs12_rfc9337_cross_mode
-        PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_COMMON}")
-endif()
+if (NOT MSVC)
+    if (GOST_BUILD_ENGINE AND GOST_BUILD_PROVIDER)
+        # Phase 16d: confirm engine.cnf and provider.cnf produce
+        # structurally equivalent PFXes (same OIDs + length fields, no
+        # divergence in PBES2/PBKDF2/cipher-params/MAC layout).
+        add_test(NAME test_pkcs12_rfc9337_cross_mode
+                 COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/test/pkcs12_cross_mode_parity.sh
+                         $<TARGET_FILE:test_pkcs12_rfc9337>
+                         ${CMAKE_CURRENT_SOURCE_DIR}/test/engine.cnf
+                         ${CMAKE_CURRENT_SOURCE_DIR}/test/provider.cnf)
+        set_tests_properties(test_pkcs12_rfc9337_cross_mode
+            PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_COMMON}")
+    endif()
 
-if (GOST_BUILD_ENGINE)
-    add_test(NAME test_pkcs12_rfc9337_cli-with-engine
-             COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/test/pkcs12_rfc9337.sh)
-    set_tests_properties(test_pkcs12_rfc9337_cli-with-engine
-        PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+    if (GOST_BUILD_ENGINE)
+        add_test(NAME test_pkcs12_rfc9337_cli-with-engine
+                 COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/test/pkcs12_rfc9337.sh)
+        set_tests_properties(test_pkcs12_rfc9337_cli-with-engine
+            PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
+    endif()
 endif()
 
 if(TLS13_PATCHED_OPENSSL)
