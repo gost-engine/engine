@@ -13,7 +13,7 @@ cmake -DTLS13_PATCHED_OPENSSL=$PATCH_OPENSSL -DOPENSSL_ROOT_DIR=$PREFIX \
 
 make
 if [ "${OPENSSL_BRANCH}" = "master" ]; then
-    ctest -E pkcs12_rfc9337 --output-on-failure
+    make test ARGS="-E test_pkcs12_rfc9337" CTEST_OUTPUT_ON_FAILURE=1
 else
     make test CTEST_OUTPUT_ON_FAILURE=1
 fi
