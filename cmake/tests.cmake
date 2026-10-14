@@ -118,7 +118,7 @@ if (NOT MSVC)
                          ${CMAKE_CURRENT_SOURCE_DIR}/test/engine.cnf
                          ${CMAKE_CURRENT_SOURCE_DIR}/test/provider.cnf)
         set_tests_properties(test_pkcs12_rfc9337_cross_mode
-            PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_COMMON}")
+            PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_ENGINE}")
     endif()
 
     if (GOST_BUILD_ENGINE)
