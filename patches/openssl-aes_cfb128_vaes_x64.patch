@@ -1,7 +1,7 @@
-diff --git a/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc b/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc
+diff --git a/openssl/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc b/openssl/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc
 index d5577d00f1..0f67919808 100644
---- a/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc
-+++ b/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc
+--- a/openssl/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc
++++ b/openssl/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc
 @@ -1,99 +1,98 @@
 -/*
 - * Copyright 2001-2025 The OpenSSL Project Authors. All Rights Reserved.
