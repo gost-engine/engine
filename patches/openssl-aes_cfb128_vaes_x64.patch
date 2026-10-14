@@ -1,5 +1,5 @@
 diff --git a/openssl/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc b/openssl/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc
-index d5577d00f1..0f67919808 100644
+index d5577d0..0f67919 100644
 --- a/openssl/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc
 +++ b/openssl/providers/implementations/ciphers/cipher_aes_cfb_hw_aesni.inc
 @@ -1,99 +1,98 @@
@@ -61,7 +61,7 @@ index d5577d00f1..0f67919808 100644
 -
 -    return 1;
 -}
--
+- 
 -/* generates AES round keys for AES-NI and VAES implementations */
 -static int cipher_hw_aesni_initkey(PROV_CIPHER_CTX *dat,
 -                                   const unsigned char *key, size_t keylen)
