@@ -12,11 +12,13 @@ cmake -DTLS13_PATCHED_OPENSSL=$PATCH_OPENSSL -DOPENSSL_ROOT_DIR=$PREFIX \
     $BUILD_ENGINE $BUILD_PROVIDER ..
 
 make
-if [ "${OPENSSL_BRANCH}" = "master" ]; then
-    make test ARGS="-E test_pkcs12_rfc9337" CTEST_OUTPUT_ON_FAILURE=1
-else
-    make test CTEST_OUTPUT_ON_FAILURE=1
-fi
-if [ -z "${ASAN-}" ]; then
-    make tcl_tests
+if [ -z "${COVERITY_BUILD_ONLY-}" ]; then
+    if [ "${OPENSSL_BRANCH}" = "master" ]; then
+        make test ARGS="-E test_pkcs12_rfc9337" CTEST_OUTPUT_ON_FAILURE=1
+    else
+        make test CTEST_OUTPUT_ON_FAILURE=1
+    fi
+    if [ -z "${ASAN-}" ]; then
+        make tcl_tests
+    fi
 fi

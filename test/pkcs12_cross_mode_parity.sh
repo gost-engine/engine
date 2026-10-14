@@ -22,6 +22,7 @@ fi
 BIN=$1
 ENGINE_CNF=$2
 PROVIDER_CNF=$3
+BIN_DIR=$(CDPATH= cd -- "$(dirname -- "$BIN")" && pwd)
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -29,10 +30,13 @@ trap 'rm -rf "$TMP"' EXIT
 ENGINE_FP="$TMP/engine.fp"
 PROVIDER_FP="$TMP/provider.fp"
 
+OPENSSL_ENGINES="$BIN_DIR" \
 OPENSSL_CONF="$ENGINE_CNF" \
 RFC9337_FINGERPRINT_OUT="$ENGINE_FP" \
 "$BIN" >/dev/null
 
+env -u OPENSSL_ENGINES \
+OPENSSL_MODULES="$BIN_DIR" \
 OPENSSL_CONF="$PROVIDER_CNF" \
 RFC9337_FINGERPRINT_OUT="$PROVIDER_FP" \
 "$BIN" >/dev/null
