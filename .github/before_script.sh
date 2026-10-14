@@ -16,6 +16,7 @@ if [ "${PATCH_OPENSSL}" == "1" ]; then
     git apply patches/openssl-tls1.3.patch
     git apply patches/openssl-asn1_item_verify_ctx.patch
     git apply patches/openssl-x509_sig_info_init.patch
+    git apply patches/openssl-aes_cfb128_vaes_x64.patch
 fi
 
 # pkcs12 RFC 9337/9548 libcrypto fallbacks (see patches/pkcs12/README.md).
