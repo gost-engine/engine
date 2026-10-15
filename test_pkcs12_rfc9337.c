@@ -408,8 +408,10 @@ static int run_case(EVP_PKEY *pkey, X509 *cert,
                              ASN1_STRING_length(salt),
                              (int)iters, md, sizeof(dk), dk) == 1);
     memcpy(hmac_key, dk + 64, 32);
-    unsigned char mac9548[64]; unsigned int mac9548_len = sizeof(mac9548);
-    HMAC(md, hmac_key, sizeof(hmac_key), adata, alen, mac9548, &mac9548_len);
+    unsigned char mac9548[64] = {0};
+    unsigned int mac9548_len = sizeof(mac9548);
+    ASSERT(HMAC(md, hmac_key, sizeof(hmac_key), adata, alen, mac9548,
+                &mac9548_len) != NULL);
     ASSERT((int)mac9548_len == ASN1_STRING_length(macval) &&
            memcmp(mac9548, ASN1_STRING_get0_data(macval), mac9548_len) == 0);
 
