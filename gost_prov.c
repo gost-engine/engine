@@ -135,6 +135,7 @@ static void gost_teardown(void *vprovctx)
 {
     GOST_prov_deinit_digests();
     GOST_prov_deinit_macs();
+    free_cached_groups();
     provider_ctx_free(vprovctx);
 }
 
