@@ -151,6 +151,7 @@ typedef void (*fptr_t)(void);
         { OSSL_FUNC_DIGEST_INIT, (fptr_t)digest_init },                 \
         { OSSL_FUNC_DIGEST_UPDATE, (fptr_t)digest_update },             \
         { OSSL_FUNC_DIGEST_FINAL, (fptr_t)digest_final },               \
+        { 0, NULL },                                                    \
     }
 
 MAKE_FUNCTIONS(GostR3411_94_digest);
