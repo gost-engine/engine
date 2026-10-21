@@ -436,6 +436,11 @@ int gost_set_raw_pub_key(EVP_PKEY *pk, const unsigned char *pub, size_t len)
         return 0;
     }
 
+    if (len != (size_t)(2 * BN_num_bytes(order))) {
+        GOSTerr(GOST_F_GOST_SET_RAW_PUB_KEY, GOST_R_ERROR_DECODING_PUBLIC_KEY);
+        return 0;
+    }
+
     half = len / 2;
     if ((X = BN_lebin2bn(pub, half, NULL)) == NULL
         || (Y = BN_lebin2bn(pub + half, half, NULL)) == NULL
@@ -444,6 +449,11 @@ int gost_set_raw_pub_key(EVP_PKEY *pk, const unsigned char *pub, size_t len)
     }
 
     if (EC_POINT_set_affine_coordinates(group, pub_key, X, Y, NULL) != 1) {
+        goto end;
+    }
+
+    if (!gost_ec_pub_key_subgroup_check(group, pub_key)) {
+        GOSTerr(GOST_F_GOST_SET_RAW_PUB_KEY, GOST_R_PUBLIC_KEY_NOT_IN_SUBGROUP);
         goto end;
     }
 
@@ -1098,7 +1108,7 @@ int internal_pub_decode_ec(EC_KEY *ec, int *key_type, X509_ALGOR *palg,
 {
     unsigned char *databuf = NULL;
     EC_POINT *pub_key = NULL;
-    BIGNUM *X = NULL, *Y = NULL;
+    BIGNUM *X = NULL, *Y = NULL, *order = NULL;
     ASN1_OCTET_STRING *octet = NULL;
     size_t len;
     const EC_GROUP *group;
@@ -1112,12 +1122,18 @@ int internal_pub_decode_ec(EC_KEY *ec, int *key_type, X509_ALGOR *palg,
 
     group = EC_KEY_get0_group(ec);
     octet = d2i_ASN1_OCTET_STRING(NULL, &pubkey_buf, pub_len);
+    order = BN_new();
 
-    if (!octet) {
+    if (!octet || !order) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_MALLOC_FAILURE);
         goto ret;
     }
     const int octet_length = ASN1_STRING_length(octet);
+    if (!EC_GROUP_get_order(group, order, NULL)
+        || octet_length != 2 * BN_num_bytes(order)) {
+        GOSTerr(GOST_F_PUB_DECODE_GOST_EC, GOST_R_ERROR_DECODING_PUBLIC_KEY);
+        goto ret;
+    }
     databuf = OPENSSL_malloc(octet_length);
     if (!databuf) {
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_MALLOC_FAILURE);
@@ -1139,6 +1155,11 @@ int internal_pub_decode_ec(EC_KEY *ec, int *key_type, X509_ALGOR *palg,
         goto ret;
     }
 
+    if (!gost_ec_pub_key_subgroup_check(group, pub_key)) {
+        GOSTerr(GOST_F_PUB_DECODE_GOST_EC, GOST_R_PUBLIC_KEY_NOT_IN_SUBGROUP);
+        goto ret;
+    }
+
     retval = EC_KEY_set_public_key(ec, pub_key);
     if (!retval)
         GOSTerr(GOST_F_PUB_DECODE_GOST_EC, ERR_R_EC_LIB);
@@ -1147,6 +1168,7 @@ ret:
     EC_POINT_free(pub_key);
     BN_free(X);
     BN_free(Y);
+    BN_free(order);
     OPENSSL_free(databuf);
     ASN1_OCTET_STRING_free(octet);
     return retval;
