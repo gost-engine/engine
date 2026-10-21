@@ -299,6 +299,9 @@ int VKO_compute_key(unsigned char *shared_key,
 int store_bignum(const BIGNUM *bn, unsigned char *buf, int len);
 /* Pack GOST R 34.10 signature according to CryptoPro rules */
 int pack_sign_cp(ECDSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
+/* Unpack GOST R 34.10 signature, rejecting non-exact sizes */
+ECDSA_SIG *unpack_cp_signature(const unsigned char *sigbuf, size_t siglen,
+                               size_t expected_len);
 /* from ameth.c */
 /* Get private key as BIGNUM from both 34.10-2001 keys*/
 /* Returns pointer into EVP_PKEY structure */
