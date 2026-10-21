@@ -265,6 +265,8 @@ int gost_ec_keygen(EC_KEY *ec);
 ECDSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey);
 int gost_ec_verify(const unsigned char *dgst, int dgst_len,
                    ECDSA_SIG *sig, EC_KEY *ec);
+int gost_ec_pub_key_subgroup_check(const EC_GROUP *group,
+                                   const EC_POINT *pub_key);
 int gost_ec_compute_public(EC_KEY *ec);
 int gost_ec_point_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n,
                       const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);
