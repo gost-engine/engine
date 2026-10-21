@@ -135,6 +135,7 @@ if(TLS13_PATCHED_OPENSSL)
 endif()
 
 add_unit_test(NAME test_curves)
+add_unit_test(NAME test_subgroup)
 add_unit_test(NAME test_gost89)
 add_unit_test(NAME test_gosthash)
 add_unit_test(NAME test_gosthash2012)
