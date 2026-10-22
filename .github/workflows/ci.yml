@@ -58,6 +58,7 @@ jobs:
         env:
             PATCH_OPENSSL: 1
             GOST_BUILD_ENGINE: OFF
+            ASAN: -DASAN=1
         steps:
             - uses: actions/checkout@v2
               with:
@@ -72,6 +73,7 @@ jobs:
             CC: clang
             PATCH_OPENSSL: 1
             GOST_BUILD_ENGINE: OFF
+            ASAN: -DASAN=1
         steps:
             - uses: actions/checkout@v2
               with:
@@ -87,6 +89,7 @@ jobs:
             GOST_PROVIDER_ENABLE_ONLINE_TESTS: 0 # macOS runner has no network access to infotecs TLS1.3 server
             PATCH_OPENSSL: 1
             GOST_BUILD_ENGINE: OFF
+            ASAN: -DASAN=1
         steps:
             - uses: actions/checkout@v2
               with:
@@ -98,6 +101,7 @@ jobs:
         runs-on: ubuntu-latest
         env:
             OPENSSL_BRANCH: master
+            ASAN: -DASAN=1
         steps:
             - uses: actions/checkout@v2
               with:
@@ -111,6 +115,7 @@ jobs:
         env:
             CC: clang
             OPENSSL_BRANCH: openssl-4.0.0
+            ASAN: -DASAN=1
         steps:
             - uses: actions/checkout@v2
               with:
@@ -124,6 +129,7 @@ jobs:
         env:
             OPENSSL_BRANCH: openssl-4.0.0
             USE_RPATH:
+            ASAN: -DASAN=1
             GOST_PROVIDER_ENABLE_ONLINE_TESTS: 0 # macOS runner has no network access to infotecs TLS1.3 server
         steps:
             - uses: actions/checkout@v2
@@ -132,7 +138,7 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    gcc-asan-openssl-4-0-0:
+    gcc-openssl-4-0-0:
         runs-on: ubuntu-latest
         env:
             OPENSSL_BRANCH: openssl-4.0.0
@@ -144,7 +150,7 @@ jobs:
             - run: .github/before_script.sh
             - run: .github/script.sh
 
-    macos-asan-openssl-4-0-0:
+    macos-openssl-4-0-0:
         runs-on: macos-latest
         env:
             OPENSSL_BRANCH: openssl-4.0.0
