@@ -598,10 +598,17 @@ int pkey_gost_ec_cp_sign(EVP_PKEY_CTX *ctx, unsigned char *sig,
 
 /* ------------------- verify callbacks --------------------------- */
 /* Unpack signature according to cryptopro rules  */
-ECDSA_SIG *unpack_cp_signature(const unsigned char *sigbuf, size_t siglen)
+ECDSA_SIG *unpack_cp_signature(const unsigned char *sigbuf, size_t siglen,
+                               size_t expected_len)
 {
     ECDSA_SIG *sig;
     BIGNUM *r = NULL, *s = NULL;
+
+    /* Reject anything but the exact signature size */
+    if (siglen != expected_len) {
+        GOSTerr(GOST_F_UNPACK_CP_SIGNATURE, GOST_R_INVALID_BUFFER_SIZE);
+        return NULL;
+    }
 
     sig = ECDSA_SIG_new();
     if (sig == NULL) {
@@ -620,11 +627,23 @@ int internal_pkey_ec_cp_verify(EC_KEY *ec, const unsigned char *sig,
 {
     int ok = 0;
     ECDSA_SIG *s = NULL;
+    const EC_GROUP *group;
+    BIGNUM *order = NULL;
+    size_t expected_len = 0;
 
     if (!ec)
         return 0;
 
-    s = (sig) ? unpack_cp_signature(sig, siglen) : NULL;
+    group = EC_KEY_get0_group(ec);
+    order = BN_new();
+    if (!group || !order || !EC_GROUP_get_order(group, order, NULL)) {
+        BN_free(order);
+        return 0;
+    }
+    expected_len = 2 * (size_t)BN_num_bytes(order);
+    BN_free(order);
+
+    s = (sig) ? unpack_cp_signature(sig, siglen, expected_len) : NULL;
     if (!s)
         return 0;
 

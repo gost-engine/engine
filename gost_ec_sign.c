@@ -319,6 +319,48 @@ ECDSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
 }
 
 /*
+ * Checks that q*pub_key is the point at infinity, i.e. that pub_key
+ * belongs to the subgroup of order q.  For parameter sets with
+ * cofactor 1 the check is trivially true and is skipped.
+ */
+int gost_ec_pub_key_subgroup_check(const EC_GROUP *group,
+                                   const EC_POINT *pub_key)
+{
+    BN_CTX *ctx = NULL;
+    BIGNUM *order = NULL;
+    EC_POINT *check = NULL;
+    const BIGNUM *cofactor = NULL;
+    int ok = 0;
+
+    if (!group || !pub_key)
+        return 0;
+
+    if (EC_POINT_is_at_infinity(group, pub_key))
+        return 0;
+
+    cofactor = EC_GROUP_get0_cofactor(group);
+    if (cofactor && BN_is_one(cofactor))
+        return 1;
+
+    if (!(ctx = BN_CTX_new()))
+        return 0;
+
+    BN_CTX_start(ctx);
+    order = BN_CTX_get(ctx);
+    check = EC_POINT_new(group);
+    if (order && check
+        && EC_GROUP_get_order(group, order, ctx)
+        && EC_POINT_mul(group, check, NULL, pub_key, order, ctx)
+        && EC_POINT_is_at_infinity(group, check))
+        ok = 1;
+
+    EC_POINT_free(check);
+    BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
+    return ok;
+}
+
+/*
  * Verifies gost ec signature
  *
  */
@@ -359,6 +401,11 @@ int gost_ec_verify(const unsigned char *dgst, int dgst_len,
     pub_key = EC_KEY_get0_public_key(ec);
     if (!pub_key || !EC_GROUP_get_order(group, order, ctx)) {
         GOSTerr(GOST_F_GOST_EC_VERIFY, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+
+    if (!gost_ec_pub_key_subgroup_check(group, pub_key)) {
+        GOSTerr(GOST_F_GOST_EC_VERIFY, GOST_R_PUBLIC_KEY_NOT_IN_SUBGROUP);
         goto err;
     }
 

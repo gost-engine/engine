@@ -265,6 +265,8 @@ int gost_ec_keygen(EC_KEY *ec);
 ECDSA_SIG *gost_ec_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey);
 int gost_ec_verify(const unsigned char *dgst, int dgst_len,
                    ECDSA_SIG *sig, EC_KEY *ec);
+int gost_ec_pub_key_subgroup_check(const EC_GROUP *group,
+                                   const EC_POINT *pub_key);
 int gost_ec_compute_public(EC_KEY *ec);
 int gost_ec_point_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n,
                       const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);
@@ -297,6 +299,9 @@ int VKO_compute_key(unsigned char *shared_key,
 int store_bignum(const BIGNUM *bn, unsigned char *buf, int len);
 /* Pack GOST R 34.10 signature according to CryptoPro rules */
 int pack_sign_cp(ECDSA_SIG *s, int order, unsigned char *sig, size_t *siglen);
+/* Unpack GOST R 34.10 signature, rejecting non-exact sizes */
+ECDSA_SIG *unpack_cp_signature(const unsigned char *sigbuf, size_t siglen,
+                               size_t expected_len);
 /* from ameth.c */
 /* Get private key as BIGNUM from both 34.10-2001 keys*/
 /* Returns pointer into EVP_PKEY structure */

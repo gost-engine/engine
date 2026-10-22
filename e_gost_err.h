@@ -63,6 +63,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_F_GOST_MGM128_AAD                           170
 # define GOST_F_GOST_MGM128_DECRYPT                       171
 # define GOST_F_GOST_MGM128_ENCRYPT                       172
+# define GOST_F_GOST_SET_RAW_PUB_KEY                      173
 # define GOST_F_MAGMA_CIPHER_CTL                          163
 # define GOST_F_MAGMA_CIPHER_CTL_ACPKM_OMAC               164
 # define GOST_F_MAGMA_CIPHER_INIT_CTR_ACPKM_OMAC          165
@@ -141,6 +142,7 @@ void ERR_GOST_error(int function, int reason, char *file, int line);
 # define GOST_R_NO_PARAMETERS_SET                         122
 # define GOST_R_NO_PEER_KEY                               123
 # define GOST_R_NO_PRIVATE_PART_OF_NON_EPHEMERAL_KEYPAIR  124
+# define GOST_R_PUBLIC_KEY_NOT_IN_SUBGROUP                143
 # define GOST_R_PUBLIC_KEY_UNDEFINED                      125
 # define GOST_R_RNG_ERROR                                 126
 # define GOST_R_SIGNATURE_MISMATCH                        127
