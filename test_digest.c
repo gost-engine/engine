@@ -824,9 +824,21 @@ static int do_test(const struct hash_testvec *tv)
     EVP_MAC *mac = NULL;
 
     ERR_set_mark();
-    T((md = EVP_MD_fetch(NULL, tv->algname, NULL))
-      || (mac = EVP_MAC_fetch(NULL, tv->algname, NULL))
-      || (md = (EVP_MD *)EVP_get_digestbyname(tv->algname)));
+    if (tv->key && !tv->hmac) {
+	/*
+	 * The provider may expose a digest stub under the same name
+	 * (needed for TLS 1.2) which cannot accept a key through
+	 * EVP_MD_CTX_ctrl. Prefer the MAC implementation for keyed
+	 * non-HMAC vectors.
+	 */
+	T((mac = EVP_MAC_fetch(NULL, tv->algname, NULL))
+	  || (md = EVP_MD_fetch(NULL, tv->algname, NULL))
+	  || (md = (EVP_MD *)EVP_get_digestbyname(tv->algname)));
+    } else {
+	T((md = EVP_MD_fetch(NULL, tv->algname, NULL))
+	  || (mac = EVP_MAC_fetch(NULL, tv->algname, NULL))
+	  || (md = (EVP_MD *)EVP_get_digestbyname(tv->algname)));
+    }
     ERR_pop_to_mark();
 
     printf(cBLUE "Test %s: %s: " cNORM, tv->algname, tv->name);

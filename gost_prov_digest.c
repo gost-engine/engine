@@ -158,6 +158,11 @@ MAKE_FUNCTIONS(GostR3411_94_digest);
 MAKE_FUNCTIONS(GostR3411_2012_256_digest);
 MAKE_FUNCTIONS(GostR3411_2012_512_digest);
 
+MAKE_FUNCTIONS(Gost28147_89_mac);
+MAKE_FUNCTIONS(Gost28147_89_mac_12);
+MAKE_FUNCTIONS(magma_omac_mac);
+MAKE_FUNCTIONS(grasshopper_omac_mac);
+
 /* The OSSL_ALGORITHM for the provider's operation query function */
 const OSSL_ALGORITHM GOST_prov_digests[] = {
     /*
@@ -184,13 +189,26 @@ const OSSL_ALGORITHM GOST_prov_digests[] = {
     { SN_id_GostR3411_94":id-GostR3411-94:1.2.643.2.2.9:"
       LN_id_GostR3411_94, NULL,
       GostR3411_94_digest_functions, "GOST R 34.11-94" },
-    { NULL , NULL, NULL }
+
+    { SN_id_Gost28147_89_MAC ":" LN_id_Gost28147_89_MAC ":1.2.643.2.2.22", NULL,
+      Gost28147_89_mac_functions, "gost mac stub for TLS 1.2" },
+    { SN_gost_mac_12, NULL,
+      Gost28147_89_mac_12_functions, "gost12 mac stub for TLS 1.2" },
+    { SN_magma_mac, NULL,
+      magma_omac_mac_functions, "magma mac stub for TLS 1.2" },
+    { SN_kuznyechik_mac, NULL,
+      grasshopper_omac_mac_functions, "kuznyechik mac stub for TLS 1.2" },
+    { NULL, NULL, NULL }
 };
 
 static GOST_digest *digests[] = {
     &GostR3411_94_digest,
     &GostR3411_2012_256_digest,
     &GostR3411_2012_512_digest,
+    &Gost28147_89_mac,
+    &Gost28147_89_mac_12,
+    &magma_omac_mac,
+    &grasshopper_omac_mac,
 };
 
 #define arraysize(l) (sizeof(l) / sizeof(l[0]))
