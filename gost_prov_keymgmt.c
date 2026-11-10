@@ -801,5 +801,13 @@ const OSSL_ALGORITHM GOST_prov_keymgmt[] = {
     { ALG_NAME_GOST2001DH, NULL, id_gost2001dh_keymgmt_functions },
     { ALG_NAME_GOST2012_256, NULL, id_gost2012_256_keymgmt_functions },
     { ALG_NAME_GOST2012_512, NULL, id_gost2012_512_keymgmt_functions },
+    { ALG_NAME_GOST_MAC, NULL, id_gost_mac_keymgmt_mac_functions,
+      "Keymgmt for gost-mac key" },
+    { ALG_NAME_GOST12_MAC, NULL, id_gost_mac_12_keymgmt_mac_functions,
+      "Keymgmt for gost-mac-12 key" },
+    { ALG_NAME_MAGMA_MAC, NULL, id_magma_mac_keymgmt_mac_functions,
+      "Keymgmt for magma-mac key" },
+    { ALG_NAME_KUZNYECHIK_MAC, NULL, id_kuznyechik_mac_keymgmt_mac_functions,
+      "Keymgmt for kuznyechik-mac key" },
     { NULL, NULL, NULL }
 };

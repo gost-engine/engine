@@ -5,6 +5,8 @@ set(GOST_PROV_SOURCE_FILES
         gost_prov_digest.c
         gost_prov_mac.c
         gost_prov_keymgmt.c
+        gost_prov_keymgmt_mac.c
+        gost_prov_signature_mac.c
         gost_prov_encoder.c
         gost_prov_signature.c
         gost_prov_decoder.c

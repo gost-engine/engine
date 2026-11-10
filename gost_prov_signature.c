@@ -546,5 +546,29 @@ const OSSL_ALGORITHM GOST_prov_signature[] = {
         NULL,
         id_signature_functions
     },
+    {
+        ALG_NAME_GOST_MAC,
+        NULL,
+        id_Gost28147_89_mac_signature_mac_functions,
+        "gost mac with sign interface"
+    },
+    {
+        ALG_NAME_GOST12_MAC,
+        NULL,
+        id_Gost28147_89_mac_12_signature_mac_functions,
+        "gost 12 mac with sign interface"
+    },
+    {
+        ALG_NAME_MAGMA_MAC,
+        NULL,
+        id_magma_omac_mac_signature_mac_functions,
+        "magma mac with sign interface"
+    },
+    {
+        ALG_NAME_KUZNYECHIK_MAC,
+        NULL,
+        id_grasshopper_omac_mac_signature_mac_functions,
+        "kuznyechik mac with sign interface"
+    },
     { NULL, NULL, NULL }
 };
