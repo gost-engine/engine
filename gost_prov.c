@@ -104,6 +104,8 @@ static const OSSL_ALGORITHM *gost_operation(void *vprovctx,
         return GOST_prov_decoder;
     case OSSL_OP_KEYEXCH:
         return GOST_prov_keyexch;
+    case OSSL_OP_ASYM_CIPHER:
+        return GOST_prov_asym_cipher;
     }
     return NULL;
 }

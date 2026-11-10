@@ -73,3 +73,4 @@ extern const OSSL_ALGORITHM GOST_prov_encoder[];
 extern const OSSL_ALGORITHM GOST_prov_signature[];
 extern const OSSL_ALGORITHM GOST_prov_decoder[];
 extern const OSSL_ALGORITHM GOST_prov_keyexch[];
+extern const OSSL_ALGORITHM GOST_prov_asym_cipher[];

@@ -6,7 +6,7 @@ my $target = $ARGV[0];
 unless (grep { $_ eq $target } @valid_target) {
     skip_all("Unknown test mode '$target' – expected one of @valid_target");
 }
-plan(2);
+plan(3);
 use Cwd 'abs_path';
 
 # prepare data for 
@@ -380,6 +380,52 @@ MF4CAQAwFwYIKoUDBwEBAQIwCwYJKoUDBwECAQIDBEDsI/BH7zxilCahaafnqe3ILFBHUf+pM0wAqwZl
 # 10. Разобрать стандартый encrypted key
 
 # 11. Сгенерирвоать encrypted key и его разобрать.
+
+# 12. Key transport: wrap and unwrap a session key
+subtest 'key transport' => sub {
+    my @cases = ( ['gost2012_256', 'A'], ['gost2012_512', 'A'], ['gost2001', 'A'] );
+    # 4 checks per GKT case + 6 skipped KEG checks on engine + 1 negative
+    plan(4 * scalar(@cases) + 6 + 1);
+
+    # Exactly 32 bytes: GOST session key size
+    open $F, ">", "session.bin";
+    print $F "0123456789abcdef0123456789abcdef";
+    close $F;
+    my $session_hash = `$openssl_bin dgst -sha256 -r session.bin`;
+    # Keep the digest only: 'dgst -r' output contains the file name too
+    ($session_hash) = $session_hash =~ /^([0-9a-f]+)/;
+    $session_hash //= '';
+
+    foreach my $case (@cases) {
+        my ($alg, $paramset) = @$case;
+        # Recipient keygen
+        ok(system("$openssl_bin genpkey -algorithm $alg -pkeyopt paramset:$paramset -out recip.prv.pem") == 0, "Keygen:$alg");
+        # CryptoPro key transport (GKT) roundtrip
+        ok(system("$openssl_bin pkeyutl -encrypt -inkey recip.prv.pem -in session.bin -out wrapped.bin") == 0, "GKT encrypt:$alg");
+        ok(system("$openssl_bin pkeyutl -decrypt -inkey recip.prv.pem -in wrapped.bin -out unwrapped.bin") == 0, "GKT decrypt:$alg");
+        like(`$openssl_bin dgst -sha256 -r unwrapped.bin`, qr/^\Q$session_hash\E/, "GKT roundtrip:$alg");
+    }
+
+    SKIP: {
+        skip "Engine has no cipher string control for KEG", 6 if $target eq 'engine';
+        # KEG/KExp15 transport roundtrip
+        ok(system("$openssl_bin pkeyutl -encrypt -inkey recip.prv.pem -in session.bin -out wrapped.bin -pkeyopt cipher:kuznyechik-ctr") == 0, "KEG encrypt:kuznyechik-ctr");
+        ok(system("$openssl_bin pkeyutl -decrypt -inkey recip.prv.pem -in wrapped.bin -out unwrapped.bin -pkeyopt cipher:kuznyechik-ctr") == 0, "KEG decrypt:kuznyechik-ctr");
+        like(`$openssl_bin dgst -sha256 -r unwrapped.bin`, qr/^\Q$session_hash\E/, "KEG roundtrip:kuznyechik-ctr");
+
+        ok(system("$openssl_bin pkeyutl -encrypt -inkey recip.prv.pem -in session.bin -out wrapped.bin -pkeyopt cipher:magma-ctr") == 0, "KEG encrypt:magma-ctr");
+        ok(system("$openssl_bin pkeyutl -decrypt -inkey recip.prv.pem -in wrapped.bin -out unwrapped.bin -pkeyopt cipher:magma-ctr") == 0, "KEG decrypt:magma-ctr");
+        like(`$openssl_bin dgst -sha256 -r unwrapped.bin`, qr/^\Q$session_hash\E/, "KEG roundtrip:magma-ctr");
+    }
+
+    # KEG is impossible with GOST R 34.10-2001 keys
+    ok(system("$openssl_bin pkeyutl -encrypt -inkey recip.prv.pem -in session.bin -out wrapped.bin -pkeyopt cipher:kuznyechik-ctr") != 0, "KEG rejected for GOST2001");
+
+    unlink "recip.prv.pem";
+    unlink "wrapped.bin";
+    unlink "unwrapped.bin";
+    unlink "session.bin";
+};
 
 unlink "test.cnf";
 

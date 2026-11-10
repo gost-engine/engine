@@ -9,6 +9,7 @@ set(GOST_PROV_SOURCE_FILES
         gost_prov_signature.c
         gost_prov_decoder.c
         gost_prov_keyexch.c
+        gost_prov_asym_cipher.c
         gost_prov_tls.c
         gost_prov_tls.h
         gost_cipher_ctx.c
