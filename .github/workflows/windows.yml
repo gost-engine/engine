@@ -28,6 +28,7 @@ jobs:
             - name: Apply patches
               run: |
                   git apply patches/openssl-tls1.3.patch
+                  git apply patches/openssl-tls1.2.patch
                   git apply patches/openssl-asn1_item_verify_ctx.patch
                   git apply patches/openssl-x509_sig_info_init.patch
                   git apply patches/pkcs12/openssl-pkcs12-provider-pbe-3.6.patch

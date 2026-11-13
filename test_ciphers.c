@@ -858,6 +858,82 @@ static int test_provider_padded_decrypt(const EVP_CIPHER *type, const char *name
     return ret;
 }
 
+/* Size of the MAC (imit) for the GOST TLS 1.2 stream cipher suites */
+static size_t tls_mac_size_for_cipher(const char *name)
+{
+    if (strcmp(name, SN_grasshopper_ctr) == 0
+        || strcmp(name, SN_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm) == 0)
+        return 16;
+    return 8;
+}
+
+/*
+ * Emulates the libssl record protection for Mac-then-encrypt stream
+ * ciphers: the MAC is encrypted as a tail of the record, on decryption
+ * the provider must cut it off the output and hand it over through the
+ * OSSL_CIPHER_PARAM_TLS_MAC (octet_ptr) parameter.
+ */
+static int test_provider_tls_mac(const EVP_CIPHER *type, const char *name,
+                                 const unsigned char *key,
+                                 const unsigned char *iv, size_t iv_size,
+                                 size_t mac_size)
+{
+    EVP_CIPHER_CTX *enc = NULL, *dec = NULL;
+    OSSL_PARAM params[2];
+    unsigned char rec[128];
+    unsigned char ct[128];
+    unsigned char *tls_mac = NULL;
+    int outl = 0, part = 0;
+    int ret = 0, test;
+    size_t i;
+
+    if (EVP_CIPHER_get0_provider(type) == NULL)
+        return 0;
+
+    T(mac_size > 0 && mac_size <= EVP_MAX_MD_SIZE);
+    T(sizeof(rec) >= sizeof(P) + mac_size);
+    memcpy(rec, P, sizeof(P));
+    for (i = 0; i < mac_size; i++)
+        rec[sizeof(P) + i] = (unsigned char)(0xa0 + i);
+
+    printf("Provider tls-mac test [%s]: ", name);
+
+    enc = EVP_CIPHER_CTX_new();
+    dec = EVP_CIPHER_CTX_new();
+    T(enc != NULL && dec != NULL);
+
+    /* libssl sets tls-mac-size on both directions */
+    params[0] = OSSL_PARAM_construct_size_t(OSSL_CIPHER_PARAM_TLS_MAC_SIZE, &mac_size);
+    params[1] = OSSL_PARAM_construct_end();
+
+    T(EVP_CipherInit_ex(enc, type, NULL, key, iv, 1));
+    T(EVP_CIPHER_CTX_set_params(enc, params));
+    /* Nothing must be cut off the output while encrypting */
+    T(EVP_EncryptUpdate(enc, ct, &outl, rec, (int)(sizeof(P) + mac_size)));
+    TEST_ASSERT((size_t)outl != sizeof(P) + mac_size);
+    ret |= test;
+
+    T(EVP_CipherInit_ex(dec, type, NULL, key, iv, 0));
+    T(EVP_CIPHER_CTX_set_params(dec, params));
+    T(EVP_DecryptUpdate(dec, ct, &part, ct, outl));
+    /* The plaintext must come out without the MAC tail */
+    TEST_ASSERT((size_t)part != sizeof(P) || memcmp(ct, P, sizeof(P)) != 0);
+    ret |= test;
+
+    params[0] = OSSL_PARAM_construct_octet_ptr(OSSL_CIPHER_PARAM_TLS_MAC,
+                                               (void **)&tls_mac, mac_size);
+    params[1] = OSSL_PARAM_construct_end();
+    T(EVP_CIPHER_CTX_get_params(dec, params));
+    T(params[0].return_size == mac_size);
+    TEST_ASSERT(tls_mac == NULL
+                || memcmp(tls_mac, rec + sizeof(P), mac_size) != 0);
+    ret |= test;
+
+    EVP_CIPHER_CTX_free(enc);
+    EVP_CIPHER_CTX_free(dec);
+    return ret;
+}
+
 int engine_is_available(const char *name)
 {
 #if HAVE_ENGINE
@@ -963,6 +1039,10 @@ int main(int argc, char **argv)
             }
             ret |= test_provider_padded_decrypt(ciph, t->algname, t->block,
                                                 t->key, t->iv);
+            if (t->stream || strcmp(t->algname, SN_magma_ctr) == 0)
+                ret |= test_provider_tls_mac(ciph, t->algname, t->key,
+                                             t->iv, t->iv_size,
+                                             tls_mac_size_for_cipher(t->algname));
         }
         ret |= test_engine_asn1_acpkm_reinit(ciph, t->algname, t->key, t->iv);
 

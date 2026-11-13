@@ -290,6 +290,10 @@ int VKO_compute_key(unsigned char *shared_key,
                     const EC_POINT *pub_key, const EC_KEY *priv_key,
                     const unsigned char *ukm, const size_t ukm_size,
                     const int vko_dgst_nid);
+/* KEG algorithm, keyout expected to be 64 bytes */
+int gost_keg(const unsigned char *ukm_source, int pkey_nid,
+             const EC_POINT *pub_key, const EC_KEY *priv_key,
+             unsigned char *keyout);
 
 /*============== miscellaneous functions============================= */
 /*

@@ -1,0 +1,222 @@
+diff --git a/openssl/crypto/evp/ctrl_params_translate.c b/openssl/crypto/evp/ctrl_params_translate.c
+index 76dd8e0d36..2fbc6370cb 100644
+--- a/openssl/crypto/evp/ctrl_params_translate.c
++++ b/openssl/crypto/evp/ctrl_params_translate.c
+@@ -2433,6 +2433,12 @@ static const struct translation_st evp_pkey_ctx_translations[] = {
+       EVP_PKEY_CTRL_GET_MD, NULL, NULL,
+       OSSL_SIGNATURE_PARAM_DIGEST, OSSL_PARAM_UTF8_STRING, fix_md },
+ 
++    { OSSL_ACTION_SET, -1, -1, EVP_PKEY_OP_TYPE_CRYPT,
++        EVP_PKEY_CTRL_SET_IV, NULL, NULL,
++        OSSL_EXCHANGE_PARAM_KDF_UKM, OSSL_PARAM_OCTET_STRING, NULL },
++    { OSSL_ACTION_GET, -1, -1, EVP_PKEY_OP_TYPE_CRYPT,
++        EVP_PKEY_CTRL_SET_IV, NULL, NULL,
++        OSSL_EXCHANGE_PARAM_KDF_UKM, OSSL_PARAM_OCTET_PTR, NULL },
+     /*-
+      * ECX
+      * ===
+diff --git a/openssl/crypto/evp/digest.c b/openssl/crypto/evp/digest.c
+index 680917da57..c6e564820c 100644
+--- a/openssl/crypto/evp/digest.c
++++ b/openssl/crypto/evp/digest.c
+@@ -914,6 +914,11 @@ int EVP_MD_CTX_ctrl(EVP_MD_CTX *ctx, int cmd, int p1, void *p2)
+         params[0] = OSSL_PARAM_construct_octet_string(OSSL_DIGEST_PARAM_SSL3_MS,
+                                                       p2, p1);
+         break;
++    case EVP_MD_CTRL_TLSTREE:
++        sz = (size_t)p1;
++        params[0] = OSSL_PARAM_construct_octet_string(OSSL_DIGEST_PARAM_TLSTREE, p2, sz);
++        params[1] = OSSL_PARAM_construct_end();
++        break;
+     default:
+         goto conclude;
+     }
+diff --git a/openssl/ssl/ssl_ciph.c b/openssl/ssl/ssl_ciph.c
+index ee22dd4d95..02f89a7b6d 100644
+--- a/openssl/ssl/ssl_ciph.c
++++ b/openssl/ssl/ssl_ciph.c
+@@ -342,6 +342,24 @@ static int get_optional_pkey_id(const char *pkey_name)
+ 
+ IS_FETCHABLE(keymgmt, EVP_KEYMGMT)
+ 
++static int check_md_support(const char *pkey_name) {
++    /* Engine */
++    int nid = get_optional_pkey_id(pkey_name);
++    if (nid != NID_undef)
++        return nid;
++
++    /* Provider */
++    ERR_set_mark();
++    EVP_MD *md = EVP_MD_fetch(NULL, pkey_name, NULL);
++    if (md) {
++        EVP_MD_free(md);
++        nid = OBJ_sn2nid(pkey_name);
++    } else {
++        ERR_pop_to_mark();
++    }
++    return nid;
++}
++
+ int ssl_load_ciphers(SSL_CTX *ctx)
+ {
+     size_t i;
+@@ -422,29 +440,25 @@ int ssl_load_ciphers(SSL_CTX *ctx)
+     memcpy(ctx->ssl_mac_pkey_id, default_mac_pkey_id,
+            sizeof(ctx->ssl_mac_pkey_id));
+ 
+-    ctx->ssl_mac_pkey_id[SSL_MD_GOST89MAC_IDX] =
+-        get_optional_pkey_id(SN_id_Gost28147_89_MAC);
++    ctx->ssl_mac_pkey_id[SSL_MD_GOST89MAC_IDX] = check_md_support(SN_id_Gost28147_89_MAC);
+     if (ctx->ssl_mac_pkey_id[SSL_MD_GOST89MAC_IDX])
+         ctx->ssl_mac_secret_size[SSL_MD_GOST89MAC_IDX] = 32;
+     else
+         ctx->disabled_mac_mask |= SSL_GOST89MAC;
+ 
+-    ctx->ssl_mac_pkey_id[SSL_MD_GOST89MAC12_IDX] =
+-        get_optional_pkey_id(SN_gost_mac_12);
++    ctx->ssl_mac_pkey_id[SSL_MD_GOST89MAC12_IDX] = check_md_support(SN_gost_mac_12);
+     if (ctx->ssl_mac_pkey_id[SSL_MD_GOST89MAC12_IDX])
+         ctx->ssl_mac_secret_size[SSL_MD_GOST89MAC12_IDX] = 32;
+     else
+         ctx->disabled_mac_mask |= SSL_GOST89MAC12;
+ 
+-    ctx->ssl_mac_pkey_id[SSL_MD_MAGMAOMAC_IDX] =
+-        get_optional_pkey_id(SN_magma_mac);
++    ctx->ssl_mac_pkey_id[SSL_MD_MAGMAOMAC_IDX] = check_md_support(SN_magma_mac);
+     if (ctx->ssl_mac_pkey_id[SSL_MD_MAGMAOMAC_IDX])
+         ctx->ssl_mac_secret_size[SSL_MD_MAGMAOMAC_IDX] = 32;
+     else
+         ctx->disabled_mac_mask |= SSL_MAGMAOMAC;
+ 
+-    ctx->ssl_mac_pkey_id[SSL_MD_KUZNYECHIKOMAC_IDX] =
+-        get_optional_pkey_id(SN_kuznyechik_mac);
++    ctx->ssl_mac_pkey_id[SSL_MD_KUZNYECHIKOMAC_IDX] = check_md_support(SN_kuznyechik_mac);
+     if (ctx->ssl_mac_pkey_id[SSL_MD_KUZNYECHIKOMAC_IDX])
+         ctx->ssl_mac_secret_size[SSL_MD_KUZNYECHIKOMAC_IDX] = 32;
+     else
+diff --git a/openssl/ssl/statem/statem_clnt.c b/openssl/ssl/statem/statem_clnt.c
+index a968becdfc..a876495fee 100644
+--- a/openssl/ssl/statem/statem_clnt.c
++++ b/openssl/ssl/statem/statem_clnt.c
+@@ -3340,6 +3340,8 @@ static int tls_construct_cke_gost(SSL_CONNECTION *s, WPACKET *pkt)
+     unsigned char *pms = NULL;
+     size_t pmslen = 0;
+     SSL_CTX *sctx = SSL_CONNECTION_GET_CTX(s);
++    EVP_MD* fetched_md = NULL;
++    const EVP_MD* md = NULL;
+ 
+     if ((s->s3.tmp.new_cipher->algorithm_auth & SSL_aGOST12) != 0)
+         dgst_nid = NID_id_GostR3411_2012_256;
+@@ -3381,13 +3383,27 @@ static int tls_construct_cke_gost(SSL_CONNECTION *s, WPACKET *pkt)
+         SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+         goto err;
+     };
++
++    (void)ERR_set_mark();
++    fetched_md = EVP_MD_fetch(sctx->libctx, OBJ_nid2sn(dgst_nid), sctx->propq);
++    /* Fallback to legacy method */
++    if (fetched_md == NULL)
++        md = EVP_get_digestbynid(dgst_nid);
++    else
++        md = fetched_md;
++    if (md == NULL) {
++        (void)ERR_clear_last_mark();
++        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
++        goto err;
++    }
++    (void)ERR_pop_to_mark();
+     /*
+      * Compute shared IV and store it in algorithm-specific context
+      * data
+      */
+     ukm_hash = EVP_MD_CTX_new();
+     if (ukm_hash == NULL
+-        || EVP_DigestInit(ukm_hash, EVP_get_digestbynid(dgst_nid)) <= 0
++        || EVP_DigestInit(ukm_hash, md) <= 0
+         || EVP_DigestUpdate(ukm_hash, s->s3.client_random,
+                             SSL3_RANDOM_SIZE) <= 0
+         || EVP_DigestUpdate(ukm_hash, s->s3.server_random,
+@@ -3398,6 +3414,8 @@ static int tls_construct_cke_gost(SSL_CONNECTION *s, WPACKET *pkt)
+     }
+     EVP_MD_CTX_free(ukm_hash);
+     ukm_hash = NULL;
++    EVP_MD_free(fetched_md);
++    fetched_md = NULL;
+     if (EVP_PKEY_CTX_ctrl(pkey_ctx, -1, EVP_PKEY_OP_ENCRYPT,
+                           EVP_PKEY_CTRL_SET_IV, 8, shared_ukm) <= 0) {
+         SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_R_LIBRARY_BUG);
+@@ -3427,6 +3445,7 @@ static int tls_construct_cke_gost(SSL_CONNECTION *s, WPACKET *pkt)
+     return 1;
+  err:
+     EVP_PKEY_CTX_free(pkey_ctx);
++    EVP_MD_free(fetched_md);
+     OPENSSL_clear_free(pms, pmslen);
+     EVP_MD_CTX_free(ukm_hash);
+     return 0;
+diff --git a/openssl/ssl/statem/statem_srvr.c b/openssl/ssl/statem/statem_srvr.c
+index 80d09d76e1..d2c16f621b 100644
+--- a/openssl/ssl/statem/statem_srvr.c
++++ b/openssl/ssl/statem/statem_srvr.c
+@@ -3312,10 +3312,6 @@ static int tls_process_cke_gost(SSL_CONNECTION *s, PACKET *pkt)
+         /* SSLfatal() already called */
+         goto err;
+     }
+-    /* Check if pubkey from client certificate was used */
+-    if (EVP_PKEY_CTX_ctrl(pkey_ctx, -1, -1, EVP_PKEY_CTRL_PEER_KEY, 2,
+-                          NULL) > 0)
+-        s->statem.no_cert_verify = 1;
+ 
+     ret = 1;
+  err:
+diff --git a/openssl/ssl/t1_lib.c b/openssl/ssl/t1_lib.c
+index d53a9d566a..614eb11216 100644
+--- a/openssl/ssl/t1_lib.c
++++ b/openssl/ssl/t1_lib.c
+@@ -2188,7 +2188,7 @@ int ssl_setup_sigalgs(SSL_CTX *ctx)
+     uint16_t *tls12_sigalgs_list = NULL;
+     EVP_PKEY *tmpkey = EVP_PKEY_new();
+     int istls;
+-    int ret = 0;
++    int ret = 0, tmpret = 0;
+ 
+     if (ctx == NULL)
+         goto err;
+@@ -2227,9 +2227,23 @@ int ssl_setup_sigalgs(SSL_CTX *ctx)
+             continue;
+         }
+ 
++        /* Try to use legacy key initialization */
+         if (!EVP_PKEY_set_type(tmpkey, lu->sig)) {
+-            cache[i].available = 0;
+-            continue;
++            /* Otherwise initialization with provider */
++            EVP_KEYMGMT* keymgmt = EVP_KEYMGMT_fetch(ctx->libctx,
++                                                     OBJ_nid2sn(lu->sig),
++                                                     ctx->propq);
++            if (!keymgmt) {
++                cache[i].available = 0;
++                continue;
++            }
++
++            tmpret = EVP_PKEY_set_type_by_keymgmt(tmpkey, keymgmt);
++            EVP_KEYMGMT_free(keymgmt);
++            if (!tmpret) {
++                cache[i].available = 0;
++                continue;
++            }
+         }
+         pctx = EVP_PKEY_CTX_new_from_pkey(ctx->libctx, tmpkey, ctx->propq);
+         /* If unable to create pctx we assume the sig algorithm is unavailable */
+diff --git a/openssl/util/perl/OpenSSL/paramnames.pm b/openssl/util/perl/OpenSSL/paramnames.pm
+index 0aec3b28d9..c22cb29528 100644
+--- a/openssl/util/perl/OpenSSL/paramnames.pm
++++ b/openssl/util/perl/OpenSSL/paramnames.pm
+@@ -175,6 +175,8 @@ my %params = (
+     'OSSL_DIGEST_PARAM_XOF' =>          "xof",          # int, 0 or 1
+     'OSSL_DIGEST_PARAM_ALGID_ABSENT' => "algid-absent", # int, 0 or 1
+ 
++    'OSSL_DIGEST_PARAM_TLSTREE' => "tlstree", # octet_string
++
+ # MAC parameters
+     'OSSL_MAC_PARAM_KEY' =>            "key",           # octet string
+     'OSSL_MAC_PARAM_IV' =>             "iv",            # octet string

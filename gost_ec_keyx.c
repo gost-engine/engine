@@ -93,9 +93,16 @@ int VKO_compute_key(unsigned char *shared_key,
     size_t secret_len = 0;
     EVP_MD_CTX *mdctx = NULL;
     const EVP_MD *md = NULL;
+    EVP_MD *fetched_md = NULL;
     int ret = 0;
 
     md = EVP_get_digestbynid(vko_dgst_nid);
+    if (!md) {
+        /* Digest may live in a provider (e.g. when called from
+         * the GOST provider itself) */
+        fetched_md = EVP_MD_fetch(NULL, OBJ_nid2sn(vko_dgst_nid), NULL);
+        md = fetched_md;
+    }
     if (!md) {
         GOSTerr(GOST_F_VKO_COMPUTE_KEY, GOST_R_INVALID_DIGEST_TYPE);
         goto exit;
@@ -129,6 +136,7 @@ int VKO_compute_key(unsigned char *shared_key,
     ret = (EVP_MD_size(md) > 0) ? EVP_MD_size(md) : 0;
 exit:
 
+    EVP_MD_free(fetched_md);
     EVP_MD_CTX_free(mdctx);
     OPENSSL_free(ecdh_secret);
 
@@ -139,7 +147,7 @@ exit:
  * KEG Algorithm described in R 1323565.1.020-2018 6.4.5.1.
  * keyout expected to be 64 bytes
  * */
-static int gost_keg(const unsigned char *ukm_source, int pkey_nid,
+int gost_keg(const unsigned char *ukm_source, int pkey_nid,
                     const EC_POINT *pub_key, const EC_KEY *priv_key,
                     unsigned char *keyout)
 {
